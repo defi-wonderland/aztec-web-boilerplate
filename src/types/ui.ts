@@ -2,7 +2,7 @@
 // UI COMPONENT TYPES
 // ============================================================================
 
-export type TabType = 'mint' | 'vote' | 'settings';
+export type TabType = 'mint' | 'settings' | 'bridge-out';
 
 export interface TabConfig {
   id: TabType;

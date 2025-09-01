@@ -1,6 +1,6 @@
 import { type AccountWallet, Fr } from '@aztec/aztec.js';
 import { AztecWalletService, AztecContractService } from '../core';
-import { AztecDripperService, AztecTokenService } from '../features';
+import { AztecDripperService, AztecTokenService, AztecBridgeService } from '../features';
 import { AztecStorageService } from '../storage';
 import { WalletServices } from './initialization';
 import { AppConfig } from '../../../config/networks';
@@ -8,6 +8,7 @@ import { AppConfig } from '../../../config/networks';
 export interface WalletActionServices {
   dripperService: AztecDripperService;
   tokenService: AztecTokenService;
+  bridgeService: AztecBridgeService;
 }
 
 export const createWalletActionServices = (
@@ -22,10 +23,18 @@ export const createWalletActionServices = (
   );
 
   const tokenService = new AztecTokenService(getConnectedAccount);
+  
+  const pxe = walletServices.walletService.getPXE();
+  const bridgeService = new AztecBridgeService(getConnectedAccount);
+  // Set PXE on bridge service
+  if (pxe) {
+    bridgeService.setPXE(pxe);
+  }
 
   return {
     dripperService,
     tokenService,
+    bridgeService,
   };
 };
 

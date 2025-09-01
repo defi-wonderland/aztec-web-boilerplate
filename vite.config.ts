@@ -64,8 +64,9 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: true,
+    sourcemap: false, // Disable sourcemaps to reduce memory usage
     minify: 'esbuild',
+    chunkSizeWarningLimit: 2000, // Increase chunk size warning limit
     commonjsOptions: {
       // Forces @aztec packages to be treated as ESM to prevent class identity errors
       defaultIsModuleExports: (id) => {
@@ -77,25 +78,15 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
+        format: 'es',
         preserveModules: false,
-        generatedCode: {
-          constBindings: true,
-        },
+        inlineDynamicImports: false,
+        interop: 'auto',
         assetFileNames: (assetInfo) => {
           if ((assetInfo as any).name?.endsWith('.wasm')) {
             return 'assets/[name]-[hash][extname]';
           }
           return 'assets/[name]-[hash][extname]';
-        },
-        manualChunks: (id) => {
-          // Keep WASM-related modules in separate chunks for better caching
-          if (id.includes('noirc_abi_wasm') || id.includes('.wasm')) {
-            return 'wasm';
-          }
-          // Keep @aztec packages together to prevent class identity issues
-          if (id.includes('@aztec/')) {
-            return 'aztec-core';
-          }
         },
       },
     },
@@ -104,14 +95,19 @@ export default defineConfig({
     include: [
       'react',
       'react-dom',
+      'react/jsx-runtime',
       'buffer',
       'crypto-browserify',
       'stream-browserify',
       'util',
       'path-browserify',
+      '@aztec/bb.js',
+      '@rainbow-me/rainbowkit',
+      '@tanstack/react-query',
+      'wagmi',
+      'viem',
     ],
     exclude: [
-      '@aztec/bb.js',
       '@aztec/pxe',
       '@aztec/pxe/client/lazy',
       '@aztec/foundation',

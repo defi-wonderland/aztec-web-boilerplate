@@ -57,6 +57,8 @@ export const Header: React.FC = () => {
   };
   
   const showAccountOptions = !connectedAccount;
+  const accountAddress = connectedAccount?.getAddress().toString();
+  const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 6)}...${accountAddress.slice(-4)}` : '';
 
   const renderAccountSection = () => {
     if (!isInitialized) {
@@ -67,7 +69,7 @@ export const Header: React.FC = () => {
       return (
         <div className="connected-account-section">
           <div id="account-display" className="account-display">
-            Account: {connectedAccount.getAddress().toString().slice(0, 6)}...{connectedAccount.getAddress().toString().slice(-4)}
+            Account: {truncatedAddress}
           </div>
           <button 
             onClick={handleDisconnect}
