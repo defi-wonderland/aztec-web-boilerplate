@@ -1,77 +1,171 @@
-# aztec-web-starter
+# Bridge and Seek
 
-This is an example web app that demonstrates how to interact with an Aztec contract using the Aztec JS SDK.
+A privacy-first cross-chain bridge application powered by Substance Labs' bridge that enables seamless token transfers between Base Sepolia and Aztec Sepolia, with built-in private swapping capabilities.
 
-- Uses the [Private Voting](https://docs.aztec.network/developers/tutorials/codealong/contract_tutorials/private_voting_contract) example
-- Includes an embedded wallet. This is only for demonstration purposes and not for production use.
-- Works on top of the Sandbox, but can be adapted to work with a testnet.
+## 🌉 Overview
 
-### Setup
+Bridge and Seek demonstrates the power of privacy-preserving cross-chain interactions by allowing users to:
+- Bridge tokens from Base Sepolia into Aztec's private ecosystem
+- Bridge tokens out from Aztec to Base Sepolia
+- Perform private token operations within Aztec
+- Execute cross-chain swaps while maintaining transaction privacy
 
-1. Install the Aztec tools from the first few steps in [Quick Start Guide](https://docs.aztec.network/developers/getting_started).
+The application showcases Aztec's privacy features through both public and private token operations, providing a complete demonstration of confidential cross-chain DeFi.
 
-Please note that this project uses `1.1.2` version of Aztec SDK. If you wish to use a different version, please update the dependencies in the `package.json` and in `contracts/Nargo.toml` file to match your version.
+## ✨ Key Features
 
-You can install a specific version of Aztec tools by running `aztec-up 1.1.2`
+### Core Bridge Functionality
+- **Shield (Bridge In)**: Transfer WETH from Base Sepolia to Aztec Sepolia
+- **Unshield (Bridge Out)**: Transfer WETH from Aztec back to Base Sepolia  
+- **7683 Standard**: Intent-based cross-chain order system for secure transfers
 
+### User Experience
+- **Embedded Wallet**: No popups or external wallet apps required. Everything is generated in-browser
+- **MetaMask Integration**: Seamless connection for EVM operations
+- **Account Abstraction**: Sponsored fee payments through SponsoredFPC
 
-2. Compile smart contracts in `/contracts`:
+## 🚀 Quick Start
 
-```sh
-yarn build-contracts
-```
+### Prerequisites
+- Node.js >=22.0.0
+- MetaMask or compatible EVM wallet
 
-The build script compiles the contract and generates the artifacts.
+### Installation
 
-3. Deploy the contracts
+```bash
+# Clone the repository
+git clone https://github.com/defi-wonderland/aztec-bridge-and-seek.git
+cd bridge-and-seek
 
-Run the JS deploy script to deploy the contracts (NodeJS v20.0):
-
-```sh
+# Install dependencies
 yarn install
+
+# Install Aztec 1.1.2
+aztec-up 1.1.2
+
+# Start Sandbox
+aztec start --sandbox
+
+# Build and deploy contracts
+yarn build-contracts
 yarn deploy-contracts
-```
 
-The deploy script generates a random account and deploys the voting contract with it. It also uses the SponsoredFPC contract for fee payment. This is sufficient for testing with Sandbox, but is not suitable for production setup.
-
-The script also writes the deployment info to `.env` (which our web-app reads from).
-
-> Note that the script generates client proofs and it may take a couple of seconds. For faster development, you can disable proving by calling with `PROVER_ENABLED=false` (Sandbox accepts transactions without a valid proof).
-
-4. Run the app (development mode):
-
-```sh
+# Start development server
 yarn dev
 ```
 
-### Test the app
+The application will be available at http://localhost:3000
 
-You can now interact with the deployed contract using the web app:
+## 📦 Project Structure
 
-- Create a new account
-  - Like before, this will take some time to generate proofs (especially the first time as it needs to download a ~67MB proving key)
-  - Note: this will save your account keys to your browser's local storage
-- Cast a vote for one of the 5 candidates
-- Voting again should throw an error
-- Open another browser (or an incognito window), create a new account, and cast a vote
-- See the updated vote results in the first browser
+```
+bridge-and-seek/
+├── contracts/              # Noir smart contracts
+│   └── dripper/           # Token faucet contract
+├── src/
+│   ├── artifacts/         # Generated contract TypeScript bindings
+│   ├── components/        # React UI components
+│   ├── providers/         # React context providers
+│   │   ├── AztecWalletProvider.tsx
+│   │   ├── EvmWalletProvider.tsx
+│   │   ├── TokenProvider.tsx
+│   │   └── NotificationProvider.tsx
+│   └── services/          # Service layer
+│       └── aztec/        # Aztec-specific services
+│           ├── core/     # Wallet and contract services
+│           ├── features/ # Token, voting, dripper services
+│           └── storage/  # Browser storage management
+├── scripts/              # Deployment and utility scripts
+└── tests/               # E2E Playwright tests
+```
 
-You can also run the E2E tests:
+## 🛠️ Development
 
-```sh
+### Essential Commands
+
+```bash
+# Contract Development
+yarn build-contracts      # Compile Noir contracts and generate TypeScript artifacts
+yarn compile-contracts    # Compile Noir contracts only
+yarn codegen-contracts    # Generate TypeScript bindings
+yarn deploy-contracts     # Deploy all contracts to Aztec network
+
+# Application Development  
+yarn dev                  # Start development server
+yarn build-app           # Production build with Webpack
+yarn build               # Full build (contracts + app)
+yarn serve               # Serve production build
+
+# Testing & Quality
+yarn test                # Run E2E test suite
+yarn prep-test           # Deploy contracts and build for testing
+yarn lint                # Check code formatting
+
+# Performance Options
+PROVER_ENABLED=false yarn deploy-contracts  # Skip proof generation for faster development
+```
+
+## 🔗 Technical Architecture
+
+### Cross-Chain Bridge
+- **Bridge Implementation**: Built on [Substance Labs Aztec-EVM Bridge](https://github.com/substance-labs/aztec-evm-bridge)
+- **Source Chain**: Base Sepolia 
+- **Destination Chain**: Aztec Testnet
+- **Bridge Token**: WETH
+  - Base Sepolia: `0x1BDD24840e119DC2602dCC587Dd182812427A5Cc`
+  - Aztec Sepolia: `0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb`
+- **Gateway Contract**: `0x0Bf4eD5a115e6Ad789A88c21e9B75821Cc7B2e6f`
+- **Architecture**: Intent-based settlement with zero-knowledge proofs for privacy-preserving cross-chain transfers
+
+### Aztec Integration
+- **PXE**: Client-side Private eXecution Environment for proof generation
+- **Account Contracts**: ECDSA keys for EVM wallet compatibility
+- **Note System**: Encrypted UTXO-like notes for private state
+- **Fee Abstraction**: Sponsored transactions through SponsoredFPC
+
+### Security Features
+- Zero-knowledge proofs for transaction privacy
+- Client-side proof generation (no trusted setup)
+- Optional auditability through selective disclosure
+- Secure cross-chain message passing via 7683 standard
+
+## 🧪 Testing
+
+The project includes comprehensive E2E tests using Playwright:
+
+```bash
+# Run full test suite
 yarn test
+
+# Run tests without proof generation (faster)
+PROVER_ENABLED=false yarn test
 ```
 
-<br />
+## 🤝 Contributing
 
-## Disable client proofs
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on our development process and how to submit pull requests.
 
-The Sandbox will accept transactions without a valid proof. You can disable proof generation when working against the Sandbox as it will save time during development.
+## 📚 Resources
 
-To disable proving in the deploy script, run:
+- [Aztec Documentation](https://docs.aztec.network)
+- [7683 Cross-Chain Standard](https://www.erc7683.org/)
+- [Bridge Architecture](https://github.com/substance-labs/aztec-evm-bridge)
+- [Noir Language Guide](https://noir-lang.org/docs)
 
-```sh
-PXE_PROVER=none ./deploy.sh
-```
+## 📝 License
 
-To disable proving in the web app, you can set `PROVER_ENABLED` to `false` in your environment variables.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built by [Wonderland](https://wonderland.xyz) in collaboration with Aztec Labs
+- Bridge infrastructure powered by [Substance Labs Aztec-EVM Bridge](https://github.com/substance-labs/aztec-evm-bridge)
+- Privacy technology enabled by [Aztec Network](https://aztec.network)
+
+## ⚠️ Disclaimer
+
+This is a testnet application for demonstration purposes. Do not use with real funds on mainnet.
+
+---
+
+For questions, issues, or feature requests, please open an issue on [GitHub](https://github.com/defi-wonderland/aztec-bridge-and-seek/issues).
