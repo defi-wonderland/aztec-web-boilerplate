@@ -4,6 +4,7 @@ export { DripperCard } from './DripperCard';
 export { TokenBalanceCard } from './TokenBalanceCard';
 export { Layout } from './Layout';
 export { SettingsCard } from './SettingsCard';
+export { SendersCard } from './SendersCard';
 export { Sidebar } from './Sidebar';
 export { MainContent } from './MainContent';
 export { BridgeOutCard } from './BridgeOutCard';

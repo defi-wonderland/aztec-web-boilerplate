@@ -1,6 +1,5 @@
 /**
- * Bridge Configuration
- * Constants and configuration for Aztec-EVM bridge operations
+ * Bridge Constants
  * Based on Substance Labs Aztec-EVM Bridge
  */
 
@@ -51,9 +50,3 @@ export const ORDER_DATA_TYPE = {
 // Default values
 export const DEFAULT_FILL_DEADLINE_SECONDS = 3600; // 1 hour
 export const POLLING_INTERVAL_MS = 5000; // 5 seconds
-
-// UI Constants
-export const ADDRESS_TRUNCATE_START = 6;
-export const ADDRESS_TRUNCATE_END = 4;
-export const SUCCESS_MESSAGE_TIMEOUT = 3000;
-export const ERROR_MESSAGE_TIMEOUT = 5000;
