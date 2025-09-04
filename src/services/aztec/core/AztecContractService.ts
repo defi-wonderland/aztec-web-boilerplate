@@ -14,6 +14,8 @@ import { IAztecContractService } from '../../../types';
 import { AztecArtifactService } from '../artifacts/AztecArtifactService';
 import { ContractUIGenerator } from '../ui/ContractUIGenerator';
 import { ContractInteractionService } from '../interaction/ContractInteractionService';
+import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
+import { NFTContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/NFT.js';
 import type { AztecContractMetadata } from '../../../types';
 import type { ContractUIConfig } from '../ui/ContractUIGenerator';
 import type {
@@ -176,6 +178,96 @@ export class AztecContractService implements IAztecContractService {
    */
   isReadyForInteraction(): boolean {
     return !!this.interactionService;
+  }
+
+  /**
+   * Deploy a Token contract with custom parameters
+   * 
+   * @param params - Token deployment parameters
+   * @returns Deployment result with contract address
+   */
+  async deployTokenContract(params: {
+    name: string;
+    symbol: string;
+    decimals: number;
+    initialSupply: string;
+    to: AztecAddress;
+    upgradeAuthority: AztecAddress;
+  }): Promise<{ contractAddress: string; txHash?: string }> {
+    if (!this.interactionService) {
+      throw new Error('Wallet required for contract deployment');
+    }
+
+    try {
+      const deployMethod = TokenContract.deploy(
+        this.wallet!,
+        params.name,
+        params.symbol,
+        params.decimals,
+        BigInt(params.initialSupply),
+        params.to,
+        params.upgradeAuthority
+      );
+
+      const receipt = await deployMethod.send().wait();
+      const contractAddress = receipt.contract.address.toString();
+
+      // Register the deployed contract with PXE
+      await this.pxe.registerContract({
+        instance: receipt.contract,
+        artifact: TokenContract.artifact,
+      });
+
+      return {
+        contractAddress,
+        txHash: receipt.txHash?.toString(),
+      };
+    } catch (error) {
+      throw new Error(`Token deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Deploy an NFT contract with custom parameters
+   * 
+   * @param params - NFT deployment parameters
+   * @returns Deployment result with contract address
+   */
+  async deployNFTContract(params: {
+    name: string;
+    symbol: string;
+    minter: AztecAddress;
+    upgradeAuthority: AztecAddress;
+  }): Promise<{ contractAddress: string; txHash?: string }> {
+    if (!this.interactionService) {
+      throw new Error('Wallet required for contract deployment');
+    }
+
+    try {
+      const deployMethod = NFTContract.deploy(
+        this.wallet!,
+        params.name,
+        params.symbol,
+        params.minter,
+        params.upgradeAuthority
+      );
+
+      const receipt = await deployMethod.send().wait();
+      const contractAddress = receipt.contract.address.toString();
+
+      // Register the deployed contract with PXE
+      await this.pxe.registerContract({
+        instance: receipt.contract,
+        artifact: NFTContract.artifact,
+      });
+
+      return {
+        contractAddress,
+        txHash: receipt.txHash?.toString(),
+      };
+    } catch (error) {
+      throw new Error(`NFT deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
 

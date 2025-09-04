@@ -17,8 +17,6 @@ import { createStore } from '@aztec/kv-store/lmdb';
 import { getDefaultInitializer } from '@aztec/stdlib/abi';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-// @ts-ignore
-import { EasyPrivateVotingContract } from '../src/artifacts/EasyPrivateVoting.ts';
 import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Dripper.js';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
 
@@ -98,53 +96,7 @@ async function createAccount(pxe: PXE) {
   };
 }
 
-async function deployContract(pxe: PXE, deployer: Wallet) {
-  const salt = Fr.random();
-  const contract = await getContractInstanceFromDeployParams(
-    EasyPrivateVotingContract.artifact,
-    {
-      publicKeys: PublicKeys.default(),
-      constructorArtifact: getDefaultInitializer(
-        EasyPrivateVotingContract.artifact
-      ),
-      constructorArgs: [deployer.getAddress().toField()],
-      deployer: deployer.getAddress(),
-      salt,
-    }
-  );
 
-  const deployMethod = new DeployMethod(
-    contract.publicKeys,
-    deployer,
-    EasyPrivateVotingContract.artifact,
-    (address: AztecAddress, wallet: Wallet) =>
-      EasyPrivateVotingContract.at(address, wallet),
-    [deployer.getAddress().toField()],
-    getDefaultInitializer(EasyPrivateVotingContract.artifact)?.name
-  );
-
-  const sponsoredPFCContract = await getSponsoredPFCContract();
-
-  const provenInteraction = await deployMethod.prove({
-    contractAddressSalt: salt,
-    fee: {
-      paymentMethod: new SponsoredFeePaymentMethod(
-        sponsoredPFCContract.address
-      ),
-    },
-  });
-  await provenInteraction.send().wait({ timeout: 120 });
-  await pxe.registerContract({
-    instance: contract,
-    artifact: EasyPrivateVotingContract.artifact,
-  });
-
-  return {
-    contractAddress: contract.address.toString(),
-    deployerAddress: deployer.getAddress().toString(),
-    deploymentSalt: salt.toString(),
-  };
-}
 
 async function deployDripperContract(pxe: PXE, deployer: Wallet) {
   const salt = Fr.random();
@@ -296,9 +248,6 @@ async function createAccountAndDeployContract() {
   // );
   // console.log('\n\n\nWallet info saved to wallet-info.json\n\n\n');
 
-  // Deploy the contract
-  const deploymentInfo = await deployContract(pxe, wallet);
-
   // Deploy the Dripper contract first
   const dripperDeploymentInfo = await deployDripperContract(pxe, wallet);
 
@@ -310,11 +259,9 @@ async function createAccountAndDeployContract() {
   // Save the deployment info to .env file
   if (WRITE_ENV_FILE) {
     await writeEnvFile({
-      CONTRACT_ADDRESS: deploymentInfo.contractAddress,
       DRIPPER_CONTRACT_ADDRESS: dripperDeploymentInfo.contractAddress,
       TOKEN_CONTRACT_ADDRESS: tokenDeploymentInfo.contractAddress,
-      DEPLOYER_ADDRESS: deploymentInfo.deployerAddress,
-      DEPLOYMENT_SALT: deploymentInfo.deploymentSalt,
+      DEPLOYER_ADDRESS: dripperDeploymentInfo.deployerAddress,
       DRIPPER_DEPLOYMENT_SALT: dripperDeploymentInfo.deploymentSalt,
       TOKEN_DEPLOYMENT_SALT: tokenDeploymentInfo.deploymentSalt,
       AZTEC_NODE_URL,

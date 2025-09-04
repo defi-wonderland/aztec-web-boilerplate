@@ -19,7 +19,7 @@ describe('AztecContractService', () => {
     service = new AztecContractService(mockPXE);
   });
 
-  describe('Initialization', () => {
+  describe('initialization', () => {
     it('creates service without wallet', () => {
       const serviceWithoutWallet = new AztecContractService(mockPXE);
       expect(serviceWithoutWallet.isReadyForInteraction()).toBe(false);
@@ -31,7 +31,7 @@ describe('AztecContractService', () => {
     });
   });
 
-  describe('Wallet Management', () => {
+  describe('wallet management', () => {
     it('sets wallet and enables interactions', () => {
       expect(service.isReadyForInteraction()).toBe(false);
       
@@ -41,7 +41,7 @@ describe('AztecContractService', () => {
     });
   });
 
-  describe('Service Integration', () => {
+  describe('service integration', () => {
     it('has parseContractArtifact method', () => {
       expect(typeof service.parseContractArtifact).toBe('function');
     });
@@ -67,7 +67,7 @@ describe('AztecContractService', () => {
     });
   });
 
-  describe('Error Handling for Wallet-Required Operations', () => {
+  describe('error handling for wallet-required operations', () => {
     it('throws error when executing function without wallet', async () => {
       const contractAddress = AztecAddress.fromString('0x' + '1'.repeat(64));
       const functionConfig = { name: 'testFunction' };

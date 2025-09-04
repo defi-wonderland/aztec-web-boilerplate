@@ -71,7 +71,7 @@ const mockContractMetadata: AztecContractMetadata = {
   unconstrainedFunctions: [mockUnconstrainedFunction],
 };
 
-describe('Contract Form Component Types and Logic', () => {
+describe('contract form component types and logic', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -132,7 +132,7 @@ describe('Contract Form Component Types and Logic', () => {
   });
 });
 
-describe('Function Display Logic', () => {
+describe('function display logic', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -180,7 +180,7 @@ describe('Function Display Logic', () => {
   });
 });
 
-describe('Contract Metadata Processing', () => {
+describe('contract metadata processing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

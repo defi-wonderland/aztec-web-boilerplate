@@ -39,7 +39,6 @@ const registerContracts = async (
   contractService: AztecContractService,
   config: AppConfig
 ): Promise<void> => {
-  // Register EasyPrivateVoting contract
   const deployerAddress = AztecAddress.fromString(config.deployerAddress);
   
   // Register Dripper contract

@@ -50,7 +50,7 @@ describe('ContractInteractionService', () => {
     vi.clearAllMocks();
   });
 
-  describe('Input Validation', () => {
+  describe('input validation', () => {
     it('validates required parameters', async () => {
       const contractAddress = AztecAddress.fromString('0x' + '1'.repeat(64));
       
@@ -131,7 +131,7 @@ describe('ContractInteractionService', () => {
     });
   });
 
-  describe('Type Parsing', () => {
+  describe('type parsing', () => {
     it('parses Field types correctly', () => {
       const mockFr = { value: 'mock-field' };
       vi.mocked(Fr.fromString).mockReturnValue(mockFr as any);
@@ -194,7 +194,7 @@ describe('ContractInteractionService', () => {
     });
   });
 
-  describe('Function Execution', () => {
+  describe('function execution', () => {
     it('executes private functions correctly', async () => {
       const contractAddress = AztecAddress.fromString('0x' + '1'.repeat(64));
       const mockReceipt = { txHash: 'mock-private-tx-hash', blockNumber: 12345 };
@@ -276,7 +276,7 @@ describe('ContractInteractionService', () => {
     });
   });
 
-  describe('Contract Deployment', () => {
+  describe('contract deployment', () => {
     it('deploys contract without initializer', async () => {
       const mockReceipt = {
         contractAddress: AztecAddress.fromString('0x' + '2'.repeat(64)),
@@ -359,7 +359,7 @@ describe('ContractInteractionService', () => {
     });
   });
 
-  describe('Edge Cases and Error Handling', () => {
+  describe('error handling', () => {
     it('handles unsupported function visibility', async () => {
       const contractAddress = AztecAddress.fromString('0x' + '1'.repeat(64));
       

@@ -3,15 +3,21 @@ import { ContractInput } from './ContractInput';
 import { ContractInfoPanel } from './ContractInfoPanel';
 import { DynamicContractForm } from './DynamicContractForm';
 import { ExecutionResults, ExecutionResult } from './ExecutionResults';
+import { ContractDeployer } from './ContractDeployer';
 import { AztecContractMetadata } from '../../types';
 import { AztecArtifactService } from '../../services/aztec/artifacts/AztecArtifactService';
+import { AztecContractService } from '../../services/aztec/core/AztecContractService';
+import { ContractUIGenerator } from '../../services/aztec/ui/ContractUIGenerator';
 import { useAztecWallet } from '../../hooks';
 import { useError } from '../../providers/ErrorProvider';
+import { AztecAddress } from '@aztec/aztec.js';
+import { ContractArtifact } from '@aztec/stdlib/abi';
 
 interface LoadedContract {
   address: string;
   metadata: AztecContractMetadata;
-  rawArtifact: unknown;
+  rawArtifact: ContractArtifact;
+  uiConfig: any; // ContractUIConfig from ui generator
 }
 
 /**
@@ -19,6 +25,7 @@ interface LoadedContract {
  * Provides complete contract interaction functionality
  */
 export const AztecWebInterface: React.FC = () => {
+  const [mode, setMode] = useState<'interact' | 'deploy'>('interact');
   const [loadedContract, setLoadedContract] = useState<LoadedContract | null>(null);
   const [isLoadingContract, setIsLoadingContract] = useState(false);
   const [executionResults, setExecutionResults] = useState<ExecutionResult[]>([]);
@@ -35,6 +42,10 @@ export const AztecWebInterface: React.FC = () => {
   
   const { addError } = useError();
   const artifactService = useMemo(() => new AztecArtifactService(), []);
+  const uiGenerator = useMemo(() => new ContractUIGenerator(), []);
+  
+  // TODO: Integrate with full contract service when we have access to PXE
+  const contractService = null;
 
   // Load contract from address and artifact
   const handleLoadContract = useCallback(async (address: string, artifact: unknown) => {
@@ -42,13 +53,18 @@ export const AztecWebInterface: React.FC = () => {
     
     try {
       // Parse the artifact to get contract metadata
-      const metadata = artifactService.parseArtifact(artifact as any);
+      const contractArtifact = artifact as ContractArtifact;
+      const metadata = artifactService.parseArtifact(contractArtifact);
       
-      // Store the loaded contract
+      // Generate UI configuration
+      const uiConfig = uiGenerator.generateContractUI(metadata);
+      
+      // Store the loaded contract with UI configuration
       const contract: LoadedContract = {
         address,
         metadata,
-        rawArtifact: artifact,
+        rawArtifact: contractArtifact,
+        uiConfig,
       };
       
       setLoadedContract(contract);
@@ -88,7 +104,7 @@ export const AztecWebInterface: React.FC = () => {
     } finally {
       setIsLoadingContract(false);
     }
-  }, [artifactService, recentContracts, addError]);
+  }, [artifactService, uiGenerator, recentContracts, addError]);
 
   // Execute contract function
   const handleExecuteFunction = useCallback(async (functionName: string, parameters: Record<string, unknown>) => {
@@ -122,8 +138,7 @@ export const AztecWebInterface: React.FC = () => {
         throw new Error(`Function ${functionName} not found in contract`);
       }
 
-      // For now, simulate execution since we need to implement the actual contract interaction
-      // This would be replaced with actual contract execution logic
+      // TODO: Replace with actual contract execution using AztecContractService
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
       
       const executionTime = Date.now() - startTime;
@@ -183,13 +198,64 @@ export const AztecWebInterface: React.FC = () => {
     setExecutionResults([]);
   }, []);
 
+  // Handle contract deployment
+  const handleContractDeployed = useCallback(async (contractAddress: string, contractType: string, artifact: any) => {
+    // Add to recent contracts
+    const newContract = {
+      address: contractAddress,
+      name: contractType,
+      artifact,
+    };
+    
+    setRecentContracts(prev => {
+      const filtered = prev.filter(c => c.address !== contractAddress);
+      return [newContract, ...filtered].slice(0, 10);
+    });
+
+    // Optionally auto-load the deployed contract
+    try {
+      await handleLoadContract(contractAddress, artifact);
+      setMode('interact'); // Switch to interaction mode
+    } catch (error) {
+      console.error('Failed to auto-load deployed contract:', error);
+    }
+  }, [handleLoadContract]);
+
   const isWalletReady = connectedAccount && isInitialized;
 
   return (
     <div className="aztec-eth95-interface">
+      {/* Mode Switcher */}
+      <div className="mode-switcher">
+        <button
+          type="button"
+          onClick={() => setMode('interact')}
+          className={`mode-btn ${mode === 'interact' ? 'active' : ''}`}
+        >
+          <span className="mode-icon">🔗</span>
+          <span className="mode-title">Interact with Contract</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('deploy')}
+          className={`mode-btn ${mode === 'deploy' ? 'active' : ''}`}
+        >
+          <span className="mode-icon">🚀</span>
+          <span className="mode-title">Deploy New Contract</span>
+        </button>
+      </div>
+
       {/* Main Content */}
       <div className="interface-body">
-        {!loadedContract ? (
+        {mode === 'deploy' ? (
+          /* Contract Deployment Phase */
+          <div className="deployment-phase">
+            <ContractDeployer
+              onContractDeployed={handleContractDeployed}
+              disabled={!isWalletReady}
+            />
+          </div>
+        ) : !loadedContract ? (
           /* Contract Input Phase */
           <div className="input-phase">
             <div className="input-container">

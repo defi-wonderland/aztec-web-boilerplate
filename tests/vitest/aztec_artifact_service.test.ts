@@ -3,7 +3,6 @@ import { AztecArtifactService } from '../../src/services/aztec/artifacts/AztecAr
 import { AztecContractMetadata, AztecContractFunction } from '../../src/types';
 import { ContractArtifact } from '@aztec/stdlib/abi';
 import dripperArtifact from '../../src/artifacts/dripper-Dripper.json' with { type: 'json' };
-import votingArtifact from '../../src/artifacts/easy_private_voting-EasyPrivateVoting.json';
 
 describe('AztecArtifactService', () => {
   let service: AztecArtifactService;
@@ -245,9 +244,9 @@ describe('AztecArtifactService', () => {
       expect(service.parseParameterType('string')).toBe('unknown');
     });
 
-    it('parses real voting artifact correctly', () => {
-      const result = service.parseArtifact(votingArtifact as ContractArtifact);
-      expect(result.name).toBe('EasyPrivateVoting');
+    it('parses real dripper artifact correctly', () => {
+      const result = service.parseArtifact(dripperArtifact as ContractArtifact);
+      expect(result.name).toBe('Dripper');
       expect(result.functions.length).toBeGreaterThan(0);
     });
   });
