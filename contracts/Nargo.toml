@@ -1,0 +1,5 @@
+[workspace]
+members = [
+"easy_private_voting",
+"dripper",
+]
