@@ -7,4 +7,3 @@ export { SettingsCard } from './SettingsCard';
 export { SendersCard } from './SendersCard';
 export { Sidebar } from './Sidebar';
 export { MainContent } from './MainContent';
-export { BridgeOutCard } from './BridgeOutCard';
