@@ -10,15 +10,16 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 50%, var(--bg-tertiary) 100%);
+  color: var(--text-primary);
   min-height: 100vh;
 }
 
 /* Header styles */
 .navbar {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--navbar-bg);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   padding: 1rem 0;
   position: sticky;
   top: 0;
@@ -376,7 +377,7 @@ body {
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: white;
+  color: #374151;
   font-size: 0.75rem;
 }
 
@@ -424,8 +425,34 @@ body {
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: white;
+  color: #374151;
   font-size: 0.75rem;
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
 }
 
 .nav-title {
@@ -438,7 +465,7 @@ body {
 }
 
 .nav-title::before {
-  content: '🛡️';
+  content: '💾';
   font-size: 1.75rem;
 }
 
@@ -2264,5 +2291,234 @@ body {
   
   .address-display-container {
     padding: 0.5rem;
+  }
+}
+
+/* ============================================================================
+   DARK MODE STYLES
+   ============================================================================ */
+
+/* CSS Variables for theming */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --navbar-bg: rgba(255, 255, 255, 0.9);
+}
+
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #334155;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --navbar-bg: rgba(15, 23, 42, 0.9);
+}
+
+/* Apply theme variables */
+body {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 50%, var(--bg-tertiary) 100%);
+  color: var(--text-primary);
+}
+
+.navbar {
+  background: var(--navbar-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nav-title {
+  color: var(--text-primary);
+}
+
+/* Theme toggle dark mode styles */
+.dark .theme-toggle {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dark .theme-toggle:hover {
+  background: var(--bg-secondary);
+}
+
+/* Update arrow colors for dark mode */
+.dark .network-select-arrow,
+.dark .wallet-select-arrow {
+  color: var(--text-secondary);
+}
+
+/* Cards and containers */
+.card,
+.settings-card,
+.dripper-card,
+.token-balance-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Buttons */
+button {
+  color: var(--text-primary);
+}
+
+/* Form elements */
+input, select, textarea {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Modal */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Connected account section */
+.connected-account-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.account-address {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Comprehensive Dark Mode Overrides */
+.dark {
+  /* Layout containers */
+  .layout-container,
+  .layout-grid,
+  .sidebar,
+  .main-content,
+  .content-section {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  /* Cards */
+  .card,
+  .settings-card,
+  .dripper-card,
+  .token-balance-card,
+  .senders-card,
+  .voting-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+
+  /* Card headers and content */
+  .card-header,
+  .card-title,
+  .card-subtitle,
+  .card-content,
+  .section-title,
+  .section-subtitle {
+    color: var(--text-primary);
+  }
+
+  /* Form elements */
+  input,
+  select,
+  textarea,
+  .form-input,
+  .form-select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* Buttons - preserve gradients but adjust for dark mode */
+  .network-select {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+  }
+
+  .wallet-select {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+  }
+
+  /* Status and messages */
+  .status-message,
+  .error-message,
+  .success-message,
+  .info-message {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+
+  /* Tabs */
+  .tabs,
+  .tab-list,
+  .tab-content {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  .tab-button {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+
+  .tab-button.active {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  /* Address displays */
+  .address-display,
+  .address-display-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+
+  /* Balance displays */
+  .balance-display,
+  .token-balance,
+  .balance-item {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  /* Tooltips and small text */
+  .tooltip,
+  .network-selector-tooltip,
+  .help-text,
+  .description {
+    color: var(--text-secondary);
+  }
+
+  /* Borders and dividers */
+  .divider,
+  .separator {
+    border-color: var(--border-color);
   }
 }

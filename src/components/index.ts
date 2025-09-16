@@ -6,4 +6,5 @@ export { AzguardAccountDisplay } from './AzguardAccountDisplay';
 export { AzguardConnectButton } from './AzguardConnectButton';
 export { EmbeddedWalletButton } from './EmbeddedWalletButton';
 export { EmbeddedWalletModal } from './EmbeddedWalletModal';
+export { ThemeToggle } from './ThemeToggle';
 export * from './settings';

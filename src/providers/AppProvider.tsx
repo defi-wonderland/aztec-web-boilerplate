@@ -5,6 +5,7 @@ import { AztecWalletProvider } from './AztecWalletProvider';
 import { TokenProvider } from './TokenProvider';
 import { AzguardWalletProvider } from './AzguardWalletProvider';
 import { UniversalWalletProvider } from './UniversalWalletProvider';
+import { ThemeProvider } from './ThemeProvider';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -12,18 +13,20 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
-    <ConfigProvider>
-      <ErrorProvider>
-        <AzguardWalletProvider>
-          <AztecWalletProvider>
-            <UniversalWalletProvider>
-              <TokenProvider>
-                {children}
-              </TokenProvider>
-            </UniversalWalletProvider>
-          </AztecWalletProvider>
-        </AzguardWalletProvider>
-      </ErrorProvider>
-    </ConfigProvider>
+    <ThemeProvider>
+      <ConfigProvider>
+        <ErrorProvider>
+          <AzguardWalletProvider>
+            <AztecWalletProvider>
+              <UniversalWalletProvider>
+                <TokenProvider>
+                  {children}
+                </TokenProvider>
+              </UniversalWalletProvider>
+            </AztecWalletProvider>
+          </AzguardWalletProvider>
+        </ErrorProvider>
+      </ConfigProvider>
+    </ThemeProvider>
   );
 };

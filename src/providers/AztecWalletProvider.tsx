@@ -19,7 +19,6 @@ interface AztecWalletContextType {
   votingService: AztecVotingService | null;
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
-  bridgeService: any | null;
 
   // Actions
   createAccount: () => Promise<AccountWallet>;
@@ -51,7 +50,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   const [tokenService, setTokenService] = useState<AztecTokenService | null>(
     null
   );
-  const [bridgeService, setBridgeService] = useState<any | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
 
   const walletServicesRef = useRef<WalletServices | null>(null);
@@ -104,7 +102,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
     setDripperService(actionServices.dripperService);
     setTokenService(actionServices.tokenService);
-    setBridgeService(actionServices.bridgeService);
   };
 
   const handleNetworkSwitch = () => {
@@ -202,7 +199,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     votingService,
     dripperService,
     tokenService,
-    bridgeService,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,

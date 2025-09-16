@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
-import { ADDRESS_TRUNCATE_START, ADDRESS_TRUNCATE_END } from '../config/bridgeConstants';
+
+const ADDRESS_TRUNCATE_START = 6;
+const ADDRESS_TRUNCATE_END = 4;
 
 export const useAddressUtils = () => {
   const truncateAddress = useCallback((address: string | undefined): string => {

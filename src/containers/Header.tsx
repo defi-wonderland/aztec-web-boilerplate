@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
-import { WalletSelector, AzguardAccountDisplay } from '../components';
+import { WalletSelector, AzguardAccountDisplay, ThemeToggle } from '../components';
 
 export const Header: React.FC = () => {
   const { 
@@ -124,13 +124,14 @@ export const Header: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        <div className="nav-title">Bridge and Seek</div>
+        <div className="nav-title">AZT25</div>
 
             <div className="nav-controls">
               {renderNetworkSelector()}
               <div className="account-controls">
                 {renderAccountSection()}
               </div>
+              <ThemeToggle />
             </div>
       </div>
     </nav>
