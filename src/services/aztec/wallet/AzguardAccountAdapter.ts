@@ -1,4 +1,4 @@
-import { type AccountWallet, type AztecAddress, Fr } from '@aztec/aztec.js';
+import { type AccountWallet, AztecAddress, Fr } from '@aztec/aztec.js';
 import type { Operation, CaipAccount } from '@azguardwallet/types';
 import type { IAzguardAccountAdapter } from '../../../types/aztec';
 import { AzguardWalletService } from './AzguardWalletService';
@@ -36,7 +36,7 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
       
       return accountWallet;
     } catch (error) {
-      console.error('❌ Failed to convert CAIP account to AccountWallet:', error);
+      console.error('Failed to convert CAIP account to AccountWallet:', error);
       throw new Error(`Failed to convert account ${caipAccount}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -53,14 +53,26 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
       }
 
       const addressStr = parts[2];
-      if (!addressStr.startsWith('0x') || addressStr.length !== 42) {
+      if (!addressStr.startsWith('0x')) {
         throw new Error(`Invalid address format: ${addressStr}`);
       }
 
-      // Convert to AztecAddress (this might need adjustment based on actual Aztec.js API)
-      return AztecAddress.fromString(addressStr);
+      // Aztec addresses are 32 bytes (64 hex chars + 0x = 66 chars total)
+      // Ethereum addresses are 20 bytes (40 hex chars + 0x = 42 chars total)
+      if (addressStr.length === 66) {
+        // This is already an Aztec address format
+        return AztecAddress.fromString(addressStr);
+      } else if (addressStr.length === 42) {
+        // This is an Ethereum address format, need to convert to Aztec format
+        // Pad with zeros to make it 32 bytes (Aztec address length)
+        const paddedAddress = addressStr.replace('0x', '').padStart(64, '0');
+        const aztecAddressStr = '0x' + paddedAddress;
+        return AztecAddress.fromString(aztecAddressStr);
+      } else {
+        throw new Error(`Unsupported address length: ${addressStr.length}. Expected 42 (Ethereum) or 66 (Aztec) characters.`);
+      }
     } catch (error) {
-      console.error('❌ Failed to extract Aztec address from CAIP account:', error);
+      console.error('Failed to extract Aztec address from CAIP account:', error);
       throw error;
     }
   }

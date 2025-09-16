@@ -164,9 +164,12 @@ describe('AzguardWalletService', () => {
       // Arrange
       const error = new Error('Connection failed');
       mockClient.connect = vi.fn().mockRejectedValue(error);
+      
+      const dappMetadata = { name: 'Test Dapp' };
+      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
 
       // Act & Assert
-      await expect(service.connect({}, [])).rejects.toThrow('Connection failed');
+      await expect(service.connect(dappMetadata, permissions)).rejects.toThrow('Connection failed');
       
       const state = service.getState();
       expect(state.isConnecting).toBe(false);
@@ -176,9 +179,11 @@ describe('AzguardWalletService', () => {
     it('throws error when service not initialized', async () => {
       // Arrange
       const uninitializedService = new AzguardWalletService();
+      const dappMetadata = { name: 'Test Dapp' };
+      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
 
       // Act & Assert
-      await expect(uninitializedService.connect({}, [])).rejects.toThrow('not initialized');
+      await expect(uninitializedService.connect(dappMetadata, permissions)).rejects.toThrow('not initialized');
     });
   });
 
@@ -191,7 +196,9 @@ describe('AzguardWalletService', () => {
       await service.initialize();
       
       mockClient.accounts = [TestUtils.createMockCaipAccount()];
-      await service.connect({}, []);
+      const dappMetadata = { name: 'Test Dapp' };
+      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
+      await service.connect(dappMetadata, permissions);
     });
 
     it('disconnects successfully', async () => {
@@ -229,7 +236,9 @@ describe('AzguardWalletService', () => {
       await service.initialize();
       
       mockClient.accounts = [TestUtils.createMockCaipAccount()];
-      await service.connect({}, []);
+      const dappMetadata = { name: 'Test Dapp' };
+      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
+      await service.connect(dappMetadata, permissions);
     });
 
     it('sends transaction successfully', async () => {

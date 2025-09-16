@@ -50,7 +50,7 @@ export class AzguardWalletService implements IAzguardWalletService {
         const supportedChains = this.getSupportedChains();
         this.updateState({ supportedChains });
 
-        console.log('✅ Azguard wallet service initialized successfully');
+        console.log('Azguard wallet service initialized successfully');
       } else {
         console.warn('⚠️ Azguard wallet is not installed');
         this.updateState({ 
@@ -58,7 +58,7 @@ export class AzguardWalletService implements IAzguardWalletService {
         });
       }
     } catch (error) {
-      console.error('❌ Failed to initialize Azguard wallet service:', error);
+      console.error('Failed to initialize Azguard wallet service:', error);
       this.updateState({ 
         error: error instanceof Error ? error.message : 'Failed to initialize Azguard wallet service' 
       });
@@ -75,7 +75,7 @@ export class AzguardWalletService implements IAzguardWalletService {
       this.updateState({ isInstalled });
       return isInstalled;
     } catch (error) {
-      console.error('❌ Error checking Azguard installation:', error);
+      console.error('Error checking Azguard installation:', error);
       return false;
     }
   }
@@ -91,6 +91,10 @@ export class AzguardWalletService implements IAzguardWalletService {
     try {
       this.updateState({ isConnecting: true, error: null });
 
+
+      // Validate connection parameters
+      this.validateConnectionParams(dappMetadata, permissions);
+
       // Connect to the wallet
       await this.client.connect(dappMetadata, permissions);
 
@@ -105,16 +109,97 @@ export class AzguardWalletService implements IAzguardWalletService {
         selectedAccount
       });
 
-      console.log('✅ Connected to Azguard wallet:', { accounts, selectedAccount });
+      console.log('Connected to Azguard wallet:', { accounts, selectedAccount });
       return accounts;
     } catch (error) {
-      console.error('❌ Failed to connect to Azguard wallet:', error);
+      console.error('Failed to connect to Azguard wallet:', error);
+      
+      // Enhanced error logging
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
+      
       this.updateState({
         isConnecting: false,
         error: error instanceof Error ? error.message : 'Failed to connect to Azguard wallet'
       });
       throw error;
     }
+  }
+
+  /**
+   * Validate connection parameters before attempting connection
+   */
+  private validateConnectionParams(dappMetadata: any, permissions: any[]): void {
+    // Validate dappMetadata
+    if (!dappMetadata || typeof dappMetadata !== 'object') {
+      throw new Error('dappMetadata is required and must be an object');
+    }
+
+    if (!dappMetadata.name || typeof dappMetadata.name !== 'string') {
+      throw new Error('dappMetadata.name is required and must be a string');
+    }
+
+    if (dappMetadata.url && typeof dappMetadata.url !== 'string') {
+      throw new Error('dappMetadata.url must be a string if provided');
+    }
+
+    if (dappMetadata.icon && typeof dappMetadata.icon !== 'string') {
+      throw new Error('dappMetadata.icon must be a string if provided');
+    }
+
+    // Validate permissions
+    if (!Array.isArray(permissions)) {
+      throw new Error('permissions must be an array');
+    }
+
+    if (permissions.length === 0) {
+      throw new Error('permissions array cannot be empty');
+    }
+
+    permissions.forEach((permission, index) => {
+      if (!permission || typeof permission !== 'object') {
+        throw new Error(`permissions[${index}] must be an object`);
+      }
+
+      if (!Array.isArray(permission.chains)) {
+        throw new Error(`permissions[${index}].chains must be an array`);
+      }
+
+      if (permission.chains.length === 0) {
+        throw new Error(`permissions[${index}].chains cannot be empty`);
+      }
+
+      if (!Array.isArray(permission.methods)) {
+        throw new Error(`permissions[${index}].methods must be an array`);
+      }
+
+      if (permission.methods.length === 0) {
+        throw new Error(`permissions[${index}].methods cannot be empty`);
+      }
+
+      // Validate chain format (should be like "aztec:31337")
+      permission.chains.forEach((chain: any, chainIndex: number) => {
+        if (typeof chain !== 'string') {
+          throw new Error(`permissions[${index}].chains[${chainIndex}] must be a string`);
+        }
+        if (!chain.startsWith('aztec:')) {
+          throw new Error(`permissions[${index}].chains[${chainIndex}] must start with "aztec:"`);
+        }
+      });
+
+      // Validate method names
+      permission.methods.forEach((method: any, methodIndex: number) => {
+        if (typeof method !== 'string') {
+          throw new Error(`permissions[${index}].methods[${methodIndex}] must be a string`);
+        }
+      });
+    });
+
   }
 
   /**
@@ -135,9 +220,9 @@ export class AzguardWalletService implements IAzguardWalletService {
         error: null
       });
 
-      console.log('✅ Disconnected from Azguard wallet');
+      console.log('Disconnected from Azguard wallet');
     } catch (error) {
-      console.error('❌ Failed to disconnect from Azguard wallet:', error);
+      console.error('Failed to disconnect from Azguard wallet:', error);
       throw error;
     }
   }
@@ -182,10 +267,10 @@ export class AzguardWalletService implements IAzguardWalletService {
         throw new Error(result.error || 'Transaction failed');
       }
 
-      console.log('✅ Transaction sent successfully:', result.result);
+      console.log('Transaction sent successfully:', result.result);
       return result.result as string;
     } catch (error) {
-      console.error('❌ Failed to send transaction:', error);
+      console.error('Failed to send transaction:', error);
       throw error;
     }
   }

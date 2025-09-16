@@ -139,21 +139,25 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
         throw new Error('Azguard service not initialized');
       }
 
-      // Default connection configuration
+      // Get supported chains from the service
+      const supportedChains = azguardServiceRef.current.getSupportedChains();
+      console.log('🔗 Supported chains from Azguard:', supportedChains);
+
+      // Default connection configuration - following Azguard wallet specification
       const config: AzguardConnectionConfig = {
         dappMetadata: {
           name: 'Aztec Bridge and Seek',
-          description: 'Privacy-first cross-chain bridge application',
+          description: 'Privacy-first cross-chain bridge application built on Aztec Network',
           url: window.location.origin,
           icon: `${window.location.origin}/favicon.ico`
         },
         permissions: [
           {
-            chains: ['aztec:31337', 'aztec:11155111'], // Sandbox and Testnet
+            chains: ['aztec:11155111'], // Testnet as primary (matching Azguard test dapp)
             methods: [
-              'send_transaction',
-              'simulate_views',
               'register_contract',
+              'send_transaction', 
+              'simulate_views',
               'add_private_authwit',
               'call'
             ]
@@ -161,11 +165,56 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
         ]
       };
 
-      // Connect to wallet
-      const accounts = await azguardServiceRef.current.connect(
-        config.dappMetadata,
-        config.permissions
-      );
+      // Log the configuration for debugging
+      console.log('🔧 Azguard connection config:', config);
+
+      // Try to connect with primary config, fallback to minimal config if it fails
+      let accounts: CaipAccount[];
+      try {
+        accounts = await azguardServiceRef.current.connect(
+          config.dappMetadata,
+          config.permissions
+        );
+      } catch (primaryError) {
+        console.warn('⚠️ Primary connection config failed, trying minimal config:', primaryError);
+        
+        // Try different fallback configurations (matching Azguard test dapp patterns)
+        const fallbackConfigs = [
+          // Try with aztec:1337 (local development)
+          {
+            dappMetadata: { name: 'Aztec Bridge and Seek' },
+            permissions: [{ chains: ['aztec:1337'], methods: ['register_contract', 'send_transaction'] }]
+          },
+          // Try with aztec:31337 (sandbox)
+          {
+            dappMetadata: { name: 'Aztec Bridge and Seek' },
+            permissions: [{ chains: ['aztec:31337'], methods: ['register_contract', 'send_transaction'] }]
+          },
+          // Try minimal with just register_contract
+          {
+            dappMetadata: { name: 'Aztec Bridge and Seek' },
+            permissions: [{ chains: ['aztec:11155111'], methods: ['register_contract'] }]
+          }
+        ];
+
+        let lastError = primaryError;
+        for (let i = 0; i < fallbackConfigs.length; i++) {
+          try {
+            console.log(`🔧 Trying fallback config ${i + 1}:`, fallbackConfigs[i]);
+            accounts = await azguardServiceRef.current.connect(
+              fallbackConfigs[i].dappMetadata,
+              fallbackConfigs[i].permissions
+            );
+            break; // Success, exit loop
+          } catch (fallbackError) {
+            console.warn(`⚠️ Fallback config ${i + 1} failed:`, fallbackError);
+            lastError = fallbackError;
+            if (i === fallbackConfigs.length - 1) {
+              throw lastError; // Throw the last error if all configs fail
+            }
+          }
+        }
+      }
 
       // Update state
       setState(prev => ({
