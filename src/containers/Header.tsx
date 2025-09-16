@@ -9,11 +9,17 @@ export const Header: React.FC = () => {
     disconnectWallet
   } = useAztecWallet();
 
-  const { state: azguardState } = useAzguardWallet();
+  const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
 
   const handleDisconnect = () => {
-    disconnectWallet();
+    if (azguardState.isConnected) {
+      // Disconnect Azguard wallet
+      disconnectAzguard();
+    } else if (connectedAccount) {
+      // Disconnect embedded wallet
+      disconnectWallet();
+    }
   };
 
   const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -31,7 +37,7 @@ export const Header: React.FC = () => {
   
   const isAnyWalletConnected = connectedAccount || azguardState.isConnected;
   const accountAddress = connectedAccount?.getAddress().toString();
-  const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 6)}...${accountAddress.slice(-4)}` : '';
+  const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 4)}...${accountAddress.slice(-4)}` : '';
 
   const renderAccountSection = () => {
     if (!isInitialized) {
@@ -39,20 +45,31 @@ export const Header: React.FC = () => {
     }
 
     // Show Azguard account if connected
-    if (azguardState.isConnected) {
-      return <AzguardAccountDisplay onDisconnect={handleDisconnect} />;
+    if (azguardState.isConnected && azguardState.selectedAccount) {
+      const azguardAddress = azguardState.selectedAccount.split(':')[2];
+      const truncatedAzguardAddress = azguardAddress ? `${azguardAddress.slice(0, 4)}...${azguardAddress.slice(-4)}` : '';
+      
+      return (
+        <div className="connected-account-section">
+          <span className="wallet-type">Azguard</span>
+          <span className="account-address">{truncatedAzguardAddress}</span>
+          <button 
+            onClick={handleDisconnect}
+            type="button"
+            className="disconnect-button"
+          >
+            Disconnect
+          </button>
+        </div>
+      );
     }
 
     // Show embedded wallet account if connected
     if (connectedAccount) {
       return (
         <div className="connected-account-section">
-          <div className="account-info">
-            <span className="wallet-type">Embedded</span>
-            <div id="account-display" className="account-display">
-              {truncatedAddress}
-            </div>
-          </div>
+          <span className="wallet-type">Embedded</span>
+          <span className="account-address">{truncatedAddress}</span>
           <button 
             onClick={handleDisconnect}
             type="button"

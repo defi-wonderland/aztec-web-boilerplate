@@ -17,11 +17,10 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
 
   const { 
     createAccount, 
-    connectTestAccount, 
-    connectExistingAccount 
+    connectTestAccount
   } = useAztecWallet();
 
-  const handleEmbeddedWalletAction = async (action: 'create' | 'test' | 'existing') => {
+  const handleEmbeddedWalletAction = async (action: 'create' | 'test') => {
     if (isConnecting) return;
     
     setIsConnecting(true);
@@ -32,9 +31,6 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
           break;
         case 'test':
           await connectTestAccount(testAccountIndex - 1);
-          break;
-        case 'existing':
-          await connectExistingAccount();
           break;
       }
       onWalletConnected?.();
@@ -94,15 +90,6 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
               className="modal-action-button"
             >
               {isConnecting ? 'Creating...' : 'Create New Account'}
-            </button>
-            
-            <button 
-              onClick={() => handleEmbeddedWalletAction('existing')}
-              type="button"
-              disabled={isConnecting}
-              className="modal-action-button secondary"
-            >
-              {isConnecting ? 'Connecting...' : 'Connect Existing'}
             </button>
           </div>
         </div>
