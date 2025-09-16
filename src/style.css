@@ -434,8 +434,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  padding: 0.75rem;
   border: none;
   border-radius: 8px;
   background: #f8fafc;
@@ -443,6 +442,7 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
 }
 
 .theme-toggle:hover {
@@ -465,7 +465,7 @@ body {
 }
 
 .nav-title::before {
-  content: '💾';
+  content: '🛠️';
   font-size: 1.75rem;
 }
 
@@ -2308,7 +2308,7 @@ body {
   --text-muted: #64748b;
   --border-color: #e2e8f0;
   --shadow-color: rgba(0, 0, 0, 0.1);
-  --navbar-bg: rgba(255, 255, 255, 0.9);
+  --navbar-bg: rgba(212, 212, 212, 0.95);
 }
 
 .dark {

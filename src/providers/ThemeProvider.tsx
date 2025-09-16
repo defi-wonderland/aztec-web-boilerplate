@@ -1,42 +1,44 @@
 import React, { ReactNode, useState, useEffect } from 'react';
-import { ThemeContext, Theme } from '../hooks/context/useTheme';
+import { ThemeContext } from '../hooks/context/useTheme';
 
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [isLightTheme, setIsLightTheme] = useState<boolean>(() => {
     // Check localStorage first, then system preference
-    const savedTheme = localStorage.getItem('theme') as Theme;
+    const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
-      return savedTheme;
+      return savedTheme === 'light';
     }
     
     // Check system preference
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
+      return false; // dark mode
     }
     
-    return 'light';
+    return true; // light mode default
   });
 
   const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
+    const newIsLightTheme = !isLightTheme;
+    setIsLightTheme(newIsLightTheme);
+    localStorage.setItem('theme', newIsLightTheme ? 'light' : 'dark');
   };
 
   useEffect(() => {
+    const themeString = isLightTheme ? 'light' : 'dark';
+    
     // Apply theme to document root
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-theme', themeString);
     
     // Also add class for easier CSS targeting
-    document.documentElement.className = theme;
-  }, [theme]);
+    document.documentElement.className = themeString;
+  }, [isLightTheme]);
 
   const value = {
-    theme,
+    isLightTheme,
     toggleTheme,
   };
 

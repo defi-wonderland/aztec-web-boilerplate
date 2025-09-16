@@ -124,7 +124,7 @@ export const Header: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        <div className="nav-title">AZT25</div>
+        <div className="nav-title">Aztec Web Boilerplate</div>
 
             <div className="nav-controls">
               {renderNetworkSelector()}
