@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAztecWallet, useConfig, useEVMWallet, useAzguardWallet } from '../hooks';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
 import { WalletSelector, AzguardAccountDisplay } from '../components';
 
 export const Header: React.FC = () => {
@@ -77,27 +76,30 @@ export const Header: React.FC = () => {
     }
 
     const networkOptions = getNetworkOptions();
+    
+    // Get display text for current network
+    const getNetworkDisplayText = () => {
+      if (currentConfig.name === 'sandbox') return 'Local Sandbox';
+      if (currentConfig.name === 'testnet') return 'Testnet';
+      return currentConfig.name;
+    };
 
     return (
       <div className="network-selector">
-        <select
-          name="network-selector"
-          value={currentConfig.name}
-          onChange={handleNetworkChange}
-          className="network-select"
-          title="Select network configuration"
-        >
-          {networkOptions.map((option) => (
-            <option
-              key={option.value}
-              value={option.value}
-              disabled={option.disabled}
-            >
-              {option.label}
-            </option>
-          ))}
-        </select>
-
+        <div className="network-select-wrapper">
+          <select
+            name="network-selector"
+            value={currentConfig.name}
+            onChange={handleNetworkChange}
+            className="network-select"
+            title="Select network configuration"
+          >
+            <option value="" disabled>Network</option>
+            <option value="sandbox">Local Sandbox</option>
+            <option value="testnet">Testnet</option>
+          </select>
+          <span className="network-select-arrow">▼</span>
+        </div>
       </div>
     );
   };
@@ -107,15 +109,12 @@ export const Header: React.FC = () => {
       <div className="nav-container">
         <div className="nav-title">Bridge and Seek</div>
 
-        <div className="nav-controls">
-          {renderNetworkSelector()}
-          <div className="account-controls">
-            {renderAccountSection()}
-          </div>
-          <div className="evm-wallet-controls">
-            <ConnectButton showBalance={false} accountStatus="address" />
-          </div>
-        </div>
+            <div className="nav-controls">
+              {renderNetworkSelector()}
+              <div className="account-controls">
+                {renderAccountSection()}
+              </div>
+            </div>
       </div>
     </nav>
   );
