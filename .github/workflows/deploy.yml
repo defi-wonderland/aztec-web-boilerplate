@@ -72,7 +72,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build project
-        run: yarn build
+        run: yarn build-app
 
       - name: Deploy to Vercel
         id: vercel-deployment
