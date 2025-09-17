@@ -40,6 +40,7 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
 }) => {
   const [executingFunction, setExecutingFunction] = useState<string | null>(null);
   const [contractAddress, setContractAddress] = useState(contract.address || '');
+  const [activeTab, setActiveTab] = useState<'read' | 'write'>('read');
   
   // Get wallet services
   const { connectedAccount, walletService } = useAztecWallet();
@@ -183,13 +184,30 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
         </small>
       </div>
 
+      {/* Function Tabs */}
+      <div className="function-tabs">
+        <button 
+          className={`tab-button ${activeTab === 'read' ? 'active' : ''}`}
+          onClick={() => setActiveTab('read')}
+          disabled={readFunctions.length === 0}
+        >
+          <span className="tab-icon">👁️</span>
+          Read Functions ({readFunctions.length})
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'write' ? 'active' : ''}`}
+          onClick={() => setActiveTab('write')}
+          disabled={writeFunctions.length === 0}
+        >
+          <span className="tab-icon">✍️</span>
+          Write Functions ({writeFunctions.length})
+        </button>
+      </div>
+
+      {/* Function Content */}
       <div className="functions-container">
-        {readFunctions.length > 0 && (
+        {activeTab === 'read' && readFunctions.length > 0 && (
           <div className="function-section">
-            <h4 className="section-title">
-              <span className="section-icon">👁️</span>
-              Read Functions
-            </h4>
             <div className="functions-list">
               {readFunctions.map((func, index) => (
                 <ContractFunction
@@ -203,12 +221,8 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
           </div>
         )}
 
-        {writeFunctions.length > 0 && (
+        {activeTab === 'write' && writeFunctions.length > 0 && (
           <div className="function-section">
-            <h4 className="section-title">
-              <span className="section-icon">✍️</span>
-              Write Functions
-            </h4>
             <div className="functions-list">
               {writeFunctions.map((func, index) => (
                 <ContractFunction
@@ -219,6 +233,19 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
                 />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Empty state messages */}
+        {activeTab === 'read' && readFunctions.length === 0 && (
+          <div className="empty-functions">
+            <p>No read functions available in this contract.</p>
+          </div>
+        )}
+
+        {activeTab === 'write' && writeFunctions.length === 0 && (
+          <div className="empty-functions">
+            <p>No write functions available in this contract.</p>
           </div>
         )}
 

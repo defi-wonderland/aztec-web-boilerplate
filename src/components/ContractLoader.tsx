@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import { loadContractArtifact } from '@aztec/stdlib/abi';
+import type { NoirCompiledContract } from '@aztec/stdlib/noir';
 
 interface ContractArtifact {
   contractName: string;
@@ -30,13 +32,24 @@ export const ContractLoader: React.FC<ContractLoaderProps> = ({ onContractLoaded
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [processingMessage, setProcessingMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Detect contract format based on JSON structure
-  const detectContractFormat = (json: any): 'aztec-noir' | 'unknown' => {
+  const detectContractFormat = (json: any): 'aztec-noir' | 'pre-formatted-abi' | 'unknown' => {
     // Aztec Noir contracts have 'functions' array and often 'noir_version'
     if (json.functions && Array.isArray(json.functions) && json.name) {
       return 'aztec-noir';
+    }
+    
+    // Pre-formatted ABI is just an array of function definitions
+    if (Array.isArray(json) && json.length > 0 && json[0].type === 'function') {
+      return 'pre-formatted-abi';
+    }
+    
+    // Object with 'abi' property containing function array
+    if (json.abi && Array.isArray(json.abi) && json.abi.length > 0) {
+      return 'pre-formatted-abi';
     }
     
     return 'unknown';
@@ -51,69 +64,75 @@ export const ContractLoader: React.FC<ContractLoaderProps> = ({ onContractLoaded
     );
   };
 
-  // Convert Noir functions to simplified ABI format for UI
-  const convertNoirFunctionsToAbi = (functions: any[]): any[] => {
-    return functions.map(func => {
-      // Extract parameters from the nested ABI structure
-      const inputs = func.abi?.parameters?.map((param: any) => ({
-        name: param.name,
-        type: simplifyNoirType(param.type),
-        visibility: param.visibility
-      })) || [];
-
-      // Extract return type
-      const outputs = func.abi?.return_type ? [{
-        type: simplifyNoirType(func.abi.return_type.abi_type),
-        visibility: func.abi.return_type.visibility
-      }] : [];
-
-      // Determine state mutability based on Aztec Noir function properties
-      let stateMutability = 'nonpayable'; // Default to write function
+  // Convert Noir compiled contract to standard Aztec ABI using official tooling
+  const convertNoirContractToAbi = (compiledContract: NoirCompiledContract): any[] => {
+    try {
+      // Use Aztec's official loadContractArtifact to get proper ABI format
+      const contractArtifact = loadContractArtifact(compiledContract);
       
-      // First, check for the official isStatic property (if available)
-      if (func.abi?.isStatic === true || func.isStatic === true) {
-        // Static functions cannot alter state - they are read functions
-        stateMutability = 'view';
-      } else if (func.abi?.isStatic === false || func.isStatic === false) {
-        // Non-static functions can alter state - they are write functions
-        stateMutability = 'nonpayable';
-      } else {
-        // Fallback logic for contracts without isStatic property
-        // Use custom attributes to determine function type
-        const attributes = func.custom_attributes || [];
-        
-        if (attributes.includes('utility') || attributes.includes('view')) {
-          // Utility and view functions are read-only
-          stateMutability = 'view';
-        } else if (attributes.includes('initializer') || attributes.includes('constructor')) {
-          // Initializers and constructors are write functions
-          stateMutability = 'nonpayable';
-        } else if (!func.is_unconstrained) {
-          // Private functions (is_unconstrained: false) are typically write functions
-          stateMutability = 'nonpayable';
-        } else {
-          // For unconstrained functions without clear indicators, check return type
-          // Functions that only return data without parameters are likely getters
-          if (func.abi?.return_type && (!func.abi?.parameters || func.abi.parameters.length === 0)) {
-            stateMutability = 'view';
-          } else {
-            // Default to write function for safety
-            stateMutability = 'nonpayable';
-          }
-        }
-      }
-
-      return {
+      // The contractArtifact.functions array now contains proper ABI entries
+      // with isStatic, parameters, returnTypes, etc.
+      return contractArtifact.functions.map(func => ({
         name: func.name,
         type: 'function',
-        inputs,
-        outputs,
-        stateMutability,
-        custom_attributes: func.custom_attributes || [],
-        is_unconstrained: func.is_unconstrained,
-        error_types: func.abi?.error_types || {}
-      };
-    });
+        inputs: func.parameters.map(param => ({
+          name: param.name,
+          type: simplifyNoirType(param.type),
+          visibility: param.visibility
+        })),
+        outputs: func.returnTypes?.map(returnType => ({
+          type: simplifyNoirType(returnType.type),
+          visibility: returnType.visibility
+        })) || [],
+        // Use the proper isStatic property from the converted ABI
+        stateMutability: func.isStatic ? 'view' : 'nonpayable',
+        // Preserve original attributes for debugging/display
+        isStatic: func.isStatic,
+        functionType: func.functionType,
+        isInternal: func.isInternal
+      }));
+    } catch (error) {
+      console.warn('Failed to use loadContractArtifact, falling back to manual parsing:', error);
+      
+      // Fallback to manual parsing if loadContractArtifact fails
+      return compiledContract.functions.map(func => {
+        const inputs = func.abi?.parameters?.map((param: any) => ({
+          name: param.name,
+          type: simplifyNoirType(param.type),
+          visibility: param.visibility
+        })) || [];
+
+        const outputs = func.abi?.return_type ? [{
+          type: simplifyNoirType(func.abi.return_type.abi_type),
+          visibility: func.abi.return_type.visibility
+        }] : [];
+
+        // Fallback logic for manual parsing
+        const attributes = func.custom_attributes || [];
+        let stateMutability = 'nonpayable';
+        
+        if (attributes.includes('utility') || attributes.includes('view')) {
+          stateMutability = 'view';
+        } else if (attributes.includes('initializer') || attributes.includes('constructor')) {
+          stateMutability = 'nonpayable';
+        } else if (!func.is_unconstrained) {
+          stateMutability = 'nonpayable';
+        } else if (func.abi?.return_type && (!func.abi?.parameters || func.abi.parameters.length === 0)) {
+          stateMutability = 'view';
+        }
+
+        return {
+          name: func.name,
+          type: 'function',
+          inputs,
+          outputs,
+          stateMutability,
+          custom_attributes: func.custom_attributes || [],
+          is_unconstrained: func.is_unconstrained,
+          error_types: func.abi?.error_types || {}
+        };
+      });
+    }
   };
 
   // Simplify complex Noir types for UI display
@@ -144,9 +163,9 @@ export const ContractLoader: React.FC<ContractLoaderProps> = ({ onContractLoaded
     }
   };
 
-  // Parse Aztec Noir contract
+  // Parse Aztec Noir contract using official Aztec tooling
   const parseNoirContract = (json: NoirContractArtifact, fileName: string): ContractArtifact => {
-    const abi = json.abi || convertNoirFunctionsToAbi(json.functions || []);
+    const abi = json.abi || convertNoirContractToAbi(json as NoirCompiledContract);
     
     return {
       contractName: json.name || fileName.replace('.json', ''),
@@ -156,6 +175,31 @@ export const ContractLoader: React.FC<ContractLoaderProps> = ({ onContractLoaded
       metadata: {
         noir_version: json.noir_version,
         transpiled: json.transpiled,
+      }
+    };
+  };
+
+  // Parse pre-formatted ABI
+  const parsePreFormattedAbi = (json: any, fileName: string): ContractArtifact => {
+    let abi: any[];
+    
+    if (Array.isArray(json)) {
+      // Direct ABI array
+      abi = json;
+    } else if (json.abi && Array.isArray(json.abi)) {
+      // Object with 'abi' property
+      abi = json.abi;
+    } else {
+      throw new Error('Invalid ABI format');
+    }
+    
+    return {
+      contractName: json.contractName || json.name || fileName.replace('.json', ''),
+      abi,
+      bytecode: json.bytecode,
+      format: 'aztec-noir', // Treat as Aztec format for UI purposes
+      metadata: {
+        source: 'pre-formatted-abi',
       }
     };
   };
@@ -188,19 +232,23 @@ export const ContractLoader: React.FC<ContractLoaderProps> = ({ onContractLoaded
       let contract: ContractArtifact;
       
       if (format === 'aztec-noir') {
+        setProcessingMessage('Contract artifact received and converted into ABI');
         contract = parseNoirContract(json as NoirContractArtifact, file.name);
+      } else if (format === 'pre-formatted-abi') {
+        setProcessingMessage('ABI received');
+        contract = parsePreFormattedAbi(json, file.name);
       } else {
         // Try to extract what we can from unknown format
         if (json.functions && Array.isArray(json.functions)) {
+          setProcessingMessage('Contract artifact received and converted into ABI');
           contract = parseNoirContract(json as NoirContractArtifact, file.name);
         } else {
           throw new Error(
-            'Unrecognized Aztec contract format.\n\n' +
-            'Expected Aztec Noir contract with:\n' +
-            '• "name" field with contract name\n' +
-            '• "functions" array with contract functions\n' +
-            '• Optional "noir_version" field\n\n' +
-            'Make sure you\'re loading a compiled Aztec contract artifact, not a Solidity ABI.'
+            'Unrecognized format.\n\n' +
+            'Expected either:\n' +
+            '• Aztec Noir contract artifact with "name" and "functions" fields\n' +
+            '• Pre-formatted ABI array or object with "abi" property\n\n' +
+            'Make sure you\'re loading a valid Aztec contract file.'
           );
         }
       }
@@ -216,12 +264,16 @@ export const ContractLoader: React.FC<ContractLoaderProps> = ({ onContractLoaded
       }
 
       onContractLoaded(contract);
+      
+      // Clear processing message after a short delay to show success
+      setTimeout(() => setProcessingMessage(null), 2000);
     } catch (err) {
       if (err instanceof SyntaxError) {
         setError('Invalid JSON file. Please check the file format.');
       } else {
         setError(err instanceof Error ? err.message : 'Failed to parse contract file');
       }
+      setProcessingMessage(null);
     } finally {
       setIsLoading(false);
     }
@@ -279,13 +331,18 @@ export const ContractLoader: React.FC<ContractLoaderProps> = ({ onContractLoaded
           <div className="contract-loader-content">
             <div className="loading-spinner"></div>
             <p>Loading contract...</p>
+            {processingMessage && (
+              <small style={{ color: 'var(--accent-primary)', marginTop: '0.5rem', display: 'block' }}>
+                ✅ {processingMessage}
+              </small>
+            )}
           </div>
         ) : (
           <div className="contract-loader-content">
             <div className="contract-loader-icon">📄</div>
             <h3>Load Contract Artifact</h3>
             <p>Drag & drop a JSON contract file here, or click to browse</p>
-            <small>Supports Aztec Noir contract artifacts only</small>
+            <small>Supports Aztec Noir contract artifacts and pre-formatted ABIs</small>
           </div>
         )}
       </div>
