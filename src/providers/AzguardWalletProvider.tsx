@@ -146,8 +146,8 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
       // Default connection configuration - following Azguard wallet specification
       const config: AzguardConnectionConfig = {
         dappMetadata: {
-          name: 'Aztec Bridge and Seek',
-          description: 'Privacy-first cross-chain bridge application built on Aztec Network',
+          name: 'Aztec Web Boilerplate',
+          description: 'Comprehensive Aztec development boilerplate with dynamic contract interaction',
           url: window.location.origin,
           icon: `${window.location.origin}/favicon.ico`
         },
@@ -182,17 +182,17 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
         const fallbackConfigs = [
           // Try with aztec:1337 (local development)
           {
-            dappMetadata: { name: 'Aztec Bridge and Seek' },
+            dappMetadata: { name: 'Aztec Web Boilerplate' },
             permissions: [{ chains: ['aztec:1337'], methods: ['register_contract', 'send_transaction'] }]
           },
           // Try with aztec:31337 (sandbox)
           {
-            dappMetadata: { name: 'Aztec Bridge and Seek' },
+            dappMetadata: { name: 'Aztec Web Boilerplate' },
             permissions: [{ chains: ['aztec:31337'], methods: ['register_contract', 'send_transaction'] }]
           },
           // Try minimal with just register_contract
           {
-            dappMetadata: { name: 'Aztec Bridge and Seek' },
+            dappMetadata: { name: 'Aztec Web Boilerplate' },
             permissions: [{ chains: ['aztec:11155111'], methods: ['register_contract'] }]
           }
         ];

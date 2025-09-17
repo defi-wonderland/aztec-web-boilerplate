@@ -2,6 +2,7 @@ import React from 'react';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { SendersCard } from './SendersCard';
+import { ContractsCard } from './ContractsCard';
 import { Tabs } from '../components';
 import { TabConfig } from '../types';
 
@@ -12,6 +13,12 @@ export const MainContent: React.FC = () => {
       label: 'Mint Tokens',
       icon: '💰',
       component: <DripperCard />
+    },
+    {
+      id: 'contracts',
+      label: 'Contracts',
+      icon: '📄',
+      component: <ContractsCard />
     },
     {
       id: 'settings',

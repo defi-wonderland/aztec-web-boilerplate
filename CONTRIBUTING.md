@@ -1,6 +1,6 @@
-# Contributing to Bridge and Seek
+# Contributing to Aztec Web Boilerplate
 
-We welcome contributions to Bridge and Seek! Whether you're fixing bugs, improving documentation, or proposing new features, your help is appreciated.
+We welcome contributions to Aztec Web Boilerplate! Whether you're fixing bugs, improving documentation, or proposing new features, your help is appreciated.
 
 ## Getting Started
 
@@ -29,11 +29,12 @@ Follow conventional commit format:
 - `test:` Adding or updating tests
 - `chore:` Maintenance tasks
 
-Example: `feat: add private balance display to bridge UI`
+Example: `feat: add dynamic contract interface generation`
 
 ### Testing
 - Write tests for new features when applicable
 - Ensure all existing tests pass with `yarn test`
+- Use `yarn test:watch` for development and `yarn test:ui` for interactive testing
 - Test your changes locally with both Aztec sandbox and testnet
 
 ## Pull Request Process

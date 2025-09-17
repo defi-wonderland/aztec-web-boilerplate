@@ -1,41 +1,42 @@
-# Bridge and Seek
+# Aztec Web Boilerplate
 
-A privacy-first cross-chain bridge application powered by Substance Labs' bridge that enables seamless token transfers between Base Sepolia and Aztec Sepolia, with built-in private swapping capabilities.
+A comprehensive Aztec development boilerplate featuring dynamic contract interaction, wallet integration, and privacy-preserving operations on the Aztec network.
 
-## 🌉 Overview
+## 🛠️ Overview
 
-Bridge and Seek demonstrates the power of privacy-preserving cross-chain interactions by allowing users to:
-- Bridge tokens from Base Sepolia into Aztec's private ecosystem
-- Bridge tokens out from Aztec to Base Sepolia
-- Perform private token operations within Aztec
-- Execute cross-chain swaps while maintaining transaction privacy
+Aztec Web Boilerplate provides developers with a complete toolkit for building privacy-first applications on Aztec, featuring:
+- Dynamic contract loading and interaction through drag-and-drop JSON artifacts
+- Dual wallet support (Embedded Aztec wallet and Azguard wallet integration)
+- Real-time contract function execution with automatic UI generation
+- Privacy-preserving token operations and account management
+- Modern React architecture with TypeScript and comprehensive testing
 
-The application showcases Aztec's privacy features through both public and private token operations, providing a complete demonstration of confidential cross-chain DeFi.
+The application demonstrates Aztec's capabilities through an intuitive interface that automatically generates contract interaction forms from ABI definitions.
 
 ## ✨ Key Features
 
-### Core Bridge Functionality
-- **Shield (Bridge In)**: Transfer WETH from Base Sepolia to Aztec Sepolia
-- **Unshield (Bridge Out)**: Transfer WETH from Aztec back to Base Sepolia  
-- **7683 Standard**: Intent-based cross-chain order system for secure transfers
+### Dynamic Contract Interaction
+- **Contract Loader**: Drag-and-drop JSON artifacts to instantly generate interactive interfaces
+- **ABI Parser**: Automatic parsing of contract ABIs with support for Aztec Noir and standard formats
+- **Function Execution**: Real-time contract function calls with proper input validation and result display
 
-### User Experience
-- **Embedded Wallet**: No popups or external wallet apps required. Everything is generated in-browser
-- **MetaMask Integration**: Seamless connection for EVM operations
-- **Account Abstraction**: Sponsored fee payments through SponsoredFPC
+### Wallet Integration
+- **Embedded Wallet**: Browser-based Aztec wallet with no external dependencies
+- **Azguard Integration**: Seamless connection to Azguard wallet extension
+- **Account Management**: Create, connect, and manage multiple Aztec accounts
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js >=22.0.0
-- MetaMask or compatible EVM wallet
+- Azguard wallet extension (optional, for external wallet integration)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/defi-wonderland/aztec-bridge-and-seek.git
-cd bridge-and-seek
+git clone https://github.com/defi-wonderland/aztec-web-boilerplate.git
+cd aztec-web-boilerplate
 
 # Install dependencies
 yarn install
@@ -59,24 +60,27 @@ The application will be available at http://localhost:3000
 ## 📦 Project Structure
 
 ```
-bridge-and-seek/
+aztec-web-boilerplate/
 ├── contracts/              # Noir smart contracts
 │   └── dripper/           # Token faucet contract
 ├── src/
 │   ├── artifacts/         # Generated contract TypeScript bindings
 │   ├── components/        # React UI components
+│   │   ├── ContractLoader.tsx    # Drag-and-drop contract loading
+│   │   ├── ContractInterface.tsx # Dynamic contract UI generation
+│   │   └── ContractFunction.tsx  # Individual function interaction
 │   ├── providers/         # React context providers
 │   │   ├── AztecWalletProvider.tsx
-│   │   ├── EvmWalletProvider.tsx
-│   │   ├── TokenProvider.tsx
-│   │   └── NotificationProvider.tsx
+│   │   ├── AzguardWalletProvider.tsx
+│   │   ├── ThemeProvider.tsx
+│   │   └── ConfigProvider.tsx
 │   └── services/          # Service layer
 │       └── aztec/        # Aztec-specific services
 │           ├── core/     # Wallet and contract services
 │           ├── features/ # Token, voting, dripper services
-│           └── storage/  # Browser storage management
+│           └── wallet/   # Azguard integration services
 ├── scripts/              # Deployment and utility scripts
-└── tests/               # E2E Playwright tests
+└── tests/               # Vitest unit and integration tests
 ```
 
 ## 🛠️ Development
@@ -97,8 +101,9 @@ yarn build               # Full build (contracts + app)
 yarn serve               # Serve production build
 
 # Testing & Quality
-yarn test                # Run E2E test suite
-yarn prep-test           # Deploy contracts and build for testing
+yarn test                # Run Vitest test suite
+yarn test:watch          # Run tests in watch mode
+yarn test:ui             # Run tests with UI interface
 yarn lint                # Check code formatting
 
 # Performance Options
@@ -107,35 +112,37 @@ PROVER_ENABLED=false yarn deploy-contracts  # Skip proof generation for faster d
 
 ## 🔗 Technical Architecture
 
-### Cross-Chain Bridge
-- **Bridge Implementation**: Built on [Substance Labs Aztec-EVM Bridge](https://github.com/substance-labs/aztec-evm-bridge)
-- **Source Chain**: Base Sepolia 
-- **Destination Chain**: Aztec Testnet
-- **Bridge Token**: WETH
-  - Base Sepolia: `0x1BDD24840e119DC2602dCC587Dd182812427A5Cc`
-  - Aztec Sepolia: `0x143c799188d6881bff72012bebb100d19b51ce0c90b378bfa3ba57498b5ddeeb`
-- **Gateway Contract**: `0x0Bf4eD5a115e6Ad789A88c21e9B75821Cc7B2e6f`
-- **Architecture**: Intent-based settlement with zero-knowledge proofs for privacy-preserving cross-chain transfers
+### Dynamic Contract Interaction
+- **Contract Loading**: Drag-and-drop interface for JSON artifacts with automatic ABI parsing
+- **UI Generation**: Dynamic form generation from contract ABI definitions
+- **Function Execution**: Real-time contract interaction with input validation and result display
+- **Multi-format Support**: Compatible with both Aztec Noir and standard Ethereum ABI formats
 
 ### Aztec Integration
 - **PXE**: Client-side Private eXecution Environment for proof generation
-- **Account Contracts**: ECDSA keys for EVM wallet compatibility
-- **Note System**: Encrypted UTXO-like notes for private state
+- **Account Contracts**: ECDSA keys for seamless wallet integration
+- **Note System**: Encrypted UTXO-like notes for private state management
 - **Fee Abstraction**: Sponsored transactions through SponsoredFPC
 
-### Security Features
-- Zero-knowledge proofs for transaction privacy
-- Client-side proof generation (no trusted setup)
-- Optional auditability through selective disclosure
-- Secure cross-chain message passing via 7683 standard
+### Wallet Architecture
+- **Embedded Wallet**: Browser-based Aztec wallet with local key management
+- **Azguard Integration**: External wallet support via RPC communication
+- **Universal Interface**: Seamless switching between wallet types
+- **Persistence**: Automatic reconnection and session management
 
 ## 🧪 Testing
 
-The project includes comprehensive E2E tests using Playwright:
+The project includes comprehensive unit and integration tests using Vitest:
 
 ```bash
 # Run full test suite
 yarn test
+
+# Run tests in watch mode
+yarn test:watch
+
+# Run tests with UI interface
+yarn test:ui
 
 # Run tests without proof generation (faster)
 PROVER_ENABLED=false yarn test
@@ -148,9 +155,9 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ## 📚 Resources
 
 - [Aztec Documentation](https://docs.aztec.network)
-- [7683 Cross-Chain Standard](https://www.erc7683.org/)
-- [Bridge Architecture](https://github.com/substance-labs/aztec-evm-bridge)
+- [Azguard Wallet](https://github.com/AzguardWallet)
 - [Noir Language Guide](https://noir-lang.org/docs)
+- [Vitest Testing Framework](https://vitest.dev)
 
 ## 📝 License
 
@@ -159,13 +166,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built by [Wonderland](https://wonderland.xyz) in collaboration with Aztec Labs
-- Bridge infrastructure powered by [Substance Labs Aztec-EVM Bridge](https://github.com/substance-labs/aztec-evm-bridge)
+- Wallet integration powered by [Azguard Wallet](https://github.com/AzguardWallet)
 - Privacy technology enabled by [Aztec Network](https://aztec.network)
 
 ## ⚠️ Disclaimer
 
-This is a testnet application for demonstration purposes. Do not use with real funds on mainnet.
+This is a development boilerplate for demonstration purposes. Always test thoroughly before deploying to production environments.
 
 ---
 
-For questions, issues, or feature requests, please open an issue on [GitHub](https://github.com/defi-wonderland/aztec-bridge-and-seek/issues).
+For questions, issues, or feature requests, please open an issue on [GitHub](https://github.com/defi-wonderland/aztec-web-boilerplate/issues).

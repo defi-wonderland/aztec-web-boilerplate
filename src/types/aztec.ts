@@ -128,7 +128,7 @@ export interface AzguardWalletState {
 
 /**
  * Azguard account adapter interface
- * Bridges between CAIP account format and AccountWallet interface
+ * Adapts between CAIP account format and AccountWallet interface
  */
 export interface IAzguardAccountAdapter {
   /**

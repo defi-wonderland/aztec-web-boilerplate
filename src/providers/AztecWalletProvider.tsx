@@ -173,9 +173,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setVotingService(null);
     setDripperService(null);
     setTokenService(null);
-    setBridgeService(null);
     setIsDeploying(false);
-    // Don't reset isInitialized - that's for app initialization, not wallet connection
     if (walletServicesRef.current) {
       walletServicesRef.current.storageService.clearAccount();
     }

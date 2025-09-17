@@ -7,4 +7,7 @@ export { AzguardConnectButton } from './AzguardConnectButton';
 export { EmbeddedWalletButton } from './EmbeddedWalletButton';
 export { EmbeddedWalletModal } from './EmbeddedWalletModal';
 export { ThemeToggle } from './ThemeToggle';
+export { ContractLoader } from './ContractLoader';
+export { ContractFunction } from './ContractFunction';
+export { ContractInterface } from './ContractInterface';
 export * from './settings';

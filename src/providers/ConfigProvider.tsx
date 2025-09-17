@@ -20,8 +20,8 @@ interface ConfigContextType {
 
 export const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
-const CONFIG_STORAGE_KEY = 'bridge-and-seek-config';
-const CUSTOM_CONFIG_STORAGE_KEY = 'bridge-and-seek-custom-config';
+const CONFIG_STORAGE_KEY = 'aztec-web-boilerplate-config';
+const CUSTOM_CONFIG_STORAGE_KEY = 'aztec-web-boilerplate-custom-config';
 
 interface ConfigProviderProps {
   children: ReactNode;
