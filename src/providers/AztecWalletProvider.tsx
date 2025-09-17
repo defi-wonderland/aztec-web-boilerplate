@@ -109,7 +109,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setVotingService(null);
     setDripperService(null);
     setTokenService(null);
-    setBridgeService(null);
     setIsInitialized(false);
     
     isInitializingRef.current = false;

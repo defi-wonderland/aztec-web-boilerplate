@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
 /* Reset and base styles */
 * {
   box-sizing: border-box;
@@ -5,14 +7,31 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 50%, var(--bg-tertiary) 100%);
+  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
   color: var(--text-primary);
   min-height: 100vh;
+}
+
+/* App container styles */
+.app {
+  min-height: 100vh;
+  background: transparent;
+  transition: filter 0.3s ease;
+}
+
+/* Blur the root container when modal is open */
+#root.modal-open {
+  filter: blur(8px);
+  -webkit-filter: blur(8px);
+}
+
+/* Modal root container */
+#modal-root {
+  position: relative;
+  z-index: 999;
 }
 
 /* Header styles */
@@ -24,7 +43,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
   width: 100%;
   display: flex;
   justify-content: center;
@@ -57,10 +76,10 @@ body {
 
 .network-select {
   padding: 0.5rem 2rem 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.875rem;
-  background: #ffffff;
+  background: var(--bg-secondary);
   color: #374151;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -176,8 +195,8 @@ body {
   flex-direction: column;
   gap: 1rem;
   padding: 1rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -200,26 +219,29 @@ body {
   color: #64748b;
 }
 
-/* Embedded Wallet Button */
+/* Embedded Wallet Button - Aztec Design System */
 .embedded-wallet-button {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
+  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  color: var(--button-text);
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(140, 126, 255, 0.2);
 }
 
 .embedded-wallet-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(140, 126, 255, 0.3);
 }
 
 /* Modal Styles */
@@ -229,12 +251,11 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
   padding: 2rem;
   box-sizing: border-box;
 }
@@ -268,7 +289,8 @@ body {
 
 .modal-close-button {
   background: none;
-  border: none;
+  border: none !important;
+  outline: none;
   font-size: 1.5rem;
   color: #64748b;
   cursor: pointer;
@@ -286,6 +308,46 @@ body {
   padding: 0 1.5rem 1.5rem 1.5rem;
 }
 
+.test-account-selector {
+  margin-bottom: 1.5rem;
+}
+
+.test-account-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.test-account-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.test-account-select:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-color: var(--border-color);
+}
+
+.testnet-notice {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--accent-secondary) 10%, var(--bg-primary));
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--accent-secondary) 80%, var(--text-primary));
+  text-align: center;
+  font-weight: 500;
+}
+
 .modal-description {
   margin: 0 0 1.5rem 0;
   color: #64748b;
@@ -301,10 +363,10 @@ body {
 
 .modal-action-button {
   padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: white;
-  color: #374151;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -312,9 +374,9 @@ body {
 }
 
 .modal-action-button:hover {
-  background: #f8fafc;
-  border-color: #8b5cf6;
-  color: #8b5cf6;
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .modal-action-button:disabled {
@@ -350,25 +412,28 @@ body {
   -webkit-appearance: none;
   -moz-appearance: none;
   padding: 0.75rem 2rem 0.75rem 1rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+  background: linear-gradient(180deg, var(--accent-secondary) 0%, color-mix(in srgb, var(--accent-secondary) 85%, black) 100%);
+  color: var(--button-text);
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   min-width: 140px;
+  box-shadow: 0 3px 10px rgba(237, 161, 255, 0.2);
 }
 
 .network-select:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 90%, white) 0%, var(--accent-secondary) 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 5px 15px rgba(237, 161, 255, 0.3);
 }
 
 .network-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-secondary) 30%, transparent);
 }
 
 .network-select-arrow {
@@ -377,7 +442,7 @@ body {
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: #374151;
+  color: var(--button-text);
   font-size: 0.75rem;
 }
 
@@ -398,25 +463,28 @@ body {
   -webkit-appearance: none;
   -moz-appearance: none;
   padding: 0.75rem 2rem 0.75rem 1rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
+  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  color: var(--button-text);
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   min-width: 140px;
+  box-shadow: 0 3px 10px rgba(140, 126, 255, 0.2);
 }
 
 .wallet-select:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 5px 15px rgba(140, 126, 255, 0.3);
 }
 
 .wallet-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
 
 .wallet-select-arrow {
@@ -425,30 +493,31 @@ body {
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: #374151;
+  color: var(--button-text);
   font-size: 0.75rem;
 }
 
-/* Theme Toggle */
+/* Theme Toggle - Aztec Design System */
 .theme-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #374151;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px var(--shadow-color);
   font-size: 1rem;
 }
 
 .theme-toggle:hover {
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .theme-toggle:active {
@@ -456,9 +525,10 @@ body {
 }
 
 .nav-title {
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: 600;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -475,7 +545,7 @@ body {
   gap: 0.75rem;
   padding: 0.5rem 1rem;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
@@ -498,7 +568,7 @@ body {
 
 .account-display {
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.5rem 1rem;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
@@ -508,23 +578,28 @@ body {
 }
 
 .disconnect-button {
-  background: #ef4444 !important;
-  border-color: #dc2626 !important;
-  color: #ffffff !important;
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
 
 .disconnect-button:hover {
-  background: #dc2626 !important;
-  border-color: #b91c1c !important;
+  background: var(--text-muted) !important;
+  color: var(--bg-primary) !important;
+  border-color: var(--text-muted) !important;
 }
 
 .navbar select,
 .navbar button {
   padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.875rem;
-  background: #ffffff;
+  background: var(--bg-secondary);
   color: #374151;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -576,11 +651,12 @@ body {
 }
 
 .sidebar-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px var(--shadow-color);
   overflow: hidden;
+  color: var(--text-primary);
 }
 
 .card-header {
@@ -776,7 +852,7 @@ body {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   font-size: 0.75rem;
   color: #475569;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   word-break: break-all;
   min-height: 48px;
   display: flex;
@@ -785,7 +861,7 @@ body {
 
 .copy-button {
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.75rem;
   cursor: pointer;
@@ -815,11 +891,11 @@ body {
 }
 
 .status-message {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1rem 1.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
   font-size: 0.875rem;
   transition: all 0.2s ease;
   position: relative;
@@ -1053,11 +1129,11 @@ body {
 }
 
 .tabs-container {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 0.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
   width: 100%;
   margin: 0 auto;
   padding: 0.5rem 2rem;
@@ -1086,13 +1162,13 @@ body {
 }
 
 .tab-trigger:hover {
-  background: #f8fafc;
-  color: #475569;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .tab-trigger.active {
-  background: #8b5cf6;
-  color: #ffffff;
+  background: var(--accent-primary);
+  color: var(--button-text);
 }
 
 .tab-icon {
@@ -1101,10 +1177,10 @@ body {
 
 /* Tab content styles */
 .tab-content-wrapper {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
   overflow: hidden;
   width: 100%;
   margin: 1rem auto 0;
@@ -1192,18 +1268,19 @@ body {
 .form-select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.875rem;
-  background: #ffffff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   transition: all 0.2s ease;
 }
 
 .form-input:focus,
 .form-select:focus {
   outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent);
 }
 
 .input-with-copy {
@@ -1224,7 +1301,7 @@ body {
 /* Vote display styles */
 .vote-display {
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -1248,9 +1325,9 @@ body {
 
 .vote-results > div {
   padding: 0.5rem;
-  background: #ffffff;
+  background: var(--bg-secondary);
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   text-align: center;
 }
 
@@ -1259,9 +1336,9 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem;
-  background: #ffffff;
+  background: var(--bg-secondary);
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .vote-count {
@@ -1312,7 +1389,7 @@ body {
 .btn-secondary {
   background: transparent;
   color: #8b5cf6;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   width: 100%;
   justify-content: center;
 }
@@ -1377,7 +1454,7 @@ body {
   gap: 0.5rem;
   margin-bottom: 2rem;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.5rem;
 }
@@ -1457,7 +1534,7 @@ body {
   background: #f8fafc;
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   word-break: break-all;
 }
 
@@ -1621,9 +1698,11 @@ body {
 /* Bridge Out Card Styles */
 .bridge-out-card {
   padding: 2rem;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .bridge-header {
@@ -1659,7 +1738,7 @@ body {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 12px;
   margin-bottom: 2rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .route-endpoint {
@@ -1690,7 +1769,7 @@ body {
   background: white;
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .route-arrow {
@@ -1723,7 +1802,7 @@ body {
   padding: 1rem;
   background: #f8fafc;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .token-name {
@@ -1755,21 +1834,23 @@ body {
   width: 100%;
   padding: 0.875rem 1rem;
   font-size: 1.125rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background: white;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   transition: all 0.2s ease;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
 }
 
 .amount-input:focus {
   outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent);
 }
 
 .amount-input:disabled {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -1929,7 +2010,7 @@ body {
 
 /* Senders Tab Styles */
 .senders-content {
-  background: #ffffff;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 2rem;
 }
@@ -2006,12 +2087,13 @@ body {
 }
 
 .sender-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1.5rem;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  color: var(--text-primary);
 }
 
 .sender-card:hover {
@@ -2060,7 +2142,7 @@ body {
   align-items: center;
   gap: 0.5rem;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.75rem;
 }
@@ -2196,7 +2278,7 @@ body {
   align-items: center;
   gap: 0.5rem;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.75rem;
   min-height: 48px;
@@ -2252,7 +2334,7 @@ body {
 }
 
 .token-address-display {
-  background: #ffffff;
+  background: var(--bg-secondary);
   border: 1px solid #d1d5db;
   padding: 0.5rem;
   border-radius: 6px;
@@ -2298,35 +2380,57 @@ body {
    DARK MODE STYLES
    ============================================================================ */
 
-/* CSS Variables for theming */
-:root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #f1f5f9;
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --border-color: #e2e8f0;
-  --shadow-color: rgba(0, 0, 0, 0.1);
-  --navbar-bg: rgba(212, 212, 212, 0.95);
-}
+    /* CSS Variables for theming - Aztec Design System */
+    :root {
+      /* Light Theme - Playground Aesthetic */
+      --bg-primary: #ffffff;
+      --bg-secondary: #eeedf1; /* pui-10 */
+      --bg-tertiary: #f8f7fa;
+      --bg-gradient-start: #f8f7fa; /* Darker at top */
+      --bg-gradient-end: #ffffff; /* Lighter at bottom */
+      --text-primary: #321e4c; /* pui-70 */
+      --text-secondary: #5a4a6b;
+      --text-muted: #8b7a9b;
+      --border-color: #d4d1db;
+      --shadow-color: rgba(50, 30, 76, 0.1);
+      --navbar-bg: rgba(238, 237, 241, 0.95);
+      --accent-primary: #8C7EFF; /* purple-60 */
+      --accent-secondary: #EDA1FF; /* pink-50 */
+      --button-text: #eeedf1;
+    }
 
-.dark {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --border-color: #334155;
-  --shadow-color: rgba(0, 0, 0, 0.3);
-  --navbar-bg: rgba(15, 23, 42, 0.9);
-}
+    .dark {
+      /* Dark Theme - Aztec.network Aesthetic */
+      --bg-primary: #0a0a0a; /* Deep black like aztec.network */
+      --bg-secondary: #1a1a1a; /* Dark grey */
+      --bg-tertiary: #2a2a2a; /* Medium grey */
+      --bg-gradient-start: #1a1a1a; /* Darker at top */
+      --bg-gradient-end: #0a0a0a; /* Deeper black at bottom */
+      --text-primary: #ffffff; /* Pure white text */
+      --text-secondary: #e0e0e0;
+      --text-muted: #a0a0a0;
+      --border-color: #333333;
+      --shadow-color: rgba(0, 0, 0, 0.5);
+      --navbar-bg: rgba(26, 26, 26, 0.95);
+      --accent-primary: #EDA1FF; /* pink-50 */
+      --accent-secondary: #8C7EFF; /* purple-60 */
+      --button-text: #000000; /* Black text on bright buttons */
+    }
 
 /* Apply theme variables */
 body {
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 50%, var(--bg-tertiary) 100%);
+  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
   color: var(--text-primary);
+}
+
+/* App container - consistent background */
+.app {
+  min-height: 100vh;
+  background: transparent; /* Inherit from body */
+}
+
+.main-content {
+  background: transparent; /* Inherit from body */
 }
 
 .navbar {
@@ -2359,9 +2463,11 @@ body {
 .settings-card,
 .dripper-card,
 .token-balance-card {
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 /* Buttons */
@@ -2371,7 +2477,7 @@ button {
 
 /* Form elements */
 input, select, textarea {
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
 }
@@ -2391,26 +2497,60 @@ input::placeholder {
   color: var(--text-primary);
 }
 
-/* Connected account section */
-.connected-account-section {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-}
+    /* Connected account section */
+    .connected-account-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+    }
 
-.account-address {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
+    .account-address {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    /* Testnet notice */
+    .testnet-notice {
+      background: color-mix(in srgb, var(--accent-secondary) 15%, var(--bg-primary));
+      border-color: color-mix(in srgb, var(--accent-secondary) 40%, transparent);
+      color: color-mix(in srgb, var(--accent-secondary) 90%, white);
+    }
+
+    .test-account-selector label {
+      color: var(--text-primary);
+    }
+
+    .test-account-select {
+      background: var(--bg-primary);
+      border-color: var(--border-color);
+      color: var(--text-primary);
+    }
+
+    .test-account-select:disabled {
+      background: var(--bg-secondary);
+      color: var(--text-muted);
+    }
+
+    /* Embedded wallet button */
+    .embedded-wallet-button {
+      background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+      color: var(--button-text);
+      box-shadow: 0 4px 12px rgba(237, 161, 255, 0.2);
+    }
+
+    .embedded-wallet-button:hover {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+      box-shadow: 0 6px 20px rgba(237, 161, 255, 0.3);
+    }
 
 /* Comprehensive Dark Mode Overrides */
 .dark {
-  /* Layout containers */
+  /* Layout containers - inherit background from body */
   .layout-container,
   .layout-grid,
   .sidebar,
   .main-content,
   .content-section {
-    background: var(--bg-primary);
+    background: transparent; /* Inherit gradient from body */
     color: var(--text-primary);
   }
 
@@ -2424,6 +2564,7 @@ input::placeholder {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
+    box-shadow: 0 4px 12px var(--shadow-color);
   }
 
   /* Card headers and content */
@@ -2521,4 +2662,40 @@ input::placeholder {
   .separator {
     border-color: var(--border-color);
   }
+}
+
+/* Ensure all content has proper text color */
+.tab-content-wrapper *,
+.tabs-container *,
+.dripper-content *,
+.voting-content *,
+.settings-content *,
+.card *,
+.sidebar-card *,
+.sender-card * {
+  color: var(--text-primary) !important;
+}
+
+/* Ensure all input elements use proper theming */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+textarea,
+select {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent) !important;
 }

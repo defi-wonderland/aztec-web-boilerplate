@@ -40,11 +40,7 @@ export const Header: React.FC = () => {
   const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 4)}...${accountAddress.slice(-4)}` : '';
 
   const renderAccountSection = () => {
-    if (!isInitialized) {
-      return <div className="initializing">Initializing...</div>;
-    }
-
-    // Show Azguard account if connected
+    // Show Azguard account if connected (prioritize over initialization state)
     if (azguardState.isConnected && azguardState.selectedAccount) {
       const azguardAddress = azguardState.selectedAccount.split(':')[2];
       const truncatedAzguardAddress = azguardAddress ? `${azguardAddress.slice(0, 4)}...${azguardAddress.slice(-4)}` : '';
@@ -64,7 +60,7 @@ export const Header: React.FC = () => {
       );
     }
 
-    // Show embedded wallet account if connected
+    // Show embedded wallet account if connected (prioritize over initialization state)
     if (connectedAccount) {
       return (
         <div className="connected-account-section">
@@ -81,17 +77,18 @@ export const Header: React.FC = () => {
       );
     }
 
-    // Show wallet selector if no wallet is connected
+    // Show initializing state only if no wallets are connected
+    if (!isInitialized) {
+      return <div className="initializing">Initializing...</div>;
+    }
+
+    // Show wallet selector if no wallet is connected and system is initialized
     return <WalletSelector onWalletConnected={() => {}} />;
   };
 
   // Auto-initialization removed - users now choose wallet type explicitly
   
   const renderNetworkSelector = () => {
-    if (!isInitialized) {
-      return null;
-    }
-
     const networkOptions = getNetworkOptions();
     
     // Get display text for current network
