@@ -9,16 +9,16 @@ import { TabConfig } from '../types';
 export const MainContent: React.FC = () => {
   const tabs: TabConfig[] = [
     {
-      id: 'mint',
-      label: 'Mint Tokens',
-      icon: '💰',
-      component: <DripperCard />
-    },
-    {
       id: 'contracts',
       label: 'Contracts',
       icon: '📄',
       component: <ContractsCard />
+    },
+    {
+      id: 'mint',
+      label: 'Mint Tokens',
+      icon: '💰',
+      component: <DripperCard />
     },
     {
       id: 'settings',

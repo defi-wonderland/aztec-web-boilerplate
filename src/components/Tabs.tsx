@@ -10,7 +10,7 @@ interface TabsProps {
 
 export const Tabs: React.FC<TabsProps> = ({ 
   tabs, 
-  defaultTab = 'mint', 
+  defaultTab = 'contracts', 
   onTabChange,
   children 
 }) => {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ContractFunction } from './ContractFunction';
 import { useAztecWallet, useAzguardWallet } from '../hooks';
 import { AztecAddress, Contract } from '@aztec/aztec.js';
+import { loadContractArtifact } from '@aztec/stdlib/abi';
 
 interface AbiInput {
   name: string;
@@ -43,8 +44,8 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
   const [activeTab, setActiveTab] = useState<'read' | 'write'>('read');
   
   // Get wallet services
-  const { connectedAccount, walletService } = useAztecWallet();
-  const { state: azguardState } = useAzguardWallet();
+  const { connectedAccount } = useAztecWallet();
+  const { state: azguardState, executeOperations } = useAzguardWallet();
 
   // Filter and parse ABI functions
   const functions = contract.abi
@@ -90,40 +91,118 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
       const func = functions.find(f => f.name === functionName);
       if (!func) throw new Error('Function not found');
 
-      // For Aztec contracts, we need to create a contract instance
-      // Since we don't have the full contract artifact with bytecode,
-      // we'll simulate the execution but with more realistic responses
-      
+      const contractAddr = AztecAddress.fromString(contractAddress);
+
+      // Execute Aztec transactions
       if (func.stateMutability === 'view' || func.stateMutability === 'pure') {
-        // For read functions, we would normally call contract.methods[functionName](...args).simulate()
-        // Since we don't have the full contract instance, we'll provide a more realistic simulation
-        
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
-        
-        return {
-          success: true,
-          result: generateMockResult(func, args),
-          timestamp: new Date().toISOString(),
-          gasUsed: Math.floor(Math.random() * 50000) + 21000
-        };
+        // Read functions - use view/simulate calls
+        if (azguardState.isConnected && azguardState.selectedAccount) {
+          // Use Azguard wallet for view calls
+          const viewOperation = {
+            kind: 'simulate_views' as const,
+            account: azguardState.selectedAccount!,
+            calls: [{
+              kind: 'call' as const,
+              contract: contractAddr.toString(),
+              method: functionName,
+              args
+            }]
+          };
+          
+          const results = await executeOperations([viewOperation]);
+          const result = results[0];
+          
+          if (result.status === 'ok') {
+            return {
+              success: true,
+              result: result.result,
+              timestamp: new Date().toISOString(),
+              method: 'azguard_view'
+            };
+          } else {
+            throw new Error((result as any).error || 'View call failed');
+          }
+        } else if (connectedAccount) {
+          // Use embedded wallet for view calls
+          try {
+            // Create a contract instance using the loaded artifact
+            const contractArtifact = loadContractArtifact(contract as any);
+            const contractInstance = await Contract.at(contractAddr, contractArtifact, connectedAccount);
+            
+            // Execute the view function
+            const result = await contractInstance.methods[functionName](...args).simulate();
+            
+            return {
+              success: true,
+              result: result,
+              timestamp: new Date().toISOString(),
+              method: 'embedded_view',
+              note: 'Aztec view call via embedded wallet'
+            };
+          } catch (error) {
+            console.error('Failed to execute view call with embedded wallet:', error);
+            throw new Error(`View call failed: ${error.message}`);
+          }
+        }
       } else {
-        // For write functions, we would normally call contract.methods[functionName](...args).send()
-        // This requires the full contract artifact and proper wallet integration
-        
-        // Simulate transaction time
-        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
-        
-        return {
-          success: true,
-          transactionHash: '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-          blockNumber: Math.floor(Math.random() * 1000000) + 1000000,
-          gasUsed: Math.floor(Math.random() * 200000) + 50000,
-          timestamp: new Date().toISOString(),
-          note: 'Transaction simulation - real execution requires full contract deployment'
-        };
+        // Write functions - execute transactions
+        if (azguardState.isConnected && azguardState.selectedAccount) {
+          // Use Azguard wallet for transactions
+          const txOperation = {
+            kind: 'send_transaction' as const,
+            account: azguardState.selectedAccount!,
+            actions: [{
+              kind: 'call' as const,
+              contract: contractAddr.toString(),
+              method: functionName,
+              args
+            }]
+          };
+          
+          const results = await executeOperations([txOperation]);
+          const result = results[0];
+          
+          if (result.status !== 'ok') {
+            throw new Error((result as any).error || 'Transaction failed');
+          }
+          
+          const txHash = result.result;
+          
+          return {
+            success: true,
+            transactionHash: txHash,
+            timestamp: new Date().toISOString(),
+            method: 'azguard_transaction',
+            note: 'Aztec transaction executed via Azguard wallet'
+          };
+        } else if (connectedAccount) {
+          // Use embedded wallet for transactions
+          try {
+            // Create a contract instance using the loaded artifact
+            const contractArtifact = loadContractArtifact(contract as any);
+            const contractInstance = await Contract.at(contractAddr, contractArtifact, connectedAccount);
+            
+            // Execute the transaction
+            const tx = await contractInstance.methods[functionName](...args).send().wait();
+            
+            return {
+              success: true,
+              transactionHash: tx.txHash.toString(),
+              blockNumber: tx.blockNumber,
+              timestamp: new Date().toISOString(),
+              method: 'embedded_transaction',
+              note: 'Aztec transaction executed via embedded wallet'
+            };
+          } catch (error) {
+            console.error('Failed to execute transaction with embedded wallet:', error);
+            throw new Error(`Transaction failed: ${error.message}`);
+          }
+        }
       }
+      
+      throw new Error('No suitable wallet available for transaction execution');
     } catch (error) {
+      console.error('❌ Function execution failed:', error);
       throw error;
     } finally {
       setExecutingFunction(null);
