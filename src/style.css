@@ -902,35 +902,35 @@ body {
 }
 
 .status-message.info {
-  background: #f0f9ff;
-  border-color: #bae6fd;
-  color: #0369a1;
+  background: color-mix(in srgb, #3b82f6 10%, var(--bg-primary));
+  border-color: color-mix(in srgb, #3b82f6 30%, transparent);
+  color: #3b82f6;
   text-align: left;
 }
 
 .status-message.info.global-error {
-  background: #f0f9ff;
-  border-color: #bae6fd;
-  color: #0369a1;
+  background: color-mix(in srgb, #3b82f6 10%, var(--bg-primary));
+  border-color: color-mix(in srgb, #3b82f6 30%, transparent);
+  color: #3b82f6;
 }
 
 .status-message.success {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  color: #15803d;
+  background: color-mix(in srgb, #10b981 10%, var(--bg-primary));
+  border-color: color-mix(in srgb, #10b981 30%, transparent);
+  color: #10b981;
   text-align: left;
 }
 
 .status-message.success.global-message {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  color: #15803d;
+  background: color-mix(in srgb, #10b981 10%, var(--bg-primary));
+  border-color: color-mix(in srgb, #10b981 30%, transparent);
+  color: #10b981;
 }
 
 .status-message.error {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #dc2626;
+  background: color-mix(in srgb, #ef4444 10%, var(--bg-primary));
+  border-color: color-mix(in srgb, #ef4444 30%, transparent);
+  color: #ef4444;
 }
 
 .status-message.global-error {
@@ -1917,10 +1917,10 @@ body {
 
 .error-message {
   padding: 0.875rem;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
+  background: color-mix(in srgb, #ef4444 10%, var(--bg-primary));
+  border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
   border-radius: 8px;
-  color: #dc2626;
+  color: #ef4444;
   font-size: 0.875rem;
   margin-bottom: 1rem;
   display: flex;
@@ -2213,9 +2213,9 @@ body {
 }
 
 .success-message {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-  border: 1px solid #22c55e;
-  color: #15803d;
+  background: color-mix(in srgb, #10b981 10%, var(--bg-primary));
+  border: 1px solid color-mix(in srgb, #10b981 30%, transparent);
+  color: #10b981;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
@@ -2224,13 +2224,13 @@ body {
 }
 
 .success-message:hover {
-  background: linear-gradient(135deg, #bbf7d0 0%, #dcfce7 100%);
+  background: color-mix(in srgb, #10b981 15%, var(--bg-primary));
 }
 
 .error-message {
-  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
-  border: 1px solid #ef4444;
-  color: #dc2626;
+  background: color-mix(in srgb, #ef4444 10%, var(--bg-primary));
+  border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
+  color: #ef4444;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
@@ -2239,7 +2239,7 @@ body {
 }
 
 .error-message:hover {
-  background: linear-gradient(135deg, #fecaca 0%, #fef2f2 100%);
+  background: color-mix(in srgb, #ef4444 15%, var(--bg-primary));
 }
 
 /* Responsive adjustments for Senders */
