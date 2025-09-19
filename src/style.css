@@ -2699,3 +2699,111 @@ select:focus {
   border-color: var(--accent-primary) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent) !important;
 }
+
+/* Testnet Debug Modal Styles */
+.testnet-debug-modal {
+  max-width: 600px;
+}
+
+.testnet-debug-modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.debug-message {
+  margin-bottom: 1.5rem;
+}
+
+.debug-message p {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.debug-message p:last-child {
+  margin-bottom: 0;
+}
+
+.debug-details {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.debug-details h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.debug-details ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.debug-details li {
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.debug-details li:last-child {
+  margin-bottom: 0;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.modal-button {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.modal-button.secondary {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.modal-button.secondary:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--accent-secondary);
+}
+
+.modal-button.primary {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  color: var(--button-text);
+  border-color: var(--accent-primary);
+}
+
+.modal-button.primary:hover {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent-primary) 30%, transparent);
+}
+
+/* Error state styling */
+.initializing.error {
+  color: #f59e0b;
+  font-weight: 500;
+}

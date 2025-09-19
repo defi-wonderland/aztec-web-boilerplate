@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { SendersCard } from './SendersCard';
 import { Tabs } from '../components';
-import { TabConfig } from '../types';
+import { TabConfig, TabType } from '../types';
+import { useAzguardWallet } from '../hooks';
 
 export const MainContent: React.FC = () => {
-  const tabs: TabConfig[] = [
+  const { state: azguardState } = useAzguardWallet();
+  const [activeTab, setActiveTab] = useState<TabType>('mint');
+  
+  const allTabs: TabConfig[] = [
     {
       id: 'mint',
       label: 'Mint Tokens',
@@ -27,9 +31,25 @@ export const MainContent: React.FC = () => {
     }
   ];
 
+  // Filter out Senders tab when Azguard wallet is connected
+  const tabs = azguardState.isConnected 
+    ? allTabs.filter(tab => tab.id !== 'senders')
+    : allTabs;
+
+  // If user is on Senders tab and Azguard wallet connects, switch to Mint tab
+  useEffect(() => {
+    if (azguardState.isConnected && activeTab === 'senders') {
+      setActiveTab('mint');
+    }
+  }, [azguardState.isConnected, activeTab]);
+
   return (
     <main className="main-content">
-      <Tabs tabs={tabs} />
+      <Tabs 
+        tabs={tabs} 
+        defaultTab={activeTab}
+        onTabChange={setActiveTab}
+      />
     </main>
   );
 };

@@ -1,16 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
-import { WalletSelector, AzguardAccountDisplay, ThemeToggle } from '../components';
+import { WalletSelector, AzguardAccountDisplay, ThemeToggle, TestnetDebugModal } from '../components';
 
 export const Header: React.FC = () => {
   const { 
     connectedAccount, 
     isInitialized,
+    initializationTimedOut,
+    forceShowWalletSelector,
     disconnectWallet
   } = useAztecWallet();
+  
+  const [showDebugModal, setShowDebugModal] = useState(false);
 
   const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
+  
+  // Show debug modal when testnet initialization times out
+  useEffect(() => {
+    if (initializationTimedOut && currentConfig.isTestnet) {
+      setShowDebugModal(true);
+    }
+  }, [initializationTimedOut, currentConfig.isTestnet]);
 
   const handleDisconnect = () => {
     if (azguardState.isConnected) {
@@ -77,9 +88,14 @@ export const Header: React.FC = () => {
       );
     }
 
-    // Show initializing state only if no wallets are connected
-    if (!isInitialized) {
+    // Show initializing state only if no wallets are connected and not timed out
+    if (!isInitialized && !initializationTimedOut) {
       return <div className="initializing">Initializing...</div>;
+    }
+    
+    // Show error message for testnet if failed and modal not dismissed
+    if (initializationTimedOut && currentConfig.isTestnet && showDebugModal) {
+      return <div className="initializing error">Connection failed...</div>;
     }
 
     // Show wallet selector if no wallet is connected and system is initialized
@@ -119,18 +135,29 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <nav className="navbar">
-      <div className="nav-container">
-        <div className="nav-title">Aztec Web Boilerplate</div>
+    <>
+      <nav className="navbar">
+        <div className="nav-container">
+          <div className="nav-title">Aztec Web Boilerplate</div>
 
-            <div className="nav-controls">
-              {renderNetworkSelector()}
-              <div className="account-controls">
-                {renderAccountSection()}
+              <div className="nav-controls">
+                {renderNetworkSelector()}
+                <div className="account-controls">
+                  {renderAccountSection()}
+                </div>
+                <ThemeToggle />
               </div>
-              <ThemeToggle />
-            </div>
-      </div>
-    </nav>
+        </div>
+      </nav>
+      
+      <TestnetDebugModal
+        isOpen={showDebugModal}
+        onClose={() => setShowDebugModal(false)}
+        onForceShowWalletSelector={() => {
+          forceShowWalletSelector();
+          setShowDebugModal(false);
+        }}
+      />
+    </>
   );
 };

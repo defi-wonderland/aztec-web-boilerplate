@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TabType, TabConfig } from '../types';
 
 interface TabsProps {
@@ -15,6 +15,11 @@ export const Tabs: React.FC<TabsProps> = ({
   children 
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
+
+  // Update active tab when defaultTab prop changes
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
