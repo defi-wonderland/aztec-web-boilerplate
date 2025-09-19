@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAztecWallet } from '../hooks';
+import { useAztecWallet, useAzguardWallet } from '../hooks';
 import { useToken } from '../hooks/context/useToken';
 import { useError } from '../providers/ErrorProvider';
 
@@ -11,6 +11,7 @@ export const DripperCard: React.FC = () => {
     isDeploying
   } = useAztecWallet();
   
+  const { state: azguardState } = useAzguardWallet();
   const { refreshBalance, currentTokenAddress, setTokenAddress, clearTokenAddress } = useToken();
   const { addError } = useError();
   
@@ -82,8 +83,9 @@ export const DripperCard: React.FC = () => {
     }
   };
 
-  // Show dripper form only when account is connected and app is initialized
-  const showDripForm = !!connectedAccount && isInitialized;
+  // Show dripper form when either wallet is connected and app is initialized
+  const isAnyWalletConnected = !!connectedAccount || azguardState.isConnected;
+  const showDripForm = isAnyWalletConnected && isInitialized;
 
   if (!showDripForm) {
     return null;
