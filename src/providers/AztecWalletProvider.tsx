@@ -14,6 +14,7 @@ interface AztecWalletContextType {
   isLoading: boolean;
   error: string | null;
   isDeploying: boolean;
+  initializationTimedOut: boolean;
 
   // Contract services
   votingService: AztecVotingService | null;
@@ -26,6 +27,7 @@ interface AztecWalletContextType {
   connectExistingAccount: () => Promise<AccountWallet | null>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
+  forceShowWalletSelector: () => void;
 }
 
 export const AztecWalletContext = createContext<
@@ -51,6 +53,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     null
   );
   const [isDeploying, setIsDeploying] = useState(false);
+  const [initializationTimedOut, setInitializationTimedOut] = useState(false);
+  const [forceWalletSelector, setForceWalletSelector] = useState(false);
 
   const walletServicesRef = useRef<WalletServices | null>(null);
   const isInitializingRef = useRef(false);
@@ -110,6 +114,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setDripperService(null);
     setTokenService(null);
     setIsInitialized(false);
+    setInitializationTimedOut(false);
+    setForceWalletSelector(false);
     
     isInitializingRef.current = false;
   };
@@ -125,6 +131,12 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       }, 'initialize wallet services');
     } catch (err) {
       console.error('App initialization failed:', err);
+      
+      // For testnet errors, show debug modal immediately
+      if (config.isTestnet && !isInitialized) {
+        console.warn('⚠️ Testnet initialization failed, showing debug modal immediately');
+        setInitializationTimedOut(true);
+      }
     } finally {
       isInitializingRef.current = false;
     }
@@ -188,11 +200,12 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   };
 
   const contextValue: AztecWalletContextType = {
-    isInitialized,
+    isInitialized: isInitialized || forceWalletSelector,
     connectedAccount,
     isLoading,
     error,
     isDeploying,
+    initializationTimedOut,
     votingService,
     dripperService,
     tokenService,
@@ -201,6 +214,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     connectExistingAccount: handleConnectExistingAccount,
     disconnectWallet,
     reinitialize,
+    forceShowWalletSelector: () => setForceWalletSelector(true),
   };
 
   return (
