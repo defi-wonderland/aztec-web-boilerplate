@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useAztecWallet, useConfig } from '../hooks';
+import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
 
 interface EmbeddedWalletModalProps {
   isOpen: boolean;
@@ -18,14 +18,22 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
 
   const { 
     createAccount, 
-    connectTestAccount
+    connectTestAccount,
+    isInitialized,
+    isLoading,
+    error,
+    initializationTimedOut
   } = useAztecWallet();
 
-  const { currentConfig } = useConfig();
+  const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
+  const { state: azguardState, connect: connectAzguard } = useAzguardWallet();
   
-  // Disable test account functionality on testnet
-  const isTestnet = currentConfig.name === 'testnet';
-  const isTestAccountDisabled = isTestnet || isConnecting;
+  // Disable functionality when no network is selected, network is initializing, or failed
+  const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';
+  const isNetworkInitializing = isNetworkSelected && !isInitialized && isLoading;
+  const isNetworkFailed = isNetworkSelected && (error || initializationTimedOut) && !isInitialized;
+  const isTestAccountDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting;
+  const isAzguardDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting || azguardState.isConnected;
 
   // Apply modal-open class to root when modal is open
   useEffect(() => {
@@ -68,6 +76,56 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     }
   };
 
+  const handleAzguardConnect = async () => {
+    if (isConnecting || azguardState.isConnecting) return;
+    
+    try {
+      await connectAzguard();
+      onWalletConnected?.();
+      onClose(); // Close modal after successful connection
+    } catch (error) {
+      console.error('Failed to connect Azguard wallet:', error);
+    }
+  };
+
+  const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const networkName = event.target.value;
+    console.log('🔄 Network change requested from modal:', { 
+      from: currentConfig.name, 
+      to: networkName,
+      currentConfig 
+    });
+    
+    if (networkName && networkName !== currentConfig.name) {
+      switchToNetwork(networkName);
+    }
+  };
+
+  const renderNetworkSelector = () => {
+    return (
+      <div className="network-connect-section">
+        <label className="wallet-section-label">Network</label>
+        <div className="modal-network-selector">
+          <div className="network-select-wrapper">
+            <select
+              id="modal-network-selector"
+              name="modal-network-selector"
+              value={currentConfig?.name || ""}
+              onChange={handleNetworkChange}
+              className="network-select"
+              title="Select network configuration"
+            >
+              <option value="" disabled>Network</option>
+              <option value="sandbox">Local Sandbox</option>
+              <option value="testnet">Testnet</option>
+            </select>
+            <span className="network-select-arrow">▼</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!isOpen) return null;
 
   const modalRoot = document.getElementById('modal-root');
@@ -77,7 +135,7 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Embedded Wallet Configuration</h3>
+          <h3>Wallet Configuration</h3>
           <button className="modal-close-button" onClick={onClose}>
             ×
           </button>
@@ -85,48 +143,107 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
         
         <div className="modal-body">
           <p className="modal-description">
-            Create or connect to an Aztec account using the embedded wallet.
+            Create or connect to an Aztec account using a wallet.
           </p>
           
-          <div className="test-account-selector">
-            <label htmlFor="modal-test-account-number">Test Account:</label>
-            <select 
-              id="modal-test-account-number"
-              value={testAccountIndex} 
-              onChange={(e) => setTestAccountIndex(Number(e.target.value))}
-              className="test-account-select"
-              disabled={isTestAccountDisabled}
-            >
-              <option value="1">Account 1</option>
-              <option value="2">Account 2</option>
-              <option value="3">Account 3</option>
-            </select>
-            {isTestnet && (
-              <p className="testnet-notice">
-                Test accounts are not available on testnet. Please create a new account instead.
-              </p>
+          {renderNetworkSelector()}
+          
+          <div className={`network-status ${
+            !isNetworkSelected ? 'not-connected' : 
+            isNetworkInitializing ? 'initializing' : 
+            isNetworkFailed ? 'failed' :
+            'connected'
+          }`}>
+            {!isNetworkSelected && (
+              <span>Network not connected</span>
+            )}
+            {isNetworkInitializing && (
+              <>
+                <div className="initializing-spinner"></div>
+                <span>Initializing network connection...</span>
+              </>
+            )}
+            {isNetworkFailed && (
+              <span>
+                {currentConfig.name === 'sandbox' ? 'Local Sandbox connection failed' : 
+                 currentConfig.name === 'testnet' ? 'Testnet connection failed' : 
+                 `${currentConfig.displayName} connection failed`}
+              </span>
+            )}
+            {isNetworkSelected && isInitialized && (
+              <span>
+                {currentConfig.name === 'sandbox' ? 'Local Sandbox connected' : 
+                 currentConfig.name === 'testnet' ? 'Testnet connected' : 
+                 `${currentConfig.displayName} connected`}
+              </span>
             )}
           </div>
           
-          <div className="modal-actions">
+          <div className="azguard-connect-section">
+            <label className="wallet-section-label">Browser Wallet</label>
             <button 
-              onClick={() => handleEmbeddedWalletAction('test')}
+              onClick={handleAzguardConnect}
               type="button"
-              disabled={isTestAccountDisabled}
-              className="modal-action-button primary"
-              title={isTestnet ? 'Test accounts are not available on testnet' : ''}
+              disabled={isAzguardDisabled}
+              className="modal-action-button azguard-connect"
+              title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
             >
-              {isConnecting ? 'Connecting...' : 'Connect Test Account'}
+              {azguardState.isConnecting ? 'Connecting...' : 
+               azguardState.isConnected ? 'Azguard Connected' : 
+               'Connect Azguard Wallet'}
             </button>
+          </div>
+          
+          <div className="embedded-connect-section">
+            <label className="wallet-section-label">Embedded Wallet</label>
             
-            <button 
-              onClick={() => handleEmbeddedWalletAction('create')}
-              type="button"
-              disabled={isConnecting}
-              className="modal-action-button primary"
-            >
-              {isConnecting ? 'Creating...' : 'Create New Account'}
-            </button>
+            {/* Only show test account section for Local Sandbox */}
+            {currentConfig?.name === 'sandbox' && (
+              <div className="test-account-selector">
+                <label htmlFor="modal-test-account-number">Test Account:</label>
+                <select 
+                  id="modal-test-account-number"
+                  value={testAccountIndex} 
+                  onChange={(e) => setTestAccountIndex(Number(e.target.value))}
+                  className="test-account-select"
+                  disabled={isTestAccountDisabled}
+                >
+                  <option value="1">Account 1</option>
+                  <option value="2">Account 2</option>
+                  <option value="3">Account 3</option>
+                </select>
+                {!isNetworkSelected && (
+                  <p className="network-notice">
+                    Please select a network to continue.
+                  </p>
+                )}
+              </div>
+            )}
+            
+            <div className="modal-actions">
+              {/* Only show test account button for Local Sandbox */}
+              {currentConfig?.name === 'sandbox' && (
+                <button 
+                  onClick={() => handleEmbeddedWalletAction('test')}
+                  type="button"
+                  disabled={isTestAccountDisabled}
+                  className="modal-action-button primary"
+                  title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
+                >
+                  {isConnecting ? 'Connecting...' : 'Connect Test Account'}
+                </button>
+              )}
+              
+              <button 
+                onClick={() => handleEmbeddedWalletAction('create')}
+                type="button"
+                disabled={!isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting}
+                className="modal-action-button primary"
+                title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
+              >
+                {isConnecting ? 'Creating...' : 'Create New Account'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

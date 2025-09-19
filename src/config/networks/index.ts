@@ -11,4 +11,5 @@ export const AVAILABLE_NETWORKS: NetworkConfig[] = [
   TESTNET_CONFIG,
 ];
 
-export const DEFAULT_NETWORK = TESTNET_CONFIG;
+
+export const DEFAULT_NETWORK = SANDBOX_CONFIG;

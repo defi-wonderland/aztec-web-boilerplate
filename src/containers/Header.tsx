@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
-import { WalletSelector, AzguardAccountDisplay, ThemeToggle, TestnetDebugModal } from '../components';
+import { AzguardAccountDisplay, ThemeToggle, TestnetDebugModal, EmbeddedWalletModal } from '../components';
 
 export const Header: React.FC = () => {
   const { 
@@ -12,9 +12,10 @@ export const Header: React.FC = () => {
   } = useAztecWallet();
   
   const [showDebugModal, setShowDebugModal] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
-  const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
+  const { currentConfig } = useConfig();
   
   // Show debug modal when testnet initialization times out
   useEffect(() => {
@@ -33,18 +34,6 @@ export const Header: React.FC = () => {
     }
   };
 
-  const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const networkName = event.target.value;
-    console.log('🔄 Network change requested:', { 
-      from: currentConfig.name, 
-      to: networkName,
-      currentConfig 
-    });
-    
-    if (networkName && networkName !== currentConfig.name) {
-      switchToNetwork(networkName);
-    }
-  };
   
   const isAnyWalletConnected = connectedAccount || azguardState.isConnected;
   const accountAddress = connectedAccount?.getAddress().toString();
@@ -88,51 +77,18 @@ export const Header: React.FC = () => {
       );
     }
 
-    // Show initializing state only if no wallets are connected and not timed out
-    if (!isInitialized && !initializationTimedOut) {
-      return <div className="initializing">Initializing...</div>;
-    }
-    
-    // Show error message for testnet if failed and modal not dismissed
-    if (initializationTimedOut && currentConfig.isTestnet && showDebugModal) {
-      return <div className="initializing error">Connection failed...</div>;
-    }
-
-    // Show wallet selector if no wallet is connected and system is initialized
-    return <WalletSelector onWalletConnected={() => {}} />;
-  };
-
-  // Auto-initialization removed - users now choose wallet type explicitly
-  
-  const renderNetworkSelector = () => {
-    const networkOptions = getNetworkOptions();
-    
-    // Get display text for current network
-    const getNetworkDisplayText = () => {
-      if (currentConfig.name === 'sandbox') return 'Local Sandbox';
-      if (currentConfig.name === 'testnet') return 'Testnet';
-      return currentConfig.name;
-    };
-
+    // Show wallet button if no wallet is connected
     return (
-      <div className="network-selector">
-        <div className="network-select-wrapper">
-          <select
-            name="network-selector"
-            value={currentConfig.name}
-            onChange={handleNetworkChange}
-            className="network-select"
-            title="Select network configuration"
-          >
-            <option value="" disabled>Network</option>
-            <option value="sandbox">Local Sandbox</option>
-            <option value="testnet">Testnet</option>
-          </select>
-          <span className="network-select-arrow">▼</span>
-        </div>
-      </div>
+      <button 
+        onClick={() => setShowWalletModal(true)}
+        className="wallet-connect-button"
+        type="button"
+      >
+        Connect Wallet
+      </button>
     );
   };
+
 
   return (
     <>
@@ -141,7 +97,6 @@ export const Header: React.FC = () => {
           <div className="nav-title">Aztec Web Boilerplate</div>
 
               <div className="nav-controls">
-                {renderNetworkSelector()}
                 <div className="account-controls">
                   {renderAccountSection()}
                 </div>
@@ -157,6 +112,12 @@ export const Header: React.FC = () => {
           forceShowWalletSelector();
           setShowDebugModal(false);
         }}
+      />
+      
+      <EmbeddedWalletModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onWalletConnected={() => setShowWalletModal(false)}
       />
     </>
   );
