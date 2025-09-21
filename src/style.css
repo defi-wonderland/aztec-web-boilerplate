@@ -1234,13 +1234,15 @@ body {
 /* Generic content styles for all cards */
 .dripper-content,
 .voting-content,
-.settings-content {
+.settings-content,
+.deploy-content {
   padding: 1.5rem;
 }
 
 /* Form container styles */
 .mint-form-container,
-.vote-form-container {
+.vote-form-container,
+.deploy-form-container {
   margin-bottom: 2rem;
 }
 
@@ -3274,10 +3276,199 @@ input::placeholder {
 .dripper-content *,
 .voting-content *,
 .settings-content *,
+.deploy-content *,
 .card *,
 .sidebar-card *,
 .sender-card * {
   color: var(--text-primary) !important;
+}
+
+/* Contract Type Selector */
+.contract-type-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.contract-type-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.contract-type-btn:hover {
+  border-color: var(--primary-color);
+  background: var(--bg-primary);
+}
+
+.contract-type-btn.active {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+}
+
+.contract-type-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.contract-icon {
+  font-size: 2rem;
+}
+
+/* Constructor Type Selector */
+.constructor-type-selector,
+.minter-type-selector,
+.airdrop-type-selector,
+.upgradeability-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radio-label:hover {
+  border-color: var(--primary-color);
+  background: var(--bg-primary);
+}
+
+.radio-label input[type="radio"] {
+  margin: 0;
+  margin-top: 0.125rem;
+}
+
+.radio-label input[type="radio"]:checked + span {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.radio-label small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+/* Deploy Button */
+.deploy-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.deploy-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.deploy-icon {
+  font-size: 1.2rem;
+}
+
+.loading-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Deployment Result */
+.deployment-result {
+  padding: 1.5rem;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.deployment-result h4 {
+  margin: 0 0 1rem 0;
+  color: #10b981;
+  font-size: 1.1rem;
+}
+
+.deployed-address {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.deployed-address label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.address-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.address-display code {
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: transparent;
+  word-break: break-all;
+}
+
+.copy-button {
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  background: var(--primary-color);
+  color: white;
 }
 
 /* Ensure all input elements use proper theming */

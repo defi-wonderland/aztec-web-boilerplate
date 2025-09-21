@@ -1,8 +1,9 @@
 import React from 'react';
-import { useAzguardWallet } from '../hooks';
+import { useAzguardWallet, useAddressUtils } from '../hooks';
 
 export const AzguardConnectButton: React.FC = () => {
   const { state, connect, disconnect } = useAzguardWallet();
+  const { truncateAddress } = useAddressUtils();
 
   const handleClick = async () => {
     if (state.isConnected) {
@@ -20,8 +21,7 @@ export const AzguardConnectButton: React.FC = () => {
     if (state.isConnected && state.selectedAccount) {
       // Extract address from CAIP format (aztec:chainId:address)
       const address = state.selectedAccount.split(':')[2];
-      const truncated = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected';
-      return truncated;
+      return truncateAddress(address) || 'Connected';
     }
     
     return 'Connect Azguard';

@@ -1,6 +1,7 @@
 export { Header } from './Header';
 export { StatusMessage } from './StatusMessage';
 export { DripperCard } from './DripperCard';
+export { DeployContractCard } from './DeployContractCard';
 export { TokenBalanceCard } from './TokenBalanceCard';
 export { Layout } from './Layout';
 export { SettingsCard } from './SettingsCard';

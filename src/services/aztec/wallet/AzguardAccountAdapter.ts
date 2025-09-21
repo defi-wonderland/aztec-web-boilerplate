@@ -125,8 +125,7 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
    * Create a proxy AccountWallet that delegates operations to Azguard
    */
   private createAccountWalletProxy(caipAccount: CaipAccount, address: AztecAddress): AccountWallet {
-    // This is a complex implementation that would need to proxy all AccountWallet methods
-    // For now, we'll create a minimal implementation that covers the most important methods
+    // Create a more complete proxy that supports deployment operations
     
     const proxy = {
       // Basic account information
@@ -149,9 +148,58 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
         };
         return this.executeOperation(operation);
       },
-      
-      // Other required methods would be implemented here
-      // This is a simplified version for demonstration
+
+      // Contract registration method (required for deployment)
+      registerContract: async (params: { instance: any; artifact: any }) => {
+        // Create register contract operation for Azguard
+        const operation = {
+          kind: 'register_contract' as const,
+          chain: caipAccount.split(':')[1], // Extract chain from CAIP account
+          address: params.instance.address.toString(),
+          instance: params.instance,
+          artifact: params.artifact
+        };
+        return this.executeOperation(operation);
+      },
+
+      // PXE access (some deployment flows might need this)
+      getPXE: () => {
+        // Return a minimal PXE-like object that delegates to Azguard
+        return {
+          registerContract: async (params: { instance: any; artifact: any }) => {
+            return proxy.registerContract(params);
+          }
+        };
+      },
+
+      // Deployment support - this is key for contract deployment
+      createTxExecutionRequest: async (txRequest: any) => {
+        // This method is often called during deployment
+        return txRequest;
+      },
+
+      // Additional methods that might be called during deployment
+      prove: async (txRequest: any) => {
+        // For Azguard, we don't need separate proving - it's handled in the wallet
+        return {
+          send: () => ({
+            wait: async (options?: { timeout?: number }) => {
+              // Execute the transaction through Azguard
+              const operation = this.convertToAzguardOperation(txRequest, caipAccount);
+              const result = await this.executeOperation(operation);
+              
+              // Return a receipt-like object
+              return {
+                contract: {
+                  address: result.contractAddress || result.address
+                },
+                transactionHash: result.txHash,
+                status: 'mined'
+              };
+            }
+          })
+        };
+      }
       
     } as unknown as AccountWallet;
 

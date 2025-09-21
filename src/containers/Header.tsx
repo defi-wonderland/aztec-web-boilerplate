@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
+import { useAztecWallet, useConfig, useAzguardWallet, useAddressUtils } from '../hooks';
 import { AzguardAccountDisplay, ThemeToggle, TestnetDebugModal, EmbeddedWalletModal } from '../components';
 
 export const Header: React.FC = () => {
@@ -16,6 +16,7 @@ export const Header: React.FC = () => {
 
   const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
   const { currentConfig } = useConfig();
+  const { truncateAddress } = useAddressUtils();
   
   // Show debug modal when testnet initialization times out
   useEffect(() => {
@@ -37,13 +38,13 @@ export const Header: React.FC = () => {
   
   const isAnyWalletConnected = connectedAccount || azguardState.isConnected;
   const accountAddress = connectedAccount?.getAddress().toString();
-  const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 4)}...${accountAddress.slice(-4)}` : '';
+  const truncatedAddress = truncateAddress(accountAddress);
 
   const renderAccountSection = () => {
     // Show Azguard account if connected (prioritize over initialization state)
     if (azguardState.isConnected && azguardState.selectedAccount) {
       const azguardAddress = azguardState.selectedAccount.split(':')[2];
-      const truncatedAzguardAddress = azguardAddress ? `${azguardAddress.slice(0, 4)}...${azguardAddress.slice(-4)}` : '';
+      const truncatedAzguardAddress = truncateAddress(azguardAddress);
       
       return (
         <div className="connected-account-section">

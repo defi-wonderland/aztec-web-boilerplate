@@ -3,6 +3,7 @@ import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { SendersCard } from './SendersCard';
 import { ContractsCard } from './ContractsCard';
+import { DeployContractCard } from './DeployContractCard';
 import { Tabs } from '../components';
 import { TabConfig, TabType } from '../types';
 import { useAzguardWallet } from '../hooks';
@@ -23,6 +24,12 @@ export const MainContent: React.FC = () => {
       label: 'Mint Tokens',
       icon: '💰',
       component: <DripperCard />
+    },
+    {
+      id: 'deploy',
+      label: 'Deploy Token',
+      icon: '🚀',
+      component: <DeployContractCard />
     },
     {
       id: 'settings',
