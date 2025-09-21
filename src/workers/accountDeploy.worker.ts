@@ -35,7 +35,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
     console.log('🔧 Worker received:', { nodeUrl: !!nodeUrl, secretKey: typeof secretKey, signingKeyHex: typeof signingKeyHex, salt: typeof salt });
 
     // Connect to existing PXE instead of creating a new one
-    const pxe = createPXEClient('http://localhost:8081');
+    const pxe = createPXEClient('http://localhost:8080');
 
     await pxe.registerContract({
       instance: await getSponsoredPFCContract(),
