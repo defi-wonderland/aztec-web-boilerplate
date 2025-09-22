@@ -30,8 +30,8 @@
     "lint": "prettier --check ./src"
   },
   "dependencies": {
-    "@azguardwallet/client": "^0.4.2",
-    "@azguardwallet/types": "^0.4.1",
+    "@azguardwallet/client": "0.4.2",
+    "@azguardwallet/types": "0.4.1",
     "@aztec/accounts": "1.1.2",
     "@aztec/aztec.js": "1.1.2",
     "@aztec/constants": "1.1.2",
