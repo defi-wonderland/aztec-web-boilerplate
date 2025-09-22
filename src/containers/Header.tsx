@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
-import { AzguardAccountDisplay, ThemeToggle, TestnetDebugModal, EmbeddedWalletModal } from '../components';
+import { AzguardAccountDisplay, ThemeToggle, EmbeddedWalletModal } from '../components';
 
 export const Header: React.FC = () => {
   const { 
@@ -11,18 +11,10 @@ export const Header: React.FC = () => {
     disconnectWallet
   } = useAztecWallet();
   
-  const [showDebugModal, setShowDebugModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
   const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
   const { currentConfig } = useConfig();
-  
-  // Show debug modal when testnet initialization times out
-  useEffect(() => {
-    if (initializationTimedOut && currentConfig.isTestnet) {
-      setShowDebugModal(true);
-    }
-  }, [initializationTimedOut, currentConfig.isTestnet]);
 
   const handleDisconnect = () => {
     if (azguardState.isConnected) {
@@ -104,15 +96,6 @@ export const Header: React.FC = () => {
               </div>
         </div>
       </nav>
-      
-      <TestnetDebugModal
-        isOpen={showDebugModal}
-        onClose={() => setShowDebugModal(false)}
-        onForceShowWalletSelector={() => {
-          forceShowWalletSelector();
-          setShowDebugModal(false);
-        }}
-      />
       
       <EmbeddedWalletModal
         isOpen={showWalletModal}
