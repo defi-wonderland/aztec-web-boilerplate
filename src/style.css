@@ -3304,64 +3304,6 @@ select:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent) !important;
 }
 
-/* Testnet Debug Modal Styles */
-.testnet-debug-modal {
-  max-width: 600px;
-}
-
-.testnet-debug-modal .modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.debug-message {
-  margin-bottom: 1.5rem;
-}
-
-.debug-message p {
-  margin: 0 0 1rem 0;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.debug-message p:last-child {
-  margin-bottom: 0;
-}
-
-.debug-details {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.debug-details h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.debug-details ul {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: var(--text-secondary);
-}
-
-.debug-details li {
-  margin-bottom: 0.25rem;
-  line-height: 1.4;
-}
-
-.debug-details li:last-child {
-  margin-bottom: 0;
-}
 
 .modal-footer {
   display: flex;
@@ -3419,11 +3361,6 @@ select:focus {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-}
-
-/* Modal Network Selector Styles */
-.modal-network-selector {
-  /* Remove margin since it's now inside a section */
 }
 
 .modal-network-selector .network-select-wrapper {

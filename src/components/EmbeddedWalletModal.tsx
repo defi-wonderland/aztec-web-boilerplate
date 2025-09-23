@@ -31,7 +31,7 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   // Disable functionality when no network is selected, network is initializing, or failed
   const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';
   const isNetworkInitializing = isNetworkSelected && !isInitialized && isLoading;
-  const isNetworkFailed = isNetworkSelected && (error || initializationTimedOut) && !isInitialized;
+  const isNetworkFailed = isNetworkSelected && (error || initializationTimedOut) && !isInitialized && !isLoading;
   const isTestAccountDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting;
   const isAzguardDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting || azguardState.isConnected;
 
@@ -150,27 +150,24 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
           
           <div className={`network-status ${
             !isNetworkSelected ? 'not-connected' : 
-            isNetworkInitializing ? 'initializing' : 
             isNetworkFailed ? 'failed' :
+            isNetworkInitializing ? 'initializing' : 
             'connected'
           }`}>
-            {!isNetworkSelected && (
+            {!isNetworkSelected ? (
               <span>Network not connected</span>
-            )}
-            {isNetworkInitializing && (
-              <>
-                <div className="initializing-spinner"></div>
-                <span>Initializing network connection...</span>
-              </>
-            )}
-            {isNetworkFailed && (
+            ) : isNetworkFailed ? (
               <span>
                 {currentConfig.name === 'sandbox' ? 'Local Sandbox connection failed' : 
                  currentConfig.name === 'testnet' ? 'Testnet connection failed' : 
                  `${currentConfig.displayName} connection failed`}
               </span>
-            )}
-            {isNetworkSelected && isInitialized && (
+            ) : isNetworkInitializing ? (
+              <>
+                <div className="initializing-spinner"></div>
+                <span>Initializing network connection...</span>
+              </>
+            ) : (
               <span>
                 {currentConfig.name === 'sandbox' ? 'Local Sandbox connected' : 
                  currentConfig.name === 'testnet' ? 'Testnet connected' : 

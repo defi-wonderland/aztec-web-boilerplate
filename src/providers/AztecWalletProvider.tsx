@@ -132,9 +132,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     } catch (err) {
       console.error('App initialization failed:', err);
       
-      // For testnet errors, show debug modal immediately
-      if (config.isTestnet && !isInitialized) {
-        console.warn('⚠️ Testnet initialization failed, showing debug modal immediately');
+      if (!isInitialized) {
+        console.warn('⚠️ Network initialization failed');
         setInitializationTimedOut(true);
       }
     } finally {

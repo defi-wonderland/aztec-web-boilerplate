@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TabType, TabConfig } from '../types';
 
 interface TabsProps {
@@ -7,6 +7,57 @@ interface TabsProps {
   onTabChange?: (tab: TabType) => void;
   children?: React.ReactNode;
 }
+
+// Sub-components
+const TabButton: React.FC<{
+  tab: TabConfig;
+  isActive: boolean;
+  onClick: (tabId: TabType) => void;
+}> = ({ tab, isActive, onClick }) => (
+  <button
+    className={`tab-trigger ${isActive ? 'active' : ''}`}
+    onClick={() => onClick(tab.id)}
+  >
+    <span className="tab-icon">{tab.icon}</span>
+    {tab.label}
+  </button>
+);
+
+const TabNavigation: React.FC<{
+  tabs: TabConfig[];
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
+}> = ({ tabs, activeTab, onTabChange }) => (
+  <div className="tabs-container">
+    <div className="tabs-list">
+      {tabs.map((tab) => (
+        <TabButton
+          key={tab.id}
+          tab={tab}
+          isActive={activeTab === tab.id}
+          onClick={onTabChange}
+        />
+      ))}
+    </div>
+  </div>
+);
+
+const TabContent: React.FC<{
+  tabs: TabConfig[];
+  activeTab: TabType;
+  children?: React.ReactNode;
+}> = ({ tabs, activeTab, children }) => {
+  const renderTabContent = () => {
+    const activeTabConfig = tabs.find(tab => tab.id === activeTab);
+    return activeTabConfig?.component || tabs[0]?.component;
+  };
+
+  return (
+    <div className="tab-content-wrapper">
+      {children || renderTabContent()}
+    </div>
+  );
+};
 
 export const Tabs: React.FC<TabsProps> = ({ 
   tabs, 
@@ -21,38 +72,15 @@ export const Tabs: React.FC<TabsProps> = ({
     setActiveTab(defaultTab);
   }, [defaultTab]);
 
-  const handleTabChange = (tab: TabType) => {
+  const handleTabChange = useCallback((tab: TabType) => {
     setActiveTab(tab);
     onTabChange?.(tab);
-  };
-
-  const renderTabContent = () => {
-    const activeTabConfig = tabs.find(tab => tab.id === activeTab);
-    return activeTabConfig?.component || tabs[0]?.component;
-  };
+  }, [onTabChange]);
 
   return (
     <div className="tabs-wrapper">
-      {/* Tab Navigation */}
-      <div className="tabs-container">
-        <div className="tabs-list">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`tab-trigger ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => handleTabChange(tab.id)}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="tab-content-wrapper">
-        {children || renderTabContent()}
-      </div>
+      <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} />
+      <TabContent tabs={tabs} activeTab={activeTab} children={children} />
     </div>
   );
 };

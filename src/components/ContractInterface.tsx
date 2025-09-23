@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ContractFunction } from './ContractFunction';
 import { useAztecWallet, useAzguardWallet } from '../hooks';
 import { AztecAddress, Contract } from '@aztec/aztec.js';
@@ -35,6 +35,140 @@ interface ContractInterfaceProps {
   onClose: () => void;
 }
 
+// Utility functions
+const filterFunctions = (abi: any[]) => 
+  abi.filter((item): item is AbiFunction => 
+    item.type === 'function' && 
+    item.name && 
+    typeof item.name === 'string'
+  ).sort((a, b) => {
+    const aIsRead = a.stateMutability === 'view' || a.stateMutability === 'pure';
+    const bIsRead = b.stateMutability === 'view' || b.stateMutability === 'pure';
+    
+    if (aIsRead && !bIsRead) return -1;
+    if (!aIsRead && bIsRead) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+const generateMockResult = (func: AbiFunction, args: any[]): any => {
+  if (!func.outputs || func.outputs.length === 0) return null;
+
+  const output = func.outputs[0];
+  switch (output.type) {
+    case 'uint256': case 'uint':
+      return (BigInt(Math.floor(Math.random() * 1000000))).toString();
+    case 'bool': return Math.random() > 0.5;
+    case 'address': 
+      return '0x' + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    case 'string': return `Result for ${func.name}(${args.join(', ')})`;
+    case 'bytes32': 
+      return '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    default: return `Mock ${output.type} result`;
+  }
+};
+
+// Sub-components
+const ContractHeader: React.FC<{ 
+  contract: ContractArtifact; 
+  readCount: number; 
+  writeCount: number; 
+  onClose: () => void; 
+}> = ({ contract, readCount, writeCount, onClose }) => (
+  <div className="contract-interface-header">
+    <div className="contract-info">
+      <h3 className="contract-title">{contract.contractName}</h3>
+      <p className="contract-description">
+        {contract.abi.length} functions • {readCount} read • {writeCount} write • {contract.format}
+        {contract.metadata?.noir_version && ` • Noir ${contract.metadata.noir_version}`}
+      </p>
+    </div>
+    <button className="close-button" onClick={onClose}>✕</button>
+  </div>
+);
+
+const AddressInput: React.FC<{ 
+  address: string; 
+  onChange: (address: string) => void; 
+}> = ({ address, onChange }) => (
+  <div className="contract-address-section">
+    <label className="address-label">Contract Address:</label>
+    <input
+      type="text"
+      className="address-input"
+      placeholder="0x1234...abcd (required for execution)"
+      value={address}
+      onChange={(e) => onChange(e.target.value)}
+    />
+    <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.5rem', display: 'block' }}>
+      <strong>Required:</strong> Enter the deployed contract address to enable function execution.
+      {!address && <span style={{ color: 'var(--accent-secondary)' }}> ⚠️ Address required</span>}
+    </small>
+  </div>
+);
+
+const FunctionTabs: React.FC<{ 
+  activeTab: 'read' | 'write'; 
+  onTabChange: (tab: 'read' | 'write') => void; 
+  readCount: number; 
+  writeCount: number; 
+}> = ({ activeTab, onTabChange, readCount, writeCount }) => (
+  <div className="function-tabs">
+    <button 
+      className={`tab-button ${activeTab === 'read' ? 'active' : ''}`}
+      onClick={() => onTabChange('read')}
+      disabled={readCount === 0}
+    >
+      <span className="tab-icon">👁️</span>
+      Read Functions ({readCount})
+    </button>
+    <button 
+      className={`tab-button ${activeTab === 'write' ? 'active' : ''}`}
+      onClick={() => onTabChange('write')}
+      disabled={writeCount === 0}
+    >
+      <span className="tab-icon">✍️</span>
+      Write Functions ({writeCount})
+    </button>
+  </div>
+);
+
+const FunctionsList: React.FC<{ 
+  functions: AbiFunction[]; 
+  onExecute: (name: string, args: any[]) => Promise<any>; 
+  executingFunction: string | null; 
+}> = ({ functions, onExecute, executingFunction }) => (
+  <div className="function-section">
+    <div className="functions-list">
+      {functions.map((func, index) => (
+        <ContractFunction
+          key={index}
+          func={func}
+          onExecute={onExecute}
+          isExecuting={executingFunction === func.name}
+        />
+      ))}
+    </div>
+  </div>
+);
+
+const EmptyState: React.FC<{ type: 'read' | 'write' | 'none' }> = ({ type }) => {
+  if (type === 'none') {
+    return (
+      <div className="no-functions">
+        <div className="no-functions-icon">🤷‍♂️</div>
+        <h4>No Functions Found</h4>
+        <p>This contract doesn't have any callable functions in its ABI.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="empty-functions">
+      <p>No {type} functions available in this contract.</p>
+    </div>
+  );
+};
+
 export const ContractInterface: React.FC<ContractInterfaceProps> = ({
   contract,
   onClose
@@ -43,45 +177,23 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
   const [contractAddress, setContractAddress] = useState(contract.address || '');
   const [activeTab, setActiveTab] = useState<'read' | 'write'>('read');
   
-  // Get wallet services
   const { connectedAccount } = useAztecWallet();
   const { state: azguardState, executeOperations } = useAzguardWallet();
 
-  // Filter and parse ABI functions
-  const functions = contract.abi
-    .filter((item): item is AbiFunction => 
-      item.type === 'function' && 
-      item.name && 
-      typeof item.name === 'string'
-    )
-    .sort((a, b) => {
-      // Sort read functions first, then write functions
-      const aIsRead = a.stateMutability === 'view' || a.stateMutability === 'pure';
-      const bIsRead = b.stateMutability === 'view' || b.stateMutability === 'pure';
-      
-      if (aIsRead && !bIsRead) return -1;
-      if (!aIsRead && bIsRead) return 1;
-      return a.name.localeCompare(b.name);
-    });
+  const { functions, readFunctions, writeFunctions } = useMemo(() => {
+    const functions = filterFunctions(contract.abi);
+    return {
+      functions,
+      readFunctions: functions.filter(f => f.stateMutability === 'view' || f.stateMutability === 'pure'),
+      writeFunctions: functions.filter(f => f.stateMutability === 'nonpayable' || f.stateMutability === 'payable')
+    };
+  }, [contract.abi]);
 
-  const readFunctions = functions.filter(f => 
-    f.stateMutability === 'view' || f.stateMutability === 'pure'
-  );
-  
-  const writeFunctions = functions.filter(f => 
-    f.stateMutability === 'nonpayable' || f.stateMutability === 'payable'
-  );
-
-  const handleFunctionExecute = async (functionName: string, args: any[]): Promise<any> => {
+  const handleFunctionExecute = useCallback(async (functionName: string, args: any[]): Promise<any> => {
     setExecutingFunction(functionName);
     
     try {
-      // Validate contract address
-      if (!contractAddress) {
-        throw new Error('Contract address is required');
-      }
-
-      // Check if we have a connected wallet
+      if (!contractAddress) throw new Error('Contract address is required');
       if (!connectedAccount && !azguardState.isConnected) {
         throw new Error('No wallet connected. Please connect a wallet first.');
       }
@@ -93,11 +205,9 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
 
       const contractAddr = AztecAddress.fromString(contractAddress);
 
-      // Execute Aztec transactions
       if (func.stateMutability === 'view' || func.stateMutability === 'pure') {
-        // Read functions - use view/simulate calls
+        // Read functions
         if (azguardState.isConnected && azguardState.selectedAccount) {
-          // Use Azguard wallet for view calls
           const viewOperation = {
             kind: 'simulate_views' as const,
             account: azguardState.selectedAccount!,
@@ -123,13 +233,9 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
             throw new Error((result as any).error || 'View call failed');
           }
         } else if (connectedAccount) {
-          // Use embedded wallet for view calls
           try {
-            // Create a contract instance using the loaded artifact
             const contractArtifact = loadContractArtifact(contract as any);
             const contractInstance = await Contract.at(contractAddr, contractArtifact, connectedAccount);
-            
-            // Execute the view function
             const result = await contractInstance.methods[functionName](...args).simulate();
             
             return {
@@ -145,9 +251,8 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
           }
         }
       } else {
-        // Write functions - execute transactions
+        // Write functions
         if (azguardState.isConnected && azguardState.selectedAccount) {
-          // Use Azguard wallet for transactions
           const txOperation = {
             kind: 'send_transaction' as const,
             account: azguardState.selectedAccount!,
@@ -166,23 +271,17 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
             throw new Error((result as any).error || 'Transaction failed');
           }
           
-          const txHash = result.result;
-          
           return {
             success: true,
-            transactionHash: txHash,
+            transactionHash: result.result,
             timestamp: new Date().toISOString(),
             method: 'azguard_transaction',
             note: 'Aztec transaction executed via Azguard wallet'
           };
         } else if (connectedAccount) {
-          // Use embedded wallet for transactions
           try {
-            // Create a contract instance using the loaded artifact
             const contractArtifact = loadContractArtifact(contract as any);
             const contractInstance = await Contract.at(contractAddr, contractArtifact, connectedAccount);
-            
-            // Execute the transaction
             const tx = await contractInstance.methods[functionName](...args).send().wait();
             
             return {
@@ -207,134 +306,47 @@ export const ContractInterface: React.FC<ContractInterfaceProps> = ({
     } finally {
       setExecutingFunction(null);
     }
-  };
-
-  // Generate more realistic mock results based on function signature
-  const generateMockResult = (func: AbiFunction, args: any[]): any => {
-    if (!func.outputs || func.outputs.length === 0) {
-      return null;
-    }
-
-    const output = func.outputs[0];
-    switch (output.type) {
-      case 'uint256':
-      case 'uint':
-        return (BigInt(Math.floor(Math.random() * 1000000))).toString();
-      case 'bool':
-        return Math.random() > 0.5;
-      case 'address':
-        return '0x' + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      case 'string':
-        return `Result for ${func.name}(${args.join(', ')})`;
-      case 'bytes32':
-        return '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      default:
-        return `Mock ${output.type} result`;
-    }
-  };
+  }, [contractAddress, connectedAccount, azguardState, executeOperations, functions, contract]);
 
   return (
     <div className="contract-interface">
-      <div className="contract-interface-header">
-        <div className="contract-info">
-          <h3 className="contract-title">{contract.contractName}</h3>
-          <p className="contract-description">
-            {functions.length} functions • {readFunctions.length} read • {writeFunctions.length} write • {contract.format}
-            {contract.metadata?.noir_version && ` • Noir ${contract.metadata.noir_version}`}
-          </p>
-        </div>
-        <button className="close-button" onClick={onClose}>
-          ✕
-        </button>
-      </div>
+      <ContractHeader 
+        contract={contract} 
+        readCount={readFunctions.length} 
+        writeCount={writeFunctions.length} 
+        onClose={onClose} 
+      />
 
-      <div className="contract-address-section">
-        <label className="address-label">Contract Address:</label>
-        <input
-          type="text"
-          className="address-input"
-          placeholder="0x1234...abcd (required for execution)"
-          value={contractAddress}
-          onChange={(e) => setContractAddress(e.target.value)}
-        />
-        <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.5rem', display: 'block' }}>
-          <strong>Required:</strong> Enter the deployed contract address to enable function execution.
-          {!contractAddress && <span style={{ color: 'var(--accent-secondary)' }}> ⚠️ Address required</span>}
-        </small>
-      </div>
+      <AddressInput address={contractAddress} onChange={setContractAddress} />
 
-      {/* Function Tabs */}
-      <div className="function-tabs">
-        <button 
-          className={`tab-button ${activeTab === 'read' ? 'active' : ''}`}
-          onClick={() => setActiveTab('read')}
-          disabled={readFunctions.length === 0}
-        >
-          <span className="tab-icon">👁️</span>
-          Read Functions ({readFunctions.length})
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'write' ? 'active' : ''}`}
-          onClick={() => setActiveTab('write')}
-          disabled={writeFunctions.length === 0}
-        >
-          <span className="tab-icon">✍️</span>
-          Write Functions ({writeFunctions.length})
-        </button>
-      </div>
+      <FunctionTabs 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+        readCount={readFunctions.length} 
+        writeCount={writeFunctions.length} 
+      />
 
-      {/* Function Content */}
       <div className="functions-container">
         {activeTab === 'read' && readFunctions.length > 0 && (
-          <div className="function-section">
-            <div className="functions-list">
-              {readFunctions.map((func, index) => (
-                <ContractFunction
-                  key={`read-${index}`}
-                  func={func}
-                  onExecute={handleFunctionExecute}
-                  isExecuting={executingFunction === func.name}
-                />
-              ))}
-            </div>
-          </div>
+          <FunctionsList 
+            functions={readFunctions} 
+            onExecute={handleFunctionExecute} 
+            executingFunction={executingFunction} 
+          />
         )}
 
         {activeTab === 'write' && writeFunctions.length > 0 && (
-          <div className="function-section">
-            <div className="functions-list">
-              {writeFunctions.map((func, index) => (
-                <ContractFunction
-                  key={`write-${index}`}
-                  func={func}
-                  onExecute={handleFunctionExecute}
-                  isExecuting={executingFunction === func.name}
-                />
-              ))}
-            </div>
-          </div>
+          <FunctionsList 
+            functions={writeFunctions} 
+            onExecute={handleFunctionExecute} 
+            executingFunction={executingFunction} 
+          />
         )}
 
-        {/* Empty state messages */}
-        {activeTab === 'read' && readFunctions.length === 0 && (
-          <div className="empty-functions">
-            <p>No read functions available in this contract.</p>
-          </div>
-        )}
-
-        {activeTab === 'write' && writeFunctions.length === 0 && (
-          <div className="empty-functions">
-            <p>No write functions available in this contract.</p>
-          </div>
-        )}
-
-        {functions.length === 0 && (
-          <div className="no-functions">
-            <div className="no-functions-icon">🤷‍♂️</div>
-            <h4>No Functions Found</h4>
-            <p>This contract doesn't have any callable functions in its ABI.</p>
-          </div>
-        )}
+        {/* Empty states */}
+        {activeTab === 'read' && readFunctions.length === 0 && <EmptyState type="read" />}
+        {activeTab === 'write' && writeFunctions.length === 0 && <EmptyState type="write" />}
+        {functions.length === 0 && <EmptyState type="none" />}
       </div>
     </div>
   );
