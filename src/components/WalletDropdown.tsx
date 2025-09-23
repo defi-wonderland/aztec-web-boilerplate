@@ -45,14 +45,12 @@ export const WalletDropdown: React.FC<WalletDropdownProps> = ({ onWalletConnecte
     onWalletConnected?.();
   };
 
-  // Get display data for the dropdown
   const getDisplayData = () => {
     if (isEmbeddedConnected) return { value: 'embedded', text: 'Embedded' };
     if (isAzguardConnected) return { value: 'azguard', text: 'Azguard' };
     return { value: 'wallet', text: 'Wallet' };
   };
 
-  // Don't show dropdown if a wallet is already connected
   if (isAnyWalletConnected) {
     return null;
   }
