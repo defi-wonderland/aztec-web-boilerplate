@@ -1,5 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-import { useAztecWallet } from '../hooks';
+import { useAztecWallet, useUniversalWallet } from '../hooks';
 import { useConfig } from '../hooks/context/useConfig';
 
 interface TokenBalance {
@@ -37,7 +37,8 @@ interface TokenProviderProps {
 }
 
 export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
-  const { tokenService, connectedAccount } = useAztecWallet();
+  const { tokenService } = useAztecWallet();
+  const { activeAccount } = useUniversalWallet();
   const { currentConfig } = useConfig();
   
   // Balance state
@@ -48,10 +49,10 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   // Auto-fetch balance when token address changes or when account connects
   useEffect(() => {
-    if (currentTokenAddress && connectedAccount && tokenService) {
+    if (currentTokenAddress && activeAccount && tokenService) {
       fetchTokenBalance(currentTokenAddress);
     }
-  }, [currentTokenAddress, connectedAccount, tokenService]);
+  }, [currentTokenAddress, activeAccount, tokenService]);
 
   // Ensure default token address is set when component mounts
   useEffect(() => {
@@ -69,10 +70,10 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   // Reset state when wallet is disconnected
   useEffect(() => {
-    if (!connectedAccount) {
+    if (!activeAccount) {
       reset();
     }
-  }, [connectedAccount]);
+  }, [activeAccount]);
 
   // Clear balances when network configuration changes
   useEffect(() => {
@@ -84,7 +85,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   // Balance methods
   const fetchTokenBalance = async (tokenAddress: string) => {
     
-    if (!tokenAddress || !tokenService || !connectedAccount) {
+    if (!tokenAddress || !tokenService || !activeAccount) {
       setTokenBalance(null);
       return;
     }
@@ -93,7 +94,7 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     setBalanceError(null);
     
     try {
-      const ownerAddress = connectedAccount.getAddress().toString();
+      const ownerAddress = activeAccount.getAddress().toString();
       
       // Make calls sequential to avoid PXE concurrency issues
       const privateBalance = await tokenService.getPrivateBalance(tokenAddress, ownerAddress);

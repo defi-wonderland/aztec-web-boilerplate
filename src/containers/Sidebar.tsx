@@ -1,15 +1,15 @@
 import React from 'react';
 import { useToken } from '../hooks/context/useToken';
 import { useConfig } from '../hooks';
-import { useAztecWallet } from '../hooks/context/useAztecWallet';
+import { useUniversalWallet } from '../hooks';
 import { AddressDisplay } from '../components/AddressDisplay';
 
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isBalanceLoading } = useToken();
   const { currentConfig } = useConfig();
-  const { connectedAccount } = useAztecWallet();
+  const { activeAccount, getAccountAddress } = useUniversalWallet();
 
-  const accountAddress = connectedAccount?.getAddress().toString();
+  const accountAddress = getAccountAddress();
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
   const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
   const totalBalance = privateBalance + publicBalance;

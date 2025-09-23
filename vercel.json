@@ -1,5 +1,5 @@
 {
-  "buildCommand": "yarn build:ci",
+  "buildCommand": "yarn build-app:ci",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [

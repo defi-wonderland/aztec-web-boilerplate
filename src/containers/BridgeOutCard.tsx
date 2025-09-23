@@ -3,6 +3,7 @@ import { useEVMWallet } from '../hooks/context/useEVMWallet';
 import { useAztecWallet } from '../hooks/context/useAztecWallet';
 import { useWethBalance } from '../hooks/useWethBalance';
 import { useBridgeOut } from '../hooks/useBridgeOut';
+import { useAddressUtils } from '../hooks/useAddressUtils';
 import { formatUnits } from 'viem';
 import { BRIDGE_CONFIG } from '../config/networks/testnet';
 
@@ -10,6 +11,7 @@ export const BridgeOutCard: React.FC = () => {
   const { account: evmAccount, connect: connectEVM, isSupported } = useEVMWallet();
   const { connectedAccount: aztecWallet } = useAztecWallet();
   const { balance: wethBalance, isLoading: isLoadingWethBalance, refetch: refetchWethBalance } = useWethBalance();
+  const { truncateAddress } = useAddressUtils();
   const [amount, setAmount] = useState('');
   
   const { bridgeOut, isBridging, error, orderStatus, clearError } = useBridgeOut({
@@ -24,9 +26,9 @@ export const BridgeOutCard: React.FC = () => {
   
   // Computed variables for addresses
   const aztecAddress = aztecWallet?.getAddress().toString();
-  const truncatedAztecAddress = aztecAddress ? `${aztecAddress.slice(0, 8)}...${aztecAddress.slice(-6)}` : '';
-  const truncatedEvmAddress = evmAccount?.address ? `${evmAccount.address.slice(0, 8)}...${evmAccount.address.slice(-6)}` : '';
-  const truncatedWethAddress = `${BRIDGE_CONFIG.aztecWETH.slice(0, 6)}...${BRIDGE_CONFIG.aztecWETH.slice(-4)}`;
+  const truncatedAztecAddress = truncateAddress(aztecAddress);
+  const truncatedEvmAddress = truncateAddress(evmAccount?.address);
+  const truncatedWethAddress = truncateAddress(BRIDGE_CONFIG.aztecWETH);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
