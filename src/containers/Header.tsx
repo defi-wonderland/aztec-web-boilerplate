@@ -53,6 +53,8 @@ export const Header: React.FC = () => {
         <div className="connected-account-section">
           <span className="wallet-type">Embedded</span>
           <span className="account-address">{truncateAddress(accountAddress)}</span>
+          <span className="wallet-type">Embedded</span>
+          <span className="account-address">{truncateAddress(accountAddress)}</span>
           <button 
             onClick={handleDisconnect}
             type="button"
