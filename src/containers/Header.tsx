@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
+import { useAztecWallet, useConfig, useAzguardWallet, useAddressUtils } from '../hooks';
 import { AzguardAccountDisplay, ThemeToggle, EmbeddedWalletModal } from '../components';
 
 export const Header: React.FC = () => {
@@ -15,6 +15,7 @@ export const Header: React.FC = () => {
 
   const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
   const { currentConfig } = useConfig();
+  const { truncateAddress, truncateCaipAddress } = useAddressUtils();
 
   const handleDisconnect = () => {
     if (azguardState.isConnected) {
@@ -25,22 +26,16 @@ export const Header: React.FC = () => {
       disconnectWallet();
     }
   };
-
   
-  const isAnyWalletConnected = connectedAccount || azguardState.isConnected;
   const accountAddress = connectedAccount?.getAddress().toString();
-  const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 4)}...${accountAddress.slice(-4)}` : '';
 
   const renderAccountSection = () => {
     // Show Azguard account if connected (prioritize over initialization state)
     if (azguardState.isConnected && azguardState.selectedAccount) {
-      const azguardAddress = azguardState.selectedAccount.split(':')[2];
-      const truncatedAzguardAddress = azguardAddress ? `${azguardAddress.slice(0, 4)}...${azguardAddress.slice(-4)}` : '';
-      
       return (
         <div className="connected-account-section">
           <span className="wallet-type">Azguard</span>
-          <span className="account-address">{truncatedAzguardAddress}</span>
+          <span className="account-address">{truncateCaipAddress(azguardState.selectedAccount)}</span>
           <button 
             onClick={handleDisconnect}
             type="button"
@@ -57,7 +52,7 @@ export const Header: React.FC = () => {
       return (
         <div className="connected-account-section">
           <span className="wallet-type">Embedded</span>
-          <span className="account-address">{truncatedAddress}</span>
+          <span className="account-address">{truncateAddress(accountAddress)}</span>
           <button 
             onClick={handleDisconnect}
             type="button"
@@ -69,7 +64,6 @@ export const Header: React.FC = () => {
       );
     }
 
-    // Show wallet button if no wallet is connected
     return (
       <button 
         onClick={() => setShowWalletModal(true)}
