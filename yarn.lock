@@ -15,12 +15,12 @@
     "@jridgewell/gen-mapping" "^0.3.5"
     "@jridgewell/trace-mapping" "^0.3.24"
 
-"@azguardwallet/client@^0.4.2":
+"@azguardwallet/client@0.4.2":
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/@azguardwallet/client/-/client-0.4.2.tgz#b9cf0ae381c00ffc8cc7cfe38ee6463179da4534"
   integrity sha512-wAMw/3EsCRscVcT9CEW/Ukbic+AkLAdX5HoGtRD3q9LJV+j5o8Nm4UpBv+gcOFQWcTqo4zeFS9ZEgvSQfWqfYg==
 
-"@azguardwallet/types@^0.4.1":
+"@azguardwallet/types@0.4.1":
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/@azguardwallet/types/-/types-0.4.1.tgz#24148ceb5972e8401849524839775e5297e597e6"
   integrity sha512-lRQAJJPOZY2Uy8J+gmMbLWEpFMWCJX6aVkMmmxX1VOYzSA1dJNAv7M29gqAfA8HWIMRXImw+y6Uszr65LOJfoQ==
