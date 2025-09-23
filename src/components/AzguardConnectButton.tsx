@@ -27,28 +27,12 @@ export const AzguardConnectButton: React.FC = () => {
     return 'Connect Azguard';
   };
 
-  const getButtonClass = () => {
-    let baseClass = 'azguard-connect-button';
-    
-    if (state.isConnecting) {
-      baseClass += ' connecting';
-    } else if (state.isConnected) {
-      baseClass += ' connected';
-    }
-    
-    if (state.error) {
-      baseClass += ' error';
-    }
-    
-    return baseClass;
-  };
-
   return (
     <div className="azguard-wallet-section">
       <button
         onClick={handleClick}
         disabled={state.isConnecting}
-        className={getButtonClass()}
+        className={`azguard-connect-button ${state.isConnecting ? 'connecting' : ''} ${state.isConnected ? 'connected' : ''} ${state.error ? 'error' : ''}`}
         title={state.isConnected ? 'Click to disconnect' : 'Connect to Azguard Wallet'}
       >
         {getButtonText()}
