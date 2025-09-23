@@ -1,8 +1,9 @@
 import React from 'react';
-import { useAzguardWallet } from '../hooks';
+import { useAzguardWallet, useAddressUtils } from '../hooks';
 
 export const AzguardConnectButton: React.FC = () => {
   const { state, connect, disconnect } = useAzguardWallet();
+  const { truncateCaipAddress } = useAddressUtils();
 
   const handleClick = async () => {
     if (state.isConnected) {
@@ -13,34 +14,11 @@ export const AzguardConnectButton: React.FC = () => {
   };
 
   const getButtonText = () => {
-    if (state.isConnecting) {
-      return 'Connecting...';
-    }
-    
+    if (state.isConnecting) return 'Connecting...';
     if (state.isConnected && state.selectedAccount) {
-      // Extract address from CAIP format (aztec:chainId:address)
-      const address = state.selectedAccount.split(':')[2];
-      const truncated = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected';
-      return truncated;
+      return truncateCaipAddress(state.selectedAccount);
     }
-    
     return 'Connect Azguard';
-  };
-
-  const getButtonClass = () => {
-    let baseClass = 'azguard-connect-button';
-    
-    if (state.isConnecting) {
-      baseClass += ' connecting';
-    } else if (state.isConnected) {
-      baseClass += ' connected';
-    }
-    
-    if (state.error) {
-      baseClass += ' error';
-    }
-    
-    return baseClass;
   };
 
   return (
@@ -48,7 +26,7 @@ export const AzguardConnectButton: React.FC = () => {
       <button
         onClick={handleClick}
         disabled={state.isConnecting}
-        className={getButtonClass()}
+        className={`azguard-connect-button ${state.isConnecting ? 'connecting' : ''} ${state.isConnected ? 'connected' : ''} ${state.error ? 'error' : ''}`}
         title={state.isConnected ? 'Click to disconnect' : 'Connect to Azguard Wallet'}
       >
         {getButtonText()}
