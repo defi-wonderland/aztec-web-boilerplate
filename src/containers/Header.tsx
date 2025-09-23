@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAztecWallet, useConfig, useAzguardWallet, useAddressUtils } from '../hooks';
-import { AzguardAccountDisplay, ThemeToggle, TestnetDebugModal, EmbeddedWalletModal } from '../components';
+import { AzguardAccountDisplay, ThemeToggle, EmbeddedWalletModal } from '../components';
 
 export const Header: React.FC = () => {
   const { 
@@ -11,19 +11,11 @@ export const Header: React.FC = () => {
     disconnectWallet
   } = useAztecWallet();
   
-  const [showDebugModal, setShowDebugModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
   const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
   const { currentConfig } = useConfig();
-  const { truncateAddress } = useAddressUtils();
-  
-  // Show debug modal when testnet initialization times out
-  useEffect(() => {
-    if (initializationTimedOut && currentConfig.isTestnet) {
-      setShowDebugModal(true);
-    }
-  }, [initializationTimedOut, currentConfig.isTestnet]);
+  const { truncateAddress, truncateCaipAddress } = useAddressUtils();
 
   const handleDisconnect = () => {
     if (azguardState.isConnected) {
@@ -34,22 +26,16 @@ export const Header: React.FC = () => {
       disconnectWallet();
     }
   };
-
   
-  const isAnyWalletConnected = connectedAccount || azguardState.isConnected;
   const accountAddress = connectedAccount?.getAddress().toString();
-  const truncatedAddress = truncateAddress(accountAddress);
 
   const renderAccountSection = () => {
     // Show Azguard account if connected (prioritize over initialization state)
     if (azguardState.isConnected && azguardState.selectedAccount) {
-      const azguardAddress = azguardState.selectedAccount.split(':')[2];
-      const truncatedAzguardAddress = truncateAddress(azguardAddress);
-      
       return (
         <div className="connected-account-section">
           <span className="wallet-type">Azguard</span>
-          <span className="account-address">{truncatedAzguardAddress}</span>
+          <span className="account-address">{truncateCaipAddress(azguardState.selectedAccount)}</span>
           <button 
             onClick={handleDisconnect}
             type="button"
@@ -66,7 +52,7 @@ export const Header: React.FC = () => {
       return (
         <div className="connected-account-section">
           <span className="wallet-type">Embedded</span>
-          <span className="account-address">{truncatedAddress}</span>
+          <span className="account-address">{truncateAddress(accountAddress)}</span>
           <button 
             onClick={handleDisconnect}
             type="button"
@@ -78,7 +64,6 @@ export const Header: React.FC = () => {
       );
     }
 
-    // Show wallet button if no wallet is connected
     return (
       <button 
         onClick={() => setShowWalletModal(true)}
@@ -105,15 +90,6 @@ export const Header: React.FC = () => {
               </div>
         </div>
       </nav>
-      
-      <TestnetDebugModal
-        isOpen={showDebugModal}
-        onClose={() => setShowDebugModal(false)}
-        onForceShowWalletSelector={() => {
-          forceShowWalletSelector();
-          setShowDebugModal(false);
-        }}
-      />
       
       <EmbeddedWalletModal
         isOpen={showWalletModal}

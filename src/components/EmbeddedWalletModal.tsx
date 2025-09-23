@@ -135,7 +135,7 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Wallet Configuration</h3>
+          <h3>Connect Wallet</h3>
           <button className="modal-close-button" onClick={onClose}>
             ×
           </button>

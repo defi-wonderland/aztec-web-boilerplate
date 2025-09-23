@@ -45,24 +45,17 @@ export const WalletDropdown: React.FC<WalletDropdownProps> = ({ onWalletConnecte
     onWalletConnected?.();
   };
 
-  // Get display value for the dropdown
-  const getDisplayValue = () => {
-    if (isEmbeddedConnected) return 'embedded';
-    if (isAzguardConnected) return 'azguard';
-    return 'wallet'; // Default to generic "wallet" label
+  const getDisplayData = () => {
+    if (isEmbeddedConnected) return { value: 'embedded', text: 'Embedded' };
+    if (isAzguardConnected) return { value: 'azguard', text: 'Azguard' };
+    return { value: 'wallet', text: 'Wallet' };
   };
 
-  // Get display text for the dropdown
-  const getDisplayText = () => {
-    if (isEmbeddedConnected) return 'Embedded';
-    if (isAzguardConnected) return 'Azguard';
-    return 'Wallet'; // Default to generic "Wallet" label
-  };
-
-  // Don't show dropdown if a wallet is already connected
   if (isAnyWalletConnected) {
     return null;
   }
+
+  const displayData = getDisplayData();
 
   return (
     <>
@@ -70,7 +63,7 @@ export const WalletDropdown: React.FC<WalletDropdownProps> = ({ onWalletConnecte
         <div className="wallet-select-wrapper">
           <select
             name="wallet-selector"
-            value={getDisplayValue()}
+            value={displayData.value}
             onChange={handleWalletTypeChange}
             className="wallet-select"
             title="Select wallet type"
