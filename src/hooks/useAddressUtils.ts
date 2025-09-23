@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { hasHexPrefix, truncate } from '@aztec/foundation/string';
+import { AZTEC_TEST_CHAIN_ID } from '@aztec/ethereum';
 import type { CaipAccount } from '../types/azguard';
 
 export const useAddressUtils = () => {
@@ -24,7 +25,7 @@ export const useAddressUtils = () => {
     const chainId = caipAccount.split(':')[1];
     switch (chainId) {
       case '31337': return 'Sandbox';
-      case '11155111': return 'Testnet';
+      case AZTEC_TEST_CHAIN_ID.toString(): return 'Testnet';
       case '1337': return 'Devnet';
       default: return `Chain ${chainId}`;
     }
