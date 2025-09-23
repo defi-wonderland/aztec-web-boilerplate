@@ -184,9 +184,458 @@ body {
   word-wrap: break-word;
 }
 
+/* Azguard Wallet Controls */
+.azguard-wallet-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.azguard-connect-button {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  white-space: nowrap;
+}
+
+.azguard-connect-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.azguard-connect-button:active {
+  transform: translateY(0);
+}
+
+.azguard-connect-button.connecting {
+  background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+  cursor: not-allowed;
+}
+
+.azguard-connect-button.connected {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.azguard-connect-button.connected:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.azguard-connect-button.error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.azguard-connect-button:disabled {
+  background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.azguard-error-message {
+  font-size: 0.75rem;
+  color: #ef4444;
+  text-align: center;
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
 .evm-wallet-controls {
   display: flex;
   align-items: center;
+}
+
+/* Wallet Selector */
+.wallet-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.wallet-selector-header {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.wallet-selector-header h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.wallet-selector-header p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+/* Embedded Wallet Button - Aztec Design System */
+.embedded-wallet-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  color: var(--button-text);
+  border: none;
+  border-radius: 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(140, 126, 255, 0.2);
+}
+
+.embedded-wallet-button:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(140, 126, 255, 0.3);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 100%;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  margin: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1.5rem 0 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-close-button {
+  background: none;
+  border: none !important;
+  outline: none;
+  font-size: 1.5rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modal-close-button:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.modal-body {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.test-account-selector {
+  margin-bottom: 1.5rem;
+}
+
+.test-account-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.test-account-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.test-account-select:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-color: var(--border-color);
+}
+
+.testnet-notice {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--accent-secondary) 10%, var(--bg-primary));
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--accent-secondary) 80%, var(--text-primary));
+  text-align: center;
+  font-weight: 500;
+}
+
+.modal-description {
+  margin: 0 0 1.5rem 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.modal-action-button {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-action-button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.modal-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-action-button.primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: white;
+  border-color: #8b5cf6;
+}
+
+.modal-action-button.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.modal-action-button.secondary {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+/* Network Selector with Arrow */
+.network-select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.network-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 0.75rem 2rem 0.75rem 1rem;
+  background: linear-gradient(180deg, var(--accent-secondary) 0%, color-mix(in srgb, var(--accent-secondary) 85%, black) 100%);
+  color: var(--button-text);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 140px;
+  box-shadow: 0 3px 10px rgba(237, 161, 255, 0.2);
+}
+
+.network-select:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 90%, white) 0%, var(--accent-secondary) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(237, 161, 255, 0.3);
+}
+
+.network-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-secondary) 30%, transparent);
+}
+
+.network-select-arrow {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--button-text);
+  font-size: 0.75rem;
+}
+
+/* Wallet Dropdown */
+.wallet-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wallet-select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.wallet-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 0.75rem 2rem 0.75rem 1rem;
+  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  color: var(--button-text);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 140px;
+  box-shadow: 0 3px 10px rgba(140, 126, 255, 0.2);
+}
+
+.wallet-select:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(140, 126, 255, 0.3);
+}
+
+.wallet-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 30%, transparent);
+}
+
+.wallet-select-arrow {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--button-text);
+  font-size: 0.75rem;
+}
+
+/* Theme Toggle - Aztec Design System */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  font-size: 1rem;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+}
+
+.nav-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wallet-select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.wallet-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 0.75rem 2rem 0.75rem 1rem;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.wallet-select:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.wallet-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+.wallet-select-arrow {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: white;
+  font-size: 0.75rem;
 }
 
 /* Wallet Selector */
@@ -3495,64 +3944,6 @@ select:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent) !important;
 }
 
-/* Testnet Debug Modal Styles */
-.testnet-debug-modal {
-  max-width: 600px;
-}
-
-.testnet-debug-modal .modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.debug-message {
-  margin-bottom: 1.5rem;
-}
-
-.debug-message p {
-  margin: 0 0 1rem 0;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.debug-message p:last-child {
-  margin-bottom: 0;
-}
-
-.debug-details {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.debug-details h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.debug-details ul {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: var(--text-secondary);
-}
-
-.debug-details li {
-  margin-bottom: 0.25rem;
-  line-height: 1.4;
-}
-
-.debug-details li:last-child {
-  margin-bottom: 0;
-}
 
 .modal-footer {
   display: flex;
@@ -3610,11 +4001,6 @@ select:focus {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-}
-
-/* Modal Network Selector Styles */
-.modal-network-selector {
-  /* Remove margin since it's now inside a section */
 }
 
 .modal-network-selector .network-select-wrapper {
