@@ -13,17 +13,13 @@ export const AzguardConnectButton: React.FC = () => {
   };
 
   const getButtonText = () => {
-    if (state.isConnecting) {
-      return 'Connecting...';
-    }
-    
+    if (state.isConnecting) return 'Connecting...';
+
     if (state.isConnected && state.selectedAccount) {
-      // Extract address from CAIP format (aztec:chainId:address)
       const address = state.selectedAccount.split(':')[2];
       const truncated = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected';
       return truncated;
     }
-    
     return 'Connect Azguard';
   };
 

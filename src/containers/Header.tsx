@@ -35,7 +35,6 @@ export const Header: React.FC = () => {
     }
   };
   
-  const isAnyWalletConnected = connectedAccount || azguardState.isConnected;
   const accountAddress = connectedAccount?.getAddress().toString();
   const truncatedAddress = accountAddress ? `${accountAddress.slice(0, 4)}...${accountAddress.slice(-4)}` : '';
 
