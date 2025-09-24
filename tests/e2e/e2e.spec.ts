@@ -4,7 +4,7 @@ const proofTimeout = 300_000;
 
 test('app initialization and basic rendering', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Private Voting on Aztec/);
+  await expect(page).toHaveTitle(/Aztec Web Boilerplate/);
   
   // Wait for the app to be ready (connect button visible)
   const connectButton = await page.locator('#connect-test-account');
@@ -20,7 +20,7 @@ test('app initialization and basic rendering', async ({ page }) => {
 
 test('create account and cast vote', async ({ page }, testInfo) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Private Voting on Aztec/);
+  await expect(page).toHaveTitle(/Aztec Web Boilerplate/);
 
   // Wait for the connect button to be visible (means app is ready)
   const connectTestAccount = await page.locator('#connect-test-account');

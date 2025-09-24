@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AztecAddress } from '@aztec/aztec.js';
 import { useAztecWallet } from './context';
 import { AztecStorageService } from '../services/aztec/storage';
-import { SUCCESS_MESSAGE_TIMEOUT } from '../config/bridgeConstants';
+const SUCCESS_MESSAGE_TIMEOUT = 3000;
 
 export const useRegisterSender = () => {
   const [registeredSenders, setRegisteredSenders] = useState<string[]>([]);

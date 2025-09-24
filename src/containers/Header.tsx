@@ -1,131 +1,93 @@
-import React, { useEffect, useState } from 'react';
-import { useAztecWallet, useConfig, useAzguardWallet, useAddressUtils } from '../hooks';
-import { WalletSelector, AzguardAccountDisplay } from '../components';
+import React, { useState, useCallback } from 'react';
+import { useAztecWallet, useAzguardWallet, useAddressUtils } from '../hooks';
+import { ThemeToggle, EmbeddedWalletModal } from '../components';
+
+// Sub-components
+const ConnectedAccount: React.FC<{
+  walletType: 'Azguard' | 'Embedded';
+  address: string;
+  onDisconnect: () => void;
+}> = ({ walletType, address, onDisconnect }) => (
+  <div className="connected-account-section">
+    <span className="wallet-type">{walletType}</span>
+    <span className="account-address">{address}</span>
+    <button onClick={onDisconnect} type="button" className="disconnect-button">
+      Disconnect
+    </button>
+  </div>
+);
+
+const ConnectButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button onClick={onClick} className="wallet-connect-button" type="button">
+    Connect Wallet
+  </button>
+);
 
 export const Header: React.FC = () => {
-  const { 
-    connectedAccount, 
-    isInitialized,
-    disconnectWallet
-  } = useAztecWallet();
-
+  const { connectedAccount, disconnectWallet } = useAztecWallet();
   const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
-  const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   const { truncateAddress, truncateCaipAddress } = useAddressUtils();
+  
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
-  const handleDisconnect = () => {
+  const handleDisconnect = useCallback(() => {
     if (azguardState.isConnected) {
-      // Disconnect Azguard wallet
       disconnectAzguard();
     } else if (connectedAccount) {
-      // Disconnect embedded wallet
       disconnectWallet();
     }
-  };
+  }, [azguardState.isConnected, connectedAccount, disconnectAzguard, disconnectWallet]);
 
-  const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const networkName = event.target.value;
-    console.log('🔄 Network change requested:', { 
-      from: currentConfig.name, 
-      to: networkName,
-      currentConfig 
-    });
-    
-    if (networkName && networkName !== currentConfig.name) {
-      switchToNetwork(networkName);
-    }
-  };
-  
-  const accountAddress = connectedAccount?.getAddress().toString();
+  const handleWalletConnected = useCallback(() => {
+    setShowWalletModal(false);
+  }, []);
 
   const renderAccountSection = () => {
-    if (!isInitialized) {
-      return <div className="initializing">Initializing...</div>;
-    }
-
-    // Show Azguard account if connected
+    // Azguard wallet takes priority
     if (azguardState.isConnected && azguardState.selectedAccount) {
       return (
-        <div className="connected-account-section">
-          <span className="wallet-type">Azguard</span>
-          <span className="account-address">{truncateCaipAddress(azguardState.selectedAccount)}</span>
-          <button 
-            onClick={handleDisconnect}
-            type="button"
-            className="disconnect-button"
-          >
-            Disconnect
-          </button>
-        </div>
+        <ConnectedAccount
+          walletType="Azguard"
+          address={truncateCaipAddress(azguardState.selectedAccount)}
+          onDisconnect={handleDisconnect}
+        />
       );
     }
 
-    // Show embedded wallet account if connected
+    // Embedded wallet
     if (connectedAccount) {
       return (
-        <div className="connected-account-section">
-          <span className="wallet-type">Embedded</span>
-          <span className="account-address">{truncateAddress(accountAddress)}</span>
-          <button 
-            onClick={handleDisconnect}
-            type="button"
-            className="disconnect-button"
-          >
-            Disconnect
-          </button>
-        </div>
+        <ConnectedAccount
+          walletType="Embedded"
+          address={truncateAddress(connectedAccount.getAddress().toString())}
+          onDisconnect={handleDisconnect}
+        />
       );
     }
 
-    return <WalletSelector onWalletConnected={() => {}} />;
-  };
-  
-  const renderNetworkSelector = () => {
-    if (!isInitialized) {
-      return null;
-    }
-
-    const networkOptions = getNetworkOptions();
-    
-    // Get display text for current network
-    const getNetworkDisplayText = () => {
-      if (currentConfig.name === 'sandbox') return 'Local Sandbox';
-      if (currentConfig.name === 'testnet') return 'Testnet';
-      return currentConfig.name;
-    };
-
-    return (
-      <div className="network-selector">
-        <div className="network-select-wrapper">
-          <select
-            name="network-selector"
-            value={currentConfig.name}
-            onChange={handleNetworkChange}
-            className="network-select"
-            title="Select network configuration"
-          >
-            <option value="" disabled>Network</option>
-            <option value="sandbox">Local Sandbox</option>
-            <option value="testnet">Testnet</option>
-          </select>
-          <span className="network-select-arrow">▼</span>
-        </div>
-      </div>
-    );
+    // No wallet connected
+    return <ConnectButton onClick={() => setShowWalletModal(true)} />;
   };
 
   return (
-    <nav className="navbar">
-      <div className="nav-container">
-        <div className="nav-title">Bridge and Seek</div>
-
-            <div className="nav-controls">
-              {renderNetworkSelector()}
-              <div className="account-controls">
-                {renderAccountSection()}
-              </div>
+    <>
+      <nav className="navbar">
+        <div className="nav-container">
+          <div className="nav-title">Aztec Web Boilerplate</div>
+          <div className="nav-controls">
+            <div className="account-controls">
+              {renderAccountSection()}
             </div>
-      </div>
-    </nav>
+            <ThemeToggle />
+          </div>
+        </div>
+      </nav>
+      
+      <EmbeddedWalletModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onWalletConnected={handleWalletConnected}
+      />
+    </>
   );
 };

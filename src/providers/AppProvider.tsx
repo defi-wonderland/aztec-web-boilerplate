@@ -2,10 +2,10 @@ import React, { ReactNode } from 'react';
 import { ConfigProvider } from './ConfigProvider';
 import { ErrorProvider } from './ErrorProvider';
 import { AztecWalletProvider } from './AztecWalletProvider';
-import { EVMWalletProvider } from './EVMWalletProvider';
 import { TokenProvider } from './TokenProvider';
 import { AzguardWalletProvider } from './AzguardWalletProvider';
 import { UniversalWalletProvider } from './UniversalWalletProvider';
+import { ThemeProvider } from './ThemeProvider';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -13,7 +13,7 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
-    <EVMWalletProvider>
+    <ThemeProvider>
       <ConfigProvider>
         <ErrorProvider>
           <AzguardWalletProvider>
@@ -27,6 +27,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           </AzguardWalletProvider>
         </ErrorProvider>
       </ConfigProvider>
-    </EVMWalletProvider>
+    </ThemeProvider>
   );
 };

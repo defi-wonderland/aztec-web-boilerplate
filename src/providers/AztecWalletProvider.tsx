@@ -14,12 +14,12 @@ interface AztecWalletContextType {
   isLoading: boolean;
   error: string | null;
   isDeploying: boolean;
+  initializationTimedOut: boolean;
 
   // Contract services
   votingService: AztecVotingService | null;
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
-  bridgeService: any | null;
 
   // Actions
   createAccount: () => Promise<AccountWallet>;
@@ -27,6 +27,7 @@ interface AztecWalletContextType {
   connectExistingAccount: () => Promise<AccountWallet | null>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
+  forceShowWalletSelector: () => void;
 }
 
 export const AztecWalletContext = createContext<
@@ -51,8 +52,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   const [tokenService, setTokenService] = useState<AztecTokenService | null>(
     null
   );
-  const [bridgeService, setBridgeService] = useState<any | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [initializationTimedOut, setInitializationTimedOut] = useState(false);
+  const [forceWalletSelector, setForceWalletSelector] = useState(false);
 
   const walletServicesRef = useRef<WalletServices | null>(null);
   const isInitializingRef = useRef(false);
@@ -104,7 +106,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
     setDripperService(actionServices.dripperService);
     setTokenService(actionServices.tokenService);
-    setBridgeService(actionServices.bridgeService);
   };
 
   const handleNetworkSwitch = () => {
@@ -112,8 +113,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setVotingService(null);
     setDripperService(null);
     setTokenService(null);
-    setBridgeService(null);
     setIsInitialized(false);
+    setInitializationTimedOut(false);
+    setForceWalletSelector(false);
     
     isInitializingRef.current = false;
   };
@@ -129,6 +131,12 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       }, 'initialize wallet services');
     } catch (err) {
       console.error('App initialization failed:', err);
+      
+      // For testnet errors, show debug modal immediately
+      if (config.isTestnet && !isInitialized) {
+        console.warn('⚠️ Testnet initialization failed, showing debug modal immediately');
+        setInitializationTimedOut(true);
+      }
     } finally {
       isInitializingRef.current = false;
     }
@@ -177,7 +185,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     setVotingService(null);
     setDripperService(null);
     setTokenService(null);
-    setBridgeService(null);
     setIsDeploying(false);
     // Don't reset isInitialized - that's for app initialization, not wallet connection
     if (walletServicesRef.current) {
@@ -194,20 +201,21 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   };
 
   const contextValue: AztecWalletContextType = {
-    isInitialized,
+    isInitialized: isInitialized || forceWalletSelector,
     connectedAccount,
     isLoading,
     error,
     isDeploying,
+    initializationTimedOut,
     votingService,
     dripperService,
     tokenService,
-    bridgeService,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,
     disconnectWallet,
     reinitialize,
+    forceShowWalletSelector: () => setForceWalletSelector(true),
   };
 
   return (
