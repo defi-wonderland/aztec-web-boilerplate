@@ -15,8 +15,6 @@ import { getInitialTestAccounts } from '@aztec/accounts/testing';
 import { createStore } from '@aztec/kv-store/lmdb';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-// @ts-ignore
-import { EasyPrivateVotingContract } from '../src/artifacts/EasyPrivateVoting.ts';
 import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
 
@@ -84,28 +82,6 @@ async function createAccount(pxe: PXE) {
   return {
     wallet,
     signingKey: testAccount.signingKey,
-  };
-}
-
-async function deployContract(pxe: PXE, deployer: Wallet) {
-  const salt = Fr.random();
-  const sponsoredPFCContract = await getSponsoredPFCContract();
-
-  // Use the Contract's deploy method which handles VK generation
-  const receipt = await EasyPrivateVotingContract.deploy(deployer, deployer.getAddress())
-    .send({
-      contractAddressSalt: salt,
-      from: deployer.getAddress(),
-      fee: {
-        paymentMethod: new SponsoredFeePaymentMethod(sponsoredPFCContract.address),
-      },
-    })
-    .wait({ timeout: 120 });
-
-  return {
-    contractAddress: receipt.contract.address.toString(),
-    deployerAddress: deployer.getAddress().toString(),
-    deploymentSalt: salt.toString(),
   };
 }
 
@@ -189,39 +165,19 @@ async function createAccountAndDeployContract() {
   // Create a new account
   const { wallet, /* signingKey */ } = await createAccount(pxe);
 
-  // // Save the wallet info
-  // const walletInfo = {
-  //   address: wallet.getAddress().toString(),
-  //   salt: wallet.salt.toString(),
-  //   secretKey: wallet.getSecretKey().toString(),
-  //   signingKey: Buffer.from(signingKey).toString('hex'),
-  // };
-  // fs.writeFileSync(
-  //   path.join(import.meta.dirname, '../wallet-info.json'),
-  //   JSON.stringify(walletInfo, null, 2)
-  // );
-  // console.log('\n\n\nWallet info saved to wallet-info.json\n\n\n');
-
-  // Deploy the contract
-  const deploymentInfo = await deployContract(pxe, wallet);
-
   // Deploy the Dripper contract first
   const dripperDeploymentInfo = await deployDripperContract(pxe, wallet);
 
   // Deploy the Token contract with Dripper as minter
   const tokenDeploymentInfo = await deployTokenContract(pxe, wallet, AztecAddress.fromString(dripperDeploymentInfo.contractAddress));
 
-
-  
   // Save the deployment info to .env file (VITE_ prefix for frontend access)
   if (WRITE_ENV_FILE) {
     await writeEnvFile({
       // Vite env vars (accessible in frontend)
-      VITE_CONTRACT_ADDRESS: deploymentInfo.contractAddress,
       VITE_DRIPPER_CONTRACT_ADDRESS: dripperDeploymentInfo.contractAddress,
       VITE_TOKEN_CONTRACT_ADDRESS: tokenDeploymentInfo.contractAddress,
-      VITE_DEPLOYER_ADDRESS: deploymentInfo.deployerAddress,
-      VITE_DEPLOYMENT_SALT: deploymentInfo.deploymentSalt,
+      VITE_DEPLOYER_ADDRESS: dripperDeploymentInfo.deployerAddress,
       VITE_DRIPPER_DEPLOYMENT_SALT: dripperDeploymentInfo.deploymentSalt,
       VITE_TOKEN_DEPLOYMENT_SALT: tokenDeploymentInfo.deploymentSalt,
       VITE_AZTEC_NODE_URL: AZTEC_NODE_URL,

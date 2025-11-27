@@ -81,16 +81,6 @@ export interface IAztecContractService {
 }
 
 // ============================================================================
-// VOTING SERVICE INTERFACES
-// ============================================================================
-
-export interface IAztecVotingService {
-  castVote(candidateId: number): Promise<void>;
-  getVoteCount(candidateId: number): Promise<number>;
-  getAllVoteCounts(): Promise<{ [key: number]: number }>;
-}
-
-// ============================================================================
 // DRIPPER SERVICE INTERFACES
 // ============================================================================
 

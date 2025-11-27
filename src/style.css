@@ -1382,10 +1382,6 @@ body {
 }
 
 /* Source-specific styling */
-.status-message.source-voting {
-  border-left: 4px solid #8b5cf6;
-}
-
 .status-message.source-dripper {
   border-left: 4px solid #10b981;
 }
@@ -1677,19 +1673,13 @@ body {
 
 /* Generic content styles for all cards */
 .dripper-content,
-.voting-content,
 .settings-content {
   padding: 1.5rem;
 }
 
 /* Form container styles */
-.mint-form-container,
-.vote-form-container {
+.mint-form-container {
   margin-bottom: 2rem;
-}
-
-.vote-form-container {
-  margin-top: 2rem;
 }
 
 .form-section {
@@ -1740,60 +1730,6 @@ body {
 .input-with-copy .copy-button {
   padding: 0.75rem;
   height: fit-content;
-}
-
-/* Vote display styles */
-.vote-display {
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.vote-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.vote-results {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #475569;
-}
-
-.vote-results > div {
-  padding: 0.5rem;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  text-align: center;
-}
-
-.vote-result {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-}
-
-.vote-count {
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.initializing {
-  text-align: center;
-  color: #64748b;
-  font-style: italic;
 }
 
 /* Button styles */
@@ -2689,8 +2625,7 @@ input::placeholder {
   .settings-card,
   .dripper-card,
   .token-balance-card,
-  .senders-card,
-  .voting-card {
+  .senders-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
@@ -2798,7 +2733,6 @@ input::placeholder {
 .tab-content-wrapper *,
 .tabs-container *,
 .dripper-content *,
-.voting-content *,
 .settings-content *,
 .card *,
 .sidebar-card *,

@@ -4,7 +4,7 @@ import { useAsyncOperation, useConfig } from '../hooks';
 import { useError } from './ErrorProvider';
 import { DEFAULT_NETWORK } from '../config/networks';
 import { initializeWalletServices, WalletServices, createWalletActionServices, createAccount, connectTestAccount, connectExistingAccount } from '../services/aztec/wallet';
-import { AztecVotingService, AztecDripperService, AztecTokenService } from '../services';
+import { AztecDripperService, AztecTokenService } from '../services';
 import { isValidConfig } from '../utils';
 
 interface AztecWalletContextType {
@@ -17,7 +17,6 @@ interface AztecWalletContextType {
   initializationTimedOut: boolean;
 
   // Contract services
-  votingService: AztecVotingService | null;
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
 
@@ -44,9 +43,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [connectedAccount, setConnectedAccount] =
     useState<AccountWallet | null>(null);
-  const [votingService, setVotingService] = useState<AztecVotingService | null>(
-    null
-  );
   const [dripperService, setDripperService] =
     useState<AztecDripperService | null>(null);
   const [tokenService, setTokenService] = useState<AztecTokenService | null>(
@@ -110,7 +106,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   const handleNetworkSwitch = () => {
     setConnectedAccount(null);
-    setVotingService(null);
     setDripperService(null);
     setTokenService(null);
     setIsInitialized(false);
@@ -182,7 +177,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   const disconnectWallet = () => {
     setConnectedAccount(null);
-    setVotingService(null);
     setDripperService(null);
     setTokenService(null);
     setIsDeploying(false);
@@ -207,7 +201,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     error,
     isDeploying,
     initializationTimedOut,
-    votingService,
     dripperService,
     tokenService,
     createAccount: handleCreateAccount,
