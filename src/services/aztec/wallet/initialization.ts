@@ -43,12 +43,15 @@ const registerContracts = async (
   contractService: AztecContractService,
   config: AppConfig
 ): Promise<void> => {
+  // Get the deployer address from config (must match the address used during deployment)
+  const deployerAddress = AztecAddress.fromString(config.deployerAddress);
+
   // Register Dripper contract
   const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
   
   await contractService.registerContract(
     DripperContract.artifact,
-    AztecAddress.ZERO,
+    deployerAddress,
     dripperDeploymentSalt,
     [], // No constructor args for Dripper
     'constructor' // Pass the specific constructor artifact
@@ -59,7 +62,7 @@ const registerContracts = async (
 
   await contractService.registerContract(
     TokenContract.artifact,
-    AztecAddress.ZERO,
+    deployerAddress,
     tokenDeploymentSalt,
     [
       "Yield Token", // name
