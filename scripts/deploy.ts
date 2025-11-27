@@ -18,13 +18,49 @@ import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
 import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
 
-const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || 'http://localhost:8080';
-const PROVER_ENABLED = process.env.PROVER_ENABLED === 'false' ? false : true;
-const WRITE_ENV_FILE = process.env.WRITE_ENV_FILE === 'false' ? false : true;
+// Network configuration
+type NetworkType = 'sandbox' | 'testnet';
+
+interface NetworkUrls {
+  sandbox: string;
+  testnet: string;
+}
+
+const DEFAULT_NODE_URLS: NetworkUrls = {
+  sandbox: 'http://localhost:8080',
+  testnet: 'https://aztec-alpha-testnet-fullnode.zkv.xyz/',
+};
+
+// Parse command line arguments
+const parseArgs = (): { network: NetworkType } => {
+  const args = process.argv.slice(2);
+  const networkIndex = args.findIndex(arg => arg === '--network' || arg === '-n');
+  
+  if (networkIndex !== -1 && args[networkIndex + 1]) {
+    const network = args[networkIndex + 1] as NetworkType;
+    if (network !== 'sandbox' && network !== 'testnet') {
+      console.error(`Invalid network: ${network}. Must be 'sandbox' or 'testnet'`);
+      process.exit(1);
+    }
+    return { network };
+  }
+  
+  return { network: 'sandbox' };
+};
+
+const { network: NETWORK } = parseArgs();
+
+// Environment variable overrides
+const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || DEFAULT_NODE_URLS[NETWORK];
+const PROVER_ENABLED = process.env.PROVER_ENABLED === 'false' ? false : NETWORK === 'testnet';
 
 const PXE_STORE_DIR = path.join(import.meta.dirname, '.store');
 
 async function setupPXE() {
+  console.log(`\n🔧 Setting up PXE for ${NETWORK}...`);
+  console.log(`   Node URL: ${AZTEC_NODE_URL}`);
+  console.log(`   Prover: ${PROVER_ENABLED ? 'enabled' : 'disabled'}\n`);
+
   const aztecNode = createAztecNodeClient(AZTEC_NODE_URL);
 
   fs.rmSync(PXE_STORE_DIR, { recursive: true, force: true });
@@ -86,6 +122,7 @@ async function createAccount(pxe: PXE) {
 }
 
 async function deployDripperContract(pxe: PXE, deployer: Wallet) {
+  console.log('📦 Deploying Dripper contract...');
   const salt = Fr.random();
   const sponsoredPFCContract = await getSponsoredPFCContract();
 
@@ -100,6 +137,8 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
     })
     .wait({ timeout: 120 });
 
+  console.log(`   ✅ Dripper deployed at: ${receipt.contract.address.toString()}`);
+
   return {
     contractAddress: receipt.contract.address.toString(),
     deployerAddress: deployer.getAddress().toString(),
@@ -108,6 +147,7 @@ async function deployDripperContract(pxe: PXE, deployer: Wallet) {
 }
 
 async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: AztecAddress) {
+  console.log('📦 Deploying Token contract...');
   const salt = Fr.random();
   const sponsoredPFCContract = await getSponsoredPFCContract();
 
@@ -130,6 +170,8 @@ async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: A
     })
     .wait({ timeout: 120 });
 
+  console.log(`   ✅ Token deployed at: ${receipt.contract.address.toString()}`);
+
   return {
     contractAddress: receipt.contract.address.toString(),
     deployerAddress: deployer.getAddress().toString(),
@@ -137,23 +179,64 @@ async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: A
   };
 }
 
-async function writeEnvFile(deploymentInfo) {
-  const envFilePath = path.join(import.meta.dirname, '../.env');
-  const envConfig = Object.entries(deploymentInfo)
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
+interface DeploymentInfo {
+  dripperContract: {
+    address: string;
+    salt: string;
+  };
+  tokenContract: {
+    address: string;
+    salt: string;
+  };
+  deployer: string;
+}
 
-  fs.writeFileSync(envFilePath, envConfig);
+async function writeDeploymentConfig(network: NetworkType, deploymentInfo: DeploymentInfo) {
+  const configFilePath = path.join(import.meta.dirname, `../src/config/deployments/${network}.json`);
+  
+  const config = {
+    network,
+    nodeUrl: AZTEC_NODE_URL,
+    dripperContract: {
+      address: deploymentInfo.dripperContract.address,
+      salt: deploymentInfo.dripperContract.salt,
+    },
+    tokenContract: {
+      address: deploymentInfo.tokenContract.address,
+      salt: deploymentInfo.tokenContract.salt,
+    },
+    deployer: deploymentInfo.deployer,
+    proverEnabled: PROVER_ENABLED,
+    deployedAt: new Date().toISOString(),
+  };
+
+  fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2) + '\n');
 
   console.log(`
-      \n\n\n
-      Contracts deployed successfully. Config saved to ${envFilePath}
-      IMPORTANT: Do not lose this file as you will not be able to recover the contract addresses if you lose it.
-      \n\n\n
-    `);
+╔════════════════════════════════════════════════════════════════╗
+║                    DEPLOYMENT SUCCESSFUL                       ║
+╠════════════════════════════════════════════════════════════════╣
+║  Network:  ${network.padEnd(49)}║
+║  Config:   src/config/deployments/${network}.json${' '.repeat(28 - network.length)}║
+╠════════════════════════════════════════════════════════════════╣
+║  Dripper:  ${deploymentInfo.dripperContract.address.slice(0, 20)}...  ║
+║  Token:    ${deploymentInfo.tokenContract.address.slice(0, 20)}...  ║
+║  Deployer: ${deploymentInfo.deployer.slice(0, 20)}...  ║
+╠════════════════════════════════════════════════════════════════╣
+║  TIP: You can commit this config file to version control       ║
+║       to share deployment addresses with your team.            ║
+╚════════════════════════════════════════════════════════════════╝
+`);
 }
 
 async function createAccountAndDeployContract() {
+  console.log(`
+╔════════════════════════════════════════════════════════════════╗
+║           AZTEC CONTRACT DEPLOYMENT                            ║
+║           Network: ${NETWORK.padEnd(42)}║
+╚════════════════════════════════════════════════════════════════╝
+`);
+
   const pxe = await setupPXE();
 
   // Register the SponsoredFPC contract (for sponsored fee payments)
@@ -163,35 +246,39 @@ async function createAccountAndDeployContract() {
   });
 
   // Create a new account
-  const { wallet, /* signingKey */ } = await createAccount(pxe);
+  console.log('👤 Setting up deployer account...');
+  const { wallet } = await createAccount(pxe);
+  console.log(`   ✅ Deployer: ${wallet.getAddress().toString()}\n`);
 
   // Deploy the Dripper contract first
   const dripperDeploymentInfo = await deployDripperContract(pxe, wallet);
 
   // Deploy the Token contract with Dripper as minter
-  const tokenDeploymentInfo = await deployTokenContract(pxe, wallet, AztecAddress.fromString(dripperDeploymentInfo.contractAddress));
+  const tokenDeploymentInfo = await deployTokenContract(
+    pxe,
+    wallet,
+    AztecAddress.fromString(dripperDeploymentInfo.contractAddress)
+  );
 
-  // Save the deployment info to .env file (VITE_ prefix for frontend access)
-  if (WRITE_ENV_FILE) {
-    await writeEnvFile({
-      // Vite env vars (accessible in frontend)
-      VITE_DRIPPER_CONTRACT_ADDRESS: dripperDeploymentInfo.contractAddress,
-      VITE_TOKEN_CONTRACT_ADDRESS: tokenDeploymentInfo.contractAddress,
-      VITE_DEPLOYER_ADDRESS: dripperDeploymentInfo.deployerAddress,
-      VITE_DRIPPER_DEPLOYMENT_SALT: dripperDeploymentInfo.deploymentSalt,
-      VITE_TOKEN_DEPLOYMENT_SALT: tokenDeploymentInfo.deploymentSalt,
-      VITE_AZTEC_NODE_URL: AZTEC_NODE_URL,
-      VITE_PROVER_ENABLED: PROVER_ENABLED.toString(),
-    });
-  }
+  // Save the deployment info to JSON config file
+  await writeDeploymentConfig(NETWORK, {
+    dripperContract: {
+      address: dripperDeploymentInfo.contractAddress,
+      salt: dripperDeploymentInfo.deploymentSalt,
+    },
+    tokenContract: {
+      address: tokenDeploymentInfo.contractAddress,
+      salt: tokenDeploymentInfo.deploymentSalt,
+    },
+    deployer: dripperDeploymentInfo.deployerAddress,
+  });
 
   // Clean up the PXE store
   fs.rmSync(PXE_STORE_DIR, { recursive: true, force: true });
 }
 
-
 createAccountAndDeployContract().catch((error) => {
-  console.error(error);
+  console.error('❌ Deployment failed:', error);
   process.exit(1);
 });
 
