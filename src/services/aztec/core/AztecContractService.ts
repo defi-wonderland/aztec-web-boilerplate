@@ -53,8 +53,8 @@ export class AztecContractService implements IAztecContractService {
     constructorArgs: any[],
     constructor: FunctionAbi | string
   }) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, {
+    const { getContractInstanceFromInstantiationParams } = await import('@aztec/aztec.js');
+    return await getContractInstanceFromInstantiationParams(artifact, {
       constructorArgs: params.constructorArgs,
       salt: params.salt,
       constructorArtifact: params.constructor,

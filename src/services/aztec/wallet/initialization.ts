@@ -1,9 +1,9 @@
 import { AztecAddress, Fr } from '@aztec/aztec.js';
 import { AztecWalletService, AztecContractService } from '../core';
 import { AztecStorageService } from '../storage';
-import { DripperContract } from '../../../artifacts/Dripper';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/artifacts/Token.js';
-import { TokenContractArtifact as AztecTokenContractArtifact } from '@aztec/noir-contracts.js/Token';
+import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
+import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
+import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
 import { AppConfig } from '../../../config/networks';
 
 export interface WalletServices {
@@ -57,7 +57,7 @@ const registerContracts = async (
     'constructor' // Pass the specific constructor artifact
   );
 
-  // Register Token contract
+  // Register Token contract (Wonderland Token with constructor_with_minter)
   const tokenDeploymentSalt = Fr.fromString(config.tokenDeploymentSalt);
 
   await contractService.registerContract(
@@ -71,17 +71,17 @@ const registerContracts = async (
       AztecAddress.fromString(config.dripperContractAddress), // minter (Dripper address)
       AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
     ],
-    'constructor_with_minter' // Pass the specific constructor artifact
+    'constructor_with_minter'
   );
 
-  // Register WETH contract if on testnet
+  // Register WETH contract if on testnet (using Aztec Token for testnet WETH)
   if (config.isTestnet) {
     try {
       const wethDeploymentSalt = Fr.fromHexString('0x21709ebd7c082ffe19291eca4b0ab5220814dbc07d79e8c876c1a37f3bbf3cd0');
       const wethDeployer = AztecAddress.fromString('0x2103c4465e9d73a7b400576451beae75839e215178c0846120e9ed261ebf4f58');
 
       await contractService.registerContract(
-        AztecTokenContractArtifact,
+        AztecTokenContract.artifact,
         wethDeployer,
         wethDeploymentSalt,
         [

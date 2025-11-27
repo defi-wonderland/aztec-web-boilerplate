@@ -4,7 +4,7 @@ import {
   AztecAddress,
 } from '@aztec/aztec.js';
 import { IDripperService } from '../../../types';
-import { DripperContract } from '../../../artifacts/Dripper';
+import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
 
 /**
  * Service for handling Aztec Dripper operations
@@ -80,13 +80,14 @@ export class AztecDripperService implements IDripperService {
    * Send a transaction with the Sponsored FPC Contract for fee payment
    */
   private async sendTransaction(interaction: ContractFunctionInteraction): Promise<void> {
+    const connectedAccount = this.getConnectedAccount();
     const paymentMethod = await this.getSponsoredFeePaymentMethod();
-    const provenInteraction = await interaction.prove({
+    
+    await interaction.send({
+      from: connectedAccount.getAddress(),
       fee: {
         paymentMethod,
       },
-    });
-
-    await provenInteraction.send().wait({ timeout: 120 });
+    }).wait({ timeout: 120 });
   }
 }

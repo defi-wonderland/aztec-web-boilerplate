@@ -8,10 +8,12 @@
     "jsx": "react-jsx",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["vite/client"]
   },
   "include": [
     "src/**/*.{ts,tsx}",
+    "src/vite-env.d.ts",
     "tests/**/*.ts",
     "scripts/**/*.ts"
   ],

@@ -14,7 +14,6 @@ import {
   type ContractInstanceWithAddress,
   type ContractMethod,
   type ContractStorageLayout,
-  type ContractNotes,
   decodeFromAbi,
   DeployMethod,
   EthAddress,
@@ -26,7 +25,6 @@ import {
   loadContractArtifact,
   loadContractArtifactForPublic,
   type NoirCompiledContract,
-  NoteSelector,
   Point,
   type PublicKey,
   PublicKeys,
@@ -132,15 +130,6 @@ active_at_block: {
       } as ContractStorageLayout<'admin' | 'tally' | 'vote_ended' | 'active_at_block'>;
     }
     
-
-  public static get notes(): ContractNotes<'ValueNote'> {
-    return {
-      ValueNote: {
-          id: new NoteSelector(0),
-        }
-    } as ContractNotes<'ValueNote'>;
-  }
-  
 
   /** Type-safe wrappers for the public methods exposed by the contract. */
   public declare methods: {

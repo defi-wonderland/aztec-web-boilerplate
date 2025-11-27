@@ -31,7 +31,7 @@ export class AztecWalletService implements IAztecWalletService {
    */
   async initialize(nodeUrl: string): Promise<void> {
     // Create Aztec Node Client
-    
+
     const aztecNode = await createAztecNodeClient(nodeUrl);
 
     // Create PXE Service
@@ -61,9 +61,14 @@ export class AztecWalletService implements IAztecWalletService {
   /**
    * Helper method to create contract instance from deploy params
    */
-  private async getContractInstanceFromDeployParams(artifact: any, params: any) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, params);
+  private async getContractInstanceFromDeployParams(
+    artifact: any,
+    params: any
+  ) {
+    const { getContractInstanceFromInstantiationParams } = await import(
+      '@aztec/aztec.js'
+    );
+    return await getContractInstanceFromInstantiationParams(artifact, params);
   }
 
   /**
@@ -86,7 +91,12 @@ export class AztecWalletService implements IAztecWalletService {
   async connectTestAccount(index: number): Promise<AccountWallet> {
     const testAccounts = await getInitialTestAccounts();
     const account = testAccounts[index];
-    const schnorrAccount = await getSchnorrAccount(this.pxe, account.secret, account.signingKey, account.salt);
+    const schnorrAccount = await getSchnorrAccount(
+      this.pxe,
+      account.secret,
+      account.signingKey,
+      account.salt
+    );
 
     await schnorrAccount.register();
     const wallet = await schnorrAccount.getWallet();
@@ -106,16 +116,18 @@ export class AztecWalletService implements IAztecWalletService {
     const DEPLOYER_SECRET_PHRASE = process.env.DEPLOYER_SECRET_PHRASE || 'hola';
     const DEPLOYER_SALT = process.env.DEPLOYER_SALT || '1337';
     const DEPLOYER_SECRET = await poseidon2Hash([
-      Fr.fromBufferReduce(Buffer.from(DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')),
+      Fr.fromBufferReduce(
+        Buffer.from(DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')
+      ),
     ]);
     const secretKey = DEPLOYER_SECRET;
-    const salt = Fr.fromString(DEPLOYER_SALT); 
+    const salt = Fr.fromString(DEPLOYER_SALT);
     const signingKey = Buffer.from(DEPLOYER_SECRET.toBuffer().subarray(0, 32));
     console.log({
       secretKey: DEPLOYER_SECRET.toString(),
       salt: DEPLOYER_SALT,
       signingKey: signingKey.toString('hex'),
-    })
+    });
 
     // Create an ECDSA account
     const ecdsaAccount = await getEcdsaRAccount(
@@ -156,6 +168,8 @@ export class AztecWalletService implements IAztecWalletService {
       universalDeploy: true,
       skipClassRegistration: true,
       skipPublicDeployment: true,
+      skipClassPublication: true,
+      from: ecdsaAccount.getAddress(),
     };
 
     // Generate proof and send deployment transaction
@@ -183,12 +197,18 @@ export class AztecWalletService implements IAztecWalletService {
     // Register the account with PXE so it can manage private state
     try {
       await ecdsaAccount.register();
-      logger.info('Account registered with PXE', ecdsaAccount.getAddress().toString());
+      logger.info(
+        'Account registered with PXE',
+        ecdsaAccount.getAddress().toString()
+      );
     } catch (err) {
-      logger.warn('Account registration with PXE failed (may already be registered)', err);
+      logger.warn(
+        'Account registration with PXE failed (may already be registered)',
+        err
+      );
       // For existing accounts, this is expected and we should continue
     }
-    
+
     const ecdsaWallet = await ecdsaAccount.getWallet();
 
     return ecdsaWallet;
@@ -198,11 +218,13 @@ export class AztecWalletService implements IAztecWalletService {
    * Get the SponsoredFeePaymentMethod instance (cached)
    */
   private cachedPaymentMethod: SponsoredFeePaymentMethod | null = null;
-  
+
   async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
     if (!this.cachedPaymentMethod) {
       const sponsoredPFCContract = await this.getSponsoredPFCContract();
-      this.cachedPaymentMethod = new SponsoredFeePaymentMethod(sponsoredPFCContract.address);
+      this.cachedPaymentMethod = new SponsoredFeePaymentMethod(
+        sponsoredPFCContract.address
+      );
     }
     return this.cachedPaymentMethod;
   }

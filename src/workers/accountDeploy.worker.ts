@@ -15,10 +15,10 @@ import type { WorkerRequest, WorkerResponse } from './messages';
 declare const self: DedicatedWorkerGlobalScope;
 
 async function getSponsoredPFCContract() {
-  const { getContractInstanceFromDeployParams } = await import(
+  const { getContractInstanceFromInstantiationParams } = await import(
     '@aztec/aztec.js'
   );
-  return await getContractInstanceFromDeployParams(
+  return await getContractInstanceFromInstantiationParams(
     SponsoredFPCContractArtifact,
     {
       salt: new Fr(SPONSORED_FPC_SALT),
@@ -32,7 +32,12 @@ self.addEventListener('message', async (event: MessageEvent) => {
 
   try {
     const { nodeUrl, secretKey, signingKeyHex, salt } = msg.payload;
-    console.log('🔧 Worker received:', { nodeUrl, secretKey: typeof secretKey, signingKeyHex: typeof signingKeyHex, salt: typeof salt });
+    console.log('🔧 Worker received:', {
+      nodeUrl,
+      secretKey: typeof secretKey,
+      signingKeyHex: typeof signingKeyHex,
+      salt: typeof salt,
+    });
 
     // Connect to the PXE/node endpoint
     const pxe = createPXEClient(nodeUrl);
@@ -46,7 +51,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
     const secretKeyStr = String(secretKey);
     const saltStr = String(salt);
     const signingKeyHexStr = String(signingKeyHex);
-    
+
     const secretFr = Fr.fromString(secretKeyStr);
     const saltFr = Fr.fromString(saltStr);
     const signingKey = Buffer.from(signingKeyHexStr, 'hex');
@@ -58,14 +63,17 @@ self.addEventListener('message', async (event: MessageEvent) => {
       saltFr
     );
 
-    console.log(await pxe.getContractMetadata(ecdsaAccount.getAddress()))
-    
+    console.log(await pxe.getContractMetadata(ecdsaAccount.getAddress()));
+
     // Always register the account in the worker context to ensure proper PXE state
     try {
       await ecdsaAccount.register();
       console.log('✅ Account registered with worker PXE');
     } catch (registerError) {
-      console.warn('⚠️ Account registration with worker PXE failed (may already be registered)', registerError);
+      console.warn(
+        '⚠️ Account registration with worker PXE failed (may already be registered)',
+        registerError
+      );
       // Continue with deployment even if registration fails
     }
 
@@ -77,11 +85,13 @@ self.addEventListener('message', async (event: MessageEvent) => {
 
     try {
       const provenInteraction = await deployMethod.prove({
+        from: ecdsaAccount.getAddress(),
         contractAddressSalt: saltFr,
         fee: { paymentMethod },
         universalDeploy: true,
-        skipClassRegistration: true,
-        skipPublicDeployment: true,
+        //TODO: Review this options
+        // skipClassRegistration: true,
+        // skipPublicDeployment: true,
       });
       const receipt = await provenInteraction.send().wait({ timeout: 120 });
 
@@ -121,7 +131,10 @@ self.addEventListener('message', async (event: MessageEvent) => {
   } catch (error) {
     console.error('❌ Worker deployment error:', error);
     const message = error instanceof Error ? error.message : String(error);
-    const response: WorkerResponse = { type: 'error', error: `Worker error: ${message}` };
+    const response: WorkerResponse = {
+      type: 'error',
+      error: `Worker error: ${message}`,
+    };
     self.postMessage(response);
   }
 });

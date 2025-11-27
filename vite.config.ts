@@ -49,7 +49,7 @@ export default defineConfig({
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
     },
     // Dedupe critical packages to prevent class identity issues
-    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/hashes', '@noble/curves', '@aztec/aztec.js'],
+    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/curves', '@aztec/aztec.js'],
   },
   server: {
     port: 3000,

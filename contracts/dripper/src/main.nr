@@ -1,9 +1,9 @@
-use aztec::macros::aztec;
+use dep::aztec::macros::aztec;
 
 #[aztec]
 pub contract Dripper {
-    use aztec::macros::functions::{initializer, private, public};
-    use aztec::prelude::AztecAddress;
+    use dep::aztec::macros::functions::{initializer, private, public};
+    use dep::aztec::protocol_types::address::AztecAddress;
     use token::Token;
 
     #[public]
@@ -16,9 +16,8 @@ pub contract Dripper {
     /// @param amount The amount of tokens to mint (u64, converted to u128 internally)
     #[public]
     fn drip_to_public(token_address: AztecAddress, amount: u64) {
-        let token = Token::at(token_address);
         let msg_sender = context.msg_sender();
-        token.mint_to_public(msg_sender, amount as u128).call(&mut context);
+        Token::at(token_address).mint_to_public(msg_sender, amount as u128).call(&mut context);
     }
 
     /// @notice Mints tokens into the private balance of the caller
@@ -27,9 +26,10 @@ pub contract Dripper {
     /// @param amount The amount of tokens to mint (u64, converted to u128 internally)
     #[private]
     fn drip_to_private(token_address: AztecAddress, amount: u64) {
-        let token = Token::at(token_address);
         let msg_sender = context.msg_sender();
-        token.mint_to_private(msg_sender, msg_sender, amount as u128).call(&mut context);
+        Token::at(token_address)
+            .mint_to_private(msg_sender, amount as u128)
+            .call(&mut context);
     }
 
 }
