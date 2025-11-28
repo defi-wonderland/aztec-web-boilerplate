@@ -76,32 +76,3 @@ export const useDripToPublic = (options: UseDripperMutationOptions = {}) => {
     },
   });
 };
-
-/**
- * Hook for syncing private state.
- * Invalidates all token balance queries on success.
- */
-export const useSyncPrivateState = (options: UseDripperMutationOptions = {}) => {
-  const { dripperService } = useAztecWallet();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      if (!dripperService) {
-        throw new Error('Dripper service not available');
-      }
-      await dripperService.syncPrivateState();
-    },
-    onSuccess: () => {
-      // Invalidate all token balances since private state changed
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.token.balances(),
-      });
-      options.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      options.onError?.(error);
-    },
-  });
-};
-
