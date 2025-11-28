@@ -1,6 +1,10 @@
-import { type PXE, type AccountWallet, type Fr, type ContractFunctionInteraction, type AztecAddress, type ContractInstanceWithAddress } from '@aztec/aztec.js';
+import type { PXE } from '@aztec/pxe/server';
+import type { Fr } from '@aztec/aztec.js/fields';
+import type { AztecAddress } from '@aztec/aztec.js/addresses';
+import type { ContractInstanceWithAddress, ContractFunctionInteraction } from '@aztec/aztec.js/contracts';
+import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
-import { type SponsoredFeePaymentMethod } from '@aztec/aztec.js';
 import type { AzguardClient } from '@azguardwallet/client';
 import type { 
   CaipAccount, 
@@ -39,8 +43,8 @@ export interface IAztecStorageService {
 // ============================================================================
 
 export interface CreateAccountResult {
-  account: any; // TODO: Type this properly when we know the exact type
-  wallet: AccountWallet;
+  account: unknown;
+  wallet: AccountWithSecretKey;
   salt: Fr;
   secretKey: Fr;
   signingKey: Buffer; // Node.js Buffer type
@@ -54,13 +58,13 @@ export interface IAztecWalletService {
   getPXE(): PXE;
   
   // Account management
-  connectTestAccount(index: number): Promise<AccountWallet>;
+  connectTestAccount(index: number): Promise<AccountWithSecretKey>;
   createEcdsaAccount(deploy: boolean): Promise<CreateAccountResult>;
   createEcdsaAccountFromCredentials(
     secretKey: Fr,
     signingKey: Buffer,
     salt: Fr
-  ): Promise<AccountWallet>;
+  ): Promise<AccountWithSecretKey>;
   
   // Payment methods (public API)
   getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;
@@ -78,16 +82,6 @@ export interface IAztecContractService {
     constructorArgs?: any[],
     constructor?: FunctionAbi | string
   ): Promise<ContractInstanceWithAddress>;
-}
-
-// ============================================================================
-// DRIPPER SERVICE INTERFACES
-// ============================================================================
-
-export interface IDripperService {
-  dripToPrivate(tokenAddress: string, amount: bigint): Promise<void>;
-  dripToPublic(tokenAddress: string, amount: bigint): Promise<void>;
-  syncPrivateState(): Promise<void>;
 }
 
 // ============================================================================
@@ -118,13 +112,13 @@ export interface AzguardWalletState {
 
 /**
  * Azguard account adapter interface
- * Bridges between CAIP account format and AccountWallet interface
+ * Bridges between CAIP account format and AccountWithSecretKey interface
  */
 export interface IAzguardAccountAdapter {
   /**
-   * Convert CAIP account to AccountWallet-compatible interface
+   * Convert CAIP account to AccountWithSecretKey-compatible interface
    */
-  toAccountWallet(caipAccount: CaipAccount): Promise<AccountWallet>;
+  toAccountWallet(caipAccount: CaipAccount): Promise<AccountWithSecretKey>;
   
   /**
    * Get the Aztec address from CAIP account
@@ -134,7 +128,7 @@ export interface IAzguardAccountAdapter {
   /**
    * Execute Azguard-specific operations
    */
-  executeOperation(operation: Operation): Promise<any>;
+  executeOperation(operation: Operation): Promise<unknown>;
   
   /**
    * Check if account is deployed on the network
@@ -178,15 +172,15 @@ export interface IAzguardWalletService {
 export interface IUniversalWallet {
   type: WalletType;
   isConnected: boolean;
-  account: AccountWallet | null;
+  account: AccountWithSecretKey | null;
   
   // Common operations
-  connect(): Promise<AccountWallet>;
+  connect(): Promise<AccountWithSecretKey>;
   disconnect(): Promise<void>;
   
   // Transaction operations (abstracted)
-  sendTransaction(params: any): Promise<string>;
-  simulateCall(params: any): Promise<any>;
+  sendTransaction(params: unknown): Promise<string>;
+  simulateCall(params: unknown): Promise<unknown>;
 }
 
 /**

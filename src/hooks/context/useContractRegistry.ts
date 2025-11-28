@@ -5,8 +5,8 @@ import type {
   ContractNames,
   ContractStatus,
   UseContractRegistryReturn,
-} from '../../contracts';
-import type { ContractInstanceWithAddress } from '@aztec/aztec.js';
+} from '../../contract-registry';
+import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 
 /**
  * Hook for accessing the contract registry and its operations.
@@ -109,5 +109,6 @@ export function useContractRegistry<
     ]
   );
 }
+
 
 

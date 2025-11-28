@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { useConfig } from '../hooks';
+import React from 'react';
+import { useTokenContract } from '../hooks/context/useTokenContract';
 import { useTokenBalance } from '../hooks/queries/useTokenBalance';
 
 export const TokenBalanceCard: React.FC = () => {
-  const { currentConfig } = useConfig();
-  const [tokenAddress, setTokenAddress] = useState(currentConfig.tokenContractAddress ?? '');
+  const { token, status } = useTokenContract();
+  const { isLoading, error } = useTokenBalance();
 
-  const { isLoading, error } = useTokenBalance({ tokenAddress });
+  const tokenAddress = token?.address.toString() ?? '';
 
   return (
     <div className="token-address-input">
@@ -15,10 +15,8 @@ export const TokenBalanceCard: React.FC = () => {
         <input
           id="balance-token-address"
           type="text"
-          value={tokenAddress}
-          onChange={(e) => setTokenAddress(e.target.value)}
-          placeholder="Enter token contract address"
-          disabled={isLoading}
+          value={status === 'registering' ? 'Registering...' : tokenAddress || 'Loading...'}
+          readOnly
           className="sidebar-input"
           aria-label="Token contract address for balance lookup"
         />
@@ -27,6 +25,12 @@ export const TokenBalanceCard: React.FC = () => {
       {error && (
         <div className="error-message">
           <p>Error: {error.message}</p>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="loading-message">
+          <span>Loading balance...</span>
         </div>
       )}
     </div>

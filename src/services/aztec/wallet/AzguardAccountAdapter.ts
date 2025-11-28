@@ -1,14 +1,24 @@
-import { type AccountWallet, AztecAddress, Fr } from '@aztec/aztec.js';
-import type { Operation, CaipAccount } from '@azguardwallet/types';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { Operation, CaipAccount, CallAction } from '@azguardwallet/types';
 import type { IAzguardAccountAdapter } from '../../../types/aztec';
 import { AzguardWalletService } from './AzguardWalletService';
+
+/**
+ * Transaction request shape for Azguard conversion
+ */
+interface TxRequest {
+  to?: string;
+  method?: string;
+  args?: unknown[];
+}
 
 /**
  * Adapter class that converts between Azguard CAIP accounts and Aztec AccountWallet
  */
 export class AzguardAccountAdapter implements IAzguardAccountAdapter {
   private azguardService: AzguardWalletService;
-  private accountWalletCache: Map<string, AccountWallet> = new Map();
+  private accountWalletCache: Map<string, AccountWithSecretKey> = new Map();
 
   constructor(azguardService: AzguardWalletService) {
     this.azguardService = azguardService;
@@ -18,7 +28,7 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
    * Convert CAIP account to AccountWallet-compatible interface
    * Note: This creates a proxy that delegates operations to Azguard
    */
-  async toAccountWallet(caipAccount: CaipAccount): Promise<AccountWallet> {
+  async toAccountWallet(caipAccount: CaipAccount): Promise<AccountWithSecretKey> {
     // Check cache first
     if (this.accountWalletCache.has(caipAccount)) {
       return this.accountWalletCache.get(caipAccount)!;
@@ -80,7 +90,7 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
   /**
    * Execute Azguard-specific operations
    */
-  async executeOperation(operation: Operation): Promise<any> {
+  async executeOperation(operation: Operation): Promise<unknown> {
     try {
       const results = await this.azguardService.executeOperations([operation]);
       
@@ -90,7 +100,9 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
 
       const result = results[0];
       if (result.status !== 'ok') {
-        throw new Error(result.error || 'Operation failed');
+        // Handle failed or skipped results
+        const errorMessage = 'error' in result ? result.error : 'Operation failed or was skipped';
+        throw new Error(errorMessage || 'Operation failed');
       }
 
       return result.result;
@@ -124,7 +136,7 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
   /**
    * Create a proxy AccountWallet that delegates operations to Azguard
    */
-  private createAccountWalletProxy(caipAccount: CaipAccount, address: AztecAddress): AccountWallet {
+  private createAccountWalletProxy(caipAccount: CaipAccount, address: AztecAddress): AccountWithSecretKey {
     // This is a complex implementation that would need to proxy all AccountWallet methods
     // For now, we'll create a minimal implementation that covers the most important methods
     
@@ -133,19 +145,20 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
       getAddress: () => address,
       
       // Transaction methods - these would delegate to Azguard
-      sendTransaction: async (txRequest: any) => {
+      sendTransaction: async (txRequest: unknown) => {
         // Convert Aztec transaction request to Azguard operation
-        const operation = this.convertToAzguardOperation(txRequest, caipAccount);
+        const operation = this.convertToAzguardOperation(txRequest as TxRequest, caipAccount);
         return this.executeOperation(operation);
       },
       
       // View methods
-      simulateCall: async (callRequest: any) => {
+      simulateCall: async (callRequest: unknown) => {
         // Convert to simulate_views operation
-        const operation = {
+        const callAction = callRequest as CallAction;
+        const operation: Operation = {
           kind: 'simulate_views' as const,
           account: caipAccount,
-          calls: [callRequest]
+          calls: [callAction]
         };
         return this.executeOperation(operation);
       },
@@ -153,7 +166,7 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
       // Other required methods would be implemented here
       // This is a simplified version for demonstration
       
-    } as unknown as AccountWallet;
+    } as unknown as AccountWithSecretKey;
 
     return proxy;
   }
@@ -161,22 +174,22 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
   /**
    * Convert Aztec transaction request to Azguard operation
    */
-  private convertToAzguardOperation(txRequest: any, account: CaipAccount): Operation {
+  private convertToAzguardOperation(txRequest: TxRequest, account: CaipAccount): Operation {
     // This is a simplified conversion - the actual implementation would need
     // to handle all the different types of Aztec transactions and convert them
     // to appropriate Azguard operations
     
+    const callAction: CallAction = {
+      kind: 'call',
+      contract: txRequest.to ?? '0x0000000000000000000000000000000000000000000000000000000000000000',
+      method: txRequest.method ?? 'unknown',
+      args: (txRequest.args ?? []) as string[]
+    };
+    
     return {
       kind: 'send_transaction',
       account,
-      actions: [
-        {
-          kind: 'call',
-          contract: txRequest.to || '0x0000000000000000000000000000000000000000',
-          method: txRequest.method || 'unknown',
-          args: txRequest.args || []
-        }
-      ]
+      actions: [callAction]
     };
   }
 
@@ -190,7 +203,7 @@ export class AzguardAccountAdapter implements IAzguardAccountAdapter {
   /**
    * Get cached account wallet if available
    */
-  getCachedAccountWallet(caipAccount: CaipAccount): AccountWallet | null {
+  getCachedAccountWallet(caipAccount: CaipAccount): AccountWithSecretKey | null {
     return this.accountWalletCache.get(caipAccount) || null;
   }
 

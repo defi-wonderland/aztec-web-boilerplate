@@ -7,6 +7,7 @@ import { AztecWalletProvider } from './AztecWalletProvider';
 import { AzguardWalletProvider } from './AzguardWalletProvider';
 import { UniversalWalletProvider } from './UniversalWalletProvider';
 import { ThemeProvider } from './ThemeProvider';
+import { ContractProviderWrapper } from './ContractProviderWrapper';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -20,9 +21,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           <ErrorProvider>
             <AzguardWalletProvider>
               <AztecWalletProvider>
-                <UniversalWalletProvider>
-                  {children}
-                </UniversalWalletProvider>
+                <ContractProviderWrapper>
+                  <UniversalWalletProvider>
+                    {children}
+                  </UniversalWalletProvider>
+                </ContractProviderWrapper>
               </AztecWalletProvider>
             </AzguardWalletProvider>
           </ErrorProvider>

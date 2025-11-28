@@ -1,32 +1,34 @@
-import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { type AccountWallet } from '@aztec/aztec.js';
+import React, { createContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { Wallet } from '@aztec/aztec.js/wallet';
+import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { PXE } from '@aztec/pxe/server';
 import { useAsyncOperation, useConfig } from '../hooks';
 import { useError } from './ErrorProvider';
 import { DEFAULT_NETWORK } from '../config/networks';
-import { initializeWalletServices, WalletServices, createWalletActionServices, createAccount, connectTestAccount, connectExistingAccount } from '../services/aztec/wallet';
-import { AztecDripperService, AztecTokenService } from '../services';
+import { initializeWalletServices, WalletServices, createAccount, connectTestAccount, connectExistingAccount } from '../services/aztec/wallet';
 import { isValidConfig } from '../utils';
 
 interface AztecWalletContextType {
   // State
   isInitialized: boolean;
-  connectedAccount: AccountWallet | null;
+  connectedAccount: AccountWithSecretKey | null;
   isLoading: boolean;
   error: string | null;
   isDeploying: boolean;
   initializationTimedOut: boolean;
 
-  // Core services
-  walletService: { getPXE: () => ReturnType<typeof import('../services/aztec/core/AztecWalletService').AztecWalletService.prototype.getPXE> } | null;
-  
-  // Contract services
-  dripperService: AztecDripperService | null;
-  tokenService: AztecTokenService | null;
+  // Core wallet access
+  wallet: Wallet | null;
+  pxe: PXE | null;
+
+  // Fee payment
+  getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 
   // Actions
-  createAccount: () => Promise<AccountWallet>;
-  connectTestAccount: (index: number) => Promise<AccountWallet>;
-  connectExistingAccount: () => Promise<AccountWallet | null>;
+  createAccount: () => Promise<AccountWithSecretKey>;
+  connectTestAccount: (index: number) => Promise<AccountWithSecretKey>;
+  connectExistingAccount: () => Promise<AccountWithSecretKey | null>;
   disconnectWallet: () => void;
   reinitialize: () => Promise<void>;
   forceShowWalletSelector: () => void;
@@ -45,12 +47,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [connectedAccount, setConnectedAccount] =
-    useState<AccountWallet | null>(null);
-  const [dripperService, setDripperService] =
-    useState<AztecDripperService | null>(null);
-  const [tokenService, setTokenService] = useState<AztecTokenService | null>(
-    null
-  );
+    useState<AccountWithSecretKey | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [initializationTimedOut, setInitializationTimedOut] = useState(false);
   const [forceWalletSelector, setForceWalletSelector] = useState(false);
@@ -88,29 +85,8 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     handleAutoInitialize();
   }, [config]);
 
-  useEffect(() => {
-    if (connectedAccount && isInitialized && walletServicesRef.current) {
-      recreateServices();
-    }
-  }, [connectedAccount, isInitialized]);
-
-  const recreateServices = async () => {
-    if (!walletServicesRef.current || !connectedAccount) return;
-
-    const actionServices = createWalletActionServices(
-      walletServicesRef.current,
-      config,
-      () => connectedAccount
-    );
-
-    setDripperService(actionServices.dripperService);
-    setTokenService(actionServices.tokenService);
-  };
-
   const handleNetworkSwitch = () => {
     setConnectedAccount(null);
-    setDripperService(null);
-    setTokenService(null);
     setIsInitialized(false);
     setInitializationTimedOut(false);
     setForceWalletSelector(false);
@@ -156,7 +132,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
   };
 
-  const handleCreateAccount = async (): Promise<AccountWallet> => {
+  const handleCreateAccount = async (): Promise<AccountWithSecretKey> => {
     return executeAsync(async () => {
       if (!walletServicesRef.current) {
         throw new Error('Wallet services not initialized');
@@ -168,7 +144,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }, 'create account');
   };
 
-  const handleConnectTestAccount = async (index: number): Promise<AccountWallet> => {
+  const handleConnectTestAccount = async (index: number): Promise<AccountWithSecretKey> => {
     return executeAsync(async () => {
       if (!walletServicesRef.current) {
         throw new Error('Wallet services not initialized');
@@ -180,7 +156,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }, 'connect test account');
   };
 
-  const handleConnectExistingAccount = async (): Promise<AccountWallet | null> => {
+  const handleConnectExistingAccount = async (): Promise<AccountWithSecretKey | null> => {
     return executeAsync(async () => {
       if (!walletServicesRef.current) {
         throw new Error('Wallet services not initialized');
@@ -196,8 +172,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   const disconnectWallet = () => {
     setConnectedAccount(null);
-    setDripperService(null);
-    setTokenService(null);
     setIsDeploying(false);
     // Don't reset isInitialized - that's for app initialization, not wallet connection
     if (walletServicesRef.current) {
@@ -213,6 +187,17 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }, 'reinitialize wallet');
   };
 
+  const getSponsoredFeePaymentMethod = useCallback(async (): Promise<SponsoredFeePaymentMethod> => {
+    if (!walletServicesRef.current) {
+      throw new Error('Wallet services not initialized');
+    }
+    return walletServicesRef.current.walletService.getSponsoredFeePaymentMethod();
+  }, []);
+
+  // Get the wallet and PXE instances
+  const wallet = walletServicesRef.current?.walletService.getWallet() ?? null;
+  const pxe = walletServicesRef.current?.walletService.getPXE() ?? null;
+
   const contextValue: AztecWalletContextType = {
     isInitialized: isInitialized || forceWalletSelector,
     connectedAccount,
@@ -220,9 +205,9 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     error,
     isDeploying,
     initializationTimedOut,
-    walletService: walletServicesRef.current?.walletService ?? null,
-    dripperService,
-    tokenService,
+    wallet,
+    pxe,
+    getSponsoredFeePaymentMethod,
     createAccount: handleCreateAccount,
     connectTestAccount: handleConnectTestAccount,
     connectExistingAccount: handleConnectExistingAccount,

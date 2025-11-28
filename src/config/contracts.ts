@@ -5,7 +5,6 @@ import { DripperContract } from '../artifacts/Dripper.js';
 import { TokenContract } from '../artifacts/Token.js';
 import { createContractConfig } from '../contract-registry';
 
-
 export const aztecContracts = createContractConfig({
   /**
    * Dripper contract - Mints tokens to users

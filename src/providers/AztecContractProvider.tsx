@@ -8,7 +8,7 @@ import React, {
   useMemo,
   type ReactNode,
 } from 'react';
-import type { PXE } from '@aztec/aztec.js';
+import type { PXE } from '@aztec/pxe/server';
 import type { AppConfig } from '../config/networks';
 import {
   ContractRegistry,
@@ -16,7 +16,7 @@ import {
   type ContractNames,
   type ContractRegistryContextValue,
   type IContractRegistry,
-} from '../contracts';
+} from '../contract-registry';
 
 /**
  * Props for the AztecContractProvider
@@ -202,5 +202,6 @@ export function useContractRegistryInstance<
   const { registry } = useContractRegistryContext<T>();
   return registry;
 }
+
 
 

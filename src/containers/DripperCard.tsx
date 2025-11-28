@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
-import { useAztecWallet, useAzguardWallet, useConfig } from '../hooks';
-import {
-  useDripToPrivate,
-  useDripToPublic,
-} from '../hooks/mutations/useDripper';
+import { useAztecWallet, useAzguardWallet } from '../hooks';
+import { useTokenContract } from '../hooks/context/useTokenContract';
+import { useDripper } from '../hooks/mutations/useDripper';
 import { useError } from '../providers/ErrorProvider';
 
 export const DripperCard: React.FC = () => {
   const { connectedAccount, isInitialized, isDeploying } = useAztecWallet();
   const { state: azguardState } = useAzguardWallet();
-  const { currentConfig } = useConfig();
   const { addError } = useError();
+  
+  // Get token for address display
+  const { token, status: tokenStatus } = useTokenContract();
 
-  const [tokenAddress, setTokenAddress] = useState(
-    currentConfig.tokenContractAddress ?? ''
-  );
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
 
-  const dripToPrivate = useDripToPrivate({
-    onSuccess: () => {
+  const { dripToPrivate, dripToPublic, isReady } = useDripper({
+    onDripToPrivateSuccess: () => {
       addError({
         message: `Successfully minted ${amount} tokens to private balance`,
         type: 'info',
@@ -27,7 +24,7 @@ export const DripperCard: React.FC = () => {
       });
       setAmount('');
     },
-    onError: (error) => {
+    onDripToPrivateError: (error) => {
       addError({
         message: error.message,
         type: 'error',
@@ -36,10 +33,7 @@ export const DripperCard: React.FC = () => {
           'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.',
       });
     },
-  });
-
-  const dripToPublic = useDripToPublic({
-    onSuccess: () => {
+    onDripToPublicSuccess: () => {
       addError({
         message: `Successfully minted ${amount} tokens to public balance`,
         type: 'info',
@@ -47,7 +41,7 @@ export const DripperCard: React.FC = () => {
       });
       setAmount('');
     },
-    onError: (error) => {
+    onDripToPublicError: (error) => {
       addError({
         message: error.message,
         type: 'error',
@@ -61,19 +55,21 @@ export const DripperCard: React.FC = () => {
   const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
 
   const handleDrip = () => {
-    if (!tokenAddress || !amount) return;
+    if (!amount || !isReady) return;
 
     const amountBigInt = BigInt(amount);
 
     if (dripType === 'private') {
-      dripToPrivate.mutate({ tokenAddress, amount: amountBigInt });
+      dripToPrivate.mutate({ amount: amountBigInt });
     } else {
-      dripToPublic.mutate({ tokenAddress, amount: amountBigInt });
+      dripToPublic.mutate({ amount: amountBigInt });
     }
   };
 
   const handleCopyAddress = () => {
-    navigator.clipboard.writeText(tokenAddress);
+    if (token) {
+      navigator.clipboard.writeText(token.address.toString());
+    }
   };
 
   // Show dripper form when either wallet is connected and app is initialized
@@ -84,6 +80,19 @@ export const DripperCard: React.FC = () => {
   if (!showDripForm) {
     return null;
   }
+
+  // Get contract loading status for UI
+  const getContractStatus = () => {
+    if (tokenStatus === 'registering') {
+      return 'Registering contracts...';
+    }
+    if (tokenStatus === 'error') {
+      return 'Contract registration failed';
+    }
+    return null;
+  };
+
+  const contractStatusMessage = getContractStatus();
 
   return (
     <div className="dripper-content">
@@ -99,16 +108,21 @@ export const DripperCard: React.FC = () => {
 
       <div className="mint-form-container">
         <div className="form-section">
+          {contractStatusMessage && (
+            <div className="contract-status">
+              <span className="status-icon">⏳</span>
+              {contractStatusMessage}
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="token-address">Token Address</label>
             <div className="input-with-copy">
               <input
                 id="token-address"
                 type="text"
-                value={tokenAddress}
-                onChange={(e) => setTokenAddress(e.target.value)}
-                placeholder="Enter token contract address"
-                disabled={isProcessing}
+                value={token?.address.toString() ?? 'Loading...'}
+                readOnly
                 className="form-input"
                 aria-label="Token contract address"
               />
@@ -118,6 +132,7 @@ export const DripperCard: React.FC = () => {
                 onClick={handleCopyAddress}
                 title="Copy to clipboard"
                 aria-label="Copy address to clipboard"
+                disabled={!token}
               >
                 📋
               </button>
@@ -132,7 +147,7 @@ export const DripperCard: React.FC = () => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Enter amount to mint"
-              disabled={isProcessing}
+              disabled={isProcessing || !isReady}
               className="form-input"
               aria-label="Amount to mint"
             />
@@ -146,7 +161,7 @@ export const DripperCard: React.FC = () => {
               onChange={(e) =>
                 setDripType(e.target.value as 'private' | 'public')
               }
-              disabled={isProcessing}
+              disabled={isProcessing || !isReady}
               className="form-select"
               aria-label="Select drip type"
             >
@@ -158,7 +173,7 @@ export const DripperCard: React.FC = () => {
           <button
             type="button"
             onClick={handleDrip}
-            disabled={!tokenAddress || !amount || isProcessing || isDeploying}
+            disabled={!amount || isProcessing || isDeploying || !isReady}
             className="btn btn-primary"
             aria-label={`Drip tokens to ${dripType} balance`}
           >
@@ -167,9 +182,11 @@ export const DripperCard: React.FC = () => {
             </span>
             {isDeploying
               ? 'Deploying Account...'
-              : isProcessing
-                ? 'Processing...'
-                : `Drip to ${dripType}`}
+              : !isReady
+                ? 'Loading Contracts...'
+                : isProcessing
+                  ? 'Processing...'
+                  : `Drip to ${dripType}`}
           </button>
         </div>
       </div>

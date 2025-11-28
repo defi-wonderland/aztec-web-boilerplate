@@ -9,7 +9,7 @@ import type {
   AddPrivateAuthwitAction,
   OperationResult
 } from '@azguardwallet/types';
-import { type AccountWallet } from '@aztec/aztec.js';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 
 // ============================================================================
 // AZGUARD WALLET TYPES
@@ -62,7 +62,7 @@ export interface AzguardWalletContextType {
   
   // Utility
   isAccountDeployed: (account: CaipAccount) => Promise<boolean>;
-  getAccountWallet: (account: CaipAccount) => Promise<AccountWallet>;
+  getAccountWallet: (account: CaipAccount) => Promise<AccountWithSecretKey>;
 }
 
 /**

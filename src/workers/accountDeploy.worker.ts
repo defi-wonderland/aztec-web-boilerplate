@@ -1,22 +1,73 @@
 /// <reference lib="webworker" />
 
 import { Buffer } from 'buffer';
+import { Fr } from '@aztec/aztec.js/fields';
+import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import {
-  Fr,
-  createPXEClient,
-  SponsoredFeePaymentMethod,
-} from '@aztec/aztec.js';
+  AccountManager,
+  BaseWallet,
+  type Wallet,
+} from '@aztec/aztec.js/wallet';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import { getEcdsaRAccount } from '@aztec/accounts/ecdsa/lazy';
+import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
+import { createPXE, getPXEConfig } from '@aztec/pxe/client/lazy';
+import {
+  type AccountWithSecretKey,
+  type Account,
+  SignerlessAccount,
+} from '@aztec/aztec.js/account';
+import type { PXE } from '@aztec/pxe/server';
 
 import type { WorkerRequest, WorkerResponse } from './messages';
 
 declare const self: DedicatedWorkerGlobalScope;
 
+/**
+ * MinimalWallet extends BaseWallet to bootstrap account creation in worker
+ */
+class MinimalWallet extends BaseWallet {
+  private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
+
+  constructor(pxe: PXE, aztecNode: AztecNode) {
+    super(pxe as unknown as any, aztecNode);
+  }
+
+  public addAccount(account: AccountWithSecretKey) {
+    this.addressToAccount.set(account.getAddress().toString(), account);
+  }
+
+  protected async getAccountFromAddress(
+    address: AztecAddress
+  ): Promise<Account> {
+    let account: Account | undefined;
+    if (address.equals(AztecAddress.ZERO)) {
+      const chainInfo = await this.getChainInfo();
+      account = new SignerlessAccount(chainInfo);
+    } else {
+      account = this.addressToAccount.get(address.toString());
+    }
+
+    if (!account)
+      throw new Error(
+        `Account not found in wallet for address: ${address.toString()}`
+      );
+    return account;
+  }
+
+  async getAccounts(): Promise<{ alias: string; item: AztecAddress }[]> {
+    return Array.from(this.addressToAccount.values()).map((acc) => ({
+      alias: '',
+      item: acc.getAddress(),
+    }));
+  }
+}
+
 async function getSponsoredPFCContract() {
   const { getContractInstanceFromInstantiationParams } = await import(
-    '@aztec/aztec.js'
+    '@aztec/aztec.js/contracts'
   );
   return await getContractInstanceFromInstantiationParams(
     SponsoredFPCContractArtifact,
@@ -39,8 +90,14 @@ self.addEventListener('message', async (event: MessageEvent) => {
       salt: typeof salt,
     });
 
-    // Connect to the PXE/node endpoint
-    const pxe = createPXEClient(nodeUrl);
+    // Connect to the Aztec node and create a PXE instance
+    const aztecNode = createAztecNodeClient(nodeUrl);
+    const config = getPXEConfig();
+    config.proverEnabled = true;
+    const pxe = await createPXE(aztecNode, config);
+
+    // Create MinimalWallet for account management
+    const minimalWallet = new MinimalWallet(pxe as unknown as PXE, aztecNode);
 
     await pxe.registerContract({
       instance: await getSponsoredPFCContract(),
@@ -56,36 +113,39 @@ self.addEventListener('message', async (event: MessageEvent) => {
     const saltFr = Fr.fromString(saltStr);
     const signingKey = Buffer.from(signingKeyHexStr, 'hex');
 
-    const ecdsaAccount = await getEcdsaRAccount(
-      pxe,
+    // Create an ECDSA account contract
+    const accountContract = new EcdsaRAccountContract(signingKey);
+
+    // Use MinimalWallet for AccountManager
+    const ecdsaAccount = await AccountManager.create(
+      minimalWallet,
       secretFr,
-      signingKey,
+      accountContract,
       saltFr
     );
 
-    console.log(await pxe.getContractMetadata(ecdsaAccount.getAddress()));
+    // Register the account
+    const ecdsaWallet = await ecdsaAccount.getAccount();
+    const instance = ecdsaAccount.getInstance();
+    const artifact = await ecdsaAccount
+      .getAccountContract()
+      .getContractArtifact();
+    await minimalWallet.registerContract(
+      instance,
+      artifact,
+      ecdsaAccount.getSecretKey()
+    );
+    minimalWallet.addAccount(ecdsaWallet);
 
-    // Always register the account in the worker context to ensure proper PXE state
-    try {
-      await ecdsaAccount.register();
-      console.log('✅ Account registered with worker PXE');
-    } catch (registerError) {
-      console.warn(
-        '⚠️ Account registration with worker PXE failed (may already be registered)',
-        registerError
-      );
-      // Continue with deployment even if registration fails
-    }
+    console.log(await minimalWallet.getContractMetadata(ecdsaAccount.address));
 
     const deployMethod = await ecdsaAccount.getDeployMethod();
     const sponsoredPFC = await getSponsoredPFCContract();
-    const paymentMethod = await ecdsaAccount.getSelfPaymentMethod(
-      new SponsoredFeePaymentMethod(sponsoredPFC.address)
-    );
+    const paymentMethod = new SponsoredFeePaymentMethod(sponsoredPFC.address);
 
     try {
-      const provenInteraction = await deployMethod.prove({
-        from: ecdsaAccount.getAddress(),
+      const provenInteraction = await deployMethod.simulate({
+        from: ecdsaAccount.address,
         contractAddressSalt: saltFr,
         fee: { paymentMethod },
         universalDeploy: true,
@@ -93,7 +153,9 @@ self.addEventListener('message', async (event: MessageEvent) => {
         // skipClassRegistration: true,
         // skipPublicDeployment: true,
       });
-      const receipt = await provenInteraction.send().wait({ timeout: 120 });
+      const receipt = await provenInteraction.result
+        .send()
+        .wait({ timeout: 120 });
 
       const response: WorkerResponse = {
         type: 'deployed',

@@ -1,12 +1,12 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { type AccountWallet } from '@aztec/aztec.js';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { useAztecWallet, useAzguardWallet } from '../hooks';
 import { WalletType } from '../types/aztec';
 
 interface UniversalWalletContextType {
   // Current active wallet
   activeWalletType: WalletType | null;
-  activeAccount: AccountWallet | null;
+  activeAccount: AccountWithSecretKey | null;
   isConnected: boolean;
   
   // Wallet switching
@@ -27,7 +27,7 @@ interface UniversalWalletProviderProps {
 
 export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = ({ children }) => {
   const [activeWalletType, setActiveWalletType] = useState<WalletType | null>(null);
-  const [activeAccount, setActiveAccount] = useState<AccountWallet | null>(null);
+  const [activeAccount, setActiveAccount] = useState<AccountWithSecretKey | null>(null);
   
   const { connectedAccount: embeddedAccount, disconnectWallet: disconnectEmbedded } = useAztecWallet();
   const { 

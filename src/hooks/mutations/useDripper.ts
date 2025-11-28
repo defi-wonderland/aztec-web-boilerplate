@@ -1,102 +1,166 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAztecWallet } from '../context';
+import { useDripperContract } from '../context/useDripperContract';
+import { useTokenContract } from '../context/useTokenContract';
 import { useUniversalWallet } from '../context/useUniversalWallet';
+import { useAztecWallet } from '../context/useAztecWallet';
 import { queryKeys } from '../queries/queryKeys';
 
 interface DripParams {
-  tokenAddress: string;
   amount: bigint;
 }
 
-interface UseDripperMutationOptions {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
+interface UseDripperOptions {
+  onDripToPrivateSuccess?: () => void;
+  onDripToPrivateError?: (error: Error) => void;
+  onDripToPublicSuccess?: () => void;
+  onDripToPublicError?: (error: Error) => void;
+  onSyncSuccess?: () => void;
+  onSyncError?: (error: Error) => void;
 }
 
 /**
- * Hook for minting tokens to private balance.
- * Automatically invalidates token balance query on success.
+ * Hook for all Dripper contract operations.
+ * Returns mutation objects for each operation with independent state.
+ *
+ * @example
+ * ```typescript
+ * const { dripToPrivate, dripToPublic, syncPrivateState, isReady } = useDripper();
+ *
+ * // Drip tokens
+ * dripToPrivate.mutate({ amount: 1000n });
+ *
+ * // Check loading state
+ * if (dripToPrivate.isPending) {
+ *   return <Loading />;
+ * }
+ * ```
  */
-export const useDripToPrivate = (options: UseDripperMutationOptions = {}) => {
-  const { dripperService } = useAztecWallet();
+export const useDripper = (options: UseDripperOptions = {}) => {
+  const { dripper, isReady: isDripperReady } = useDripperContract();
+  const { token, isReady: isTokenReady } = useTokenContract();
   const { activeAccount } = useUniversalWallet();
+  const { wallet, getSponsoredFeePaymentMethod } = useAztecWallet();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ tokenAddress, amount }: DripParams) => {
-      if (!dripperService) {
-        throw new Error('Dripper service not available');
-      }
-      await dripperService.dripToPrivate(tokenAddress, amount);
-    },
-    onSuccess: (_, variables) => {
-      // Invalidate the specific token balance query
-      const ownerAddress = activeAccount?.getAddress().toString();
-      if (ownerAddress) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.token.balance(variables.tokenAddress, ownerAddress),
-        });
-      }
-      options.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      options.onError?.(error);
-    },
-  });
-};
+  const isReady = isDripperReady && isTokenReady && !!wallet;
 
-/**
- * Hook for minting tokens to public balance.
- * Automatically invalidates token balance query on success.
- */
-export const useDripToPublic = (options: UseDripperMutationOptions = {}) => {
-  const { dripperService } = useAztecWallet();
-  const { activeAccount } = useUniversalWallet();
-  const queryClient = useQueryClient();
+  const invalidateBalances = () => {
+    const ownerAddress = activeAccount?.getAddress().toString();
+    if (ownerAddress && token) {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.token.balance(token.address.toString(), ownerAddress),
+      });
+    }
+  };
 
-  return useMutation({
-    mutationFn: async ({ tokenAddress, amount }: DripParams) => {
-      if (!dripperService) {
-        throw new Error('Dripper service not available');
+  const dripToPrivate = useMutation({
+    mutationFn: async ({ amount }: DripParams) => {
+      if (!dripper || !isDripperReady) {
+        throw new Error('Dripper contract not ready');
       }
-      await dripperService.dripToPublic(tokenAddress, amount);
-    },
-    onSuccess: (_, variables) => {
-      // Invalidate the specific token balance query
-      const ownerAddress = activeAccount?.getAddress().toString();
-      if (ownerAddress) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.token.balance(variables.tokenAddress, ownerAddress),
-        });
+      if (!token || !isTokenReady) {
+        throw new Error('Token contract not ready');
       }
-      options.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      options.onError?.(error);
-    },
-  });
-};
+      if (!wallet) {
+        throw new Error('Wallet not available');
+      }
 
-/**
- * Hook for syncing private state.
- * Triggers a sync of the private state for the dripper contract.
- */
-export const useSyncPrivateState = (options: UseDripperMutationOptions = {}) => {
-  const { dripperService } = useAztecWallet();
-
-  return useMutation({
-    mutationFn: async () => {
-      if (!dripperService) {
-        throw new Error('Dripper service not available');
+      const accounts = await wallet.getAccounts();
+      if (accounts.length === 0) {
+        throw new Error('No accounts in wallet');
       }
-      await dripperService.syncPrivateState();
+      const fromAddress = accounts[0].item;
+      const paymentMethod = await getSponsoredFeePaymentMethod();
+
+      await dripper.methods
+        .drip_to_private(token.address, amount)
+        .send({
+          from: fromAddress,
+          fee: { paymentMethod },
+        })
+        .wait({ timeout: 120 });
     },
     onSuccess: () => {
-      options.onSuccess?.();
+      invalidateBalances();
+      options.onDripToPrivateSuccess?.();
     },
     onError: (error: Error) => {
-      options.onError?.(error);
+      options.onDripToPrivateError?.(error);
     },
   });
-};
 
+  const dripToPublic = useMutation({
+    mutationFn: async ({ amount }: DripParams) => {
+      if (!dripper || !isDripperReady) {
+        throw new Error('Dripper contract not ready');
+      }
+      if (!token || !isTokenReady) {
+        throw new Error('Token contract not ready');
+      }
+      if (!wallet) {
+        throw new Error('Wallet not available');
+      }
+
+      const accounts = await wallet.getAccounts();
+      if (accounts.length === 0) {
+        throw new Error('No accounts in wallet');
+      }
+      const fromAddress = accounts[0].item;
+      const paymentMethod = await getSponsoredFeePaymentMethod();
+
+      await dripper.methods
+        .drip_to_public(token.address, amount)
+        .send({
+          from: fromAddress,
+          fee: { paymentMethod },
+        })
+        .wait({ timeout: 120 });
+    },
+    onSuccess: () => {
+      invalidateBalances();
+      options.onDripToPublicSuccess?.();
+    },
+    onError: (error: Error) => {
+      options.onDripToPublicError?.(error);
+    },
+  });
+
+  const syncPrivateState = useMutation({
+    mutationFn: async () => {
+      if (!dripper || !isDripperReady) {
+        throw new Error('Dripper contract not ready');
+      }
+      if (!wallet) {
+        throw new Error('Wallet not available');
+      }
+
+      const accounts = await wallet.getAccounts();
+      if (accounts.length === 0) {
+        throw new Error('No accounts in wallet');
+      }
+      const fromAddress = accounts[0].item;
+      const paymentMethod = await getSponsoredFeePaymentMethod();
+
+      await dripper.methods
+        .sync_private_state()
+        .send({
+          from: fromAddress,
+          fee: { paymentMethod },
+        })
+        .wait({ timeout: 120 });
+    },
+    onSuccess: () => {
+      options.onSyncSuccess?.();
+    },
+    onError: (error: Error) => {
+      options.onSyncError?.(error);
+    },
+  });
+
+  return {
+    dripToPrivate,
+    dripToPublic,
+    syncPrivateState,
+    isReady,
+  };
+};

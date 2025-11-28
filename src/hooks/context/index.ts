@@ -1,8 +1,9 @@
 export { useAztecWallet } from './useAztecWallet';
-export * from './useToken';
 export { useConfig } from './useConfig';
 export { useAzguardWallet } from './useAzguardWallet';
 export { useUniversalWallet } from './useUniversalWallet';
 export { useTheme } from './useTheme';
-export { useContract } from './useContract';
+export { useContractRegistration } from './useContractRegistration';
 export { useContractRegistry } from './useContractRegistry';
+export { useDripperContract } from './useDripperContract';
+export { useTokenContract } from './useTokenContract';

@@ -1,41 +1,18 @@
-import { type AccountWallet, Fr } from '@aztec/aztec.js';
+import { Fr } from '@aztec/aztec.js/fields';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { AztecWalletService } from '../core';
-import { AztecDripperService, AztecTokenService } from '../features';
 import { WalletServices } from './initialization';
 import { AppConfig } from '../../../config/networks';
+import type { MessageInfo } from '../../../providers/ErrorProvider';
 
-export interface WalletActionServices {
-  dripperService: AztecDripperService;
-  tokenService: AztecTokenService;
-}
-
-export const createWalletActionServices = (
-  walletServices: WalletServices,
-  config: AppConfig,
-  getConnectedAccount: () => AccountWallet | null
-): WalletActionServices => {
-  const dripperService = new AztecDripperService(
-    () => walletServices.walletService.getSponsoredFeePaymentMethod(),
-    config.dripperContractAddress,
-    getConnectedAccount,
-    () => walletServices.walletService.getPXE(),
-    config
-  );
-
-  const tokenService = new AztecTokenService(getConnectedAccount);
-
-  return {
-    dripperService,
-    tokenService,
-  };
-};
+type AddMessageFn = (message: Omit<MessageInfo, 'id' | 'timestamp'>) => void;
 
 export const createAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
-  addMessage?: (message: any) => void,
+  addMessage?: AddMessageFn,
   config?: AppConfig
-): Promise<AccountWallet> => {
+): Promise<AccountWithSecretKey> => {
   const result = await walletServices.walletService.createEcdsaAccount();
   
   // Clear any existing account and save the new one to storage
@@ -65,8 +42,8 @@ export const createAccount = async (
           salt: result.salt.toString(),
         },
         {
-          onSuccess: (response: any) => {
-            console.log('✅ Account deployed successfully', response.payload);
+          onSuccess: (response: unknown) => {
+            console.log('✅ Account deployed successfully', response);
             setIsDeploying(false);
           },
           onError: (error: string) => {
@@ -104,16 +81,16 @@ export const createAccount = async (
 export const connectTestAccount = async (
   walletService: AztecWalletService,
   index: number
-): Promise<AccountWallet> => {
+): Promise<AccountWithSecretKey> => {
   return await walletService.connectTestAccount(index);
 };
 
 export const connectExistingAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
-  addMessage?: (message: any) => void,
+  addMessage?: AddMessageFn,
   config?: AppConfig
-): Promise<AccountWallet | null> => {
+): Promise<AccountWithSecretKey | null> => {
   const account = walletServices.storageService.getAccount();
   if (!account) {
     return null;
@@ -142,8 +119,8 @@ export const connectExistingAccount = async (
           salt: account.salt,
         },
         {
-          onSuccess: (response: any) => {
-            console.log('✅ Existing account deployed successfully', response.payload);
+          onSuccess: (response: unknown) => {
+            console.log('✅ Existing account deployed successfully', response);
             setIsDeploying(false);
           },
           onError: (error: string) => {

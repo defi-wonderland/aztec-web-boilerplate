@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { type AccountWallet } from '@aztec/aztec.js';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type {
   AzguardWalletContextType,
   AzguardWalletState,
