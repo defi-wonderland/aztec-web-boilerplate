@@ -1,14 +1,10 @@
 import React from 'react';
 import { useTokenBalance } from '../hooks/queries/useTokenBalance';
-import { useTokenContract } from '../hooks/context/useTokenContract';
-import { useDripperContract } from '../hooks/context/useDripperContract';
 import { useConfig, useUniversalWallet } from '../hooks';
 import { AddressDisplay } from '../components/AddressDisplay';
 
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isLoading: isBalanceLoading } = useTokenBalance();
-  const { token } = useTokenContract();
-  const { dripper } = useDripperContract();
   const { currentConfig } = useConfig();
   const { getAccountAddress } = useUniversalWallet();
 
@@ -130,7 +126,7 @@ export const Sidebar: React.FC = () => {
           <div className="address-section">
             <label className="address-label">Token Contract:</label>
             <AddressDisplay
-              address={token?.address.toString() ?? currentConfig.tokenContractAddress}
+              address={currentConfig.tokenContractAddress}
               copyMessage="Token contract address copied to clipboard"
               className="sidebar-address"
             />
@@ -138,7 +134,7 @@ export const Sidebar: React.FC = () => {
           <div className="address-section">
             <label className="address-label">Dripper Contract:</label>
             <AddressDisplay
-              address={dripper?.address.toString() ?? currentConfig.dripperContractAddress}
+              address={currentConfig.dripperContractAddress}
               copyMessage="Dripper contract address copied to clipboard"
               className="sidebar-address"
             />

@@ -2,6 +2,7 @@ import type { ContractArtifact, FunctionAbi } from '@aztec/stdlib/abi';
 import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { Fr } from '@aztec/aztec.js/fields';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
+import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
 import type { AppConfig } from '../config/networks';
 
@@ -21,11 +22,20 @@ export interface ContractDeployParams {
 }
 
 /**
+ * Contract class interface - any class with a static `at` method
+ */
+export interface ContractClass<TContract = unknown> {
+  at: (address: AztecAddress, wallet: Wallet) => Promise<TContract>;
+}
+
+/**
  * Configuration for a single contract in the registry
  */
-export interface ContractConfigDefinition<TConfig = AppConfig> {
+export interface ContractConfigDefinition<TConfig = AppConfig, TContract = unknown> {
   /** The contract artifact containing ABI and bytecode */
   artifact: ContractArtifact;
+  /** The contract class with static `at` method for creating callable instances */
+  contract: ContractClass<TContract>;
   /** Function to derive the expected contract address from app config */
   address: (config: TConfig) => string;
   /** Function to derive deployment parameters from app config */
@@ -37,13 +47,19 @@ export interface ContractConfigDefinition<TConfig = AppConfig> {
  */
 export type ContractConfigMap<TConfig = AppConfig> = Record<
   string,
-  ContractConfigDefinition<TConfig>
+  ContractConfigDefinition<TConfig, unknown>
 >;
 
 /**
  * Infer contract names from a config map
  */
 export type ContractNames<T extends ContractConfigMap> = keyof T & string;
+
+/**
+ * Infer the contract type from a config entry
+ */
+export type InferContractType<T extends ContractConfigDefinition> = 
+  T extends ContractConfigDefinition<infer _TConfig, infer TContract> ? TContract : unknown;
 
 /**
  * State of a registered contract in the cache
@@ -85,15 +101,17 @@ export interface AztecContractProviderProps<T extends ContractConfigMap> {
 }
 
 /**
- * Return type for useContract hook
+ * Return type for useContractRegistration hook
  */
-export interface UseContractReturn {
-  /** The contract instance if registered */
-  instance: ContractInstanceWithAddress | null;
+export interface UseContractReturn<TContract = unknown> {
+  /** The callable contract instance if registered and ready */
+  contract: TContract | null;
   /** Current status of the contract */
   status: ContractStatus;
   /** Error if registration failed */
   error: Error | null;
+  /** Whether the contract is ready to use */
+  isReady: boolean;
   /** Function to manually trigger registration */
   register: () => Promise<void>;
 }
@@ -139,6 +157,8 @@ export interface IContractRegistry<T extends ContractConfigMap> {
   getInstance(name: ContractNames<T>): ContractInstanceWithAddress | null;
   /** Get the status of a contract */
   getStatus(name: ContractNames<T>): ContractStatus;
+  /** Get the contract class for creating callable instances */
+  getContractClass(name: ContractNames<T>): ContractClass | null;
   /** Ensure a contract is registered (checks PXE first) */
   ensureRegistered(name: ContractNames<T>): Promise<void>;
   /** Register multiple contracts in parallel */
@@ -148,4 +168,3 @@ export interface IContractRegistry<T extends ContractConfigMap> {
   /** Subscribe to status changes */
   subscribe(callback: () => void): () => void;
 }
-

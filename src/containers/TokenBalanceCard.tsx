@@ -1,12 +1,14 @@
 import React from 'react';
-import { useTokenContract } from '../hooks/context/useTokenContract';
+import { useConfig } from '../hooks/context/useConfig';
+import { useContractRegistration } from '../hooks/context/useContractRegistration';
 import { useTokenBalance } from '../hooks/queries/useTokenBalance';
 
 export const TokenBalanceCard: React.FC = () => {
-  const { token, status } = useTokenContract();
+  const { currentConfig } = useConfig();
+  const { status } = useContractRegistration('token');
   const { isLoading, error } = useTokenBalance();
 
-  const tokenAddress = token?.address.toString() ?? '';
+  const tokenAddress = currentConfig.tokenContractAddress;
 
   return (
     <div className="token-address-input">

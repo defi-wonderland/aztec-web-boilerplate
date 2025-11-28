@@ -12,6 +12,7 @@ export const aztecContracts = createContractConfig({
    */
   dripper: {
     artifact: DripperContract.artifact,
+    contract: DripperContract,
     address: (config) => config.dripperContractAddress,
     deployParams: (config) => ({
       salt: Fr.fromString(config.dripperDeploymentSalt),
@@ -27,6 +28,7 @@ export const aztecContracts = createContractConfig({
    */
   token: {
     artifact: TokenContract.artifact,
+    contract: TokenContract,
     address: (config) => config.tokenContractAddress,
     deployParams: (config) => ({
       salt: Fr.fromString(config.tokenDeploymentSalt),

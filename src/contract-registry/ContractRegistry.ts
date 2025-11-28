@@ -7,6 +7,7 @@ import type {
   ContractConfigMap,
   ContractNames,
   ContractStatus,
+  ContractClass,
   IContractRegistry,
   RegisteredContract,
 } from './types';
@@ -78,6 +79,17 @@ export class ContractRegistry<T extends ContractConfigMap>
    */
   getStatus(name: ContractNames<T>): ContractStatus {
     return this.cache.get(name)?.status ?? 'idle';
+  }
+
+  /**
+   * Get the contract class for creating callable instances
+   */
+  getContractClass(name: ContractNames<T>): ContractClass | null {
+    const contractConfig = this.contracts[name];
+    if (!contractConfig) {
+      return null;
+    }
+    return contractConfig.contract;
   }
 
   /**

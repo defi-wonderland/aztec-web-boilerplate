@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDripperContract } from '../context/useDripperContract';
-import { useTokenContract } from '../context/useTokenContract';
+import { useContractRegistration } from '../context/useContractRegistration';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useAztecWallet } from '../context/useAztecWallet';
 import { queryKeys } from '../queries/queryKeys';
+import type { ContractConfigMap } from '../../contract-registry';
+import type { DripperContract } from '../../artifacts/Dripper';
+import type { TokenContract } from '../../artifacts/Token';
 
 interface DripParams {
   amount: bigint;
@@ -36,8 +38,16 @@ interface UseDripperOptions {
  * ```
  */
 export const useDripper = (options: UseDripperOptions = {}) => {
-  const { dripper, isReady: isDripperReady } = useDripperContract();
-  const { token, isReady: isTokenReady } = useTokenContract();
+  const {
+    contract: dripper,
+    isReady: isDripperReady,
+  } = useContractRegistration<ContractConfigMap, DripperContract>('dripper');
+
+  const {
+    contract: token,
+    isReady: isTokenReady,
+  } = useContractRegistration<ContractConfigMap, TokenContract>('token');
+
   const { activeAccount } = useUniversalWallet();
   const { wallet, getSponsoredFeePaymentMethod } = useAztecWallet();
   const queryClient = useQueryClient();

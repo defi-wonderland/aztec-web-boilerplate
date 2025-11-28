@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAztecWallet, useAzguardWallet } from '../hooks';
-import { useTokenContract } from '../hooks/context/useTokenContract';
+import { useAztecWallet, useAzguardWallet, useConfig } from '../hooks';
+import { useContractRegistration } from '../hooks/context/useContractRegistration';
 import { useDripper } from '../hooks/mutations/useDripper';
 import { useError } from '../providers/ErrorProvider';
 
@@ -8,9 +8,10 @@ export const DripperCard: React.FC = () => {
   const { connectedAccount, isInitialized, isDeploying } = useAztecWallet();
   const { state: azguardState } = useAzguardWallet();
   const { addError } = useError();
+  const { currentConfig } = useConfig();
   
-  // Get token for address display
-  const { token, status: tokenStatus } = useTokenContract();
+  // Get token contract status
+  const { status: tokenStatus } = useContractRegistration('token');
 
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
@@ -67,9 +68,7 @@ export const DripperCard: React.FC = () => {
   };
 
   const handleCopyAddress = () => {
-    if (token) {
-      navigator.clipboard.writeText(token.address.toString());
-    }
+    navigator.clipboard.writeText(currentConfig.tokenContractAddress);
   };
 
   // Show dripper form when either wallet is connected and app is initialized
@@ -121,7 +120,7 @@ export const DripperCard: React.FC = () => {
               <input
                 id="token-address"
                 type="text"
-                value={token?.address.toString() ?? 'Loading...'}
+                value={currentConfig.tokenContractAddress}
                 readOnly
                 className="form-input"
                 aria-label="Token contract address"
@@ -132,7 +131,6 @@ export const DripperCard: React.FC = () => {
                 onClick={handleCopyAddress}
                 title="Copy to clipboard"
                 aria-label="Copy address to clipboard"
-                disabled={!token}
               >
                 📋
               </button>

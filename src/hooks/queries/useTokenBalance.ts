@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback } from 'react';
-import { useTokenContract } from '../context/useTokenContract';
+import { useContractRegistration } from '../context/useContractRegistration';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { queryKeys } from './queryKeys';
+import type { ContractConfigMap } from '../../contract-registry';
+import type { TokenContract } from '../../artifacts/Token';
 
 interface TokenBalance {
   private: bigint;
@@ -30,14 +32,18 @@ interface UseTokenBalanceReturn {
 
 /**
  * Hook to fetch token balance for the connected account.
- * Uses the Token contract directly via useTokenContract hook.
+ * Uses the Token contract directly via useContractRegistration hook.
  * Uses React Query for caching and automatic refetching.
  * 
  * @param options - Configuration options
  * @param options.enabled - Whether to enable the query (defaults to true when wallet is connected)
  */
 export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenBalanceReturn => {
-  const { token, isReady: isTokenReady } = useTokenContract();
+  const {
+    contract: token,
+    isReady: isTokenReady,
+  } = useContractRegistration<ContractConfigMap, TokenContract>('token');
+
   const { activeAccount } = useUniversalWallet();
   const queryClient = useQueryClient();
 
@@ -112,7 +118,10 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
  * Hook to manage token balance utilities.
  */
 export const useTokenWithAddress = () => {
-  const { token } = useTokenContract();
+  const {
+    contract: token,
+  } = useContractRegistration<ContractConfigMap, TokenContract>('token');
+
   const queryClient = useQueryClient();
 
   const tokenAddress = token?.address.toString() ?? '';
