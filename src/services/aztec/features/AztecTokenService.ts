@@ -119,8 +119,9 @@ export class AztecTokenService implements ITokenService {
   /**
    * Simulate a transaction
    */
-  private async simulateTransaction(interaction: ContractFunctionInteraction): Promise<any> {
-    const res = await interaction.simulate();
-    return res;
+  private async simulateTransaction(interaction: ContractFunctionInteraction): Promise<bigint> {
+    const connectedAccount = this.getConnectedAccount();
+    const res = await interaction.simulate({ from: connectedAccount?.getAddress() });
+    return res as bigint;
   }
 }

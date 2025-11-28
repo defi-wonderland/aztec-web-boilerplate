@@ -1,33 +1,48 @@
-import { AztecAddress, Fr } from '@aztec/aztec.js';
-import { AztecWalletService, AztecContractService } from '../core';
+import { AztecAddress } from '@aztec/aztec.js';
+import { AztecWalletService } from '../core';
 import { AztecStorageService } from '../storage';
-import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
-import { TokenContract as AztecTokenContract } from '@aztec/noir-contracts.js/Token';
-import { AppConfig } from '../../../config/networks';
 
+/**
+ * Wallet services returned from initialization.
+ * 
+ * Note: Contract registration is now handled separately via AztecContractProvider.
+ * Use the useContract or useContractRegistry hooks to access registered contracts.
+ */
 export interface WalletServices {
   storageService: AztecStorageService;
   walletService: AztecWalletService;
-  contractService: AztecContractService;
 }
 
+/**
+ * Initialize wallet services (PXE connection and storage).
+ * 
+ * Contract registration is handled separately by AztecContractProvider
+ * which provides lazy/eager loading capabilities and PXE persistence checks.
+ * 
+ * @example
+ * ```tsx
+ * // In your provider setup:
+ * const services = await initializeWalletServices(nodeUrl, config);
+ * 
+ * // Then wrap with AztecContractProvider to register contracts:
+ * <AztecContractProvider
+ *   contracts={aztecContracts}
+ *   pxe={services.walletService.getPXE()}
+ *   config={config}
+ * >
+ *   {children}
+ * </AztecContractProvider>
+ * ```
+ */
 export const initializeWalletServices = async (
-  nodeUrl: string,
-  config: AppConfig
+  nodeUrl: string
 ): Promise<WalletServices> => {
   // Initialize storage service
   const storageService = new AztecStorageService();
 
-  // Initialize wallet service
+  // Initialize wallet service (creates PXE connection)
   const walletService = new AztecWalletService();
   await walletService.initialize(nodeUrl);
-
-  // Initialize contract service
-  const contractService = new AztecContractService(walletService.getPXE());
-
-  // Register contracts
-  await registerContracts(contractService, config);
 
   // Register saved senders with PXE
   await registerSavedSenders(walletService, storageService);
@@ -35,67 +50,7 @@ export const initializeWalletServices = async (
   return {
     storageService,
     walletService,
-    contractService,
   };
-};
-
-const registerContracts = async (
-  contractService: AztecContractService,
-  config: AppConfig
-): Promise<void> => {
-  // Get the deployer address from config (must match the address used during deployment)
-  const deployerAddress = AztecAddress.fromString(config.deployerAddress);
-
-  // Register Dripper contract
-  const dripperDeploymentSalt = Fr.fromString(config.dripperDeploymentSalt);
-  
-  await contractService.registerContract(
-    DripperContract.artifact,
-    deployerAddress,
-    dripperDeploymentSalt,
-    [], // No constructor args for Dripper
-    'constructor' // Pass the specific constructor artifact
-  );
-
-  // Register Token contract (Wonderland Token with constructor_with_minter)
-  const tokenDeploymentSalt = Fr.fromString(config.tokenDeploymentSalt);
-
-  await contractService.registerContract(
-    TokenContract.artifact,
-    deployerAddress,
-    tokenDeploymentSalt,
-    [
-      "Yield Token", // name
-      "YT", // symbol
-      18, // decimals
-      AztecAddress.fromString(config.dripperContractAddress), // minter (Dripper address)
-      AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
-    ],
-    'constructor_with_minter'
-  );
-
-  // Register WETH contract if on testnet (using Aztec Token for testnet WETH)
-  if (config.isTestnet) {
-    try {
-      const wethDeploymentSalt = Fr.fromHexString('0x21709ebd7c082ffe19291eca4b0ab5220814dbc07d79e8c876c1a37f3bbf3cd0');
-      const wethDeployer = AztecAddress.fromString('0x2103c4465e9d73a7b400576451beae75839e215178c0846120e9ed261ebf4f58');
-
-      await contractService.registerContract(
-        AztecTokenContract.artifact,
-        wethDeployer,
-        wethDeploymentSalt,
-        [
-          wethDeployer,
-          "Wrapped Ethereum",
-          "WETH",
-          18,
-        ],
-        'constructor'
-      );
-    } catch (error) {
-      // Don't fail initialization if WETH registration fails
-    }
-  }
 };
 
 const registerSavedSenders = async (

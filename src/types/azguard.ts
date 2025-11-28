@@ -95,6 +95,42 @@ export interface AzguardWalletError extends Error {
   data?: any;
 }
 
+/**
+ * Azguard wallet service interface
+ * Handles communication with Azguard wallet extension
+ */
+export interface IAzguardWalletService {
+  // Core initialization
+  initialize(): Promise<void>;
+  
+  // Wallet detection and connection
+  isInstalled(): Promise<boolean>;
+  connect(dappMetadata: AzguardConnectionConfig['dappMetadata'], permissions: AzguardConnectionConfig['permissions']): Promise<CaipAccount[]>;
+  disconnect(): Promise<void>;
+  
+  // Account management
+  getAccounts(): Promise<CaipAccount[]>;
+  getSelectedAccount(): CaipAccount | null;
+  
+  // Transaction operations
+  sendTransaction(operation: SendTransactionOperation): Promise<string>;
+  simulateViews(operation: SimulateViewsOperation): Promise<unknown>;
+  registerContract(operation: RegisterContractOperation): Promise<void>;
+  
+  // Batch operations
+  executeOperations(operations: Operation[]): Promise<OperationResult[]>;
+  
+  // Event handling
+  onAccountsChanged(callback: (accounts: CaipAccount[]) => void): void;
+  onDisconnected(callback: () => void): void;
+  
+  // Utility
+  getSupportedChains(): string[];
+  getState(): AzguardWalletState;
+  getClient(): AzguardClient | null;
+  destroy(): void;
+}
+
 // Re-export commonly used Azguard types
 export type {
   AzguardClient,

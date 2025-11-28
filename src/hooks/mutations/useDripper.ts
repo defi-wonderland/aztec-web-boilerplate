@@ -77,3 +77,26 @@ export const useDripToPublic = (options: UseDripperMutationOptions = {}) => {
   });
 };
 
+/**
+ * Hook for syncing private state.
+ * Triggers a sync of the private state for the dripper contract.
+ */
+export const useSyncPrivateState = (options: UseDripperMutationOptions = {}) => {
+  const { dripperService } = useAztecWallet();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!dripperService) {
+        throw new Error('Dripper service not available');
+      }
+      await dripperService.syncPrivateState();
+    },
+    onSuccess: () => {
+      options.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      options.onError?.(error);
+    },
+  });
+};
+

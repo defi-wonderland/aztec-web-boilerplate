@@ -54,7 +54,7 @@ describe('AztecTokenService', () => {
 
   describe('getPrivateBalance', () => {
     it('returns balance when account is connected', async () => {
-      mockGetConnectedAccount.mockReturnValue({});
+      mockGetConnectedAccount.mockReturnValue({ getAddress: vi.fn().mockReturnValue({ toString: () => OWNER_ADDRESS }) });
       mockTokenContract.methods.balance_of_private.mockReturnValue({
         simulate: vi.fn().mockResolvedValue(1000n)
       });
@@ -75,7 +75,7 @@ describe('AztecTokenService', () => {
 
   describe('getPublicBalance', () => {
     it('returns balance when account is connected', async () => {
-      mockGetConnectedAccount.mockReturnValue({});
+      mockGetConnectedAccount.mockReturnValue({ getAddress: vi.fn().mockReturnValue({ toString: () => OWNER_ADDRESS }) });
       mockTokenContract.methods.balance_of_public.mockReturnValue({
         simulate: vi.fn().mockResolvedValue(2000n)
       });
@@ -96,7 +96,7 @@ describe('AztecTokenService', () => {
 
   describe('getWethPrivateBalance', () => {
     it('returns balance when account is connected', async () => {
-      mockGetConnectedAccount.mockReturnValue({});
+      mockGetConnectedAccount.mockReturnValue({ getAddress: vi.fn().mockReturnValue({ toString: () => OWNER_ADDRESS }) });
       mockTokenContract.methods.balance_of_private.mockReturnValue({
         simulate: vi.fn().mockResolvedValue(500n)
       });
@@ -107,7 +107,7 @@ describe('AztecTokenService', () => {
     });
 
     it('returns 0n on error', async () => {
-      mockGetConnectedAccount.mockReturnValue({});
+      mockGetConnectedAccount.mockReturnValue({ getAddress: vi.fn().mockReturnValue({ toString: () => OWNER_ADDRESS }) });
       mockTokenContract.methods.balance_of_private.mockReturnValue({
         simulate: vi.fn().mockRejectedValue(new Error('Contract error'))
       });
@@ -127,7 +127,7 @@ describe('AztecTokenService', () => {
 
   describe('getWethPublicBalance', () => {
     it('returns balance when account is connected', async () => {
-      mockGetConnectedAccount.mockReturnValue({});
+      mockGetConnectedAccount.mockReturnValue({ getAddress: vi.fn().mockReturnValue({ toString: () => OWNER_ADDRESS }) });
       mockTokenContract.methods.balance_of_public.mockReturnValue({
         simulate: vi.fn().mockResolvedValue(750n)
       });
@@ -138,7 +138,7 @@ describe('AztecTokenService', () => {
     });
 
     it('returns 0n on error', async () => {
-      mockGetConnectedAccount.mockReturnValue({});
+      mockGetConnectedAccount.mockReturnValue({ getAddress: vi.fn().mockReturnValue({ toString: () => OWNER_ADDRESS }) });
       mockTokenContract.methods.balance_of_public.mockReturnValue({
         simulate: vi.fn().mockRejectedValue(new Error('Contract error'))
       });
@@ -156,4 +156,5 @@ describe('AztecTokenService', () => {
     });
   });
 });
+
 

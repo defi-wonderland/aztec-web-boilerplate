@@ -1,7 +1,6 @@
 import { type AccountWallet, Fr } from '@aztec/aztec.js';
-import { AztecWalletService, AztecContractService } from '../core';
+import { AztecWalletService } from '../core';
 import { AztecDripperService, AztecTokenService } from '../features';
-import { AztecStorageService } from '../storage';
 import { WalletServices } from './initialization';
 import { AppConfig } from '../../../config/networks';
 
@@ -18,7 +17,9 @@ export const createWalletActionServices = (
   const dripperService = new AztecDripperService(
     () => walletServices.walletService.getSponsoredFeePaymentMethod(),
     config.dripperContractAddress,
-    getConnectedAccount
+    getConnectedAccount,
+    () => walletServices.walletService.getPXE(),
+    config
   );
 
   const tokenService = new AztecTokenService(getConnectedAccount);

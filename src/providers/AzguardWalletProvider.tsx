@@ -169,12 +169,15 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
       console.log('🔧 Azguard connection config:', config);
 
       // Try to connect with primary config, fallback to minimal config if it fails
-      let accounts: CaipAccount[];
+      let accounts: CaipAccount[] = [];
+      let connectionSuccessful = false;
+      
       try {
         accounts = await azguardServiceRef.current.connect(
           config.dappMetadata,
           config.permissions
         );
+        connectionSuccessful = true;
       } catch (primaryError) {
         console.warn('⚠️ Primary connection config failed, trying minimal config:', primaryError);
         
@@ -197,7 +200,7 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
           }
         ];
 
-        let lastError = primaryError;
+        let lastError: unknown = primaryError;
         for (let i = 0; i < fallbackConfigs.length; i++) {
           try {
             console.log(`🔧 Trying fallback config ${i + 1}:`, fallbackConfigs[i]);
@@ -205,14 +208,16 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
               fallbackConfigs[i].dappMetadata,
               fallbackConfigs[i].permissions
             );
+            connectionSuccessful = true;
             break; // Success, exit loop
           } catch (fallbackError) {
             console.warn(`⚠️ Fallback config ${i + 1} failed:`, fallbackError);
             lastError = fallbackError;
-            if (i === fallbackConfigs.length - 1) {
-              throw lastError; // Throw the last error if all configs fail
-            }
           }
+        }
+        
+        if (!connectionSuccessful) {
+          throw lastError; // Throw the last error if all configs fail
         }
       }
 
@@ -358,7 +363,7 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
   const contextValue: AzguardWalletContextType = {
     // State
     state,
-    client: azguardServiceRef.current,
+    client: azguardServiceRef.current?.getClient() ?? null,
 
     // Actions
     connect,

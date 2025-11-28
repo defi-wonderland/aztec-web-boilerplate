@@ -4,3 +4,5 @@ export { useConfig } from './useConfig';
 export { useAzguardWallet } from './useAzguardWallet';
 export { useUniversalWallet } from './useUniversalWallet';
 export { useTheme } from './useTheme';
+export { useContract } from './useContract';
+export { useContractRegistry } from './useContractRegistry';

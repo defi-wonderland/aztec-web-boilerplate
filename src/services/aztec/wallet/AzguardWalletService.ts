@@ -264,7 +264,8 @@ export class AzguardWalletService implements IAzguardWalletService {
       const [result] = await this.client.execute([operation]);
       
       if (result.status !== 'ok') {
-        throw new Error(result.error || 'Transaction failed');
+        const errorMessage = 'error' in result ? result.error : 'Transaction failed';
+        throw new Error(errorMessage || 'Transaction failed');
       }
 
       console.log('Transaction sent successfully:', result.result);
@@ -278,7 +279,7 @@ export class AzguardWalletService implements IAzguardWalletService {
   /**
    * Simulate view functions
    */
-  async simulateViews(operation: SimulateViewsOperation): Promise<any> {
+  async simulateViews(operation: SimulateViewsOperation): Promise<unknown> {
     if (!this.client || !this.state.isConnected) {
       throw new Error('Azguard wallet not connected');
     }
@@ -287,7 +288,8 @@ export class AzguardWalletService implements IAzguardWalletService {
       const [result] = await this.client.execute([operation]);
       
       if (result.status !== 'ok') {
-        throw new Error(result.error || 'Simulation failed');
+        const errorMessage = 'error' in result ? result.error : 'Simulation failed';
+        throw new Error(errorMessage || 'Simulation failed');
       }
 
       console.log('✅ View simulation completed:', result.result);
@@ -310,7 +312,8 @@ export class AzguardWalletService implements IAzguardWalletService {
       const [result] = await this.client.execute([operation]);
       
       if (result.status !== 'ok') {
-        throw new Error(result.error || 'Contract registration failed');
+        const errorMessage = 'error' in result ? result.error : 'Contract registration failed';
+        throw new Error(errorMessage || 'Contract registration failed');
       }
 
       console.log('✅ Contract registered successfully');
@@ -389,6 +392,13 @@ export class AzguardWalletService implements IAzguardWalletService {
    */
   getState(): AzguardWalletState {
     return { ...this.state };
+  }
+
+  /**
+   * Get the underlying AzguardClient instance
+   */
+  getClient(): AzguardClient | null {
+    return this.client;
   }
 
   /**

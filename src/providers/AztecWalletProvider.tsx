@@ -123,7 +123,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
       isInitializingRef.current = true;
       
       await executeAsync(async () => {
-        const services = await initializeWalletServices(config.nodeUrl, config);
+        const services = await initializeWalletServices(config.nodeUrl);
         walletServicesRef.current = services;
         setIsInitialized(true);
 
@@ -207,7 +207,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   const reinitialize = async () => {
     return executeAsync(async () => {
-      const services = await initializeWalletServices(config.nodeUrl, config);
+      const services = await initializeWalletServices(config.nodeUrl);
       walletServicesRef.current = services;
       setIsInitialized(true);
     }, 'reinitialize wallet');
