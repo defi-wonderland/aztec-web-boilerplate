@@ -38,6 +38,7 @@ export const createAccount = async (
   const result = await walletServices.walletService.createEcdsaAccount();
   
   // Clear any existing account and save the new one to storage
+  // ⚠️ Keys stored in plain text - for testnet only!
   walletServices.storageService.clearAccount();
   walletServices.storageService.saveAccount({
     address: result.wallet.getAddress().toString(),

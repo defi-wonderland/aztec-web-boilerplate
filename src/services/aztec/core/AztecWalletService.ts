@@ -105,29 +105,23 @@ export class AztecWalletService implements IAztecWalletService {
   }
 
   /**
-   * Create a new ECDSA account
+   * Create a new ECDSA account with randomly generated credentials.
+   * Keys are generated fresh for each account - caller should persist them
+   * using AztecStorageService for recovery.
    */
   async createEcdsaAccount(): Promise<CreateAccountResult> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
 
-    // Generate a random salt, secret key, and signing key
-    const DEPLOYER_SECRET_PHRASE = process.env.DEPLOYER_SECRET_PHRASE || 'hola';
-    const DEPLOYER_SALT = process.env.DEPLOYER_SALT || '1337';
-    const DEPLOYER_SECRET = await poseidon2Hash([
-      Fr.fromBufferReduce(
-        Buffer.from(DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')
-      ),
-    ]);
-    const secretKey = DEPLOYER_SECRET;
-    const salt = Fr.fromString(DEPLOYER_SALT);
-    const signingKey = Buffer.from(DEPLOYER_SECRET.toBuffer().subarray(0, 32));
-    console.log({
-      secretKey: DEPLOYER_SECRET.toString(),
-      salt: DEPLOYER_SALT,
-      signingKey: signingKey.toString('hex'),
-    });
+    // Generate random credentials for each new account
+    const saltBuffer = randomBytes(32);
+    const salt = Fr.fromBuffer(saltBuffer);
+
+    const secretBuffer = randomBytes(32);
+    const secretKey = await poseidon2Hash([Fr.fromBuffer(secretBuffer)]);
+
+    const signingKey = Buffer.from(secretKey.toBuffer().subarray(0, 32));
 
     // Create an ECDSA account
     const ecdsaAccount = await getEcdsaRAccount(
@@ -137,11 +131,13 @@ export class AztecWalletService implements IAztecWalletService {
       salt
     );
 
+    // Register the account with PXE
+    await ecdsaAccount.register();
+
     // Get the wallet
     const ecdsaWallet = await ecdsaAccount.getWallet();
 
-    // Register the account with PXE
-    await ecdsaAccount.register();
+    logger.info('New ECDSA account created', ecdsaAccount.getAddress().toString());
 
     return {
       account: ecdsaAccount,

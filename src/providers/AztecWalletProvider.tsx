@@ -123,6 +123,22 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
         const services = await initializeWalletServices(config.nodeUrl, config);
         walletServicesRef.current = services;
         setIsInitialized(true);
+
+        // Auto-reconnect if account exists in localStorage
+        const savedAccount = services.storageService.getAccount();
+        if (savedAccount) {
+          console.log('🔄 Found saved account, auto-reconnecting...');
+          try {
+            const wallet = await connectExistingAccount(services, setIsDeploying, addMessage, config);
+            if (wallet) {
+              setConnectedAccount(wallet);
+              console.log('✅ Auto-reconnected to saved account:', wallet.getAddress().toString());
+            }
+          } catch (reconnectError) {
+            console.warn('⚠️ Failed to auto-reconnect, clearing saved account:', reconnectError);
+            services.storageService.clearAccount();
+          }
+        }
       }, 'initialize wallet services');
     } catch (err) {
       console.error('App initialization failed:', err);

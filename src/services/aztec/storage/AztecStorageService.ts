@@ -1,7 +1,12 @@
 /**
  * Service for handling Aztec wallet storage operations
+ * 
+ * ⚠️ SECURITY WARNING: Account keys are stored in localStorage in plain text.
+ * This is suitable for TESTNET ONLY. For production apps with real funds,
+ * use hardware wallets (like Azguard) or external wallet providers.
+ * 
+ * The embedded wallet is designed for development and demonstration purposes.
  */
-import { Fr } from '@aztec/aztec.js';
 import { IAztecStorageService, AccountData } from '../../../types/aztec';
 
 export class AztecStorageService implements IAztecStorageService {
@@ -10,6 +15,7 @@ export class AztecStorageService implements IAztecStorageService {
 
   /**
    * Save account data to localStorage
+   * ⚠️ Keys are stored in plain text - testnet only!
    */
   saveAccount(accountData: AccountData): void {
     localStorage.setItem(AztecStorageService.STORAGE_KEY, JSON.stringify(accountData));
@@ -21,14 +27,17 @@ export class AztecStorageService implements IAztecStorageService {
   getAccount(): AccountData | null {
     const data = localStorage.getItem(AztecStorageService.STORAGE_KEY);
 
-    if(!data) {
+    if (!data) {
       return null;
     }
 
-    const accountData = JSON.parse(data) as AccountData;
-
-
-    return accountData;
+    try {
+      return JSON.parse(data) as AccountData;
+    } catch (error) {
+      console.error('Failed to parse account data:', error);
+      this.clearAccount();
+      return null;
+    }
   }
 
   /**

@@ -2,14 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { SendersCard } from './SendersCard';
-import { Tabs } from '../components';
+import { Tabs, SecurityWarning } from '../components';
 import { TabConfig, TabType } from '../types';
-import { useAzguardWallet } from '../hooks';
+import { useAzguardWallet, useAztecWallet } from '../hooks';
 
 export const MainContent: React.FC = () => {
   const { state: azguardState } = useAzguardWallet();
+  const { connectedAccount } = useAztecWallet();
   const [activeTab, setActiveTab] = useState<TabType>('mint');
   
+  // Show security warning when using embedded wallet (not Azguard)
+  const isUsingEmbeddedWallet = connectedAccount && !azguardState.isConnected;
+
   const allTabs: TabConfig[] = [
     {
       id: 'mint',
@@ -45,6 +49,7 @@ export const MainContent: React.FC = () => {
 
   return (
     <main className="main-content">
+      {isUsingEmbeddedWallet && <SecurityWarning />}
       <Tabs 
         tabs={tabs} 
         defaultTab={activeTab}
