@@ -46,7 +46,7 @@ export const AzguardWalletProvider: React.FC<AzguardWalletProviderProps> = ({ ch
   const isInitializedRef = useRef(false);
 
   // Hooks
-  const { isLoading, error, executeAsync } = useAsyncOperation();
+  const { executeAsync } = useAsyncOperation();
   const { addMessage } = useError();
 
   // Initialize services on mount
