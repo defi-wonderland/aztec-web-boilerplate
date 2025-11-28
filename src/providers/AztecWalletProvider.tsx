@@ -16,6 +16,9 @@ interface AztecWalletContextType {
   isDeploying: boolean;
   initializationTimedOut: boolean;
 
+  // Core services
+  walletService: { getPXE: () => ReturnType<typeof import('../services/aztec/core/AztecWalletService').AztecWalletService.prototype.getPXE> } | null;
+  
   // Contract services
   dripperService: AztecDripperService | null;
   tokenService: AztecTokenService | null;
@@ -217,6 +220,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     error,
     isDeploying,
     initializationTimedOut,
+    walletService: walletServicesRef.current?.walletService ?? null,
     dripperService,
     tokenService,
     createAccount: handleCreateAccount,
