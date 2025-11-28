@@ -1,22 +1,40 @@
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import {
-  AztecAddress,
-  createAztecNodeClient,
-  Fr,
   getContractInstanceFromInstantiationParams,
-  type PXE,
-  SponsoredFeePaymentMethod,
+  DeployMethod,
+  Contract,
+  type DeployOptions,
+} from '@aztec/aztec.js/contracts';
+import { PublicKeys } from '@aztec/aztec.js/keys';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
+import {
+  type AccountWithSecretKey,
+  type Account,
+  SignerlessAccount,
+} from '@aztec/aztec.js/account';
+import {
+  AccountManager,
+  BaseWallet,
   type Wallet,
-} from '@aztec/aztec.js';
-import { createPXEService, getPXEServiceConfig } from '@aztec/pxe/server';
-import { getSchnorrAccount } from '@aztec/accounts/schnorr';
-import { getInitialTestAccounts } from '@aztec/accounts/testing';
+} from '@aztec/aztec.js/wallet';
+import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { PXE } from '@aztec/pxe/server';
+import { getPXEConfig } from '@aztec/pxe/config';
+import { createPXE } from '@aztec/pxe/server';
+import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa';
 import { createStore } from '@aztec/kv-store/lmdb';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import { DripperContract } from '@defi-wonderland/aztec-standards/current/artifacts/Dripper.js';
-import { TokenContract } from '@defi-wonderland/aztec-standards/current/artifacts/Token.js';
+import { poseidon2Hash } from '@aztec/foundation/crypto';
+import {
+  DripperContractArtifact,
+  DripperContract,
+} from '../src/artifacts/Dripper.js';
+import { TokenContractArtifact } from '../src/artifacts/Token.js';
 
 // Network configuration
 type NetworkType = 'sandbox' | 'testnet';
@@ -28,23 +46,27 @@ interface NetworkUrls {
 
 const DEFAULT_NODE_URLS: NetworkUrls = {
   sandbox: 'http://localhost:8080',
-  testnet: 'https://aztec-alpha-testnet-fullnode.zkv.xyz/',
+  testnet: 'https://devnet.aztec-labs.com/', // Official Aztec devnet
 };
 
 // Parse command line arguments
 const parseArgs = (): { network: NetworkType } => {
   const args = process.argv.slice(2);
-  const networkIndex = args.findIndex(arg => arg === '--network' || arg === '-n');
-  
+  const networkIndex = args.findIndex(
+    (arg) => arg === '--network' || arg === '-n'
+  );
+
   if (networkIndex !== -1 && args[networkIndex + 1]) {
     const network = args[networkIndex + 1] as NetworkType;
     if (network !== 'sandbox' && network !== 'testnet') {
-      console.error(`Invalid network: ${network}. Must be 'sandbox' or 'testnet'`);
+      console.error(
+        `Invalid network: ${network}. Must be 'sandbox' or 'testnet'`
+      );
       process.exit(1);
     }
     return { network };
   }
-  
+
   return { network: 'sandbox' };
 };
 
@@ -52,9 +74,51 @@ const { network: NETWORK } = parseArgs();
 
 // Environment variable overrides
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || DEFAULT_NODE_URLS[NETWORK];
-const PROVER_ENABLED = process.env.PROVER_ENABLED === 'false' ? false : NETWORK === 'testnet';
+const PROVER_ENABLED =
+  process.env.PROVER_ENABLED === 'false' ? false : NETWORK === 'testnet';
 
+const DEPLOY_TIMEOUT = 960;
 const PXE_STORE_DIR = path.join(import.meta.dirname, '.store');
+
+/**
+ * MinimalWallet extends BaseWallet to bootstrap account creation
+ */
+class MinimalWallet extends BaseWallet {
+  private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
+
+  constructor(pxe: PXE, aztecNode: AztecNode) {
+    super(pxe as unknown as any, aztecNode);
+  }
+
+  public addAccount(account: AccountWithSecretKey) {
+    this.addressToAccount.set(account.getAddress().toString(), account);
+  }
+
+  protected async getAccountFromAddress(
+    address: AztecAddress
+  ): Promise<Account> {
+    let account: Account | undefined;
+    if (address.equals(AztecAddress.ZERO)) {
+      const chainInfo = await this.getChainInfo();
+      account = new SignerlessAccount(chainInfo);
+    } else {
+      account = this.addressToAccount.get(address.toString());
+    }
+
+    if (!account)
+      throw new Error(
+        `Account not found in wallet for address: ${address.toString()}`
+      );
+    return account;
+  }
+
+  async getAccounts(): Promise<{ alias: string; item: AztecAddress }[]> {
+    return Array.from(this.addressToAccount.values()).map((acc) => ({
+      alias: '',
+      item: acc.getAddress(),
+    }));
+  }
+}
 
 async function setupPXE() {
   console.log(`\n🔧 Setting up PXE for ${NETWORK}...`);
@@ -70,25 +134,20 @@ async function setupPXE() {
     dataStoreMapSizeKb: 1e6,
   });
 
-  const config = getPXEServiceConfig();
-  config.dataDirectory = 'pxe';
-  config.proverEnabled = PROVER_ENABLED;
-  const configWithContracts = {
-    ...config,
+  const config = {
+    ...getPXEConfig(),
+    proverEnabled: PROVER_ENABLED,
   };
 
-  const pxe = await createPXEService(
-    aztecNode,
-    configWithContracts,
-    {
-      store,
-      useLogSuffix: true,
-    },
-  );
-  return pxe;
+  const pxe = await createPXE(aztecNode, config, {
+    store,
+    useLogSuffix: true,
+  });
+
+  return { pxe, aztecNode };
 }
 
-async function getSponsoredPFCContract() {
+async function getSponsoredFPCContract() {
   const instance = await getContractInstanceFromInstantiationParams(
     SponsoredFPCContractArtifact,
     {
@@ -99,83 +158,208 @@ async function getSponsoredPFCContract() {
   return instance;
 }
 
-async function createAccount(pxe: PXE) {
-  // Use pre-deployed test account from sandbox (much simpler for development)
-  const testAccounts = await getInitialTestAccounts();
-  const testAccount = testAccounts[0];
-  
-  const schnorrAccount = await getSchnorrAccount(
-    pxe,
-    testAccount.secret,
-    testAccount.signingKey,
-    testAccount.salt
+const getSponsoredFeePaymentMethod = async () => {
+  const sponsoredPFCContract = await getSponsoredFPCContract();
+  return new SponsoredFeePaymentMethod(sponsoredPFCContract.address);
+};
+
+async function generateCredentials() {
+  if (process.env.DEPLOYER_SECRET_PHRASE) {
+    // If we have a secret phrase, we use it to generate the credentials
+    const secretKey = await poseidon2Hash([
+      Fr.fromBufferReduce(
+        Buffer.from(process.env.DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')
+      ),
+    ]);
+    return {
+      secretKey,
+      salt: Fr.fromString(process.env.DEPLOYER_SALT || '1337'),
+      signingKey: Buffer.from(secretKey.toBuffer().subarray(0, 32)),
+    };
+  } else if (process.env.DEPLOYER_SECRET_KEY && process.env.DEPLOYER_SALT) {
+    // If we have a secret key and salt, we use them to generate the credentials
+    return {
+      salt: Fr.fromString(process.env.DEPLOYER_SALT),
+      secretKey: Fr.fromString(process.env.DEPLOYER_SECRET_KEY),
+      signingKey: Buffer.from(process.env.DEPLOYER_SIGNING_KEY!, 'hex'),
+    };
+  } else {
+    // Otherwise, we generate random credentials
+    return {
+      salt: Fr.random(),
+      secretKey: Fr.random(),
+      signingKey: Buffer.alloc(32, Fr.random().toBuffer()),
+    };
+  }
+}
+
+async function createAccount(pxe: PXE, node: AztecNode) {
+  console.log('👤 Setting up deployer account...');
+
+  const { secretKey, salt, signingKey } = await generateCredentials();
+  console.log('   Credentials generated:');
+  console.log(`   - Secret Key: ${secretKey.toString().slice(0, 20)}...`);
+  console.log(`   - Salt: ${salt.toString().slice(0, 20)}...`);
+
+  const wallet = new MinimalWallet(pxe, node);
+  const accountContract = new EcdsaRAccountContract(signingKey);
+  const manager = await AccountManager.create(
+    wallet,
+    secretKey,
+    accountContract,
+    salt
   );
-  
-  // Register the account (it's already deployed in sandbox)
-  await schnorrAccount.register();
-  const wallet = await schnorrAccount.getWallet();
+  const account = await manager.getAccount();
+  const instance = manager.getInstance();
+  const artifact = await manager.getAccountContract().getContractArtifact();
+
+  await wallet.registerContract(instance, artifact, manager.getSecretKey());
+  wallet.addAccount(account);
+
+  console.log(`   ✅ Account created: ${account.getAddress().toString()}`);
+
+  const metadata = await wallet.getContractMetadata(account.getAddress());
+  if (!metadata.isContractInitialized) {
+    console.log('   📦 Deploying account contract...');
+    const sponsoredFeePaymentMethod = await getSponsoredFeePaymentMethod();
+    const deployOpts = {
+      from: AztecAddress.ZERO,
+      contractAddressSalt: salt,
+      fee: {
+        paymentMethod: sponsoredFeePaymentMethod,
+      },
+      universalDeploy: true,
+      skipClassRegistration: true,
+      skipPublicDeployment: true,
+    };
+    const deployMethod = await manager.getDeployMethod();
+    await deployMethod.send(deployOpts).wait({ timeout: DEPLOY_TIMEOUT });
+    console.log('   ✅ Account deployed');
+  } else {
+    console.log('   ✅ Account already deployed');
+  }
 
   return {
     wallet,
-    signingKey: testAccount.signingKey,
+    account,
   };
 }
 
-async function deployDripperContract(pxe: PXE, deployer: Wallet) {
+async function deployDripperContract(
+  pxe: PXE,
+  deployer: Wallet,
+  options: DeployOptions
+) {
   console.log('📦 Deploying Dripper contract...');
-  const salt = Fr.random();
-  const sponsoredPFCContract = await getSponsoredPFCContract();
 
-  // Use the Contract's deploy method which handles VK generation
-  const receipt = await DripperContract.deploy(deployer)
+  const deployMethod = new DeployMethod(
+    PublicKeys.default(),
+    deployer,
+    DripperContractArtifact,
+    (address) =>
+      Contract.at(
+        address,
+        DripperContractArtifact,
+        deployer
+      ) as Promise<DripperContract>,
+    [],
+    'constructor'
+  );
+
+  const salt = process.env.DRIPPER_SALT
+    ? Fr.fromString(process.env.DRIPPER_SALT)
+    : Fr.random();
+
+  const receipt = await deployMethod
     .send({
+      ...options,
       contractAddressSalt: salt,
-      from: deployer.getAddress(),
       fee: {
-        paymentMethod: new SponsoredFeePaymentMethod(sponsoredPFCContract.address),
+        paymentMethod: await getSponsoredFeePaymentMethod(),
       },
+      universalDeploy: true,
+      skipInitialization: false,
     })
-    .wait({ timeout: 120 });
+    .wait({ timeout: DEPLOY_TIMEOUT });
 
-  console.log(`   ✅ Dripper deployed at: ${receipt.contract.address.toString()}`);
+  console.log(`   Mined at block: ${receipt.blockNumber}`);
+  console.log(`   Tx hash: ${receipt.txHash}`);
+
+  const contract = receipt.contract;
+  console.log(`   ✅ Dripper deployed at: ${contract.address.toString()}`);
+
+  const { instance, artifact } = receipt.contract;
+
+  await pxe.registerContract({
+    instance,
+    artifact,
+  });
 
   return {
-    contractAddress: receipt.contract.address.toString(),
-    deployerAddress: deployer.getAddress().toString(),
-    deploymentSalt: salt.toString(),
+    instance: instance,
+    address: instance.address.toString(),
+    salt: salt.toString(),
   };
 }
 
-async function deployTokenContract(pxe: PXE, deployer: Wallet, dripperAddress: AztecAddress) {
+async function deployTokenContract(
+  pxe: PXE,
+  deployer: Wallet,
+  options: DeployOptions,
+  dripperAddress: AztecAddress
+) {
   console.log('📦 Deploying Token contract...');
-  const salt = Fr.random();
-  const sponsoredPFCContract = await getSponsoredPFCContract();
 
-  // Deploy Wonderland Token with constructor_with_minter
-  // Constructor signature: constructor_with_minter(name: string, symbol: string, decimals: u8, minter: AztecAddress, upgrade_authority: AztecAddress)
-  const receipt = await TokenContract.deployWithOpts(
-    { wallet: deployer, method: 'constructor_with_minter' },
-    'Yield Token', // name
-    'YT', // symbol
-    18, // decimals
-    dripperAddress, // minter (Dripper address)
-    AztecAddress.ZERO, // upgrade_authority (zero address for non-upgradeable)
-  )
+  const salt = process.env.TOKEN_SALT
+    ? Fr.fromString(process.env.TOKEN_SALT)
+    : Fr.random();
+
+  // Use constructor_with_minter to set Dripper as the authorized minter
+  // Signature: constructor_with_minter(name, symbol, decimals, minter, upgrade_authority)
+  const deployMethod = new DeployMethod(
+    PublicKeys.default(),
+    deployer,
+    TokenContractArtifact,
+    (address) => Contract.at(address, TokenContractArtifact, deployer),
+    [
+      'Yield Token', // name
+      'YT', // symbol
+      18, // decimals
+      dripperAddress, // minter (Dripper address - can mint tokens)
+      AztecAddress.ZERO, // upgrade_authority
+    ],
+    'constructor_with_minter'
+  );
+
+  const receipt = await deployMethod
     .send({
+      ...options,
       contractAddressSalt: salt,
-      from: deployer.getAddress(),
       fee: {
-        paymentMethod: new SponsoredFeePaymentMethod(sponsoredPFCContract.address),
+        paymentMethod: await getSponsoredFeePaymentMethod(),
       },
+      universalDeploy: true,
+      skipInitialization: false,
     })
-    .wait({ timeout: 120 });
+    .wait({ timeout: DEPLOY_TIMEOUT });
 
-  console.log(`   ✅ Token deployed at: ${receipt.contract.address.toString()}`);
+  console.log(`   Mined at block: ${receipt.blockNumber}`);
+  console.log(`   Tx hash: ${receipt.txHash}`);
+
+  const contract = receipt.contract;
+  console.log(`   ✅ Token deployed at: ${contract.address.toString()}`);
+
+  const { instance, artifact } = receipt.contract;
+
+  await pxe.registerContract({
+    instance,
+    artifact,
+  });
 
   return {
-    contractAddress: receipt.contract.address.toString(),
-    deployerAddress: deployer.getAddress().toString(),
-    deploymentSalt: salt.toString(),
+    instance: instance,
+    address: instance.address.toString(),
+    salt: salt.toString(),
   };
 }
 
@@ -191,9 +375,18 @@ interface DeploymentInfo {
   deployer: string;
 }
 
-async function writeDeploymentConfig(network: NetworkType, deploymentInfo: DeploymentInfo) {
-  const configFilePath = path.join(import.meta.dirname, `../src/config/deployments/${network}.json`);
-  
+async function writeDeploymentConfig(
+  network: NetworkType,
+  deploymentInfo: DeploymentInfo
+) {
+  const configDir = path.join(import.meta.dirname, `../src/config/deployments`);
+  const configFilePath = path.join(configDir, `${network}.json`);
+
+  // Ensure directory exists
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
+  }
+
   const config = {
     network,
     nodeUrl: AZTEC_NODE_URL,
@@ -237,40 +430,47 @@ async function createAccountAndDeployContract() {
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
-  const pxe = await setupPXE();
+  const { pxe, aztecNode } = await setupPXE();
 
   // Register the SponsoredFPC contract (for sponsored fee payments)
   await pxe.registerContract({
-    instance: await getSponsoredPFCContract(),
+    instance: await getSponsoredFPCContract(),
     artifact: SponsoredFPCContractArtifact,
   });
 
   // Create a new account
-  console.log('👤 Setting up deployer account...');
-  const { wallet } = await createAccount(pxe);
-  console.log(`   ✅ Deployer: ${wallet.getAddress().toString()}\n`);
+  const { wallet, account } = await createAccount(pxe, aztecNode);
+
+  const deployOptions: DeployOptions = {
+    from: account.getAddress(),
+  };
 
   // Deploy the Dripper contract first
-  const dripperDeploymentInfo = await deployDripperContract(pxe, wallet);
+  const dripperDeploymentInfo = await deployDripperContract(
+    pxe,
+    wallet,
+    deployOptions
+  );
 
   // Deploy the Token contract with Dripper as minter
   const tokenDeploymentInfo = await deployTokenContract(
     pxe,
     wallet,
-    AztecAddress.fromString(dripperDeploymentInfo.contractAddress)
+    deployOptions,
+    AztecAddress.fromString(dripperDeploymentInfo.address)
   );
 
   // Save the deployment info to JSON config file
   await writeDeploymentConfig(NETWORK, {
     dripperContract: {
-      address: dripperDeploymentInfo.contractAddress,
-      salt: dripperDeploymentInfo.deploymentSalt,
+      address: dripperDeploymentInfo.address,
+      salt: dripperDeploymentInfo.salt,
     },
     tokenContract: {
-      address: tokenDeploymentInfo.contractAddress,
-      salt: tokenDeploymentInfo.deploymentSalt,
+      address: tokenDeploymentInfo.address,
+      salt: tokenDeploymentInfo.salt,
     },
-    deployer: dripperDeploymentInfo.deployerAddress,
+    deployer: account.getAddress().toString(),
   });
 
   // Clean up the PXE store

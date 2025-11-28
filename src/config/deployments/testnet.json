@@ -1,6 +1,6 @@
 {
   "network": "testnet",
-  "nodeUrl": "https://aztec-alpha-testnet-fullnode.zkv.xyz/",
+  "nodeUrl": "https://devnet.aztec-labs.com/",
   "dripperContract": {
     "address": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "salt": "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -13,5 +13,6 @@
   "proverEnabled": true,
   "deployedAt": ""
 }
+
 
 

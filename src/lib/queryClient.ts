@@ -1,13 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
 
-/**
- * Default configuration for React Query optimized for blockchain data.
- * 
- * - staleTime: 30s - blockchain data changes with each block
- * - gcTime: 5min - keep unused data in cache for quick re-access
- * - retry: 2 attempts with exponential backoff for transient failures
- * - refetchOnWindowFocus: true - ensure fresh data when user returns
- */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -24,5 +16,6 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
 
 

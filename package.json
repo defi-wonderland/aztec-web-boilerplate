@@ -34,21 +34,20 @@
   "dependencies": {
     "@azguardwallet/client": "0.6.0",
     "@azguardwallet/types": "0.6.0",
-    "@aztec/accounts": "2.1.8",
-    "@aztec/aztec.js": "2.1.8",
-    "@aztec/constants": "2.1.8",
-    "@aztec/foundation": "2.1.8",
-    "@aztec/kv-store": "2.1.8",
-    "@aztec/noir-contracts.js": "2.1.8",
-    "@aztec/pxe": "2.1.8",
-    "@aztec/stdlib": "2.1.8",
+    "@aztec/accounts": "3.0.0-devnet.5",
+    "@aztec/aztec.js": "3.0.0-devnet.5",
+    "@aztec/constants": "3.0.0-devnet.5",
+    "@aztec/foundation": "3.0.0-devnet.5",
+    "@aztec/kv-store": "3.0.0-devnet.5",
+    "@aztec/noir-contracts.js": "3.0.0-devnet.5",
+    "@aztec/pxe": "3.0.0-devnet.5",
+    "@aztec/stdlib": "3.0.0-devnet.5",
     "@tanstack/react-query": "5.85.5",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-router-dom": "7.8.0"
   },
   "devDependencies": {
-    "@defi-wonderland/aztec-standards": "2.0.3",
     "@playwright/test": "1.52.0",
     "@types/node": "22.15.17",
     "@types/react": "19.1.10",
@@ -76,7 +75,7 @@
     "trailingComma": "es5"
   },
   "config": {
-    "aztecVersion": "2.1.8"
+    "aztecVersion": "3.0.0-devnet.5"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

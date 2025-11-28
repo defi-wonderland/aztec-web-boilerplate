@@ -1,5 +1,8 @@
 import type { ContractArtifact, FunctionAbi } from '@aztec/stdlib/abi';
-import type { AztecAddress, ContractInstanceWithAddress, Fr, PXE } from '@aztec/aztec.js';
+import type { AztecAddress } from '@aztec/aztec.js/addresses';
+import type { Fr } from '@aztec/aztec.js/fields';
+import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
+import type { PXE } from '@aztec/pxe/server';
 import type { AppConfig } from '../config/networks';
 
 /**

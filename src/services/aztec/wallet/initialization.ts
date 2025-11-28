@@ -1,4 +1,4 @@
-import { AztecAddress } from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { AztecWalletService } from '../core';
 import { AztecStorageService } from '../storage';
 

@@ -64,7 +64,7 @@ export const DEFAULT_SANDBOX_DEPLOYMENT: DeploymentConfig = {
  */
 export const DEFAULT_TESTNET_DEPLOYMENT: DeploymentConfig = {
   network: 'testnet',
-  nodeUrl: 'https://aztec-alpha-testnet-fullnode.zkv.xyz/',
+  nodeUrl: 'https://devnet.aztec-labs.com/',
   dripperContract: {
     address: PLACEHOLDER_ADDRESS,
     salt: PLACEHOLDER_SALT,
@@ -77,5 +77,6 @@ export const DEFAULT_TESTNET_DEPLOYMENT: DeploymentConfig = {
   proverEnabled: true,
   deployedAt: '',
 };
+
 
 
