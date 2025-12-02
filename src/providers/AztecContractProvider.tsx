@@ -4,7 +4,6 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useCallback,
   useMemo,
   type ReactNode,
 } from 'react';
@@ -15,7 +14,6 @@ import {
   type ContractConfigMap,
   type ContractNames,
   type ContractRegistryContextValue,
-  type IContractRegistry,
 } from '../contract-registry';
 
 /**
@@ -57,16 +55,19 @@ const ContractRegistryContext = createContext<ContractContextValue | null>(null)
  * AztecContractProvider
  *
  * Provides contract registration and access throughout the app.
- * Supports both eager (at init) and lazy (on-demand) contract registration.
+ * 
+ * On initialization, `registerAll()` is called which:
+ * 1. Syncs from storage (contracts already registered in IndexedDB are marked ready)
+ * 2. Registers any contracts not found in storage
  *
  * @example
  * ```tsx
- * // Load all contracts at init (default)
+ * // Initialize all contracts (default)
  * <AztecContractProvider contracts={aztecContracts} pxe={pxe} config={config}>
  *   {children}
  * </AztecContractProvider>
  *
- * // Load specific contracts at init, rest are on-demand
+ * // Initialize specific contracts, rest are on-demand
  * <AztecContractProvider
  *   contracts={aztecContracts}
  *   pxe={pxe}
@@ -110,19 +111,14 @@ export function AztecContractProvider<T extends ContractConfigMap>({
 
     const initializeRegistry = async () => {
       try {
-        // Create new registry
         const registry = new ContractRegistry(pxe, contracts, config);
         registryRef.current = registry;
 
-        // Determine which contracts to register at init
-        const contractsToLoad = initialContracts === undefined
+        const contractsToInit = initialContracts === undefined
           ? (Object.keys(contracts) as ContractNames<T>[]) // All contracts
           : initialContracts; // Specified list (can be empty)
 
-        // Register eager contracts
-        if (contractsToLoad.length > 0) {
-          await registry.registerAll(contractsToLoad);
-        }
+        await registry.registerAll(contractsToInit);
 
         setStatus('ready');
         setError(undefined);
@@ -139,7 +135,6 @@ export function AztecContractProvider<T extends ContractConfigMap>({
     initializeRegistry();
   }, [pxe, contracts, config, initialContracts]);
 
-  // Memoize context value
   const contextValue = useMemo<ContractContextValue<T>>(
     () => ({
       registry: registryRef.current,
@@ -149,7 +144,6 @@ export function AztecContractProvider<T extends ContractConfigMap>({
     [status, error]
   );
 
-  // Show loading state during initialization (only if there are contracts to register)
   const shouldShowLoading = status === 'initializing' && 
     (initialContracts === undefined || initialContracts.length > 0);
 

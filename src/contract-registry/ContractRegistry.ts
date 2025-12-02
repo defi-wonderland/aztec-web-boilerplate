@@ -108,7 +108,7 @@ export class ContractRegistry<T extends ContractConfigMap>
 
   /**
    * Ensure a contract is registered with PXE.
-   * If already registered (in cache or PXE), this is a no-op.
+   * If already in memory cache, this is a no-op.
    * Handles concurrent requests by deduplicating in-flight registrations.
    */
   async register(name: ContractNames<T>): Promise<void> {
@@ -136,18 +136,38 @@ export class ContractRegistry<T extends ContractConfigMap>
   }
 
   /**
-   * Register multiple contracts sequentially.
-   * If no names provided, registers all contracts in the config.
+   * Ensure multiple contracts are registered and ready.
+   * 
+   * This method handles the full registration flow:
+   * 1. First syncs from storage (checks which contracts are already in PXE's IndexedDB)
+   * 2. Then registers any contracts not found in storage
+   * 
+   * If no names provided, processes all contracts in the config.
    */
   async registerAll(names?: ContractNames<T>[]): Promise<void> {
     const contractNames =
       names ?? (Object.keys(this.contracts) as ContractNames<T>[]);
 
-    logger.info(`Registering ${contractNames.length} contracts sequentially...`, {
-      contracts: contractNames,
+    if (contractNames.length === 0) {
+      return;
+    }
+
+    // 1. Sync from storage first (mark already-registered contracts as ready)
+    await this.syncFromStorage(contractNames);
+
+    // 2. Register any contracts still not ready
+    const toRegister = contractNames.filter((name) => !this.isRegistered(name));
+
+    if (toRegister.length === 0) {
+      logger.info('All contracts already registered (found in storage)');
+      return;
+    }
+
+    logger.info(`Registering ${toRegister.length} new contracts...`, {
+      contracts: toRegister,
     });
 
-    for (const name of contractNames) {
+    for (const name of toRegister) {
       await this.register(name);
     }
 
@@ -155,7 +175,69 @@ export class ContractRegistry<T extends ContractConfigMap>
   }
 
   /**
-   * Internal: Perform the actual registration with PXE
+   * Sync memory cache from PXE's persistent storage (IndexedDB).
+   * Checks which contracts are already registered and marks them as ready.
+   * This avoids re-registering contracts that persist across page refreshes.
+   */
+  private async syncFromStorage(names: ContractNames<T>[]): Promise<void> {
+    logger.info(`Syncing ${names.length} contracts from storage...`, {
+      contracts: names,
+    });
+
+    const { getContractInstanceFromInstantiationParams } = await import(
+      '@aztec/aztec.js/contracts'
+    );
+
+    let syncedCount = 0;
+
+    for (const name of names) {
+      // Skip if already in memory cache
+      if (this.isRegistered(name)) {
+        syncedCount++;
+        continue;
+      }
+
+      const contractConfig = this.contracts[name];
+      if (!contractConfig) {
+        continue;
+      }
+
+      try {
+        const expectedAddress = AztecAddress.fromString(
+          contractConfig.address(this.config)
+        );
+
+        const isInStorage = await this.isRegisteredInStorage(expectedAddress);
+
+        if (isInStorage) {
+          const deployParams = contractConfig.deployParams(this.config);
+          const instance = await getContractInstanceFromInstantiationParams(
+            contractConfig.artifact,
+            {
+              salt: deployParams.salt,
+              deployer: deployParams.deployer,
+              constructorArgs: deployParams.constructorArgs,
+              constructorArtifact: deployParams.constructorArtifact,
+            }
+          );
+
+          this.updateCache(name, { status: 'ready', instance });
+          syncedCount++;
+          logger.debug(`Contract "${name}" synced from storage`);
+        }
+      } catch {
+        // Contract not in storage - will be registered fresh
+      }
+    }
+
+    if (syncedCount > 0) {
+      this.notifySubscribers();
+    }
+  }
+
+  /**
+   * Internal: Perform the actual registration with PXE.
+   * At this point, we know the contract is NOT in memory cache.
    */
   private async performRegistration(name: ContractNames<T>): Promise<void> {
     const contractConfig = this.contracts[name];
@@ -163,35 +245,16 @@ export class ContractRegistry<T extends ContractConfigMap>
       throw new Error(`Unknown contract: "${name}"`);
     }
 
-    // Update status to checking
     this.updateCache(name, {
-      status: 'checking',
+      status: 'registering',
       instance: null as unknown as ContractInstanceWithAddress,
     });
     this.notifySubscribers();
 
     try {
-      // Get the expected address
       const expectedAddress = AztecAddress.fromString(
         contractConfig.address(this.config)
       );
-
-      const isInPXE = await this.isRegisteredInPXE(expectedAddress);
-
-      if (isInPXE) {
-        logger.info(`Contract "${name}" already in PXE, skipping registration`);
-        const instance = await this.getInstanceFromPXE(name, expectedAddress);
-        this.updateCache(name, { status: 'ready', instance });
-        this.notifySubscribers();
-        return;
-      }
-
-      // Update status to registering
-      this.updateCache(name, {
-        status: 'registering',
-        instance: null as unknown as ContractInstanceWithAddress,
-      });
-      this.notifySubscribers();
 
       const instance = await this.registerInstanceWithPXE(name, contractConfig);
 
@@ -225,49 +288,15 @@ export class ContractRegistry<T extends ContractConfigMap>
   }
 
   /**
-   * Check if a contract is already registered in PXE (IndexedDB)
+   * Check if a contract is already registered in PXE's storage (IndexedDB)
    */
-  private async isRegisteredInPXE(address: AztecAddress): Promise<boolean> {
+  private async isRegisteredInStorage(address: AztecAddress): Promise<boolean> {
     try {
       const metadata = await this.pxe.getContractMetadata(address);
       return metadata !== undefined && metadata.contractInstance !== undefined;
     } catch {
       return false;
     }
-  }
-
-  /**
-   * Get contract instance from PXE (when already registered)
-   */
-  private async getInstanceFromPXE(
-    name: ContractNames<T>,
-    address: AztecAddress
-  ): Promise<ContractInstanceWithAddress> {
-    const contractConfig = this.contracts[name];
-    const deployParams = contractConfig.deployParams(this.config);
-
-    // Compute the instance to get full details
-    const { getContractInstanceFromInstantiationParams } = await import(
-      '@aztec/aztec.js/contracts'
-    );
-
-    const instance = await getContractInstanceFromInstantiationParams(
-      contractConfig.artifact,
-      {
-        salt: deployParams.salt,
-        deployer: deployParams.deployer,
-        constructorArgs: deployParams.constructorArgs,
-        constructorArtifact: deployParams.constructorArtifact,
-      }
-    );
-
-    if (!instance.address.equals(address)) {
-      throw new Error(
-        `Contract "${name}" instance address mismatch when retrieving from PXE`
-      );
-    }
-
-    return instance;
   }
 
   /**

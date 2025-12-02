@@ -7,8 +7,12 @@ import type { AppConfig } from '../config/networks';
 
 /**
  * Status of a contract in the registry
+ * - idle: Not registered, not attempted
+ * - registering: Currently being registered with PXE
+ * - ready: Successfully registered and available
+ * - error: Registration failed
  */
-export type ContractStatus = 'idle' | 'checking' | 'registering' | 'ready' | 'error';
+export type ContractStatus = 'idle' | 'registering' | 'ready' | 'error';
 
 /**
  * Parameters needed to compute a contract instance from deployment
@@ -122,9 +126,9 @@ export interface IContractRegistry<T extends ContractConfigMap> {
   getStatus(name: ContractNames<T>): ContractStatus;
   /** Get the contract class for creating callable instances */
   getContractClass(name: ContractNames<T>): ContractClass | null;
-  /** Register a contract (checks PXE's IndexedDB first, no-op if already registered) */
+  /** Register a single contract (no-op if already registered) */
   register(name: ContractNames<T>): Promise<void>;
-  /** Register multiple contracts sequentially (IndexedDB safe) */
+  /** Ensure contracts are registered (syncs from storage first, then registers missing) */
   registerAll(names?: ContractNames<T>[]): Promise<void>;
   /** Get all registered contract names */
   getRegisteredNames(): ContractNames<T>[];
