@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useContractRegistryContext } from '../../providers/AztecContractProvider';
-import { useAztecWallet } from './useAztecWallet';
+import { useUniversalWallet } from './useUniversalWallet';
 import type {
   ContractConfigMap,
   ContractNames,
@@ -39,7 +39,7 @@ export function useContractRegistration<
   TContract = unknown
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
-  const { wallet } = useAztecWallet();
+  const { wallet } = useUniversalWallet();
 
   const [contract, setContract] = useState<TContract | null>(null);
   const [status, setStatus] = useState<ContractStatus>('idle');

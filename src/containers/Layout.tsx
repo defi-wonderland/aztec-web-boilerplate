@@ -1,14 +1,13 @@
 import React from 'react';
-import { useAztecWallet, useUniversalWallet } from '../hooks';
+import { useUniversalWallet } from '../hooks';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 
 export const Layout: React.FC = () => {
-  const { isInitialized } = useAztecWallet();
-  const { isConnected, activeAccount } = useUniversalWallet();
+  const { isInitialized, isConnected, account } = useUniversalWallet();
 
   // Show layout only when any wallet is connected and app is initialized
-  const showLayout = isConnected && !!activeAccount && isInitialized;
+  const showLayout = isConnected && !!account && isInitialized;
 
   if (!showLayout) {
     return null;

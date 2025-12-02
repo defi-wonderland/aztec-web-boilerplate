@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { useAztecWallet, useAzguardWallet, useAddressUtils } from '../hooks';
+import { useUniversalWallet, useAddressUtils } from '../hooks';
 import { ThemeToggle, EmbeddedWalletModal } from '../components';
+import { WalletType } from '../types/aztec';
 
 // Sub-components
 const ConnectedAccount: React.FC<{
@@ -24,19 +25,14 @@ const ConnectButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 );
 
 export const Header: React.FC = () => {
-  const { connectedAccount, disconnectWallet } = useAztecWallet();
-  const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
+  const { account, walletType, disconnect, azguard } = useUniversalWallet();
   const { truncateAddress, truncateCaipAddress } = useAddressUtils();
   
   const [showWalletModal, setShowWalletModal] = useState(false);
 
-  const handleDisconnect = useCallback(() => {
-    if (azguardState.isConnected) {
-      disconnectAzguard();
-    } else if (connectedAccount) {
-      disconnectWallet();
-    }
-  }, [azguardState.isConnected, connectedAccount, disconnectAzguard, disconnectWallet]);
+  const handleDisconnect = useCallback(async () => {
+    await disconnect();
+  }, [disconnect]);
 
   const handleWalletConnected = useCallback(() => {
     setShowWalletModal(false);
@@ -44,22 +40,22 @@ export const Header: React.FC = () => {
 
   const renderAccountSection = () => {
     // Azguard wallet takes priority
-    if (azguardState.isConnected && azguardState.selectedAccount) {
+    if (azguard.state.isConnected && azguard.state.selectedAccount) {
       return (
         <ConnectedAccount
           walletType="Azguard"
-          address={truncateCaipAddress(azguardState.selectedAccount)}
+          address={truncateCaipAddress(azguard.state.selectedAccount)}
           onDisconnect={handleDisconnect}
         />
       );
     }
 
     // Embedded wallet
-    if (connectedAccount) {
+    if (account && walletType === WalletType.EMBEDDED) {
       return (
         <ConnectedAccount
           walletType="Embedded"
-          address={truncateAddress(connectedAccount.getAddress().toString())}
+          address={truncateAddress(account.getAddress().toString())}
           onDisconnect={handleDisconnect}
         />
       );

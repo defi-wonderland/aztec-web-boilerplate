@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { useAztecWallet, useAzguardWallet, useConfig } from '../hooks';
+import { useUniversalWallet, useConfig } from '../hooks';
 import { useContractRegistration } from '../hooks/context/useContractRegistration';
 import { useDripper } from '../hooks/mutations/useDripper';
 import { useError } from '../providers/ErrorProvider';
 
 export const DripperCard: React.FC = () => {
-  const { connectedAccount, isInitialized, isDeploying } = useAztecWallet();
-  const { state: azguardState } = useAzguardWallet();
+  const { account, isInitialized, embedded, azguard } = useUniversalWallet();
   const { addError } = useError();
   const { currentConfig } = useConfig();
   
@@ -54,6 +53,7 @@ export const DripperCard: React.FC = () => {
   });
 
   const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
+  const isDeploying = embedded.isDeploying;
 
   const handleDrip = () => {
     if (!amount || !isReady) return;
@@ -72,8 +72,7 @@ export const DripperCard: React.FC = () => {
   };
 
   // Show dripper form when either wallet is connected and app is initialized
-  const isAnyWalletConnected =
-    Boolean(connectedAccount) || azguardState.isConnected;
+  const isAnyWalletConnected = Boolean(account) || azguard.state.isConnected;
   const showDripForm = isAnyWalletConnected && isInitialized;
 
   if (!showDripForm) {

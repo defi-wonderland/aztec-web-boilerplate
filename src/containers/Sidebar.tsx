@@ -6,9 +6,9 @@ import { AddressDisplay } from '../components/AddressDisplay';
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isLoading: isBalanceLoading } = useTokenBalance();
   const { currentConfig } = useConfig();
-  const { getAccountAddress } = useUniversalWallet();
+  const { account } = useUniversalWallet();
 
-  const accountAddress = getAccountAddress();
+  const accountAddress = account?.getAddress().toString() ?? null;
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
   const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
   const totalBalance = privateBalance + publicBalance;

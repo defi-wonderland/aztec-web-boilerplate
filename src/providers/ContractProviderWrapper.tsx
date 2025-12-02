@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { useAztecWallet } from '../hooks/context/useAztecWallet';
+import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
 import { useConfig } from '../hooks/context/useConfig';
 import { AztecContractProvider } from './AztecContractProvider';
 import { aztecContracts, CORE_CONTRACTS } from '../config/contracts';
@@ -9,7 +9,7 @@ interface ContractProviderWrapperProps {
 }
 
 export const ContractProviderWrapper: React.FC<ContractProviderWrapperProps> = ({ children }) => {
-  const { pxe, isInitialized } = useAztecWallet();
+  const { pxe, isInitialized } = useUniversalWallet();
   const { currentConfig } = useConfig();
 
   if (!isInitialized || !pxe) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAzguardWallet, useAddressUtils } from '../hooks';
+import { useUniversalWallet, useAddressUtils } from '../hooks';
 import type { CaipAccount } from '../types/azguard';
 
 interface AzguardAccountDisplayProps {
@@ -7,7 +7,7 @@ interface AzguardAccountDisplayProps {
 }
 
 export const AzguardAccountDisplay: React.FC<AzguardAccountDisplayProps> = ({ onDisconnect }) => {
-  const { state, disconnect, switchAccount } = useAzguardWallet();
+  const { azguard, disconnect } = useUniversalWallet();
   const { truncateCaipAddress, getCaipChainName } = useAddressUtils();
 
   const handleDisconnect = async () => {
@@ -20,16 +20,16 @@ export const AzguardAccountDisplay: React.FC<AzguardAccountDisplayProps> = ({ on
   };
 
   const handleAccountSwitch = async (account: CaipAccount) => {
-    if (account === state.selectedAccount) return;
+    if (account === azguard.state.selectedAccount) return;
     
     try {
-      await switchAccount(account);
+      await azguard.switchAccount(account);
     } catch (err) {
       console.error('Failed to switch account:', err);
     }
   };
 
-  if (!state.isConnected || !state.selectedAccount) {
+  if (!azguard.state.isConnected || !azguard.state.selectedAccount) {
     return null;
   }
 
@@ -38,22 +38,22 @@ export const AzguardAccountDisplay: React.FC<AzguardAccountDisplayProps> = ({ on
       <div className="account-info">
         <div className="account-header">
           <span className="wallet-type">Azguard</span>
-          <span className="chain-name">({getCaipChainName(state.selectedAccount)})</span>
+          <span className="chain-name">({getCaipChainName(azguard.state.selectedAccount)})</span>
         </div>
         
         <div className="account-address">
-          {truncateCaipAddress(state.selectedAccount)}
+          {truncateCaipAddress(azguard.state.selectedAccount)}
         </div>
         
-        {state.accounts.length > 1 && (
+        {azguard.state.accounts.length > 1 && (
           <div className="account-selector">
             <select
-              value={state.selectedAccount}
+              value={azguard.state.selectedAccount}
               onChange={(e) => handleAccountSwitch(e.target.value as CaipAccount)}
               className="account-select"
               title="Switch account"
             >
-              {state.accounts.map((account, index) => (
+              {azguard.state.accounts.map((account, index) => (
                 <option key={account} value={account}>
                   Account {index + 1}: {truncateCaipAddress(account)}
                 </option>

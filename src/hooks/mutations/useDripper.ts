@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useUniversalWallet } from '../context/useUniversalWallet';
-import { useAztecWallet } from '../context/useAztecWallet';
 import { queryKeys } from '../queries/queryKeys';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { DripperContract } from '../../artifacts/Dripper';
@@ -48,14 +47,13 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { activeAccount } = useUniversalWallet();
-  const { wallet, getSponsoredFeePaymentMethod } = useAztecWallet();
+  const { account, wallet, getSponsoredFeePaymentMethod } = useUniversalWallet();
   const queryClient = useQueryClient();
 
   const isReady = isDripperReady && isTokenReady && !!wallet;
 
   const invalidateBalances = () => {
-    const ownerAddress = activeAccount?.getAddress().toString();
+    const ownerAddress = account?.getAddress().toString();
     if (ownerAddress && token) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.token.balance(token.address.toString(), ownerAddress),

@@ -3,15 +3,15 @@ import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { Tabs, SecurityWarning } from '../components';
 import { TabConfig, TabType } from '../types';
-import { useAzguardWallet, useAztecWallet } from '../hooks';
+import { useUniversalWallet } from '../hooks';
+import { WalletType } from '../types/aztec';
 
 export const MainContent: React.FC = () => {
-  const { state: azguardState } = useAzguardWallet();
-  const { connectedAccount } = useAztecWallet();
+  const { account, walletType, azguard } = useUniversalWallet();
   const [activeTab, setActiveTab] = useState<TabType>('mint');
   
   // Show security warning when using embedded wallet (not Azguard)
-  const isUsingEmbeddedWallet = connectedAccount && !azguardState.isConnected;
+  const isUsingEmbeddedWallet = account && walletType === WalletType.EMBEDDED && !azguard.state.isConnected;
 
   const tabs: TabConfig[] = [
     {

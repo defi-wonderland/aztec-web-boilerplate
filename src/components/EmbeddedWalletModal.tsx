@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useAztecWallet, useConfig, useAzguardWallet } from '../hooks';
+import { useUniversalWallet, useConfig } from '../hooks';
 
 interface EmbeddedWalletModalProps {
   isOpen: boolean;
@@ -17,23 +17,21 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   const [isConnecting, setIsConnecting] = useState(false);
 
   const { 
-    createAccount, 
-    connectTestAccount,
+    embedded,
+    azguard,
     isInitialized,
     isLoading,
     error,
-    initializationTimedOut
-  } = useAztecWallet();
+  } = useUniversalWallet();
 
-  const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
-  const { state: azguardState, connect: connectAzguard } = useAzguardWallet();
+  const { currentConfig, switchToNetwork } = useConfig();
   
   // Disable functionality when no network is selected, network is initializing, or failed
   const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';
   const isNetworkInitializing = isNetworkSelected && !isInitialized && isLoading;
-  const isNetworkFailed = isNetworkSelected && (error || initializationTimedOut) && !isInitialized;
+  const isNetworkFailed = isNetworkSelected && error && !isInitialized;
   const isTestAccountDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting;
-  const isAzguardDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting || azguardState.isConnected;
+  const isAzguardDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting || azguard.state.isConnected;
 
   // Apply modal-open class to root when modal is open
   useEffect(() => {
@@ -61,10 +59,10 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     try {
       switch (action) {
         case 'create':
-          await createAccount();
+          await embedded.create();
           break;
         case 'test':
-          await connectTestAccount(testAccountIndex - 1);
+          await embedded.connectTest(testAccountIndex - 1);
           break;
       }
       onWalletConnected?.();
@@ -77,14 +75,14 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   };
 
   const handleAzguardConnect = async () => {
-    if (isConnecting || azguardState.isConnecting) return;
+    if (isConnecting || azguard.state.isConnecting) return;
     
     try {
-      await connectAzguard();
+      await azguard.connect();
       onWalletConnected?.();
       onClose(); // Close modal after successful connection
-    } catch (error) {
-      console.error('Failed to connect Azguard wallet:', error);
+    } catch (err) {
+      console.error('Failed to connect Azguard wallet:', err);
     }
   };
 
@@ -188,8 +186,8 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
               className="modal-action-button azguard-connect"
               title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
             >
-              {azguardState.isConnecting ? 'Connecting...' : 
-               azguardState.isConnected ? 'Azguard Connected' : 
+              {azguard.state.isConnecting ? 'Connecting...' : 
+               azguard.state.isConnected ? 'Azguard Connected' : 
                'Connect Azguard Wallet'}
             </button>
           </div>

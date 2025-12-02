@@ -44,16 +44,16 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { activeAccount } = useUniversalWallet();
+  const { account } = useUniversalWallet();
   const queryClient = useQueryClient();
 
   const tokenAddress = token?.address.toString() ?? '';
-  const ownerAddress = activeAccount?.getAddress().toString() ?? '';
+  const ownerAddress = account?.getAddress().toString() ?? '';
 
   const isQueryEnabled = Boolean(
     token &&
     isTokenReady &&
-    activeAccount &&
+    account &&
     tokenAddress &&
     ownerAddress &&
     (options.enabled ?? true)
@@ -67,7 +67,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
       }
 
       // Sequential calls to avoid PXE concurrency issues
-      const fromAddress = activeAccount!.getAddress();
+      const fromAddress = account!.getAddress();
       
       const privateBalance = await token.methods
         .balance_of_private(fromAddress)
