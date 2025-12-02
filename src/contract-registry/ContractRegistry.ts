@@ -298,8 +298,8 @@ export class ContractRegistry<T extends ContractConfigMap>
    */
   private async isRegisteredInStorage(address: AztecAddress): Promise<boolean> {
     try {
-      const metadata = await this.pxe.getContractMetadata(address);
-      return metadata !== undefined && metadata.contractInstance !== undefined;
+      const instance = await this.pxe.getContractInstance(address);
+      return instance !== undefined;
     } catch {
       return false;
     }

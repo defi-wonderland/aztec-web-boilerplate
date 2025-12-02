@@ -93,6 +93,9 @@ export const DripperCard: React.FC = () => {
 
   const contractStatusMessage = getContractStatus();
 
+  // Show loading state while contracts are being registered
+  const isContractsLoading = tokenStatus === 'idle' || tokenStatus === 'registering';
+
   return (
     <div className="dripper-content">
       <div className="content-header">
@@ -106,87 +109,94 @@ export const DripperCard: React.FC = () => {
       </div>
 
       <div className="mint-form-container">
-        <div className="form-section">
-          {contractStatusMessage && (
-            <div className="contract-status">
-              <span className="status-icon">⏳</span>
-              {contractStatusMessage}
+        {isContractsLoading ? (
+          <div className="form-section">
+            <div className="flex flex-col items-center justify-center py-2rem gap-1rem opacity-70">
+              <div className="animate-spin rounded-full h-2rem w-2rem border-b-2 border-current" />
+              <p className="text-0.875rem">Loading contracts...</p>
             </div>
-          )}
+          </div>
+        ) : (
+          <div className="form-section">
+            {contractStatusMessage && (
+              <div className="contract-status">
+                <span className="status-icon">⏳</span>
+                {contractStatusMessage}
+              </div>
+            )}
 
-          <div className="form-group">
-            <label htmlFor="token-address">Token Address</label>
-            <div className="input-with-copy">
+            <div className="form-group">
+              <label htmlFor="token-address">Token Address</label>
+              <div className="input-with-copy">
+                <input
+                  id="token-address"
+                  type="text"
+                  value={currentConfig.tokenContractAddress}
+                  readOnly
+                  className="form-input"
+                  aria-label="Token contract address"
+                />
+                <button
+                  type="button"
+                  className="copy-button"
+                  onClick={handleCopyAddress}
+                  title="Copy to clipboard"
+                  aria-label="Copy address to clipboard"
+                >
+                  📋
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="amount">Amount</label>
               <input
-                id="token-address"
-                type="text"
-                value={currentConfig.tokenContractAddress}
-                readOnly
+                id="amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount to mint"
+                disabled={isProcessing || !isReady}
                 className="form-input"
-                aria-label="Token contract address"
+                aria-label="Amount to mint"
               />
-              <button
-                type="button"
-                className="copy-button"
-                onClick={handleCopyAddress}
-                title="Copy to clipboard"
-                aria-label="Copy address to clipboard"
-              >
-                📋
-              </button>
             </div>
-          </div>
 
-          <div className="form-group">
-            <label htmlFor="amount">Amount</label>
-            <input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount to mint"
-              disabled={isProcessing || !isReady}
-              className="form-input"
-              aria-label="Amount to mint"
-            />
-          </div>
+            <div className="form-group">
+              <label htmlFor="drip-type">Drip Type</label>
+              <select
+                id="drip-type"
+                value={dripType}
+                onChange={(e) =>
+                  setDripType(e.target.value as 'private' | 'public')
+                }
+                disabled={isProcessing || !isReady}
+                className="form-select"
+                aria-label="Select drip type"
+              >
+                <option value="private">Private Balance</option>
+                <option value="public">Public Balance</option>
+              </select>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="drip-type">Drip Type</label>
-            <select
-              id="drip-type"
-              value={dripType}
-              onChange={(e) =>
-                setDripType(e.target.value as 'private' | 'public')
-              }
-              disabled={isProcessing || !isReady}
-              className="form-select"
-              aria-label="Select drip type"
+            <button
+              type="button"
+              onClick={handleDrip}
+              disabled={!amount || isProcessing || isDeploying || !isReady}
+              className="btn btn-primary"
+              aria-label={`Drip tokens to ${dripType} balance`}
             >
-              <option value="private">Private Balance</option>
-              <option value="public">Public Balance</option>
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDrip}
-            disabled={!amount || isProcessing || isDeploying || !isReady}
-            className="btn btn-primary"
-            aria-label={`Drip tokens to ${dripType} balance`}
-          >
-            <span className="btn-icon">
-              {dripType === 'private' ? '🛡️' : '🌐'}
-            </span>
-            {isDeploying
-              ? 'Deploying Account...'
-              : !isReady
-                ? 'Loading Contracts...'
+              <span className="btn-icon">
+                {dripType === 'private' ? '🛡️' : '🌐'}
+              </span>
+              {isDeploying
+                ? 'Deploying Account...'
                 : isProcessing
                   ? 'Processing...'
                   : `Drip to ${dripType}`}
-          </button>
-        </div>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
