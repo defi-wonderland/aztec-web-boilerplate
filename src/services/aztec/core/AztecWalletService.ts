@@ -1,10 +1,8 @@
 import { Fr } from '@aztec/aztec.js/fields';
 import { createLogger } from '@aztec/aztec.js/log';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
-import { AccountManager, BaseWallet, type Wallet } from '@aztec/aztec.js/wallet';
-import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
+import { AccountManager, type Wallet } from '@aztec/aztec.js/wallet';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
@@ -14,53 +12,13 @@ import { SchnorrAccountContract } from '@aztec/accounts/schnorr/lazy';
 import { getPXEConfig } from '@aztec/pxe/config';
 import { createPXE } from '@aztec/pxe/client/lazy';
 import { getInitialTestAccountsData } from '@aztec/accounts/testing/lazy';
+import { type AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { IAztecWalletService, CreateAccountResult } from '../../../types';
-import {
-  type AccountWithSecretKey,
-  type Account,
-  SignerlessAccount,
-} from '@aztec/aztec.js/account';
+import { MinimalWallet } from '../../../utils/MinimalWallet';
 
 //TODO: This by default should be true, but set it to false to test
 const PROVER_ENABLED = false;
 const logger = createLogger('wallet-service');
-
-/**
- * MinimalWallet extends BaseWallet to bootstrap account creation
- * This bridges PXE to the Wallet interface required by AccountManager
- */
-class MinimalWallet extends BaseWallet {
-  private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
-
-  constructor(pxe: PXE, aztecNode: AztecNode) {
-    super(pxe as unknown as any, aztecNode);
-  }
-
-  public addAccount(account: AccountWithSecretKey) {
-    this.addressToAccount.set(account.getAddress().toString(), account);
-  }
-
-  protected async getAccountFromAddress(address: AztecAddress): Promise<Account> {
-    let account: Account | undefined;
-    if (address.equals(AztecAddress.ZERO)) {
-      const chainInfo = await this.getChainInfo();
-      account = new SignerlessAccount(chainInfo);
-    } else {
-      account = this.addressToAccount.get(address.toString());
-    }
-
-    if (!account)
-      throw new Error(`Account not found in wallet for address: ${address.toString()}`);
-    return account;
-  }
-
-  async getAccounts(): Promise<{ alias: string; item: AztecAddress }[]> {
-    return Array.from(this.addressToAccount.values()).map((acc) => ({
-      alias: '',
-      item: acc.getAddress(),
-    }));
-  }
-}
 
 /**
  * Core service for Aztec wallet operations

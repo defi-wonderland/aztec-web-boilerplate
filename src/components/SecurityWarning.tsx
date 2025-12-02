@@ -5,10 +5,6 @@ interface SecurityWarningProps {
   showDismiss?: boolean;
 }
 
-/**
- * Security warning banner for embedded wallet users.
- * Displays prominently to remind users this is for testnet only.
- */
 export const SecurityWarning: React.FC<SecurityWarningProps> = ({ 
   onDismiss,
   showDismiss = true 
@@ -48,6 +44,3 @@ export const SecurityWarning: React.FC<SecurityWarningProps> = ({
     </div>
   );
 };
-
-
-

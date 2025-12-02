@@ -126,8 +126,8 @@ export interface UseContractRegistryReturn<T extends ContractConfigMap> {
   getInstance: (name: ContractNames<T>) => ContractInstanceWithAddress | null;
   /** Get the status of a contract */
   getStatus: (name: ContractNames<T>) => ContractStatus;
-  /** Ensure a contract is registered (no-op if already registered) */
-  ensureRegistered: (name: ContractNames<T>) => Promise<void>;
+  /** Register a contract (no-op if already registered) */
+  register: (name: ContractNames<T>) => Promise<void>;
   /** Register multiple contracts */
   registerMany: (names: ContractNames<T>[]) => Promise<void>;
   /** Get all registered contract names */
@@ -151,7 +151,7 @@ export interface ContractRegistryContextValue<T extends ContractConfigMap> {
  * Interface for the ContractRegistry class
  */
 export interface IContractRegistry<T extends ContractConfigMap> {
-  /** Check if a contract is registered in the cache */
+  /** Check if a contract is registered in the memory cache */
   isRegistered(name: ContractNames<T>): boolean;
   /** Get the instance of a registered contract */
   getInstance(name: ContractNames<T>): ContractInstanceWithAddress | null;
@@ -159,12 +159,14 @@ export interface IContractRegistry<T extends ContractConfigMap> {
   getStatus(name: ContractNames<T>): ContractStatus;
   /** Get the contract class for creating callable instances */
   getContractClass(name: ContractNames<T>): ContractClass | null;
-  /** Ensure a contract is registered (checks PXE first) */
-  ensureRegistered(name: ContractNames<T>): Promise<void>;
-  /** Register multiple contracts in parallel */
+  /** Register a contract (checks PXE's IndexedDB first, no-op if already registered) */
+  register(name: ContractNames<T>): Promise<void>;
+  /** Register multiple contracts sequentially (IndexedDB safe) */
   registerAll(names?: ContractNames<T>[]): Promise<void>;
   /** Get all registered contract names */
   getRegisteredNames(): ContractNames<T>[];
   /** Subscribe to status changes */
   subscribe(callback: () => void): () => void;
+  /** Clear the in-memory cache */
+  clearCache(): void;
 }

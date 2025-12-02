@@ -94,7 +94,7 @@ export function useContractRegistration<
 
     // Only trigger registration if idle (not yet attempted)
     if (currentStatus === 'idle') {
-      registry.ensureRegistered(name).catch((err) => {
+      registry.register(name).catch((err) => {
         setError(err instanceof Error ? err : new Error(String(err)));
       });
     }
@@ -108,7 +108,7 @@ export function useContractRegistration<
 
     setError(null);
     try {
-      await registry.ensureRegistered(name);
+      await registry.register(name);
     } catch (err) {
       const registrationError =
         err instanceof Error ? err : new Error(String(err));

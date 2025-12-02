@@ -2,6 +2,8 @@
  * Deployment configuration types for Aztec contracts
  */
 
+import { NETWORK_URLS, type NetworkType } from '../networks/constants';
+
 /**
  * Contract deployment information
  */
@@ -14,7 +16,7 @@ export interface ContractDeployment {
  * Full deployment configuration for a network
  */
 export interface DeploymentConfig {
-  network: 'sandbox' | 'testnet';
+  network: NetworkType;
   nodeUrl: string;
   dripperContract: ContractDeployment;
   tokenContract: ContractDeployment;
@@ -45,7 +47,7 @@ export const isDeploymentValid = (config: DeploymentConfig): boolean => {
  */
 export const DEFAULT_SANDBOX_DEPLOYMENT: DeploymentConfig = {
   network: 'sandbox',
-  nodeUrl: 'http://localhost:8080',
+  nodeUrl: NETWORK_URLS.sandbox,
   dripperContract: {
     address: PLACEHOLDER_ADDRESS,
     salt: PLACEHOLDER_SALT,
@@ -64,7 +66,7 @@ export const DEFAULT_SANDBOX_DEPLOYMENT: DeploymentConfig = {
  */
 export const DEFAULT_TESTNET_DEPLOYMENT: DeploymentConfig = {
   network: 'testnet',
-  nodeUrl: 'https://devnet.aztec-labs.com/',
+  nodeUrl: NETWORK_URLS.testnet,
   dripperContract: {
     address: PLACEHOLDER_ADDRESS,
     salt: PLACEHOLDER_SALT,

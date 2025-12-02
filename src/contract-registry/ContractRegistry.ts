@@ -18,10 +18,6 @@ const logger = createLogger('contract-registry');
  * Contract Registry Service
  *
  * Manages contract registration with PXE, featuring:
- * - Smart PXE persistence checks (skip re-registration if already in PXE)
- * - Local caching of registered contracts
- * - Concurrent request deduplication
- * - Subscription support for status changes
  *
  * @example
  * ```typescript
@@ -34,7 +30,7 @@ const logger = createLogger('contract-registry');
  * await registry.registerAll(['dripper', 'token']);
  *
  * // Lazy registration
- * await registry.ensureRegistered('dripper');
+ * await registry.register('dripper');
  *
  * // Get instance
  * const instance = registry.getInstance('dripper');
@@ -115,10 +111,9 @@ export class ContractRegistry<T extends ContractConfigMap>
    * If already registered (in cache or PXE), this is a no-op.
    * Handles concurrent requests by deduplicating in-flight registrations.
    */
-  async ensureRegistered(name: ContractNames<T>): Promise<void> {
-    // Check local cache first
+  async register(name: ContractNames<T>): Promise<void> {
     if (this.isRegistered(name)) {
-      logger.debug(`Contract "${name}" already registered (cache hit)`);
+      logger.debug(`Contract "${name}" already registered (memory cache hit)`);
       return;
     }
 
@@ -141,18 +136,20 @@ export class ContractRegistry<T extends ContractConfigMap>
   }
 
   /**
-   * Register multiple contracts in parallel.
+   * Register multiple contracts sequentially.
    * If no names provided, registers all contracts in the config.
    */
   async registerAll(names?: ContractNames<T>[]): Promise<void> {
     const contractNames =
       names ?? (Object.keys(this.contracts) as ContractNames<T>[]);
 
-    logger.info(`Registering ${contractNames.length} contracts...`, {
+    logger.info(`Registering ${contractNames.length} contracts sequentially...`, {
       contracts: contractNames,
     });
 
-    await Promise.all(contractNames.map((name) => this.ensureRegistered(name)));
+    for (const name of contractNames) {
+      await this.register(name);
+    }
 
     logger.info('All contracts registered successfully');
   }
@@ -179,12 +176,10 @@ export class ContractRegistry<T extends ContractConfigMap>
         contractConfig.address(this.config)
       );
 
-      // Check if already registered in PXE
       const isInPXE = await this.isRegisteredInPXE(expectedAddress);
 
       if (isInPXE) {
         logger.info(`Contract "${name}" already in PXE, skipping registration`);
-        // Get the instance from PXE to store in cache
         const instance = await this.getInstanceFromPXE(name, expectedAddress);
         this.updateCache(name, { status: 'ready', instance });
         this.notifySubscribers();
@@ -198,7 +193,6 @@ export class ContractRegistry<T extends ContractConfigMap>
       });
       this.notifySubscribers();
 
-      // Compute instance and register
       const instance = await this.computeAndRegister(name, contractConfig);
 
       // Validate address matches expected
@@ -231,7 +225,7 @@ export class ContractRegistry<T extends ContractConfigMap>
   }
 
   /**
-   * Check if a contract is already registered in PXE
+   * Check if a contract is already registered in PXE (IndexedDB)
    */
   private async isRegisteredInPXE(address: AztecAddress): Promise<boolean> {
     try {
@@ -319,5 +313,12 @@ export class ContractRegistry<T extends ContractConfigMap>
    */
   private notifySubscribers(): void {
     this.subscribers.forEach((callback) => callback());
+  }
+
+  clearCache(): void {
+    this.cache.clear();
+    this.pendingRegistrations.clear();
+    this.notifySubscribers();
+    logger.info('Memory cache cleared');
   }
 }

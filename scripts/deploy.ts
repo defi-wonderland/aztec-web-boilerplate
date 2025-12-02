@@ -10,16 +10,8 @@ import {
 import { PublicKeys } from '@aztec/aztec.js/keys';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import {
-  type AccountWithSecretKey,
-  type Account,
-  SignerlessAccount,
-} from '@aztec/aztec.js/account';
-import {
-  AccountManager,
-  BaseWallet,
-  type Wallet,
-} from '@aztec/aztec.js/wallet';
+import { type AccountWithSecretKey } from '@aztec/aztec.js/account';
+import { AccountManager, type Wallet } from '@aztec/aztec.js/wallet';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
@@ -35,19 +27,8 @@ import {
   DripperContract,
 } from '../src/artifacts/Dripper.js';
 import { TokenContractArtifact } from '../src/artifacts/Token.js';
-
-// Network configuration
-type NetworkType = 'sandbox' | 'testnet';
-
-interface NetworkUrls {
-  sandbox: string;
-  testnet: string;
-}
-
-const DEFAULT_NODE_URLS: NetworkUrls = {
-  sandbox: 'http://localhost:8080',
-  testnet: 'https://devnet.aztec-labs.com/', // Official Aztec devnet
-};
+import { MinimalWallet } from './utils/MinimalWallet.js';
+import { NETWORK_URLS, type NetworkType } from '../src/config/networks/constants.js';
 
 // Parse command line arguments
 const parseArgs = (): { network: NetworkType } => {
@@ -73,52 +54,13 @@ const parseArgs = (): { network: NetworkType } => {
 const { network: NETWORK } = parseArgs();
 
 // Environment variable overrides
-const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || DEFAULT_NODE_URLS[NETWORK];
+const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || NETWORK_URLS[NETWORK];
 const PROVER_ENABLED =
   process.env.PROVER_ENABLED === 'false' ? false : NETWORK === 'testnet';
 
 const DEPLOY_TIMEOUT = 960;
 const PXE_STORE_DIR = path.join(import.meta.dirname, '.store');
 
-/**
- * MinimalWallet extends BaseWallet to bootstrap account creation
- */
-class MinimalWallet extends BaseWallet {
-  private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
-
-  constructor(pxe: PXE, aztecNode: AztecNode) {
-    super(pxe as unknown as any, aztecNode);
-  }
-
-  public addAccount(account: AccountWithSecretKey) {
-    this.addressToAccount.set(account.getAddress().toString(), account);
-  }
-
-  protected async getAccountFromAddress(
-    address: AztecAddress
-  ): Promise<Account> {
-    let account: Account | undefined;
-    if (address.equals(AztecAddress.ZERO)) {
-      const chainInfo = await this.getChainInfo();
-      account = new SignerlessAccount(chainInfo);
-    } else {
-      account = this.addressToAccount.get(address.toString());
-    }
-
-    if (!account)
-      throw new Error(
-        `Account not found in wallet for address: ${address.toString()}`
-      );
-    return account;
-  }
-
-  async getAccounts(): Promise<{ alias: string; item: AztecAddress }[]> {
-    return Array.from(this.addressToAccount.values()).map((acc) => ({
-      alias: '',
-      item: acc.getAddress(),
-    }));
-  }
-}
 
 async function setupPXE() {
   console.log(`\n🔧 Setting up PXE for ${NETWORK}...`);

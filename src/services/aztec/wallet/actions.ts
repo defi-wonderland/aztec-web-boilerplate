@@ -43,29 +43,25 @@ export const createAccount = async (
         },
         {
           onSuccess: (response: unknown) => {
-            console.log('✅ Account deployed successfully', response);
+            const payload = response as { status: string; txHash: string | null };
+            if (payload.status === 'already_deployed') {
+              console.log('✅ Account was already deployed');
+            } else {
+              console.log('✅ Account deployed successfully', response);
+            }
             setIsDeploying(false);
           },
           onError: (error: string) => {
-            // Check if the error is due to account already being deployed
-            if (
-              error.includes('Existing nullifier') ||
-              error.includes('Invalid tx: Existing nullifier')
-            ) {
-              console.log('✅ Account was already deployed');
-              setIsDeploying(false);
-            } else {
-              console.error('❌ Failed to deploy account in background:', error);
-              if (addMessage) {
-                addMessage({
-                  message: 'Failed to deploy account in background',
-                  type: 'error',
-                  source: 'wallet',
-                  details: error,
-                });
-              }
-              setIsDeploying(false);
+            console.error('❌ Failed to deploy account in background:', error);
+            if (addMessage) {
+              addMessage({
+                message: 'Failed to deploy account in background',
+                type: 'error',
+                source: 'wallet',
+                details: error,
+              });
             }
+            setIsDeploying(false);
           },
         }
       );
@@ -120,26 +116,23 @@ export const connectExistingAccount = async (
         },
         {
           onSuccess: (response: unknown) => {
-            console.log('✅ Existing account deployed successfully', response);
+            const payload = response as { status: string; txHash: string | null };
+            if (payload.status === 'already_deployed') {
+              console.log('✅ Existing account was already deployed');
+            } else {
+              console.log('✅ Existing account deployed successfully', response);
+            }
             setIsDeploying(false);
           },
           onError: (error: string) => {
-            // Check if the error is due to account already being deployed
-            if (
-              error.includes('Existing nullifier') ||
-              error.includes('Invalid tx: Existing nullifier')
-            ) {
-              console.log('✅ Existing account was already deployed');
-            } else {
-              console.error('❌ Failed to deploy existing account in background:', error);
-              if (addMessage) {
-                addMessage({
-                  message: 'Failed to deploy existing account in background',
-                  type: 'error',
-                  source: 'wallet',
-                  details: error,
-                });
-              }
+            console.error('❌ Failed to deploy existing account in background:', error);
+            if (addMessage) {
+              addMessage({
+                message: 'Failed to deploy existing account in background',
+                type: 'error',
+                source: 'wallet',
+                details: error,
+              });
             }
             setIsDeploying(false);
           },

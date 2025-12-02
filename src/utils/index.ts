@@ -1,6 +1,7 @@
 import { AztecAddress } from "@aztec/aztec.js/addresses";
 import { Fr } from "@aztec/aztec.js/fields";
 import { PLACEHOLDER_ADDRESS } from "../config/deployments";
+export { MinimalWallet } from './MinimalWallet';
 
 /**
  * Validates that a network configuration has valid contract addresses.

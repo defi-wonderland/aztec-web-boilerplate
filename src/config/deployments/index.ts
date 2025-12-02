@@ -8,10 +8,6 @@ import {
   DEFAULT_TESTNET_DEPLOYMENT,
 } from './types';
 
-/**
- * Load sandbox deployment config from JSON file
- * Falls back to default placeholder if file is invalid
- */
 export const getSandboxDeployment = (): DeploymentConfig => {
   try {
     return sandboxDeployment as DeploymentConfig;
@@ -20,10 +16,6 @@ export const getSandboxDeployment = (): DeploymentConfig => {
   }
 };
 
-/**
- * Load testnet deployment config from JSON file
- * Falls back to default placeholder if file is invalid
- */
 export const getTestnetDeployment = (): DeploymentConfig => {
   try {
     return testnetDeployment as DeploymentConfig;
@@ -31,6 +23,3 @@ export const getTestnetDeployment = (): DeploymentConfig => {
     return DEFAULT_TESTNET_DEPLOYMENT;
   }
 };
-
-
-

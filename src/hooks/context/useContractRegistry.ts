@@ -19,7 +19,7 @@ import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
  * const {
  *   isRegistered,
  *   getInstance,
- *   ensureRegistered,
+ *   register,
  *   registerMany,
  *   status,
  * } = useContractRegistry<typeof aztecContracts>();
@@ -30,7 +30,7 @@ import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
  * }
  *
  * // Register on demand
- * await ensureRegistered('token');
+ * await register('token');
  *
  * // Bulk register
  * await registerMany(['dripper', 'token']);
@@ -62,12 +62,12 @@ export function useContractRegistry<
     [registry]
   );
 
-  const ensureRegistered = useCallback(
+  const register = useCallback(
     async (name: ContractNames<T>): Promise<void> => {
       if (!registry) {
         throw new Error('Contract registry not initialized');
       }
-      return registry.ensureRegistered(name);
+      return registry.register(name);
     },
     [registry]
   );
@@ -91,7 +91,7 @@ export function useContractRegistry<
       isRegistered,
       getInstance,
       getStatus,
-      ensureRegistered,
+      register,
       registerMany,
       getRegisteredNames,
       status,
@@ -101,7 +101,7 @@ export function useContractRegistry<
       isRegistered,
       getInstance,
       getStatus,
-      ensureRegistered,
+      register,
       registerMany,
       getRegisteredNames,
       status,
