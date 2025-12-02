@@ -29,12 +29,12 @@ interface AztecContractProviderProps<T extends ContractConfigMap> {
   /** App configuration for deriving addresses and deploy params */
   config: AppConfig;
   /**
-   * List of contract names to eagerly load at initialization.
-   * - undefined (default): Load all contracts at init
-   * - string[]: Load only specified contracts at init
-   * - []: Load no contracts at init (all lazy)
+   * List of contract names to register at initialization.
+   * - undefined (default): Register all contracts at init
+   * - string[]: Register only specified contracts at init
+   * - []: Register no contracts at init (all on-demand)
    */
-  eagerLoad?: ContractNames<T>[];
+  initialContracts?: ContractNames<T>[];
   /** Optional loading component to show during initialization */
   loadingComponent?: ReactNode;
   /** React children */
@@ -66,22 +66,22 @@ const ContractRegistryContext = createContext<ContractContextValue | null>(null)
  *   {children}
  * </AztecContractProvider>
  *
- * // Load specific contracts at init, rest are lazy
+ * // Load specific contracts at init, rest are on-demand
  * <AztecContractProvider
  *   contracts={aztecContracts}
  *   pxe={pxe}
  *   config={config}
- *   eagerLoad={['dripper', 'token']}
+ *   initialContracts={['dripper', 'token']}
  * >
  *   {children}
  * </AztecContractProvider>
  *
- * // All contracts lazy (none at init)
+ * // All contracts on-demand (none at init)
  * <AztecContractProvider
  *   contracts={aztecContracts}
  *   pxe={pxe}
  *   config={config}
- *   eagerLoad={[]}
+ *   initialContracts={[]}
  * >
  *   {children}
  * </AztecContractProvider>
@@ -91,7 +91,7 @@ export function AztecContractProvider<T extends ContractConfigMap>({
   contracts,
   pxe,
   config,
-  eagerLoad,
+  initialContracts,
   loadingComponent,
   children,
 }: AztecContractProviderProps<T>): React.ReactElement {
@@ -114,10 +114,10 @@ export function AztecContractProvider<T extends ContractConfigMap>({
         const registry = new ContractRegistry(pxe, contracts, config);
         registryRef.current = registry;
 
-        // Determine which contracts to eagerly load
-        const contractsToLoad = eagerLoad === undefined
+        // Determine which contracts to register at init
+        const contractsToLoad = initialContracts === undefined
           ? (Object.keys(contracts) as ContractNames<T>[]) // All contracts
-          : eagerLoad; // Specified list (can be empty)
+          : initialContracts; // Specified list (can be empty)
 
         // Register eager contracts
         if (contractsToLoad.length > 0) {
@@ -137,7 +137,7 @@ export function AztecContractProvider<T extends ContractConfigMap>({
     };
 
     initializeRegistry();
-  }, [pxe, contracts, config, eagerLoad]);
+  }, [pxe, contracts, config, initialContracts]);
 
   // Memoize context value
   const contextValue = useMemo<ContractContextValue<T>>(
@@ -149,9 +149,9 @@ export function AztecContractProvider<T extends ContractConfigMap>({
     [status, error]
   );
 
-  // Show loading state during initialization (only if there are contracts to eagerly load)
+  // Show loading state during initialization (only if there are contracts to register)
   const shouldShowLoading = status === 'initializing' && 
-    (eagerLoad === undefined || eagerLoad.length > 0);
+    (initialContracts === undefined || initialContracts.length > 0);
 
   if (shouldShowLoading) {
     return (

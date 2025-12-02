@@ -21,7 +21,7 @@ export const ContractProviderWrapper: React.FC<ContractProviderWrapperProps> = (
       contracts={aztecContracts}
       pxe={pxe}
       config={currentConfig}
-      eagerLoad={CORE_CONTRACTS}
+      initialContracts={CORE_CONTRACTS}
     >
       {children}
     </AztecContractProvider>
