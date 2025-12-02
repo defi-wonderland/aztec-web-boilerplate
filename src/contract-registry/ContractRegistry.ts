@@ -108,7 +108,7 @@ export class ContractRegistry<T extends ContractConfigMap>
 
   /**
    * Ensure a contract is registered with PXE.
-   * If already in memory cache, this is a no-op.
+   * Checks memory cache first, then storage, before registering fresh.
    * Handles concurrent requests by deduplicating in-flight registrations.
    */
   async register(name: ContractNames<T>): Promise<void> {
@@ -122,6 +122,12 @@ export class ContractRegistry<T extends ContractConfigMap>
     if (pending) {
       logger.debug(`Contract "${name}" registration in progress, awaiting...`);
       return pending;
+    }
+
+    // Check storage before registering (avoid re-registration after page refresh)
+    await this.syncFromStorage([name]);
+    if (this.isRegistered(name)) {
+      return;
     }
 
     // Start new registration
