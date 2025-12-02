@@ -193,7 +193,7 @@ export class ContractRegistry<T extends ContractConfigMap>
       });
       this.notifySubscribers();
 
-      const instance = await this.computeAndRegister(name, contractConfig);
+      const instance = await this.registerInstanceWithPXE(name, contractConfig);
 
       // Validate address matches expected
       if (!instance.address.equals(expectedAddress)) {
@@ -271,9 +271,9 @@ export class ContractRegistry<T extends ContractConfigMap>
   }
 
   /**
-   * Compute contract instance and register with PXE
+   * Create contract instance from deploy params and register with PXE
    */
-  private async computeAndRegister(
+  private async registerInstanceWithPXE(
     name: ContractNames<T>,
     contractConfig: T[ContractNames<T>]
   ): Promise<ContractInstanceWithAddress> {
