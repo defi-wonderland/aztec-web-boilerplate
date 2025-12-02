@@ -60,16 +60,3 @@ export const createContractConfig = <
   return configs;
 };
 
-/**
- * Type helper to extract contract names from a config
- */
-export type InferContractNames<T> = T extends ContractConfigMap ? keyof T & string : never;
-
-/**
- * Type helper to check if a string is a valid contract name
- */
-export type IsValidContractName<T extends ContractConfigMap, K extends string> = 
-  K extends keyof T ? true : false;
-
-
-

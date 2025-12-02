@@ -3,7 +3,6 @@ import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { Fr } from '@aztec/aztec.js/fields';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
-import type { PXE } from '@aztec/pxe/server';
 import type { AppConfig } from '../config/networks';
 
 /**
@@ -56,48 +55,12 @@ export type ContractConfigMap<TConfig = AppConfig> = Record<
 export type ContractNames<T extends ContractConfigMap> = keyof T & string;
 
 /**
- * Infer the contract type from a config entry
- */
-export type InferContractType<T extends ContractConfigDefinition> = 
-  T extends ContractConfigDefinition<infer _TConfig, infer TContract> ? TContract : unknown;
-
-/**
  * State of a registered contract in the cache
  */
 export interface RegisteredContract {
   instance: ContractInstanceWithAddress;
   status: ContractStatus;
   error?: Error;
-}
-
-/**
- * Registry state containing all registered contracts
- */
-export interface RegistryState<T extends ContractConfigMap> {
-  contracts: Map<ContractNames<T>, RegisteredContract>;
-  status: 'initializing' | 'ready' | 'error';
-  error?: Error;
-}
-
-/**
- * Props for the AztecContractProvider
- */
-export interface AztecContractProviderProps<T extends ContractConfigMap> {
-  /** Contract configurations created with createContractConfig */
-  contracts: T;
-  /** PXE instance for contract registration */
-  pxe: PXE;
-  /** App configuration for deriving addresses and deploy params */
-  config: AppConfig;
-  /** 
-   * List of contract names to eagerly load at initialization.
-   * - undefined (default): Load all contracts at init
-   * - string[]: Load only specified contracts at init
-   * - []: Load no contracts at init (all lazy)
-   */
-  eagerLoad?: ContractNames<T>[];
-  /** React children */
-  children: React.ReactNode;
 }
 
 /**

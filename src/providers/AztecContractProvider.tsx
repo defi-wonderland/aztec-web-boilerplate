@@ -192,16 +192,3 @@ export function useContractRegistryContext<
 
   return context as ContractContextValue<T>;
 }
-
-/**
- * Hook to get the contract registry instance
- */
-export function useContractRegistryInstance<
-  T extends ContractConfigMap = ContractConfigMap
->(): IContractRegistry<T> | null {
-  const { registry } = useContractRegistryContext<T>();
-  return registry;
-}
-
-
-

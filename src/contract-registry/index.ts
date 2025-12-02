@@ -6,8 +6,6 @@ export type {
   ContractConfigMap,
   ContractNames,
   RegisteredContract,
-  RegistryState,
-  AztecContractProviderProps,
   UseContractReturn,
   UseContractRegistryReturn,
   ContractRegistryContextValue,
@@ -16,10 +14,6 @@ export type {
 
 // Config helper
 export { createContractConfig } from './createContractConfig';
-export type { InferContractNames, IsValidContractName } from './createContractConfig';
 
 // Registry class
 export { ContractRegistry } from './ContractRegistry';
-
-
-
