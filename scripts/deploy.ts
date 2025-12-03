@@ -256,7 +256,7 @@ async function deployTokenContract(
     ? Fr.fromString(process.env.TOKEN_SALT)
     : Fr.random();
 
-  // Use constructor_with_minter to set Dripper as the authorized minter
+  // Use Wonderland token constructor_with_minter
   // Signature: constructor_with_minter(name, symbol, decimals, minter, upgrade_authority)
   const deployMethod = new DeployMethod(
     PublicKeys.default(),

@@ -25,6 +25,7 @@ export const aztecContracts = createContractConfig({
   /**
    * Token contract - Yield Token (YT)
    * Deployed with universalDeploy=true, so deployer is AztecAddress.ZERO
+   * Uses Wonderland token with minter set to Dripper address
    */
   token: {
     artifact: TokenContract.artifact,
