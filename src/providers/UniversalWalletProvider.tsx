@@ -7,7 +7,7 @@
  * - useAzguardWalletInternal: Manages Azguard browser extension
  */
 
-import React, { createContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useEffect, ReactNode, useRef } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
@@ -24,6 +24,7 @@ import { useEmbeddedWalletInternal, useAzguardWalletInternal } from './hooks';
 import { useConfig } from '../hooks/context/useConfig';
 import { DEFAULT_NETWORK } from '../config/networks';
 import { isValidConfig } from '../utils';
+import { buildRegisterContractOperations } from '../utils/azguard';
 
 interface EmbeddedWalletActions {
   create: () => Promise<AccountWithSecretKey>;
@@ -75,6 +76,7 @@ export const UniversalWalletProvider: React.FC<
   // Compose internal hooks
   const embedded = useEmbeddedWalletInternal();
   const azguard = useAzguardWalletInternal();
+  const azguardRegistrationRef = useRef<string | null>(null);
 
   const { currentConfig: config, resetToDefault } = useConfig();
 
@@ -101,6 +103,46 @@ export const UniversalWalletProvider: React.FC<
 
     embedded.initialize(config);
   }, [config]);
+
+  useEffect(() => {
+    if (!azguard.state.isConnected || !azguard.state.selectedAccount) {
+      azguardRegistrationRef.current = null;
+      return;
+    }
+
+    const registrationKey = `${config.name}:${azguard.state.selectedAccount}`;
+    if (azguardRegistrationRef.current === registrationKey) {
+      return;
+    }
+
+    let isActive = true;
+
+    const registerContractsWithAzguard = async () => {
+      try {
+        const operations = await buildRegisterContractOperations(config);
+        if (!isActive || operations.length === 0) {
+          return;
+        }
+        await azguard.actions.executeOperations(operations);
+        if (isActive) {
+          azguardRegistrationRef.current = registrationKey;
+        }
+      } catch (err) {
+        console.error('Failed to register contracts with Azguard wallet:', err);
+      }
+    };
+
+    registerContractsWithAzguard();
+
+    return () => {
+      isActive = false;
+    };
+  }, [
+    azguard.actions,
+    azguard.state.isConnected,
+    azguard.state.selectedAccount,
+    config,
+  ]);
 
   const [azguardAccountWallet, setAzguardAccountWallet] =
     React.useState<AccountWithSecretKey | null>(null);

@@ -19,6 +19,12 @@ import { AzguardWalletService } from '../../services/aztec/wallet/AzguardWalletS
 import { AzguardAccountAdapter } from '../../services/aztec/wallet/AzguardAccountAdapter';
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { useError } from '../ErrorProvider';
+import { useConfig } from '../../hooks/context/useConfig';
+import {
+  AZGUARD_CHAIN_IDS,
+  SUPPORTED_AZGUARD_CHAINS,
+  type AzguardChainId,
+} from '../../config/networks/constants';
 
 const DEFAULT_AZGUARD_STATE: AzguardWalletState = {
   isInstalled: false,
@@ -30,56 +36,51 @@ const DEFAULT_AZGUARD_STATE: AzguardWalletState = {
   error: null,
 };
 
-const AZGUARD_CONNECTION_CONFIG: AzguardConnectionConfig = {
-  dappMetadata: {
-    name: 'Aztec Web Boilerplate',
-    description: 'Privacy-first application built on Aztec Network',
-    url: typeof window !== 'undefined' ? window.location.origin : '',
-    icon:
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/favicon.ico`
-        : '',
-  },
-  permissions: [
-    {
-      chains: ['aztec:11155111'],
-      methods: [
-        'register_contract',
-        'send_transaction',
-        'simulate_views',
-        'add_private_authwit',
-        'call',
-      ],
-    },
-  ],
-};
-
-const FALLBACK_CONFIGS = [
-  {
-    dappMetadata: { name: 'Aztec Web Boilerplate' },
-    permissions: [
-      {
-        chains: ['aztec:1337'],
-        methods: ['register_contract', 'send_transaction'],
-      },
-    ],
-  },
-  {
-    dappMetadata: { name: 'Aztec Web Boilerplate' },
-    permissions: [
-      {
-        chains: ['aztec:31337'],
-        methods: ['register_contract', 'send_transaction'],
-      },
-    ],
-  },
-  {
-    dappMetadata: { name: 'Aztec Web Boilerplate' },
-    permissions: [
-      { chains: ['aztec:11155111'], methods: ['register_contract'] },
-    ],
-  },
+/**
+ * Azguard methods we request permission for
+ */
+const AZGUARD_METHODS = [
+  'register_contract',
+  'send_transaction',
+  'simulate_views',
+  'simulate_utility',
+  'add_private_authwit',
+  'call',
 ];
+
+const buildAzguardConnectionConfig = (
+  networkName: string
+): AzguardConnectionConfig => {
+  const isSandbox = networkName === 'sandbox';
+  const requiredChain: AzguardChainId = isSandbox
+    ? AZGUARD_CHAIN_IDS.sandbox
+    : AZGUARD_CHAIN_IDS.testnet;
+  const optionalChains = SUPPORTED_AZGUARD_CHAINS.filter(
+    (chain) => chain !== requiredChain
+  );
+
+  return {
+    dappMetadata: {
+      name: 'Aztec Web Boilerplate',
+      description: 'Privacy-first application built on Aztec Network',
+      url: typeof window !== 'undefined' ? window.location.origin : '',
+      icon:
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/favicon.ico`
+          : '',
+    },
+    requiredPermissions: [
+      {
+        chains: [requiredChain],
+        methods: AZGUARD_METHODS,
+      },
+    ],
+    optionalPermissions: optionalChains.map((chain) => ({
+      chains: [chain],
+      methods: AZGUARD_METHODS,
+    })),
+  };
+};
 
 export interface AzguardWalletActions {
   connect: () => Promise<void>;
@@ -108,6 +109,7 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { addMessage } = useError();
+  const { currentConfig } = useConfig();
 
   useEffect(() => {
     if (isInitializedRef.current) return;
@@ -177,48 +179,17 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
         throw new Error('Azguard service not initialized');
       }
 
+      const connectionConfig = buildAzguardConnectionConfig(currentConfig.name);
+
       const supportedChains = azguardServiceRef.current.getSupportedChains();
       console.log('🔗 Supported chains from Azguard:', supportedChains);
-      console.log('🔧 Azguard connection config:', AZGUARD_CONNECTION_CONFIG);
+      console.log('🔧 Azguard connection config:', connectionConfig);
 
-      let accounts: CaipAccount[] = [];
-      let connectionSuccessful = false;
-
-      try {
-        accounts = await azguardServiceRef.current.connect(
-          AZGUARD_CONNECTION_CONFIG.dappMetadata,
-          AZGUARD_CONNECTION_CONFIG.permissions
-        );
-        connectionSuccessful = true;
-      } catch (primaryError) {
-        console.warn(
-          '⚠️ Primary connection config failed, trying fallback configs:',
-          primaryError
-        );
-
-        let lastError: unknown = primaryError;
-        for (let i = 0; i < FALLBACK_CONFIGS.length; i++) {
-          try {
-            console.log(
-              `🔧 Trying fallback config ${i + 1}:`,
-              FALLBACK_CONFIGS[i]
-            );
-            accounts = await azguardServiceRef.current.connect(
-              FALLBACK_CONFIGS[i].dappMetadata,
-              FALLBACK_CONFIGS[i].permissions
-            );
-            connectionSuccessful = true;
-            break;
-          } catch (fallbackError) {
-            console.warn(`⚠️ Fallback config ${i + 1} failed:`, fallbackError);
-            lastError = fallbackError;
-          }
-        }
-
-        if (!connectionSuccessful) {
-          throw lastError;
-        }
-      }
+      const accounts = await azguardServiceRef.current.connect(
+        connectionConfig.dappMetadata,
+        connectionConfig.requiredPermissions,
+        connectionConfig.optionalPermissions
+      );
 
       setAzguardState((prev) => ({
         ...prev,

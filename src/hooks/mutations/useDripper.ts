@@ -1,14 +1,30 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { SendTransactionOperation } from '@azguardwallet/types';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useUniversalWallet } from '../context/useUniversalWallet';
+import { useConfig } from '../context/useConfig';
 import { queryKeys } from '../queries/queryKeys';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { DripperContract } from '../../artifacts/Dripper';
 import type { TokenContract } from '../../artifacts/Token';
+import { WalletType } from '../../types/aztec';
+import { aztecContracts } from '../../config/contracts';
 
 interface DripParams {
   amount: bigint;
 }
+
+/**
+ * Check if a contract is an Azguard proxy marker
+ */
+const isAzguardProxy = (contract: unknown): boolean => {
+  return (
+    typeof contract === 'object' &&
+    contract !== null &&
+    '__azguardProxy' in contract &&
+    (contract as { __azguardProxy: boolean }).__azguardProxy === true
+  );
+};
 
 interface UseDripperOptions {
   onDripToPrivateSuccess?: () => void;
@@ -47,10 +63,14 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, wallet, getSponsoredFeePaymentMethod } = useUniversalWallet();
+  const { account, walletType, getSponsoredFeePaymentMethod, azguard } = useUniversalWallet();
+  const { currentConfig } = useConfig();
   const queryClient = useQueryClient();
+  
+  const isAzguardWallet = walletType === WalletType.AZGUARD;
+  const shouldUseSponsoredFees = walletType === WalletType.EMBEDDED;
 
-  const isReady = isDripperReady && isTokenReady && !!wallet;
+  const isReady = isDripperReady && isTokenReady && !!account;
 
   const invalidateBalances = () => {
     const ownerAddress = account?.getAddress().toString();
@@ -69,23 +89,56 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       if (!token || !isTokenReady) {
         throw new Error('Token contract not ready');
       }
-      if (!wallet) {
-        throw new Error('Wallet not available');
+      if (!account) {
+        throw new Error('Account not available');
       }
 
-      const accounts = await wallet.getAccounts();
-      if (accounts.length === 0) {
-        throw new Error('No accounts in wallet');
-      }
-      const fromAddress = accounts[0].item;
-      const paymentMethod = await getSponsoredFeePaymentMethod();
+      if (isAzguardWallet && isAzguardProxy(dripper) && isAzguardProxy(token)) {
+        if (!azguard.state.selectedAccount) {
+          throw new Error('Azguard account not selected');
+        }
 
-      await dripper.methods
-        .drip_to_private(token.address, amount)
-        .send({
-          from: fromAddress,
-          fee: { paymentMethod },
-        })
+        const dripperAddress = aztecContracts.dripper.address(currentConfig);
+        const tokenAddress = aztecContracts.token.address(currentConfig);
+
+        const operation: SendTransactionOperation = {
+          kind: 'send_transaction',
+          account: azguard.state.selectedAccount,
+          actions: [
+            {
+              kind: 'call',
+              contract: dripperAddress,
+              method: 'drip_to_private',
+              args: [tokenAddress, amount.toString()],
+            },
+          ],
+        };
+
+        const results = await azguard.executeOperations([operation]);
+        const result = results[0];
+        
+        if (result.status !== 'ok') {
+          const errorMessage = 'error' in result ? result.error : 'Transaction failed';
+          throw new Error(errorMessage || 'drip_to_private failed');
+        }
+
+        return;
+      }
+
+      const fromAddress = account.getAddress();
+      const sendOptions: {
+        from: ReturnType<typeof account.getAddress>;
+        fee?: { paymentMethod: Awaited<ReturnType<typeof getSponsoredFeePaymentMethod>> };
+      } = { from: fromAddress };
+
+      if (shouldUseSponsoredFees) {
+        const paymentMethod = await getSponsoredFeePaymentMethod();
+        sendOptions.fee = { paymentMethod };
+      }
+
+      await (dripper as DripperContract).methods
+        .drip_to_private((token as TokenContract).address, amount)
+        .send(sendOptions)
         .wait({ timeout: 120 });
     },
     onSuccess: () => {
@@ -105,23 +158,56 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       if (!token || !isTokenReady) {
         throw new Error('Token contract not ready');
       }
-      if (!wallet) {
-        throw new Error('Wallet not available');
+      if (!account) {
+        throw new Error('Account not available');
       }
 
-      const accounts = await wallet.getAccounts();
-      if (accounts.length === 0) {
-        throw new Error('No accounts in wallet');
-      }
-      const fromAddress = accounts[0].item;
-      const paymentMethod = await getSponsoredFeePaymentMethod();
+      if (isAzguardWallet && isAzguardProxy(dripper) && isAzguardProxy(token)) {
+        if (!azguard.state.selectedAccount) {
+          throw new Error('Azguard account not selected');
+        }
 
-      await dripper.methods
-        .drip_to_public(token.address, amount)
-        .send({
-          from: fromAddress,
-          fee: { paymentMethod },
-        })
+        const dripperAddress = aztecContracts.dripper.address(currentConfig);
+        const tokenAddress = aztecContracts.token.address(currentConfig);
+
+        const operation: SendTransactionOperation = {
+          kind: 'send_transaction',
+          account: azguard.state.selectedAccount,
+          actions: [
+            {
+              kind: 'call',
+              contract: dripperAddress,
+              method: 'drip_to_public',
+              args: [tokenAddress, amount.toString()],
+            },
+          ],
+        };
+
+        const results = await azguard.executeOperations([operation]);
+        const result = results[0];
+        
+        if (result.status !== 'ok') {
+          const errorMessage = 'error' in result ? result.error : 'Transaction failed';
+          throw new Error(errorMessage || 'drip_to_public failed');
+        }
+
+        return;
+      }
+
+      const fromAddress = account.getAddress();
+      const sendOptions: {
+        from: ReturnType<typeof account.getAddress>;
+        fee?: { paymentMethod: Awaited<ReturnType<typeof getSponsoredFeePaymentMethod>> };
+      } = { from: fromAddress };
+
+      if (shouldUseSponsoredFees) {
+        const paymentMethod = await getSponsoredFeePaymentMethod();
+        sendOptions.fee = { paymentMethod };
+      }
+
+      await (dripper as DripperContract).methods
+        .drip_to_public((token as TokenContract).address, amount)
+        .send(sendOptions)
         .wait({ timeout: 120 });
     },
     onSuccess: () => {
@@ -138,23 +224,55 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       if (!dripper || !isDripperReady) {
         throw new Error('Dripper contract not ready');
       }
-      if (!wallet) {
-        throw new Error('Wallet not available');
+      if (!account) {
+        throw new Error('Account not available');
       }
 
-      const accounts = await wallet.getAccounts();
-      if (accounts.length === 0) {
-        throw new Error('No accounts in wallet');
-      }
-      const fromAddress = accounts[0].item;
-      const paymentMethod = await getSponsoredFeePaymentMethod();
+      if (isAzguardWallet && isAzguardProxy(dripper)) {
+        if (!azguard.state.selectedAccount) {
+          throw new Error('Azguard account not selected');
+        }
 
-      await dripper.methods
+        const dripperAddress = aztecContracts.dripper.address(currentConfig);
+
+        const operation: SendTransactionOperation = {
+          kind: 'send_transaction',
+          account: azguard.state.selectedAccount,
+          actions: [
+            {
+              kind: 'call',
+              contract: dripperAddress,
+              method: 'sync_private_state',
+              args: [],
+            },
+          ],
+        };
+
+        const results = await azguard.executeOperations([operation]);
+        const result = results[0];
+        
+        if (result.status !== 'ok') {
+          const errorMessage = 'error' in result ? result.error : 'Transaction failed';
+          throw new Error(errorMessage || 'sync_private_state failed');
+        }
+
+        return;
+      }
+
+      const fromAddress = account.getAddress();
+      const sendOptions: {
+        from: ReturnType<typeof account.getAddress>;
+        fee?: { paymentMethod: Awaited<ReturnType<typeof getSponsoredFeePaymentMethod>> };
+      } = { from: fromAddress };
+
+      if (shouldUseSponsoredFees) {
+        const paymentMethod = await getSponsoredFeePaymentMethod();
+        sendOptions.fee = { paymentMethod };
+      }
+
+      await (dripper as DripperContract).methods
         .sync_private_state()
-        .send({
-          from: fromAddress,
-          fee: { paymentMethod },
-        })
+        .send(sendOptions)
         .wait({ timeout: 120 });
     },
     onSuccess: () => {

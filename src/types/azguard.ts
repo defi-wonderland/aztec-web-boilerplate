@@ -25,7 +25,11 @@ export interface AzguardConnectionConfig {
     url?: string;
     icon?: string;
   };
-  permissions: Array<{
+  requiredPermissions: Array<{
+    chains: string[];
+    methods: string[];
+  }>;
+  optionalPermissions?: Array<{
     chains: string[];
     methods: string[];
   }>;
@@ -105,7 +109,11 @@ export interface IAzguardWalletService {
   
   // Wallet detection and connection
   isInstalled(): Promise<boolean>;
-  connect(dappMetadata: AzguardConnectionConfig['dappMetadata'], permissions: AzguardConnectionConfig['permissions']): Promise<CaipAccount[]>;
+  connect(
+    dappMetadata: AzguardConnectionConfig['dappMetadata'],
+    requiredPermissions: AzguardConnectionConfig['requiredPermissions'],
+    optionalPermissions?: AzguardConnectionConfig['optionalPermissions']
+  ): Promise<CaipAccount[]>;
   disconnect(): Promise<void>;
   
   // Account management

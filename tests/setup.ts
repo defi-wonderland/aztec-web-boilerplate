@@ -20,7 +20,7 @@ export class TestUtils {
   /**
    * Create a mock CAIP account for testing
    */
-  static createMockCaipAccount(chain = 'aztec:31337', address?: string): CaipAccount {
+  static createMockCaipAccount(chain = 'aztec:0', address?: string): CaipAccount {
     const mockAddress = address || TEST_CONSTANTS.MOCK_ADDRESS;
     return `${chain}:${mockAddress}` as CaipAccount;
   }

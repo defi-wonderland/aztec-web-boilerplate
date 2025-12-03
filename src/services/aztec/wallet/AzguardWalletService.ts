@@ -12,6 +12,7 @@ import type {
   AzguardConnectionConfig,
   AzguardWalletState
 } from '../../../types/azguard';
+import { SUPPORTED_AZGUARD_CHAINS } from '../../../config/networks/constants';
 
 /**
  * Service class for interacting with Azguard wallet via RPC
@@ -29,6 +30,8 @@ export class AzguardWalletService implements IAzguardWalletService {
     error: null
   };
   private eventListeners: Map<string, Set<Function>> = new Map();
+  private accountsChangedHandler?: (accounts: CaipAccount[]) => void;
+  private disconnectedHandler?: () => void;
 
   /**
    * Initialize the Azguard wallet service
@@ -83,7 +86,11 @@ export class AzguardWalletService implements IAzguardWalletService {
   /**
    * Connect to Azguard wallet
    */
-  async connect(dappMetadata: any, permissions: any[]): Promise<CaipAccount[]> {
+  async connect(
+    dappMetadata: any,
+    requiredPermissions: any[],
+    optionalPermissions?: any[]
+  ): Promise<CaipAccount[]> {
     if (!this.client) {
       throw new Error('Azguard wallet service not initialized');
     }
@@ -91,12 +98,19 @@ export class AzguardWalletService implements IAzguardWalletService {
     try {
       this.updateState({ isConnecting: true, error: null });
 
-
       // Validate connection parameters
-      this.validateConnectionParams(dappMetadata, permissions);
+      this.validateConnectionParams(
+        dappMetadata,
+        requiredPermissions,
+        optionalPermissions
+      );
 
-      // Connect to the wallet
-      await this.client.connect(dappMetadata, permissions);
+      // Connect to the wallet with required and optional permissions
+      await this.client.connect(
+        dappMetadata,
+        requiredPermissions,
+        optionalPermissions
+      );
 
       // Get connected accounts
       const accounts = this.client.accounts;
@@ -134,7 +148,11 @@ export class AzguardWalletService implements IAzguardWalletService {
   /**
    * Validate connection parameters before attempting connection
    */
-  private validateConnectionParams(dappMetadata: any, permissions: any[]): void {
+  private validateConnectionParams(
+    dappMetadata: any,
+    requiredPermissions: any[],
+    optionalPermissions?: any[]
+  ): void {
     // Validate dappMetadata
     if (!dappMetadata || typeof dappMetadata !== 'object') {
       throw new Error('dappMetadata is required and must be an object');
@@ -152,54 +170,64 @@ export class AzguardWalletService implements IAzguardWalletService {
       throw new Error('dappMetadata.icon must be a string if provided');
     }
 
-    // Validate permissions
-    if (!Array.isArray(permissions)) {
-      throw new Error('permissions must be an array');
-    }
-
-    if (permissions.length === 0) {
-      throw new Error('permissions array cannot be empty');
-    }
-
-    permissions.forEach((permission, index) => {
-      if (!permission || typeof permission !== 'object') {
-        throw new Error(`permissions[${index}] must be an object`);
+    const validatePermissions = (permissions: any[], label: string) => {
+      if (!Array.isArray(permissions)) {
+        throw new Error(`${label} must be an array`);
       }
 
-      if (!Array.isArray(permission.chains)) {
-        throw new Error(`permissions[${index}].chains must be an array`);
+      if (permissions.length === 0) {
+        throw new Error(`${label} array cannot be empty`);
       }
 
-      if (permission.chains.length === 0) {
-        throw new Error(`permissions[${index}].chains cannot be empty`);
-      }
-
-      if (!Array.isArray(permission.methods)) {
-        throw new Error(`permissions[${index}].methods must be an array`);
-      }
-
-      if (permission.methods.length === 0) {
-        throw new Error(`permissions[${index}].methods cannot be empty`);
-      }
-
-      // Validate chain format (should be like "aztec:31337")
-      permission.chains.forEach((chain: any, chainIndex: number) => {
-        if (typeof chain !== 'string') {
-          throw new Error(`permissions[${index}].chains[${chainIndex}] must be a string`);
+      permissions.forEach((permission, index) => {
+        if (!permission || typeof permission !== 'object') {
+          throw new Error(`${label}[${index}] must be an object`);
         }
-        if (!chain.startsWith('aztec:')) {
-          throw new Error(`permissions[${index}].chains[${chainIndex}] must start with "aztec:"`);
+
+        if (!Array.isArray(permission.chains)) {
+          throw new Error(`${label}[${index}].chains must be an array`);
         }
+
+        if (permission.chains.length === 0) {
+          throw new Error(`${label}[${index}].chains cannot be empty`);
+        }
+
+        if (!Array.isArray(permission.methods)) {
+          throw new Error(`${label}[${index}].methods must be an array`);
+        }
+
+        if (permission.methods.length === 0) {
+          throw new Error(`${label}[${index}].methods cannot be empty`);
+        }
+
+        permission.chains.forEach((chain: any, chainIndex: number) => {
+          if (typeof chain !== 'string') {
+            throw new Error(
+              `${label}[${index}].chains[${chainIndex}] must be a string`
+            );
+          }
+          if (!chain.startsWith('aztec:')) {
+            throw new Error(
+              `${label}[${index}].chains[${chainIndex}] must start with "aztec:"`
+            );
+          }
+        });
+
+        permission.methods.forEach((method: any, methodIndex: number) => {
+          if (typeof method !== 'string') {
+            throw new Error(
+              `${label}[${index}].methods[${methodIndex}] must be a string`
+            );
+          }
+        });
       });
+    };
 
-      // Validate method names
-      permission.methods.forEach((method: any, methodIndex: number) => {
-        if (typeof method !== 'string') {
-          throw new Error(`permissions[${index}].methods[${methodIndex}] must be a string`);
-        }
-      });
-    });
+    validatePermissions(requiredPermissions, 'requiredPermissions');
 
+    if (optionalPermissions && optionalPermissions.length > 0) {
+      validatePermissions(optionalPermissions, 'optionalPermissions');
+    }
   }
 
   /**
@@ -347,18 +375,25 @@ export class AzguardWalletService implements IAzguardWalletService {
   private setupEventListeners(): void {
     if (!this.client) return;
 
-    // Listen for account changes
-    this.client.onDisconnected.addHandler(() => {
+    this.accountsChangedHandler = (accounts: CaipAccount[]) => {
+      this.updateState({
+        accounts,
+        selectedAccount: accounts.length > 0 ? accounts[0] : null,
+        isConnected: accounts.length > 0,
+      });
+    };
+
+    this.disconnectedHandler = () => {
       this.updateState({
         isConnected: false,
         accounts: [],
-        selectedAccount: null
+        selectedAccount: null,
       });
       this.emitEvent('disconnected');
-    });
+    };
 
-    // Note: Azguard client doesn't expose account change events directly
-    // We'll need to poll or handle this differently if needed
+    this.client.onAccountsChanged.addHandler(this.accountsChangedHandler);
+    this.client.onDisconnected.addHandler(this.disconnectedHandler);
   }
 
   /**
@@ -379,12 +414,7 @@ export class AzguardWalletService implements IAzguardWalletService {
    * Get supported chains
    */
   getSupportedChains(): string[] {
-    // Azguard supports these Aztec chains
-    return [
-      'aztec:31337',    // Sandbox
-      'aztec:11155111', // Testnet
-      'aztec:1337'      // Devnet
-    ];
+    return [...SUPPORTED_AZGUARD_CHAINS];
   }
 
   /**
@@ -444,6 +474,16 @@ export class AzguardWalletService implements IAzguardWalletService {
    * Clean up resources
    */
   destroy(): void {
+    if (this.client) {
+      if (this.accountsChangedHandler) {
+        this.client.onAccountsChanged.removeHandler(this.accountsChangedHandler);
+      }
+      if (this.disconnectedHandler) {
+        this.client.onDisconnected.removeHandler(this.disconnectedHandler);
+      }
+    }
+    this.accountsChangedHandler = undefined;
+    this.disconnectedHandler = undefined;
     this.eventListeners.clear();
     this.client = null;
     this.state = {

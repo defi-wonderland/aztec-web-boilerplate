@@ -1,12 +1,27 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import type { Wallet } from '@aztec/aztec.js/wallet';
 import { useContractRegistryContext } from '../../providers/AztecContractProvider';
 import { useUniversalWallet } from './useUniversalWallet';
+import { useConfig } from './useConfig';
+import { aztecContracts } from '../../config/contracts';
+import { WalletType } from '../../types/aztec';
 import type {
   ContractConfigMap,
   ContractNames,
   ContractStatus,
   UseContractReturn,
 } from '../../contract-registry';
+
+/**
+ * Marker type for Azguard-backed contracts.
+ * These contracts don't use local instantiation - all calls go through Azguard's execute API.
+ */
+interface AzguardContractProxy {
+  readonly __azguardProxy: true;
+  readonly address: AztecAddress;
+  readonly contractName: string;
+}
 
 /**
  * Hook for registering a contract with PXE and getting a callable contract instance.
@@ -39,15 +54,54 @@ export function useContractRegistration<
   TContract = unknown
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
-  const { wallet } = useUniversalWallet();
+  const { wallet, walletType, account } = useUniversalWallet();
+  const { currentConfig } = useConfig();
+
+  const isAzguardWallet = walletType === WalletType.AZGUARD;
 
   const [contract, setContract] = useState<TContract | null>(null);
   const [status, setStatus] = useState<ContractStatus>('idle');
   const [error, setError] = useState<Error | null>(null);
+  const getContractDefinition = useCallback(() => {
+    return (
+      (aztecContracts as ContractConfigMap)[
+        name as keyof typeof aztecContracts
+      ] ?? null
+    );
+  }, [name]);
+
+  /**
+   * For Azguard wallets, we create a proxy marker instead of a real contract instance.
+   * The actual contract calls are routed through Azguard's execute API in useDripper/etc.
+   */
+  const createAzguardContractProxy = useCallback((): TContract => {
+    const definition = getContractDefinition();
+
+    if (!definition) {
+      throw new Error(`Unknown contract: "${name}"`);
+    }
+
+    if (!account) {
+      throw new Error('Azguard account not connected');
+    }
+
+    const contractAddress = AztecAddress.fromString(
+      definition.address(currentConfig)
+    );
+
+    // Return a proxy marker - actual calls go through Azguard execute
+    const proxy: AzguardContractProxy = {
+      __azguardProxy: true,
+      address: contractAddress,
+      contractName: String(name),
+    };
+
+    return proxy as unknown as TContract;
+  }, [account, currentConfig, getContractDefinition, name]);
 
   // Subscribe to registry changes and create callable contract
   useEffect(() => {
-    if (!registry) {
+    if (!registry || isAzguardWallet) {
       return;
     }
 
@@ -82,11 +136,11 @@ export function useContractRegistration<
     // Subscribe to changes
     const unsubscribe = registry.subscribe(updateState);
     return unsubscribe;
-  }, [registry, name, wallet]);
+  }, [registry, name, wallet, isAzguardWallet]);
 
   // Auto-register if not registered (lazy loading)
   useEffect(() => {
-    if (!registry || registryStatus !== 'ready') {
+    if (!registry || registryStatus !== 'ready' || isAzguardWallet) {
       return;
     }
 
@@ -98,15 +152,60 @@ export function useContractRegistration<
         setError(err instanceof Error ? err : new Error(String(err)));
       });
     }
-  }, [registry, registryStatus, name]);
+  }, [registry, registryStatus, name, isAzguardWallet]);
+
+  useEffect(() => {
+    if (!isAzguardWallet) {
+      return;
+    }
+
+    if (!account) {
+      setContract(null);
+      setStatus('idle');
+      return;
+    }
+
+    // For Azguard, we synchronously create a proxy marker
+    // No async contract instantiation needed - calls go through Azguard execute
+    try {
+      setStatus('registering');
+      const proxy = createAzguardContractProxy();
+      setContract(proxy);
+      setStatus('ready');
+      setError(null);
+    } catch (err) {
+      const hydrationError =
+        err instanceof Error ? err : new Error(String(err));
+      setError(hydrationError);
+      setStatus('error');
+      setContract(null);
+    }
+  }, [account, createAzguardContractProxy, isAzguardWallet]);
 
   // Manual register function (for retries)
   const register = useCallback(async () => {
+    setError(null);
+
+    if (isAzguardWallet) {
+      try {
+        setStatus('registering');
+        const proxy = createAzguardContractProxy();
+        setContract(proxy);
+        setStatus('ready');
+      } catch (err) {
+        const registrationError =
+          err instanceof Error ? err : new Error(String(err));
+        setError(registrationError);
+        setStatus('error');
+        throw registrationError;
+      }
+      return;
+    }
+
     if (!registry) {
       throw new Error('Contract registry not initialized');
     }
 
-    setError(null);
     try {
       await registry.register(name);
     } catch (err) {
@@ -115,7 +214,7 @@ export function useContractRegistration<
       setError(registrationError);
       throw registrationError;
     }
-  }, [registry, name]);
+  }, [createAzguardContractProxy, isAzguardWallet, name, registry]);
 
   const isReady = status === 'ready' && contract !== null;
 

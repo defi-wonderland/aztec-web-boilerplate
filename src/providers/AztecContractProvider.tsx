@@ -230,15 +230,19 @@ export function AztecContractProvider<T extends ContractConfigMap>({
  * Hook to access the raw contract registry context
  * @internal Use useContract or useContractRegistry instead
  */
+const FALLBACK_CONTRACT_CONTEXT: ContractContextValue<ContractConfigMap> = {
+  registry: null,
+  status: 'error',
+  error: new Error('Contract registry context not available'),
+};
+
 export function useContractRegistryContext<
   T extends ContractConfigMap = ContractConfigMap
 >(): ContractContextValue<T> {
   const context = useContext(ContractRegistryContext);
 
   if (context === null) {
-    throw new Error(
-      'useContractRegistryContext must be used within an AztecContractProvider'
-    );
+    return FALLBACK_CONTRACT_CONTEXT as ContractContextValue<T>;
   }
 
   return context as ContractContextValue<T>;
