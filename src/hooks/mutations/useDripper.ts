@@ -9,20 +9,12 @@ import type { DripperContract } from '../../artifacts/Dripper';
 import type { TokenContract } from '../../artifacts/Token';
 import { WalletType } from '../../types/aztec';
 import { aztecContracts } from '../../config/contracts';
+import { isAzguardProxy } from '../../utils';
 import type { TokenBalance } from '../queries/useTokenBalance';
 
 interface DripParams {
   amount: bigint;
 }
-
-const isAzguardProxy = (contract: unknown): boolean => {
-  return (
-    typeof contract === 'object' &&
-    contract !== null &&
-    '__azguardProxy' in contract &&
-    (contract as { __azguardProxy: boolean }).__azguardProxy === true
-  );
-};
 
 interface UseDripperOptions {
   onDripToPrivateSuccess?: () => void;

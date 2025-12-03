@@ -1,8 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback } from 'react';
+import type { SimulateViewsOperation } from '@azguardwallet/types';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useUniversalWallet } from '../context/useUniversalWallet';
+import { useConfig } from '../context/useConfig';
 import { queryKeys } from './queryKeys';
+import { aztecContracts } from '../../config/contracts';
+import { WalletType } from '../../types/aztec';
+import { isAzguardProxy } from '../../utils';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { TokenContract } from '../../artifacts/Token';
 
@@ -35,6 +40,8 @@ interface UseTokenBalanceReturn {
  * Uses the Token contract directly via useContractRegistration hook.
  * Uses React Query for caching and automatic refetching.
  * 
+ * For Azguard wallets, uses simulate_views operation instead of direct contract calls.
+ * 
  * @param options - Configuration options
  * @param options.enabled - Whether to enable the query (defaults to true when wallet is connected)
  */
@@ -44,9 +51,11 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account } = useUniversalWallet();
+  const { account, walletType, azguard } = useUniversalWallet();
+  const { currentConfig } = useConfig();
   const queryClient = useQueryClient();
 
+  const isAzguardWallet = walletType === WalletType.AZGUARD;
   const tokenAddress = token?.address.toString() ?? '';
   const ownerAddress = account?.getAddress().toString() ?? '';
 
@@ -56,7 +65,8 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     account &&
     tokenAddress &&
     ownerAddress &&
-    (options.enabled ?? true)
+    (options.enabled ?? true) &&
+    (!isAzguardWallet || (azguard.state.isConnected && azguard.state.selectedAccount))
   );
 
   const query = useQuery({
@@ -66,14 +76,59 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
         throw new Error('Token contract or owner address not available');
       }
 
-      // Sequential calls to avoid PXE concurrency issues
+      if (isAzguardWallet && isAzguardProxy(token)) {
+        if (!azguard.state.selectedAccount) {
+          throw new Error('Azguard account not selected');
+        }
+
+        const tokenContractAddress = aztecContracts.token.address(currentConfig);
+        const accountAddress = account!.getAddress().toString();
+
+        const operation: SimulateViewsOperation = {
+          kind: 'simulate_views',
+          account: azguard.state.selectedAccount,
+          calls: [
+            {
+              kind: 'call',
+              contract: tokenContractAddress,
+              method: 'balance_of_private',
+              args: [accountAddress],
+            },
+            {
+              kind: 'call',
+              contract: tokenContractAddress,
+              method: 'balance_of_public',
+              args: [accountAddress],
+            },
+          ],
+        };
+
+        const results = await azguard.executeOperations([operation]);
+        const result = results[0];
+
+        if (result.status !== 'ok') {
+          const errorMessage = 'error' in result ? result.error : 'Failed to fetch balance';
+          throw new Error(errorMessage || 'Balance query failed');
+        }
+
+        // Result contains decoded values for each call
+        const viewResult = result.result as { decoded: unknown[] };
+        const privateBalance = BigInt(String(viewResult.decoded[0] ?? 0));
+        const publicBalance = BigInt(String(viewResult.decoded[1] ?? 0));
+
+        return {
+          private: privateBalance,
+          public: publicBalance,
+        };
+      }
+
       const fromAddress = account!.getAddress();
       
-      const privateBalance = await token.methods
+      const privateBalance = await (token as TokenContract).methods
         .balance_of_private(fromAddress)
         .simulate({ from: fromAddress });
       
-      const publicBalance = await token.methods
+      const publicBalance = await (token as TokenContract).methods
         .balance_of_public(fromAddress)
         .simulate({ from: fromAddress });
 

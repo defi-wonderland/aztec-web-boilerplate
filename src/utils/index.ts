@@ -4,6 +4,19 @@ import { PLACEHOLDER_ADDRESS } from "../config/deployments";
 export { MinimalWallet } from './MinimalWallet';
 
 /**
+ * Type guard to check if a contract is an Azguard proxy marker.
+ * Azguard proxies don't have real contract methods - all calls go through Azguard's execute API.
+ */
+export const isAzguardProxy = (contract: unknown): boolean => {
+  return (
+    typeof contract === 'object' &&
+    contract !== null &&
+    '__azguardProxy' in contract &&
+    (contract as { __azguardProxy: boolean }).__azguardProxy === true
+  );
+};
+
+/**
  * Validates that a network configuration has valid contract addresses.
  * Returns false if addresses are placeholders or invalid.
  */
