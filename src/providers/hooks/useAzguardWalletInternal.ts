@@ -3,7 +3,7 @@
  * Used by UniversalWalletProvider - not for direct consumption
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { AzguardClient } from '@azguardwallet/client';
 import type {
@@ -167,7 +167,7 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
     });
   };
 
-  const handleConnect = async (): Promise<void> => {
+  const handleConnect = useCallback(async (): Promise<void> => {
     return executeAsync(async () => {
       if (!azguardServiceRef.current) {
         throw new Error('Azguard service not initialized');
@@ -202,9 +202,9 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
 
       console.log('✅ Connected to Azguard wallet:', accounts);
     }, 'connect to Azguard wallet');
-  };
+  }, [currentConfig.name, executeAsync, addMessage]);
 
-  const handleDisconnect = async (): Promise<void> => {
+  const handleDisconnect = useCallback(async (): Promise<void> => {
     return executeAsync(async () => {
       if (!azguardServiceRef.current) return;
 
@@ -226,34 +226,31 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
 
       console.log('✅ Disconnected from Azguard wallet');
     }, 'disconnect from Azguard wallet');
-  };
+  }, [executeAsync, addMessage]);
 
-  const handleSwitchAccount = async (
+  const handleSwitchAccount = useCallback(async (
     newAccount: CaipAccount
   ): Promise<void> => {
     return executeAsync(async () => {
-      if (!azguardState.accounts.includes(newAccount)) {
-        throw new Error('Account not found in connected accounts');
-      }
-
-      setAzguardState((prev) => ({
-        ...prev,
-        selectedAccount: newAccount,
-      }));
+      setAzguardState((prev) => {
+        if (!prev.accounts.includes(newAccount)) {
+          throw new Error('Account not found in connected accounts');
+        }
+        return {
+          ...prev,
+          selectedAccount: newAccount,
+        };
+      });
 
       console.log('✅ Switched to Azguard account:', newAccount);
     }, 'switch Azguard account');
-  };
+  }, [executeAsync]);
 
-  const handleExecuteOperations = async (
+  const handleExecuteOperations = useCallback(async (
     operations: Operation[]
   ): Promise<OperationResult[]> => {
     if (!azguardServiceRef.current) {
       throw new Error('Azguard service not initialized');
-    }
-
-    if (!azguardState.isConnected) {
-      throw new Error('Azguard wallet not connected');
     }
 
     try {
@@ -275,25 +272,27 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
       console.error('❌ Failed to execute Azguard operations:', err);
       throw err;
     }
-  };
+  }, []);
 
-  const getAccountWallet = async (
+  const getAccountWallet = useCallback(async (
     account: CaipAccount
   ): Promise<AccountWithSecretKey> => {
     if (!accountAdapterRef.current) {
       throw new Error('Account adapter not initialized');
     }
     return accountAdapterRef.current.toAccountWallet(account);
-  };
+  }, []);
+
+  const actions = useMemo(() => ({
+    connect: handleConnect,
+    disconnect: handleDisconnect,
+    switchAccount: handleSwitchAccount,
+    executeOperations: handleExecuteOperations,
+  }), [handleConnect, handleDisconnect, handleSwitchAccount, handleExecuteOperations]);
 
   return {
     state: azguardState,
-    actions: {
-      connect: handleConnect,
-      disconnect: handleDisconnect,
-      switchAccount: handleSwitchAccount,
-      executeOperations: handleExecuteOperations,
-    },
+    actions,
     client: azguardServiceRef.current?.getClient() ?? null,
     getAccountWallet,
     isLoading,

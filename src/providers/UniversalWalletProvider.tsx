@@ -73,7 +73,6 @@ interface UniversalWalletProviderProps {
 export const UniversalWalletProvider: React.FC<
   UniversalWalletProviderProps
 > = ({ children }) => {
-  // Compose internal hooks
   const embedded = useEmbeddedWalletInternal();
   const azguard = useAzguardWalletInternal();
   const azguardRegistrationRef = useRef<string | null>(null);
@@ -127,13 +126,11 @@ export const UniversalWalletProvider: React.FC<
         console.log(`📝 Registering ${operations.length} contracts with Azguard...`);
         const results = await azguard.actions.executeOperations(operations);
         
-        // Check results and log status
         const succeeded = results.filter(r => r.status === 'ok').length;
         const failed = results.filter(r => r.status === 'failed').length;
         
         if (failed > 0) {
           console.warn(`⚠️ Contract registration: ${succeeded}/${operations.length} succeeded, ${failed} failed`);
-          // Log which contracts failed
           results.forEach((result, index) => {
             if (result.status === 'failed') {
               const errorMsg = 'error' in result ? result.error : 'Unknown error';
@@ -157,8 +154,9 @@ export const UniversalWalletProvider: React.FC<
     return () => {
       isActive = false;
     };
+    // Note: azguard.actions is intentionally excluded - it's stable but recreated on each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    azguard.actions,
     azguard.state.isConnected,
     azguard.state.selectedAccount,
     config,

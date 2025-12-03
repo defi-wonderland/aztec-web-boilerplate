@@ -1,8 +1,5 @@
 import type { RegisterContractOperation } from '@azguardwallet/types';
 import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
-import { Fr } from '@aztec/aztec.js/fields';
-import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
-import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import type { AppConfig } from '../config/networks';
 import { getAzguardChainId } from '../config/networks/constants';
 import { aztecContracts, CORE_CONTRACTS } from '../config/contracts';
@@ -10,16 +7,14 @@ import type { ContractNames } from '../contract-registry';
 
 type KnownContract = ContractNames<typeof aztecContracts>;
 
-const getSponsoredFPCAddress = async (): Promise<string> => {
-  const instance = await getContractInstanceFromInstantiationParams(
-    SponsoredFPCContractArtifact,
-    {
-      salt: new Fr(SPONSORED_FPC_SALT),
-    }
-  );
-  return instance.address.toString();
-};
-
+/**
+ * Build all contract registration operations for Azguard
+ * Registers app-specific contracts (dripper, token) with full instance and artifact
+ * 
+ * Note: Sponsored FPC is NOT registered here - users should add it manually
+ * via Azguard Settings > FPCs if they want sponsored (free) transactions.
+ * Attempting to register it programmatically causes circuit errors.
+ */
 export const buildRegisterContractOperations = async (
   config: AppConfig,
   contractNames: KnownContract[] = CORE_CONTRACTS as KnownContract[]
@@ -27,17 +22,7 @@ export const buildRegisterContractOperations = async (
   const chain = getAzguardChainId(config.name);
   const operations: RegisterContractOperation[] = [];
 
-  try {
-    const sponsoredFPCAddress = await getSponsoredFPCAddress();
-    operations.push({
-      kind: 'register_contract',
-      chain,
-      address: sponsoredFPCAddress,
-    });
-  } catch (err) {
-    console.warn('⚠️ Failed to prepare Sponsored FPC registration:', err);
-  }
-
+  // Register app-specific contracts with full instance and artifact
   for (const name of contractNames) {
     const definition = aztecContracts[name];
     if (!definition) {

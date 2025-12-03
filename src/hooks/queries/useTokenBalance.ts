@@ -6,7 +6,7 @@ import { queryKeys } from './queryKeys';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { TokenContract } from '../../artifacts/Token';
 
-interface TokenBalance {
+export interface TokenBalance {
   private: bigint;
   public: bigint;
 }

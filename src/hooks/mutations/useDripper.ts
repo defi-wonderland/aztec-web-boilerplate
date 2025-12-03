@@ -9,6 +9,7 @@ import type { DripperContract } from '../../artifacts/Dripper';
 import type { TokenContract } from '../../artifacts/Token';
 import { WalletType } from '../../types/aztec';
 import { aztecContracts } from '../../config/contracts';
+import type { TokenBalance } from '../queries/useTokenBalance';
 
 interface DripParams {
   amount: bigint;
@@ -63,22 +64,64 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const { account, walletType, getSponsoredFeePaymentMethod, azguard } = useUniversalWallet();
   const { currentConfig } = useConfig();
   const queryClient = useQueryClient();
-  
+  const getBalanceQueryKey = () => {
+    if (!token || !account) {
+      return null;
+    }
+
+    const tokenAddress = token.address?.toString();
+    const ownerAddress = account.getAddress().toString();
+
+    if (!tokenAddress || !ownerAddress) {
+      return null;
+    }
+
+    return queryKeys.token.balance(tokenAddress, ownerAddress);
+  };
+
+  const updateCachedBalance = (
+    balanceType: 'private' | 'public',
+    amountToAdd: bigint
+  ) => {
+    if (amountToAdd === 0n) {
+      return;
+    }
+
+    const queryKey = getBalanceQueryKey();
+    if (!queryKey) {
+      return;
+    }
+
+    queryClient.setQueryData<TokenBalance | undefined>(queryKey, (previous) => {
+      if (!previous) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        [balanceType]: previous[balanceType] + amountToAdd,
+      };
+    });
+  };
+
   const isAzguardWallet = walletType === WalletType.AZGUARD;
   const shouldUseSponsoredFees = walletType === WalletType.EMBEDDED;
 
   const isReady = isDripperReady && isTokenReady && !!account;
 
   const invalidateBalances = () => {
-    const ownerAddress = account?.getAddress().toString();
-    if (ownerAddress && token) {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.token.balance(token.address.toString(), ownerAddress),
-      });
+    const balanceQueryKey = getBalanceQueryKey();
+    if (!balanceQueryKey) {
+      return;
     }
+
+    queryClient.invalidateQueries({
+      queryKey: balanceQueryKey,
+    });
   };
 
   const dripToPrivate = useMutation({
+    retry: false,
     mutationFn: async ({ amount }: DripParams) => {
       if (!dripper || !isDripperReady) {
         throw new Error('Dripper contract not ready');
@@ -138,8 +181,12 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         .send(sendOptions)
         .wait({ timeout: 120 });
     },
-    onSuccess: () => {
-      invalidateBalances();
+    onSuccess: (_data, variables) => {
+      if (isAzguardWallet) {
+        updateCachedBalance('private', variables?.amount ?? 0n);
+      } else {
+        invalidateBalances();
+      }
       options.onDripToPrivateSuccess?.();
     },
     onError: (error: Error) => {
@@ -148,6 +195,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   });
 
   const dripToPublic = useMutation({
+    retry: false,
     mutationFn: async ({ amount }: DripParams) => {
       if (!dripper || !isDripperReady) {
         throw new Error('Dripper contract not ready');
@@ -207,8 +255,12 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         .send(sendOptions)
         .wait({ timeout: 120 });
     },
-    onSuccess: () => {
-      invalidateBalances();
+    onSuccess: (_data, variables) => {
+      if (isAzguardWallet) {
+        updateCachedBalance('public', variables?.amount ?? 0n);
+      } else {
+        invalidateBalances();
+      }
       options.onDripToPublicSuccess?.();
     },
     onError: (error: Error) => {
@@ -217,6 +269,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   });
 
   const syncPrivateState = useMutation({
+    retry: false,
     mutationFn: async () => {
       if (!dripper || !isDripperReady) {
         throw new Error('Dripper contract not ready');
