@@ -22,7 +22,6 @@ import { useError } from '../ErrorProvider';
 import { useConfig } from '../../hooks/context/useConfig';
 import {
   AZGUARD_CHAIN_IDS,
-  SUPPORTED_AZGUARD_CHAINS,
   type AzguardChainId,
 } from '../../config/networks/constants';
 
@@ -55,9 +54,6 @@ const buildAzguardConnectionConfig = (
   const requiredChain: AzguardChainId = isSandbox
     ? AZGUARD_CHAIN_IDS.sandbox
     : AZGUARD_CHAIN_IDS.testnet;
-  const optionalChains = SUPPORTED_AZGUARD_CHAINS.filter(
-    (chain) => chain !== requiredChain
-  );
 
   return {
     dappMetadata: {
@@ -75,10 +71,8 @@ const buildAzguardConnectionConfig = (
         methods: AZGUARD_METHODS,
       },
     ],
-    optionalPermissions: optionalChains.map((chain) => ({
-      chains: [chain],
-      methods: AZGUARD_METHODS,
-    })),
+    // Only request permissions for the current network
+    // Users can reconnect if they switch networks
   };
 };
 
@@ -265,7 +259,17 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
     try {
       const results =
         await azguardServiceRef.current.executeOperations(operations);
-      console.log('✅ Azguard operations executed successfully:', results);
+      
+      const failedResults = results.filter(r => r.status === 'failed');
+      if (failedResults.length > 0) {
+        const errors = failedResults
+          .map((r, i) => `Operation ${i}: ${'error' in r ? r.error : 'Unknown error'}`)
+          .join('; ');
+        console.error('❌ Some Azguard operations failed:', errors);
+      } else {
+        console.log('✅ All Azguard operations completed successfully');
+      }
+      
       return results;
     } catch (err) {
       console.error('❌ Failed to execute Azguard operations:', err);

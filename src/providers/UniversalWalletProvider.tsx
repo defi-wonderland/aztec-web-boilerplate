@@ -123,12 +123,32 @@ export const UniversalWalletProvider: React.FC<
         if (!isActive || operations.length === 0) {
           return;
         }
-        await azguard.actions.executeOperations(operations);
+        
+        console.log(`📝 Registering ${operations.length} contracts with Azguard...`);
+        const results = await azguard.actions.executeOperations(operations);
+        
+        // Check results and log status
+        const succeeded = results.filter(r => r.status === 'ok').length;
+        const failed = results.filter(r => r.status === 'failed').length;
+        
+        if (failed > 0) {
+          console.warn(`⚠️ Contract registration: ${succeeded}/${operations.length} succeeded, ${failed} failed`);
+          // Log which contracts failed
+          results.forEach((result, index) => {
+            if (result.status === 'failed') {
+              const errorMsg = 'error' in result ? result.error : 'Unknown error';
+              console.error(`  - Operation ${index} failed: ${errorMsg}`);
+            }
+          });
+        } else {
+          console.log(`✅ All ${succeeded} contracts registered with Azguard successfully`);
+        }
+        
         if (isActive) {
           azguardRegistrationRef.current = registrationKey;
         }
       } catch (err) {
-        console.error('Failed to register contracts with Azguard wallet:', err);
+        console.error('❌ Failed to register contracts with Azguard wallet:', err);
       }
     };
 

@@ -361,7 +361,24 @@ export class AzguardWalletService implements IAzguardWalletService {
 
     try {
       const results = await this.client.execute(operations);
-      console.log('✅ Batch operations completed:', results);
+      
+      // Log individual operation results
+      const succeeded = results.filter(r => r.status === 'ok').length;
+      const failed = results.filter(r => r.status === 'failed').length;
+      const skipped = results.filter(r => r.status === 'skipped').length;
+      
+      console.log(`📋 Batch operations completed: ${succeeded} ok, ${failed} failed, ${skipped} skipped`);
+      
+      // Log details for failed operations
+      results.forEach((result, index) => {
+        if (result.status === 'failed') {
+          const errorMsg = 'error' in result ? result.error : 'Unknown error';
+          console.error(`❌ Operation ${index} failed:`, errorMsg);
+        } else if (result.status === 'skipped') {
+          console.warn(`⏭️ Operation ${index} skipped`);
+        }
+      });
+      
       return results;
     } catch (error) {
       console.error('❌ Failed to execute operations:', error);

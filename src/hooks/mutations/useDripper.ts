@@ -14,9 +14,6 @@ interface DripParams {
   amount: bigint;
 }
 
-/**
- * Check if a contract is an Azguard proxy marker
- */
 const isAzguardProxy = (contract: unknown): boolean => {
   return (
     typeof contract === 'object' &&

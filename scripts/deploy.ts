@@ -25,10 +25,10 @@ import { poseidon2Hash } from '@aztec/foundation/crypto';
 import {
   DripperContractArtifact,
   DripperContract,
-} from '../src/artifacts/Dripper.js';
-import { TokenContractArtifact } from '../src/artifacts/Token.js';
-import { MinimalWallet } from './utils/MinimalWallet.js';
-import { NETWORK_URLS, type NetworkType } from '../src/config/networks/constants.js';
+} from '../src/artifacts/Dripper';
+import { TokenContractArtifact } from '../src/artifacts/Token';
+import { MinimalWallet } from './utils/MinimalWallet';
+import { NETWORK_URLS, type NetworkType } from '../src/config/networks/constants';
 
 // Parse command line arguments
 const parseArgs = (): { network: NetworkType } => {
