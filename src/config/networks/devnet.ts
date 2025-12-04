@@ -20,3 +20,4 @@ export const DEVNET_CONFIG: NetworkConfig = {
   isTestnet: true,
 };
 
+

@@ -9,7 +9,7 @@ import { EthAddress } from '@aztec/aztec.js/addresses';
 import { Fr, Point } from '@aztec/aztec.js/fields';
 import { type PublicKey, PublicKeys } from '@aztec/aztec.js/keys';
 import type { Wallet } from '@aztec/aztec.js/wallet';
-import DripperContractArtifactJson from './sandbox/dripper-Dripper.json' with { type: 'json' };
+import DripperContractArtifactJson from './dripper-Dripper.json' with { type: 'json' };
 export const DripperContractArtifact = loadContractArtifact(DripperContractArtifactJson as NoirCompiledContract);
 
 

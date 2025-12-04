@@ -8,14 +8,18 @@ import {
   getAzguardChainId,
   type AzguardChainId,
 } from '../config/networks/constants';
-import { aztecContracts, CORE_CONTRACTS, getContractsForConfig } from '../config/contracts';
+import {
+  aztecContracts,
+  CORE_CONTRACTS,
+  getContractsForConfig,
+} from '../config/contracts';
 import type { ContractNames } from '../contract-registry';
 
 type KnownContract = ContractNames<typeof aztecContracts>;
 
 /**
  * Build all contract registration operations for Azguard
- * Registers app-specific contracts (dripper, token) with full instance and artifact
+ * Registers app-specific contracts with full instance and artifact
  */
 export const buildRegisterContractOperations = async (
   config: AppConfig,

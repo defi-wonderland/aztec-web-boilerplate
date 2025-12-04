@@ -23,3 +23,4 @@ export const getTestnetDeployment = (): DeploymentConfig => {
     return DEFAULT_TESTNET_DEPLOYMENT;
   }
 };
+
