@@ -62,11 +62,11 @@ export const DEFAULT_SANDBOX_DEPLOYMENT: DeploymentConfig = {
 };
 
 /**
- * Default testnet deployment config (placeholder until contracts are deployed)
+ * Default devnet deployment config (placeholder until contracts are deployed)
  */
-export const DEFAULT_TESTNET_DEPLOYMENT: DeploymentConfig = {
-  network: 'testnet',
-  nodeUrl: NETWORK_URLS.testnet,
+export const DEFAULT_DEVNET_DEPLOYMENT: DeploymentConfig = {
+  network: 'devnet',
+  nodeUrl: NETWORK_URLS.devnet,
   dripperContract: {
     address: PLACEHOLDER_ADDRESS,
     salt: PLACEHOLDER_SALT,

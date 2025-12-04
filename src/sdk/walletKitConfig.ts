@@ -1,10 +1,10 @@
 import type { ConnectorFactory } from '../connectors/registry';
 
-export type AztecNetworkId = 'sandbox' | 'devnet' | 'testnet';
+export type AztecNetworkId = 'sandbox' | 'devnet';
 
 export interface WalletKitNetworkPreset {
   /**
-   * Concrete Aztec network identifier (sandbox/devnet/testnet).
+   * Concrete Aztec network identifier (sandbox/devnet).
    */
   aztecNetwork: AztecNetworkId;
   /**

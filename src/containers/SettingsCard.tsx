@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { SandboxTab, TestnetTab, CustomTab } from '../components/settings';
+import { SandboxTab, DevnetTab, CustomTab } from '../components/settings';
 
 export const SettingsCard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'sandbox' | 'testnet' | 'custom'>('sandbox');
+  const [activeTab, setActiveTab] = useState<'sandbox' | 'devnet' | 'custom'>('sandbox');
 
-  const handleTabChange = (tab: 'sandbox' | 'testnet' | 'custom') => {
+  const handleTabChange = (tab: 'sandbox' | 'devnet' | 'custom') => {
     setActiveTab(tab);
   };
 
@@ -29,11 +29,11 @@ export const SettingsCard: React.FC = () => {
           <span className="tab-label">Sandbox</span>
         </button>
         <button
-          className={`settings-tab ${activeTab === 'testnet' ? 'active' : ''}`}
-          onClick={() => handleTabChange('testnet')}
+          className={`settings-tab ${activeTab === 'devnet' ? 'active' : ''}`}
+          onClick={() => handleTabChange('devnet')}
         >
           <span className="tab-icon">🌐</span>
-          <span className="tab-label">Testnet</span>
+          <span className="tab-label">Devnet</span>
         </button>
         <button
           className={`settings-tab ${activeTab === 'custom' ? 'active' : ''}`}
@@ -46,7 +46,7 @@ export const SettingsCard: React.FC = () => {
 
       <div className="settings-tab-content">
         {activeTab === 'sandbox' && <SandboxTab />}
-        {activeTab === 'testnet' && <TestnetTab />}
+        {activeTab === 'devnet' && <DevnetTab />}
         {activeTab === 'custom' && <CustomTab />}
       </div>
     </div>

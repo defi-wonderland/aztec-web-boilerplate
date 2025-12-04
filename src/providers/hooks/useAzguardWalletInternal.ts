@@ -21,8 +21,8 @@ import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { useError } from '../ErrorProvider';
 import { useConfig } from '../../hooks/context/useConfig';
 import {
-  getAzguardChainId,
-  type AzguardChainId,
+  getChainId,
+  type AztecChainId,
 } from '../../config/networks/constants';
 
 const DEFAULT_AZGUARD_STATE: AzguardWalletState = {
@@ -50,7 +50,7 @@ const AZGUARD_METHODS = [
 const buildAzguardConnectionConfig = (
   networkName: string
 ): AzguardConnectionConfig => {
-  const requiredChain: AzguardChainId = getAzguardChainId(networkName);
+  const requiredChain: AztecChainId = getChainId(networkName);
 
   return {
     dappMetadata: {

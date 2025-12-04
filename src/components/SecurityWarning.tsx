@@ -25,9 +25,9 @@ export const SecurityWarning: React.FC<SecurityWarningProps> = ({
       <div className="security-warning-content">
         <span className="security-warning-icon" aria-hidden="true">⚠️</span>
         <div className="security-warning-text">
-          <strong>Testnet Only</strong>
+          <strong>Test Only</strong>
           <span className="security-warning-detail">
-            Embedded wallet keys are stored locally. For testnet, use the embedded wallet.
+            Embedded wallet keys are stored locally. Only use for development and testing.
           </span>
         </div>
         {showDismiss && (

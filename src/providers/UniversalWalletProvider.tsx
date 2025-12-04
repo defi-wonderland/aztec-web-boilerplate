@@ -12,7 +12,7 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { WalletType } from '../types/aztec';
 import { useEmbeddedWalletInternal, useAzguardWalletInternal } from './hooks';
 import { useConfig } from '../hooks/context/useConfig';
-import type { AzguardChainId } from '../config/networks/constants';
+import type { AztecChainId } from '../config/networks/constants';
 import { DEFAULT_NETWORK } from '../config/networks';
 import { isValidConfig } from '../utils';
 import { buildRegisterContractOperations } from '../utils/azguard';
@@ -101,7 +101,7 @@ export const UniversalWalletProvider: React.FC<
     const registerContractsWithAzguard = async () => {
       try {
         const chainFromAccount = azguard.state.selectedAccount
-          ? (`${azguard.state.selectedAccount.split(':').slice(0, 2).join(':')}` as AzguardChainId)
+          ? (`${azguard.state.selectedAccount.split(':').slice(0, 2).join(':')}` as AztecChainId)
           : undefined;
 
         const operations = await buildRegisterContractOperations(
@@ -164,7 +164,7 @@ export const UniversalWalletProvider: React.FC<
   if (!walletKitRef.current) {
     const resolvedNodeUrl = resolveWalletKitNode(
       walletKitConfig.networks,
-      config.name as 'sandbox' | 'devnet' | 'testnet',
+      config.name as 'sandbox' | 'devnet',
       config.nodeUrl
     );
     walletKitRef.current = createAztecWalletKit({

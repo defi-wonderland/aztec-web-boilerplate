@@ -1,5 +1,5 @@
 {
-  "network": "testnet",
+  "network": "devnet",
   "nodeUrl": "https://devnet.aztec-labs.com/",
   "dripperContract": {
     "address": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -13,6 +13,4 @@
   "proverEnabled": true,
   "deployedAt": ""
 }
-
-
 

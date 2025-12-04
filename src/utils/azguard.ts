@@ -5,8 +5,8 @@ import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/Sponsored
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import type { AppConfig } from '../config/networks';
 import {
-  getAzguardChainId,
-  type AzguardChainId,
+  getChainId,
+  type AztecChainId,
 } from '../config/networks/constants';
 import {
   aztecContracts,
@@ -24,9 +24,9 @@ type KnownContract = ContractNames<typeof aztecContracts>;
 export const buildRegisterContractOperations = async (
   config: AppConfig,
   contractNames: KnownContract[] = CORE_CONTRACTS as KnownContract[],
-  chainOverride?: AzguardChainId
+  chainOverride?: AztecChainId
 ): Promise<RegisterContractOperation[]> => {
-  const chain = chainOverride ?? getAzguardChainId(config.name);
+  const chain = chainOverride ?? getChainId(config.name);
   const operations: RegisterContractOperation[] = [];
   const contracts = getContractsForConfig(config);
 
