@@ -53,7 +53,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, walletType, getSponsoredFeePaymentMethod, azguard } = useUniversalWallet();
+  const { account, walletType, embedded, azguard } = useUniversalWallet();
   const { currentConfig } = useConfig();
   const queryClient = useQueryClient();
   const getBalanceQueryKey = () => {
@@ -160,11 +160,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       const fromAddress = account.getAddress();
       const sendOptions: {
         from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: Awaited<ReturnType<typeof getSponsoredFeePaymentMethod>> };
+        fee?: { paymentMethod: Awaited<ReturnType<typeof embedded.getSponsoredFeePaymentMethod>> };
       } = { from: fromAddress };
 
       if (shouldUseSponsoredFees) {
-        const paymentMethod = await getSponsoredFeePaymentMethod();
+        const paymentMethod = await embedded.getSponsoredFeePaymentMethod();
         sendOptions.fee = { paymentMethod };
       }
 
@@ -234,11 +234,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       const fromAddress = account.getAddress();
       const sendOptions: {
         from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: Awaited<ReturnType<typeof getSponsoredFeePaymentMethod>> };
+        fee?: { paymentMethod: Awaited<ReturnType<typeof embedded.getSponsoredFeePaymentMethod>> };
       } = { from: fromAddress };
 
       if (shouldUseSponsoredFees) {
-        const paymentMethod = await getSponsoredFeePaymentMethod();
+        const paymentMethod = await embedded.getSponsoredFeePaymentMethod();
         sendOptions.fee = { paymentMethod };
       }
 
@@ -304,11 +304,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       const fromAddress = account.getAddress();
       const sendOptions: {
         from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: Awaited<ReturnType<typeof getSponsoredFeePaymentMethod>> };
+        fee?: { paymentMethod: Awaited<ReturnType<typeof embedded.getSponsoredFeePaymentMethod>> };
       } = { from: fromAddress };
 
       if (shouldUseSponsoredFees) {
-        const paymentMethod = await getSponsoredFeePaymentMethod();
+        const paymentMethod = await embedded.getSponsoredFeePaymentMethod();
         sendOptions.fee = { paymentMethod };
       }
 

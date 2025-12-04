@@ -27,12 +27,15 @@ import { DEFAULT_NETWORK } from '../config/networks';
 import { isValidConfig } from '../utils';
 import { buildRegisterContractOperations } from '../utils/azguard';
 
-interface EmbeddedWalletActions {
+interface EmbeddedWalletContext {
   create: () => Promise<AccountWithSecretKey>;
   connectTest: (index: number) => Promise<AccountWithSecretKey>;
   connectExisting: () => Promise<AccountWithSecretKey | null>;
   isDeploying: boolean;
   forceShowSelector: () => void;
+  pxe: PXE | null;
+  wallet: Wallet | null;
+  getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
 interface AzguardWalletActions {
@@ -51,14 +54,10 @@ export interface UniversalWalletContextType {
   walletType: WalletType | null;
   account: AccountWithSecretKey | null;
 
-  pxe: PXE | null;
-  wallet: Wallet | null;
-  getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
-
   disconnect: () => Promise<void>;
   reinitialize: () => Promise<void>;
 
-  embedded: EmbeddedWalletActions;
+  embedded: EmbeddedWalletContext;
   azguard: AzguardWalletActions;
 }
 
@@ -216,11 +215,6 @@ export const UniversalWalletProvider: React.FC<
     walletType: activeWalletType,
     account: activeAccount,
 
-    pxe: embedded.services.pxe,
-    wallet: embedded.services.wallet,
-    getSponsoredFeePaymentMethod:
-      embedded.services.getSponsoredFeePaymentMethod,
-
     disconnect: handleDisconnect,
     reinitialize: embedded.actions.reinitialize,
 
@@ -230,6 +224,9 @@ export const UniversalWalletProvider: React.FC<
       connectExisting: embedded.actions.connectExisting,
       isDeploying: embedded.state.isDeploying,
       forceShowSelector: embedded.actions.forceShowSelector,
+      pxe: embedded.services.pxe,
+      wallet: embedded.services.wallet,
+      getSponsoredFeePaymentMethod: embedded.services.getSponsoredFeePaymentMethod,
     },
 
     azguard: {
