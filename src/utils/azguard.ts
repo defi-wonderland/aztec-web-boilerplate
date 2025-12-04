@@ -8,7 +8,7 @@ import {
   getAzguardChainId,
   type AzguardChainId,
 } from '../config/networks/constants';
-import { aztecContracts, CORE_CONTRACTS } from '../config/contracts';
+import { aztecContracts, CORE_CONTRACTS, getContractsForConfig } from '../config/contracts';
 import type { ContractNames } from '../contract-registry';
 
 type KnownContract = ContractNames<typeof aztecContracts>;
@@ -24,9 +24,10 @@ export const buildRegisterContractOperations = async (
 ): Promise<RegisterContractOperation[]> => {
   const chain = chainOverride ?? getAzguardChainId(config.name);
   const operations: RegisterContractOperation[] = [];
+  const contracts = getContractsForConfig(config);
 
   for (const name of contractNames) {
-    const definition = aztecContracts[name];
+    const definition = contracts[name];
     if (!definition) {
       continue;
     }

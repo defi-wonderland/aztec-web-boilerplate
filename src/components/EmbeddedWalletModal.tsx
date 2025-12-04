@@ -24,7 +24,7 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     error,
   } = useUniversalWallet();
 
-  const { currentConfig, switchToNetwork } = useConfig();
+  const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   
   // Disable functionality when no network is selected, network is initializing, or failed
   const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';
@@ -100,6 +100,8 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   };
 
   const renderNetworkSelector = () => {
+    const networkOptions = getNetworkOptions();
+    
     return (
       <div className="network-connect-section">
         <label className="wallet-section-label">Network</label>
@@ -114,8 +116,15 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
               title="Select network configuration"
             >
               <option value="" disabled>Network</option>
-              <option value="sandbox">Local Sandbox</option>
-              <option value="testnet">Testnet</option>
+              {networkOptions.map((option) => (
+                <option 
+                  key={option.value} 
+                  value={option.value}
+                  disabled={option.disabled}
+                >
+                  {option.label}
+                </option>
+              ))}
             </select>
             <span className="network-select-arrow">▼</span>
           </div>
@@ -162,18 +171,10 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
               </>
             )}
             {isNetworkFailed && (
-              <span>
-                {currentConfig.name === 'sandbox' ? 'Local Sandbox connection failed' : 
-                 currentConfig.name === 'testnet' ? 'Testnet connection failed' : 
-                 `${currentConfig.displayName} connection failed`}
-              </span>
+              <span>{currentConfig.displayName} connection failed</span>
             )}
             {isNetworkSelected && isInitialized && (
-              <span>
-                {currentConfig.name === 'sandbox' ? 'Local Sandbox connected' : 
-                 currentConfig.name === 'testnet' ? 'Testnet connected' : 
-                 `${currentConfig.displayName} connected`}
-              </span>
+              <span>{currentConfig.displayName} connected</span>
             )}
           </div>
           

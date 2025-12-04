@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
 import { Buffer } from 'buffer';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { createAztecNodeClient } from '@aztec/aztec.js/node';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
@@ -46,6 +47,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
     const aztecNode = createAztecNodeClient(nodeUrl);
     const config = getPXEConfig();
     config.proverEnabled = true;
+    config.l1Contracts = await aztecNode.getL1ContractAddresses();
     const pxe = await createPXE(aztecNode, config);
 
     const minimalWallet = new MinimalWallet(pxe as unknown as PXE, aztecNode);
@@ -106,15 +108,16 @@ self.addEventListener('message', async (event: MessageEvent) => {
     const sponsoredPFC = await getSponsoredPFCContract();
     const paymentMethod = new SponsoredFeePaymentMethod(sponsoredPFC.address);
 
-    const provenInteraction = await deployMethod.simulate({
-      from: ecdsaAccount.address,
-      contractAddressSalt: saltFr,
-      fee: { paymentMethod },
-      universalDeploy: true,
-    });
-
-    const receipt = await provenInteraction.result
-      .send()
+    const receipt = await deployMethod
+      .send({
+        from: AztecAddress.ZERO,
+        contractAddressSalt: saltFr,
+        fee: { paymentMethod },
+        skipClassRegistration: true,
+        skipClassPublication: true,
+        skipPublicDeployment: true,
+        universalDeploy: true,
+      } as Parameters<typeof deployMethod.send>[0])
       .wait({ timeout: DEPLOY_TIMEOUT });
 
     const response: WorkerResponse = {

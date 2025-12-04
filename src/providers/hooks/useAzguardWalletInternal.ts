@@ -21,7 +21,7 @@ import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { useError } from '../ErrorProvider';
 import { useConfig } from '../../hooks/context/useConfig';
 import {
-  AZGUARD_CHAIN_IDS,
+  getAzguardChainId,
   type AzguardChainId,
 } from '../../config/networks/constants';
 
@@ -50,10 +50,7 @@ const AZGUARD_METHODS = [
 const buildAzguardConnectionConfig = (
   networkName: string
 ): AzguardConnectionConfig => {
-  const isSandbox = networkName === 'sandbox';
-  const requiredChain: AzguardChainId = isSandbox
-    ? AZGUARD_CHAIN_IDS.sandbox
-    : AZGUARD_CHAIN_IDS.testnet;
+  const requiredChain: AzguardChainId = getAzguardChainId(networkName);
 
   return {
     dappMetadata: {

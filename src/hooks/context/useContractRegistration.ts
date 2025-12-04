@@ -4,7 +4,7 @@ import type { Wallet } from '@aztec/aztec.js/wallet';
 import { useContractRegistryContext } from '../../providers/AztecContractProvider';
 import { useUniversalWallet } from './useUniversalWallet';
 import { useConfig } from './useConfig';
-import { aztecContracts } from '../../config/contracts';
+import { aztecContracts, getContractsForConfig } from '../../config/contracts';
 import { WalletType } from '../../types/aztec';
 import type {
   ContractConfigMap,
@@ -63,12 +63,12 @@ export function useContractRegistration<
   const [status, setStatus] = useState<ContractStatus>('idle');
   const [error, setError] = useState<Error | null>(null);
   const getContractDefinition = useCallback(() => {
+    const contracts = getContractsForConfig(currentConfig);
     return (
-      (aztecContracts as ContractConfigMap)[
-        name as keyof typeof aztecContracts
-      ] ?? null
+      (contracts as ContractConfigMap)[name as keyof typeof aztecContracts] ??
+      null
     );
-  }, [name]);
+  }, [currentConfig, name]);
 
   /**
    * For Azguard wallets, we create a proxy marker instead of a real contract instance.
