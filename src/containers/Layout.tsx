@@ -4,10 +4,10 @@ import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 
 export const Layout: React.FC = () => {
-  const { isInitialized, isConnected, account } = useUniversalWallet();
+  const { isInitialized, isConnected } = useUniversalWallet();
 
-  // Show layout only when any wallet is connected and app is initialized
-  const showLayout = isConnected && !!account && isInitialized;
+  // Show layout when any wallet is connected and the app is initialized
+  const showLayout = isConnected && isInitialized;
 
   if (!showLayout) {
     return null;

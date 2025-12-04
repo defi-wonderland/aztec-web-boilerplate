@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AzguardWalletService } from '../../../src/services/aztec/wallet/AzguardWalletService';
+import { SUPPORTED_AZGUARD_CHAINS } from '../../../src/config/networks/constants';
 import { TestUtils, TEST_CONSTANTS } from '../../setup';
 
 // Mock the AzguardClient
@@ -358,9 +359,7 @@ describe('AzguardWalletService', () => {
       const chains = service.getSupportedChains();
 
       // Assert
-      expect(chains).toContain('aztec:0');
-      expect(chains).toContain('aztec:11155111');
-      expect(chains).toContain('aztec:1337');
+      expect(chains).toEqual(SUPPORTED_AZGUARD_CHAINS);
     });
 
     it('returns current state', () => {

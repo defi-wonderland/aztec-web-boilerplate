@@ -7,11 +7,11 @@ import { useUniversalWallet } from '../hooks';
 import { WalletType } from '../types/aztec';
 
 export const MainContent: React.FC = () => {
-  const { account, walletType, azguard } = useUniversalWallet();
+  const { connector } = useUniversalWallet();
   const [activeTab, setActiveTab] = useState<TabType>('mint');
   
-  // Show security warning when using embedded wallet (not Azguard)
-  const isUsingEmbeddedWallet = account && walletType === WalletType.EMBEDDED && !azguard.state.isConnected;
+  // Show security warning for embedded wallet (stores keys in browser localStorage)
+  const showSecurityWarning = connector?.getStatus().isConnected && connector.type === WalletType.EMBEDDED;
 
   const tabs: TabConfig[] = [
     {
@@ -30,7 +30,7 @@ export const MainContent: React.FC = () => {
 
   return (
     <main className="main-content">
-      {isUsingEmbeddedWallet && <SecurityWarning />}
+      {showSecurityWarning && <SecurityWarning />}
       <Tabs 
         tabs={tabs} 
         defaultTab={activeTab}

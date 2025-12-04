@@ -52,7 +52,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, walletType, azguard, isLoading: isWalletLoading } = useUniversalWallet();
+  const { account, walletType, connector, isLoading: isWalletLoading } = useUniversalWallet();
   const { currentConfig } = useConfig();
   const { status: registryStatus } = useContractRegistry();
   const queryClient = useQueryClient();
@@ -75,7 +75,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     tokenAddress &&
     ownerAddress &&
     (options.enabled ?? true) &&
-    (!isAzguardWallet || (azguard.state.isConnected && azguard.state.selectedAccount))
+    (!isAzguardWallet || Boolean(connector?.getCaipAccount?.()))
   );
 
   const query = useQuery({
@@ -86,7 +86,12 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
       }
 
       if (isAzguardWallet && isAzguardProxy(token)) {
-        if (!azguard.state.selectedAccount) {
+        if (!connector?.executeOperations) {
+          throw new Error('Connector does not support Azguard operations');
+        }
+
+        const selectedAccount = connector.getCaipAccount?.();
+        if (!selectedAccount) {
           throw new Error('Azguard account not selected');
         }
 
@@ -95,7 +100,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
 
         const operation: SimulateViewsOperation = {
           kind: 'simulate_views',
-          account: azguard.state.selectedAccount,
+          account: selectedAccount,
           calls: [
             {
               kind: 'call',
@@ -112,7 +117,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
           ],
         };
 
-        const results = await azguard.executeOperations([operation]);
+        const results = await connector.executeOperations([operation]);
         const result = results[0];
 
         if (result.status !== 'ok') {

@@ -56,7 +56,8 @@ export function useContractRegistration<
   TContract = unknown
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
-  const { wallet, walletType, account } = useUniversalWallet();
+  const { connector, walletType, account } = useUniversalWallet();
+  const wallet = connector?.getWallet?.() ?? null;
   const { currentConfig } = useConfig();
 
   const isAzguardWallet = walletType === WalletType.AZGUARD;

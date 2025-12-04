@@ -512,47 +512,34 @@ body {
 }
 
 .wallet-select-wrapper {
-  position: relative;
-  display: inline-block;
+  display: flex;
+  gap: 0.75rem;
 }
 
-.wallet-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding: 0.75rem 2rem 0.75rem 1rem;
+.wallet-options {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wallet-option-button {
   background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
   color: var(--button-text);
   border: none;
   border-radius: 10px;
+  padding: 0.6rem 1.25rem;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 140px;
   box-shadow: 0 3px 10px rgba(140, 126, 255, 0.2);
 }
 
-.wallet-select:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+.wallet-option-button:hover,
+.wallet-option-button:focus {
+  outline: none;
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(140, 126, 255, 0.3);
-}
-
-.wallet-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 30%, transparent);
-}
-
-.wallet-select-arrow {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--button-text);
-  font-size: 0.75rem;
 }
 
 /* Theme Toggle - Aztec Design System */

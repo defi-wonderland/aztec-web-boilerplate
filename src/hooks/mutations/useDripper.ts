@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { SendTransactionOperation } from '@azguardwallet/types';
+import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useConfig } from '../context/useConfig';
@@ -53,7 +53,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, walletType, embedded, azguard } = useUniversalWallet();
+  const { account, walletType, connector } = useUniversalWallet();
   const { currentConfig } = useConfig();
   const queryClient = useQueryClient();
   const getBalanceQueryKey = () => {
@@ -97,7 +97,10 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   };
 
   const isAzguardWallet = walletType === WalletType.AZGUARD;
-  const shouldUseSponsoredFees = walletType === WalletType.EMBEDDED;
+  const supportsOperations =
+    Boolean(connector?.capabilities.canExecuteOperations) && typeof connector?.sendTransaction === 'function';
+  const supportsSponsoredFees =
+    Boolean(connector?.capabilities.hasSponsoredFees) && typeof connector?.getSponsoredFeePaymentMethod === 'function';
 
   const isReady = isDripperReady && isTokenReady && !!account;
 
@@ -125,33 +128,31 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error('Account not available');
       }
 
-      if (isAzguardWallet && isAzguardProxy(dripper) && isAzguardProxy(token)) {
-        if (!azguard.state.selectedAccount) {
+      if (supportsOperations && isAzguardProxy(dripper) && isAzguardProxy(token)) {
+        if (!connector) {
+          throw new Error('No wallet connector available');
+        }
+
+        const selectedAccount = connector.getCaipAccount?.();
+        if (!selectedAccount) {
           throw new Error('Azguard account not selected');
         }
 
         const dripperAddress = aztecContracts.dripper.address(currentConfig);
         const tokenAddress = aztecContracts.token.address(currentConfig);
 
-        const operation: SendTransactionOperation = {
-          kind: 'send_transaction',
-          account: azguard.state.selectedAccount,
+        const response = await connector.sendTransaction({
           actions: [
             {
-              kind: 'call',
               contract: dripperAddress,
               method: 'drip_to_private',
               args: [tokenAddress, amount.toString()],
             },
           ],
-        };
+        });
 
-        const results = await azguard.executeOperations([operation]);
-        const result = results[0];
-        
-        if (result.status !== 'ok') {
-          const errorMessage = 'error' in result ? result.error : 'Transaction failed';
-          throw new Error(errorMessage || 'drip_to_private failed');
+        if (response.status !== 'success') {
+          throw new Error(response.error ?? 'drip_to_private failed');
         }
 
         return;
@@ -160,11 +161,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       const fromAddress = account.getAddress();
       const sendOptions: {
         from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: Awaited<ReturnType<typeof embedded.getSponsoredFeePaymentMethod>> };
+        fee?: { paymentMethod: SponsoredFeePaymentMethod };
       } = { from: fromAddress };
 
-      if (shouldUseSponsoredFees) {
-        const paymentMethod = await embedded.getSponsoredFeePaymentMethod();
+      if (supportsSponsoredFees && connector?.getSponsoredFeePaymentMethod) {
+        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
         sendOptions.fee = { paymentMethod };
       }
 
@@ -199,33 +200,31 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error('Account not available');
       }
 
-      if (isAzguardWallet && isAzguardProxy(dripper) && isAzguardProxy(token)) {
-        if (!azguard.state.selectedAccount) {
+      if (supportsOperations && isAzguardProxy(dripper) && isAzguardProxy(token)) {
+        if (!connector) {
+          throw new Error('No wallet connector available');
+        }
+
+        const selectedAccount = connector.getCaipAccount?.();
+        if (!selectedAccount) {
           throw new Error('Azguard account not selected');
         }
 
         const dripperAddress = aztecContracts.dripper.address(currentConfig);
         const tokenAddress = aztecContracts.token.address(currentConfig);
 
-        const operation: SendTransactionOperation = {
-          kind: 'send_transaction',
-          account: azguard.state.selectedAccount,
+        const response = await connector.sendTransaction({
           actions: [
             {
-              kind: 'call',
               contract: dripperAddress,
               method: 'drip_to_public',
               args: [tokenAddress, amount.toString()],
             },
           ],
-        };
+        });
 
-        const results = await azguard.executeOperations([operation]);
-        const result = results[0];
-        
-        if (result.status !== 'ok') {
-          const errorMessage = 'error' in result ? result.error : 'Transaction failed';
-          throw new Error(errorMessage || 'drip_to_public failed');
+        if (response.status !== 'success') {
+          throw new Error(response.error ?? 'drip_to_public failed');
         }
 
         return;
@@ -234,11 +233,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       const fromAddress = account.getAddress();
       const sendOptions: {
         from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: Awaited<ReturnType<typeof embedded.getSponsoredFeePaymentMethod>> };
+        fee?: { paymentMethod: SponsoredFeePaymentMethod };
       } = { from: fromAddress };
 
-      if (shouldUseSponsoredFees) {
-        const paymentMethod = await embedded.getSponsoredFeePaymentMethod();
+      if (supportsSponsoredFees && connector?.getSponsoredFeePaymentMethod) {
+        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
         sendOptions.fee = { paymentMethod };
       }
 
@@ -270,32 +269,30 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error('Account not available');
       }
 
-      if (isAzguardWallet && isAzguardProxy(dripper)) {
-        if (!azguard.state.selectedAccount) {
+      if (supportsOperations && isAzguardProxy(dripper)) {
+        if (!connector) {
+          throw new Error('No wallet connector available');
+        }
+
+        const selectedAccount = connector.getCaipAccount?.();
+        if (!selectedAccount) {
           throw new Error('Azguard account not selected');
         }
 
         const dripperAddress = aztecContracts.dripper.address(currentConfig);
 
-        const operation: SendTransactionOperation = {
-          kind: 'send_transaction',
-          account: azguard.state.selectedAccount,
+        const response = await connector.sendTransaction({
           actions: [
             {
-              kind: 'call',
               contract: dripperAddress,
               method: 'sync_private_state',
               args: [],
             },
           ],
-        };
+        });
 
-        const results = await azguard.executeOperations([operation]);
-        const result = results[0];
-        
-        if (result.status !== 'ok') {
-          const errorMessage = 'error' in result ? result.error : 'Transaction failed';
-          throw new Error(errorMessage || 'sync_private_state failed');
+        if (response.status !== 'success') {
+          throw new Error(response.error ?? 'sync_private_state failed');
         }
 
         return;
@@ -304,11 +301,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       const fromAddress = account.getAddress();
       const sendOptions: {
         from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: Awaited<ReturnType<typeof embedded.getSponsoredFeePaymentMethod>> };
+        fee?: { paymentMethod: SponsoredFeePaymentMethod };
       } = { from: fromAddress };
 
-      if (shouldUseSponsoredFees) {
-        const paymentMethod = await embedded.getSponsoredFeePaymentMethod();
+      if (supportsSponsoredFees && connector?.getSponsoredFeePaymentMethod) {
+        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
         sendOptions.fee = { paymentMethod };
       }
 

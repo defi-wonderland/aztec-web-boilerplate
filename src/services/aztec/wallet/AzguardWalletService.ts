@@ -106,11 +106,15 @@ export class AzguardWalletService implements IAzguardWalletService {
       );
 
       // Connect to the wallet with required and optional permissions
-      await this.client.connect(
-        dappMetadata,
-        requiredPermissions,
-        optionalPermissions
-      );
+      if (optionalPermissions && optionalPermissions.length > 0) {
+        await this.client.connect(
+          dappMetadata,
+          requiredPermissions,
+          optionalPermissions
+        );
+      } else {
+        await this.client.connect(dappMetadata, requiredPermissions);
+      }
 
       // Get connected accounts
       const accounts = this.client.accounts;

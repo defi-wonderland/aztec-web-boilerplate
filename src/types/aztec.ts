@@ -5,16 +5,7 @@ import type { ContractInstanceWithAddress, ContractFunctionInteraction } from '@
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
-import type { AzguardClient } from '@azguardwallet/client';
-import type { 
-  CaipAccount, 
-  Operation, 
-  SendTransactionOperation,
-  SimulateViewsOperation,
-  RegisterContractOperation,
-  CallAction,
-  AddPrivateAuthwitAction
-} from '@azguardwallet/types';
+import type { CaipAccount, Operation, CallAction } from '@azguardwallet/types';
 
 // ============================================================================
 // STORAGE SERVICE INTERFACES
@@ -104,19 +95,6 @@ export enum WalletType {
 }
 
 /**
- * Azguard wallet connection state
- */
-export interface AzguardWalletState {
-  isInstalled: boolean;
-  isConnected: boolean;
-  isConnecting: boolean;
-  accounts: CaipAccount[];
-  selectedAccount: CaipAccount | null;
-  supportedChains: string[];
-  error: string | null;
-}
-
-/**
  * Azguard account adapter interface
  * Bridges between CAIP account format and AccountWithSecretKey interface
  */
@@ -140,53 +118,6 @@ export interface IAzguardAccountAdapter {
    * Check if account is deployed on the network
    */
   isAccountDeployed(caipAccount: CaipAccount): Promise<boolean>;
-}
-
-/**
- * Azguard wallet service interface
- * Handles communication with Azguard wallet extension
- */
-export interface IAzguardWalletService {
-  // Core initialization
-  initialize(): Promise<void>;
-  
-  // Wallet detection and connection
-  isInstalled(): Promise<boolean>;
-  connect(dappMetadata: any, permissions: any[]): Promise<CaipAccount[]>;
-  disconnect(): Promise<void>;
-  
-  // Account management
-  getAccounts(): Promise<CaipAccount[]>;
-  getSelectedAccount(): CaipAccount | null;
-  
-  // Transaction operations
-  sendTransaction(operation: SendTransactionOperation): Promise<string>;
-  simulateViews(operation: SimulateViewsOperation): Promise<any>;
-  registerContract(operation: RegisterContractOperation): Promise<void>;
-  
-  // Event handling
-  onAccountsChanged(callback: (accounts: CaipAccount[]) => void): void;
-  onDisconnected(callback: () => void): void;
-  
-  // Utility
-  getSupportedChains(): string[];
-}
-
-/**
- * Universal wallet interface that can work with both embedded and Azguard wallets
- */
-export interface IUniversalWallet {
-  type: WalletType;
-  isConnected: boolean;
-  account: AccountWithSecretKey | null;
-  
-  // Common operations
-  connect(): Promise<AccountWithSecretKey>;
-  disconnect(): Promise<void>;
-  
-  // Transaction operations (abstracted)
-  sendTransaction(params: unknown): Promise<string>;
-  simulateCall(params: unknown): Promise<unknown>;
 }
 
 /**

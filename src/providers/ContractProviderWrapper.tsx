@@ -10,7 +10,7 @@ interface ContractProviderWrapperProps {
 }
 
 export const ContractProviderWrapper: React.FC<ContractProviderWrapperProps> = ({ children }) => {
-  const { embedded, isInitialized, walletType } = useUniversalWallet();
+  const { connector, isInitialized, walletType } = useUniversalWallet();
   const { currentConfig } = useConfig();
   const networkContracts = useMemo(
     () => getContractsForConfig(currentConfig),
@@ -19,14 +19,16 @@ export const ContractProviderWrapper: React.FC<ContractProviderWrapperProps> = (
 
   // Only mount AztecContractProvider for embedded wallet
   // Azguard manages its own PXE and contract registration
-  if (!isInitialized || !embedded.pxe || walletType !== WalletType.EMBEDDED) {
+  const pxe = connector?.getPXE?.() ?? null;
+
+  if (!isInitialized || !pxe || walletType !== WalletType.EMBEDDED) {
     return <>{children}</>;
   }
 
   return (
     <AztecContractProvider
       contracts={networkContracts}
-      pxe={embedded.pxe}
+      pxe={pxe}
       config={currentConfig}
       initialContracts={CORE_CONTRACTS}
     >

@@ -9,16 +9,6 @@
 
 import React, { createContext, useEffect, ReactNode, useRef } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { Wallet } from '@aztec/aztec.js/wallet';
-import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import type { PXE } from '@aztec/pxe/server';
-import type { AzguardClient } from '@azguardwallet/client';
-import type {
-  CaipAccount,
-  Operation,
-  OperationResult,
-} from '@azguardwallet/types';
-import type { AzguardWalletState } from '../types/azguard';
 import { WalletType } from '../types/aztec';
 import { useEmbeddedWalletInternal, useAzguardWalletInternal } from './hooks';
 import { useConfig } from '../hooks/context/useConfig';
@@ -26,25 +16,11 @@ import type { AzguardChainId } from '../config/networks/constants';
 import { DEFAULT_NETWORK } from '../config/networks';
 import { isValidConfig } from '../utils';
 import { buildRegisterContractOperations } from '../utils/azguard';
-
-interface EmbeddedWalletContext {
-  create: () => Promise<AccountWithSecretKey>;
-  connectTest: (index: number) => Promise<AccountWithSecretKey>;
-  connectExisting: () => Promise<AccountWithSecretKey | null>;
-  isDeploying: boolean;
-  forceShowSelector: () => void;
-  pxe: PXE | null;
-  wallet: Wallet | null;
-  getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
-}
-
-interface AzguardWalletActions {
-  connect: () => Promise<void>;
-  switchAccount: (account: CaipAccount) => Promise<void>;
-  executeOperations: (ops: Operation[]) => Promise<OperationResult[]>;
-  state: AzguardWalletState;
-  client: AzguardClient | null;
-}
+import type { WalletConnector, WalletConnectorId } from '../types/walletConnector';
+import { EmbeddedConnector, AzguardConnector } from '../connectors';
+import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
+import { walletKitConfig } from '../config/walletKit';
+import { resolveWalletKitNode } from '../sdk/walletKitConfig';
 
 export interface UniversalWalletContextType {
   isConnected: boolean;
@@ -54,11 +30,13 @@ export interface UniversalWalletContextType {
   walletType: WalletType | null;
   account: AccountWithSecretKey | null;
 
+  connector: WalletConnector | null;
+  connectors: WalletConnector[];
+  walletKit: AztecWalletKit;
+
   disconnect: () => Promise<void>;
   reinitialize: () => Promise<void>;
-
-  embedded: EmbeddedWalletContext;
-  azguard: AzguardWalletActions;
+  connectWith: (connectorId: WalletConnectorId) => Promise<WalletConnector>;
 }
 
 export const UniversalWalletContext = createContext<
@@ -75,6 +53,11 @@ export const UniversalWalletProvider: React.FC<
   const embedded = useEmbeddedWalletInternal();
   const azguard = useAzguardWalletInternal();
   const azguardRegistrationRef = useRef<string | null>(null);
+  const embeddedRef = useRef(embedded);
+  const azguardRef = useRef(azguard);
+
+  embeddedRef.current = embedded;
+  azguardRef.current = azguard;
 
   const { currentConfig: config, resetToDefault } = useConfig();
 
@@ -171,6 +154,47 @@ export const UniversalWalletProvider: React.FC<
 
   const [azguardAccountWallet, setAzguardAccountWallet] =
     React.useState<AccountWithSecretKey | null>(null);
+  const azguardAccountWalletRef = useRef<AccountWithSecretKey | null>(null);
+
+  useEffect(() => {
+    azguardAccountWalletRef.current = azguardAccountWallet;
+  }, [azguardAccountWallet]);
+
+  const walletKitRef = useRef<AztecWalletKit | null>(null);
+  if (!walletKitRef.current) {
+    const resolvedNodeUrl = resolveWalletKitNode(
+      walletKitConfig.networks,
+      config.name as 'sandbox' | 'devnet' | 'testnet',
+      config.nodeUrl
+    );
+    walletKitRef.current = createAztecWalletKit({
+      aztecNode: resolvedNodeUrl,
+      connectors: walletKitConfig.connectors,
+    });
+  }
+  const walletKit = walletKitRef.current;
+
+  const embeddedConnectorInstance = walletKit.getConnector('embedded');
+  if (embeddedConnectorInstance instanceof EmbeddedConnector) {
+    embeddedConnectorInstance.setResolver(() => embeddedRef.current);
+  }
+  const azguardConnectorInstance = walletKit.getConnector('azguard');
+  if (azguardConnectorInstance instanceof AzguardConnector) {
+    azguardConnectorInstance.setResolvers({
+      getAzguard: () => azguardRef.current,
+      getAccountWallet: () => azguardAccountWalletRef.current,
+    });
+  }
+
+  const connectors = walletKit.getConnectors();
+  const activeConnector =
+    azguard.state.isConnected && azguardConnectorInstance instanceof AzguardConnector
+      ? azguardConnectorInstance
+      : connectors.find((connector) => connector.getAccount()) ?? null;
+
+  const connectWith = (connectorId: WalletConnectorId) => {
+    return walletKit.connect(connectorId);
+  };
 
   useEffect(() => {
     const updateAzguardAccount = async () => {
@@ -192,50 +216,44 @@ export const UniversalWalletProvider: React.FC<
     updateAzguardAccount();
   }, [azguard.state.isConnected, azguard.state.selectedAccount]);
 
-  const activeAccount = azguardAccountWallet ?? embedded.state.embeddedAccount;
-  const activeWalletType = azguardAccountWallet
+  const activeAccount = activeConnector?.getAccount() ?? null;
+  const hasEmbeddedAccount = embedded.state.embeddedAccount !== null;
+  const hasAzguardConnection = azguard.state.isConnected;
+  const activeWalletType = hasAzguardConnection
     ? WalletType.AZGUARD
-    : embedded.state.embeddedAccount
+    : hasEmbeddedAccount
       ? WalletType.EMBEDDED
-      : null;
+      : activeConnector?.type ?? null;
+  const isAnyWalletConnected = hasEmbeddedAccount || hasAzguardConnection;
+  const isProviderInitialized = embedded.state.isInitialized || hasAzguardConnection;
 
   const handleDisconnect = async (): Promise<void> => {
-    if (activeWalletType === WalletType.AZGUARD) {
-      await azguard.actions.disconnect();
-    } else if (activeWalletType === WalletType.EMBEDDED) {
-      embedded.actions.disconnect();
+    if (activeConnector) {
+      await activeConnector.disconnect();
+      return;
     }
+
+    if (azguard.state.isConnected) {
+      await azguard.actions.disconnect();
+    }
+
+    embedded.actions.disconnect();
   };
 
   const contextValue: UniversalWalletContextType = {
-    isConnected: activeAccount !== null,
-    isInitialized: embedded.state.isInitialized,
+    isConnected: isAnyWalletConnected,
+    isInitialized: isProviderInitialized,
     isLoading: embedded.isLoading || azguard.isLoading,
     error: embedded.error || azguard.error,
     walletType: activeWalletType,
     account: activeAccount,
+    connector: activeConnector,
+    connectors,
+    walletKit,
 
     disconnect: handleDisconnect,
     reinitialize: embedded.actions.reinitialize,
-
-    embedded: {
-      create: embedded.actions.create,
-      connectTest: embedded.actions.connectTest,
-      connectExisting: embedded.actions.connectExisting,
-      isDeploying: embedded.state.isDeploying,
-      forceShowSelector: embedded.actions.forceShowSelector,
-      pxe: embedded.services.pxe,
-      wallet: embedded.services.wallet,
-      getSponsoredFeePaymentMethod: embedded.services.getSponsoredFeePaymentMethod,
-    },
-
-    azguard: {
-      connect: azguard.actions.connect,
-      switchAccount: azguard.actions.switchAccount,
-      executeOperations: azguard.actions.executeOperations,
-      state: azguard.state,
-      client: azguard.client,
-    },
+    connectWith,
   };
 
   return (

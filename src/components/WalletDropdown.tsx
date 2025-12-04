@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useUniversalWallet } from '../hooks';
 import { EmbeddedWalletModal } from './EmbeddedWalletModal';
-import { WalletType } from '../types/aztec';
+import type { WalletConnector } from '../types/walletConnector';
+import { EmbeddedConnector } from '../connectors/EmbeddedConnector';
 
 interface WalletDropdownProps {
   onWalletConnected?: () => void;
@@ -10,28 +11,25 @@ interface WalletDropdownProps {
 export const WalletDropdown: React.FC<WalletDropdownProps> = ({ onWalletConnected }) => {
   const [isEmbeddedModalOpen, setIsEmbeddedModalOpen] = useState(false);
   
-  const { account, walletType, azguard } = useUniversalWallet();
+  const { connectors, connectWith } = useUniversalWallet();
+  const isAnyWalletConnected = connectors.some(
+    (connector) => connector.getStatus().isConnected
+  );
 
-  // Determine current wallet status
-  const isEmbeddedConnected = !!account && walletType === WalletType.EMBEDDED;
-  const isAzguardConnected = azguard.state.isConnected;
-  const isAnyWalletConnected = isEmbeddedConnected || isAzguardConnected;
-
-  const handleWalletTypeChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newWalletType = event.target.value as WalletType;
-
-    if (newWalletType === WalletType.EMBEDDED) {
+  const handleConnectorClick = async (connector: WalletConnector) => {
+    if (connector instanceof EmbeddedConnector) {
       setIsEmbeddedModalOpen(true);
-    } else if (newWalletType === WalletType.AZGUARD) {
-      try {
-        await azguard.connect();
-        onWalletConnected?.();
-      } catch (error) {
-        console.error('Failed to connect Azguard wallet:', error);
-      }
+      return;
+    }
+
+    try {
+      await connectWith(connector.id);
+      onWalletConnected?.();
+    } catch (error) {
+      console.error(`Failed to connect ${connector.label} wallet:`, error);
     }
   };
-
+  
   const handleEmbeddedModalClose = () => {
     setIsEmbeddedModalOpen(false);
   };
@@ -41,34 +39,26 @@ export const WalletDropdown: React.FC<WalletDropdownProps> = ({ onWalletConnecte
     onWalletConnected?.();
   };
 
-  const getDisplayData = () => {
-    if (isEmbeddedConnected) return { value: WalletType.EMBEDDED, text: 'Embedded' };
-    if (isAzguardConnected) return { value: WalletType.AZGUARD, text: 'Azguard' };
-    return { value: 'wallet', text: 'Wallet' };
-  };
-
   if (isAnyWalletConnected) {
     return null;
   }
-
-  const displayData = getDisplayData();
 
   return (
     <>
       <div className="wallet-dropdown">
         <div className="wallet-select-wrapper">
-          <select
-            name="wallet-selector"
-            value={displayData.value}
-            onChange={handleWalletTypeChange}
-            className="wallet-select"
-            title="Select wallet type"
-          >
-            <option value="wallet" disabled>Wallet</option>
-            <option value={WalletType.EMBEDDED}>Embedded</option>
-            <option value={WalletType.AZGUARD}>Azguard</option>
-          </select>
-          <span className="wallet-select-arrow">▼</span>
+          <div className="wallet-options">
+            {connectors.map((connector) => (
+              <button
+                key={connector.id}
+                type="button"
+                className="wallet-option-button"
+                onClick={() => handleConnectorClick(connector)}
+              >
+                {connector.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

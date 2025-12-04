@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet, useConfig } from '../hooks';
+import { EmbeddedConnector, AzguardConnector } from '../connectors';
 
 interface EmbeddedWalletModalProps {
   isOpen: boolean;
@@ -16,13 +17,20 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   const [testAccountIndex, setTestAccountIndex] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const { 
-    embedded,
-    azguard,
+  const {
+    connectors,
     isInitialized,
     isLoading,
     error,
   } = useUniversalWallet();
+
+  const embeddedConnector = connectors.find(
+    (conn): conn is EmbeddedConnector => conn instanceof EmbeddedConnector
+  );
+  const azguardConnector = connectors.find(
+    (conn): conn is AzguardConnector => conn instanceof AzguardConnector
+  );
+  const azguardStatus = azguardConnector?.getStatus();
 
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   
@@ -31,7 +39,12 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   const isNetworkInitializing = isNetworkSelected && !isInitialized && isLoading;
   const isNetworkFailed = isNetworkSelected && error && !isInitialized;
   const isTestAccountDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting;
-  const isAzguardDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting || azguard.state.isConnected;
+  const isAzguardDisabled =
+    !isNetworkSelected ||
+    isNetworkInitializing ||
+    isNetworkFailed ||
+    isConnecting ||
+    Boolean(azguardStatus?.isConnected);
 
   // Apply modal-open class to root when modal is open
   useEffect(() => {
@@ -53,16 +66,16 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   }, [isOpen]);
 
   const handleEmbeddedWalletAction = async (action: 'create' | 'test') => {
-    if (isConnecting) return;
+    if (isConnecting || !embeddedConnector) return;
     
     setIsConnecting(true);
     try {
       switch (action) {
         case 'create':
-          await embedded.create();
+          await embeddedConnector.createAccount();
           break;
         case 'test':
-          await embedded.connectTest(testAccountIndex - 1);
+          await embeddedConnector.connectTestAccount(testAccountIndex - 1);
           break;
       }
       onWalletConnected?.();
@@ -75,10 +88,10 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   };
 
   const handleAzguardConnect = async () => {
-    if (isConnecting || azguard.state.isConnecting) return;
+    if (isConnecting || azguardStatus?.isConnecting || !azguardConnector) return;
     
     try {
-      await azguard.connect();
+      await azguardConnector.connect();
       onWalletConnected?.();
       onClose(); // Close modal after successful connection
     } catch (err) {
@@ -87,11 +100,11 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   };
 
   const handleDevnetAccountConnect = async () => {
-    if (isConnecting || !embedded.connectExisting) return;
+    if (isConnecting || !embeddedConnector?.connectExistingAccount) return;
     setIsConnecting(true);
 
     try {
-      const wallet = await embedded.connectExisting();
+      const wallet = await embeddedConnector.connectExistingAccount();
       if (wallet) {
         onWalletConnected?.();
         onClose();
@@ -206,8 +219,8 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
               className="modal-action-button azguard-connect"
               title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
             >
-              {azguard.state.isConnecting ? 'Connecting...' : 
-               azguard.state.isConnected ? 'Azguard Connected' : 
+              {azguardStatus?.isConnecting ? 'Connecting...' : 
+               azguardStatus?.isConnected ? 'Azguard Connected' : 
                'Connect Azguard Wallet'}
             </button>
           </div>

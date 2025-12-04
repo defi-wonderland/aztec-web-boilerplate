@@ -1,22 +1,32 @@
 import React from 'react';
 import { useUniversalWallet, useAddressUtils } from '../hooks';
+import { AzguardConnector } from '../connectors/AzguardConnector';
 
 export const AzguardConnectButton: React.FC = () => {
-  const { azguard, disconnect } = useUniversalWallet();
+  const { connectors, disconnect } = useUniversalWallet();
   const { truncateCaipAddress } = useAddressUtils();
+  const azguardConnector = connectors.find(
+    (conn): conn is AzguardConnector => conn instanceof AzguardConnector
+  );
+  const azguardStatus = azguardConnector?.getStatus();
+  const selectedAccount = azguardConnector?.getCaipAccount?.();
 
   const handleClick = async () => {
-    if (azguard.state.isConnected) {
+    if (!azguardConnector) {
+      return;
+    }
+
+    if (azguardStatus?.isConnected) {
       await disconnect();
     } else {
-      await azguard.connect();
+      await azguardConnector.connect();
     }
   };
 
   const getButtonText = () => {
-    if (azguard.state.isConnecting) return 'Connecting...';
-    if (azguard.state.isConnected && azguard.state.selectedAccount) {
-      return truncateCaipAddress(azguard.state.selectedAccount);
+    if (azguardStatus?.isConnecting) return 'Connecting...';
+    if (azguardStatus?.isConnected && selectedAccount) {
+      return truncateCaipAddress(selectedAccount);
     }
     return 'Connect Azguard';
   };
@@ -25,16 +35,16 @@ export const AzguardConnectButton: React.FC = () => {
     <div className="azguard-wallet-section">
       <button
         onClick={handleClick}
-        disabled={azguard.state.isConnecting}
-        className={`azguard-connect-button ${azguard.state.isConnecting ? 'connecting' : ''} ${azguard.state.isConnected ? 'connected' : ''} ${azguard.state.error ? 'error' : ''}`}
-        title={azguard.state.isConnected ? 'Click to disconnect' : 'Connect to Azguard Wallet'}
+        disabled={azguardStatus?.isConnecting}
+        className={`azguard-connect-button ${azguardStatus?.isConnecting ? 'connecting' : ''} ${azguardStatus?.isConnected ? 'connected' : ''} ${azguardStatus?.error ? 'error' : ''}`}
+        title={azguardStatus?.isConnected ? 'Click to disconnect' : 'Connect to Azguard Wallet'}
       >
         {getButtonText()}
       </button>
       
-      {azguard.state.error && (
+      {azguardStatus?.error && (
         <div className="azguard-error-message">
-          {azguard.state.error}
+          {azguardStatus.error}
         </div>
       )}
     </div>

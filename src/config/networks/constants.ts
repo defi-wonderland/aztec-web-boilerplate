@@ -29,7 +29,7 @@ export const AZGUARD_CHAIN_IDS = {
   sandbox: 'aztec:0' as AzguardChainId,
   testnet: 'aztec:11155111' as AzguardChainId,
   devnet: 'aztec:1674512022' as AzguardChainId,
-  default: 'aztec:1337' as AzguardChainId,
+  default: 'aztec:1674512022' as AzguardChainId,
 } as const;
 
 /**
@@ -39,6 +39,7 @@ export const SUPPORTED_AZGUARD_CHAINS: AzguardChainId[] = [
   AZGUARD_CHAIN_IDS.sandbox,
   AZGUARD_CHAIN_IDS.testnet,
   AZGUARD_CHAIN_IDS.devnet,
+  AZGUARD_CHAIN_IDS.default,
 ];
 
 /**

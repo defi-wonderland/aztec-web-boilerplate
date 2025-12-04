@@ -5,7 +5,7 @@ import { useDripper } from '../hooks/mutations/useDripper';
 import { useError } from '../providers/ErrorProvider';
 
 export const DripperCard: React.FC = () => {
-  const { account, isInitialized, embedded, azguard } = useUniversalWallet();
+  const { account, isInitialized, connectors, connector } = useUniversalWallet();
   const { addError } = useError();
   const { currentConfig } = useConfig();
   
@@ -53,7 +53,7 @@ export const DripperCard: React.FC = () => {
   });
 
   const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
-  const isDeploying = embedded.isDeploying;
+  const isBusy = connector?.getStatus().isBusy ?? false;
 
   const handleDrip = () => {
     if (!amount || !isReady) return;
@@ -72,7 +72,8 @@ export const DripperCard: React.FC = () => {
   };
 
   // Show dripper form when either wallet is connected and app is initialized
-  const isAnyWalletConnected = Boolean(account) || azguard.state.isConnected;
+  const isAnyWalletConnected =
+    Boolean(account) || connectors.some((conn) => conn.getStatus().isConnected);
   const showDripForm = isAnyWalletConnected && isInitialized;
 
   if (!showDripForm) {
@@ -181,15 +182,15 @@ export const DripperCard: React.FC = () => {
             <button
               type="button"
               onClick={handleDrip}
-              disabled={!amount || isProcessing || isDeploying || !isReady}
+              disabled={!amount || isProcessing || isBusy || !isReady}
               className="btn btn-primary"
               aria-label={`Drip tokens to ${dripType} balance`}
             >
               <span className="btn-icon">
                 {dripType === 'private' ? '🛡️' : '🌐'}
               </span>
-              {isDeploying
-                ? 'Deploying Account...'
+              {isBusy
+                ? 'Wallet Busy...'
                 : isProcessing
                   ? 'Processing...'
                   : `Drip to ${dripType}`}
