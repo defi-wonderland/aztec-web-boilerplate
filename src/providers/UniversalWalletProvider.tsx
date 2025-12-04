@@ -22,6 +22,7 @@ import type { AzguardWalletState } from '../types/azguard';
 import { WalletType } from '../types/aztec';
 import { useEmbeddedWalletInternal, useAzguardWalletInternal } from './hooks';
 import { useConfig } from '../hooks/context/useConfig';
+import type { AzguardChainId } from '../config/networks/constants';
 import { DEFAULT_NETWORK } from '../config/networks';
 import { isValidConfig } from '../utils';
 import { buildRegisterContractOperations } from '../utils/azguard';
@@ -58,7 +59,6 @@ export interface UniversalWalletContextType {
   reinitialize: () => Promise<void>;
 
   embedded: EmbeddedWalletActions;
-
   azguard: AzguardWalletActions;
 }
 
@@ -118,7 +118,15 @@ export const UniversalWalletProvider: React.FC<
 
     const registerContractsWithAzguard = async () => {
       try {
-        const operations = await buildRegisterContractOperations(config);
+        const chainFromAccount = azguard.state.selectedAccount
+          ? (`${azguard.state.selectedAccount.split(':').slice(0, 2).join(':')}` as AzguardChainId)
+          : undefined;
+
+        const operations = await buildRegisterContractOperations(
+          config,
+          undefined,
+          chainFromAccount
+        );
         if (!isActive || operations.length === 0) {
           return;
         }
