@@ -2930,13 +2930,16 @@ select:focus {
   font-family: 'Space Grotesk', sans-serif;
 }
 
-/* Modal Azguard Connect Section */
-.azguard-connect-section {
+/* Modal Browser Wallet Connect Section */
+.browser-wallet-section {
   margin-bottom: 1.5rem;
   padding: 1rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 /* Modal Embedded Connect Section */
@@ -2948,7 +2951,7 @@ select:focus {
   border-radius: 10px;
 }
 
-.modal-action-button.azguard-connect {
+.modal-action-button.browser-wallet-connect {
   width: 100%;
   padding: 0.875rem 1.5rem;
   background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
@@ -2965,20 +2968,20 @@ select:focus {
   gap: 0.5rem;
 }
 
-.modal-action-button.azguard-connect:hover:not(:disabled) {
+.modal-action-button.browser-wallet-connect:hover:not(:disabled) {
   background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
-.modal-action-button.azguard-connect:disabled {
+.modal-action-button.browser-wallet-connect:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-.modal-action-button.azguard-connect:disabled:hover {
+.modal-action-button.browser-wallet-connect:disabled:hover {
   background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
 }
 

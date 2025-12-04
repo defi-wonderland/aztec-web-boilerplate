@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet, useConfig } from '../hooks';
-import { EmbeddedConnector, AzguardConnector } from '../connectors';
+import { EmbeddedConnector } from '../connectors';
+import type { WalletConnector } from '../types/walletConnector';
 
 interface EmbeddedWalletModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
 }) => {
   const [testAccountIndex, setTestAccountIndex] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectingId, setConnectingId] = useState<string | null>(null);
 
   const {
     connectors,
@@ -27,10 +29,11 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   const embeddedConnector = connectors.find(
     (conn): conn is EmbeddedConnector => conn instanceof EmbeddedConnector
   );
-  const azguardConnector = connectors.find(
-    (conn): conn is AzguardConnector => conn instanceof AzguardConnector
+  
+  // Browser wallets = all connectors except embedded
+  const browserWallets = connectors.filter(
+    (conn) => !(conn instanceof EmbeddedConnector)
   );
-  const azguardStatus = azguardConnector?.getStatus();
 
   const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   
@@ -39,12 +42,11 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   const isNetworkInitializing = isNetworkSelected && !isInitialized && isLoading;
   const isNetworkFailed = isNetworkSelected && error && !isInitialized;
   const isTestAccountDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting;
-  const isAzguardDisabled =
-    !isNetworkSelected ||
-    isNetworkInitializing ||
-    isNetworkFailed ||
-    isConnecting ||
-    Boolean(azguardStatus?.isConnected);
+  
+  const isBrowserWalletDisabled = (connector: WalletConnector) => {
+    const status = connector.getStatus();
+    return !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting || status.isConnected;
+  };
 
   // Apply modal-open class to root when modal is open
   useEffect(() => {
@@ -87,15 +89,19 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     }
   };
 
-  const handleAzguardConnect = async () => {
-    if (isConnecting || azguardStatus?.isConnecting || !azguardConnector) return;
+  const handleBrowserWalletConnect = async (connector: WalletConnector) => {
+    const status = connector.getStatus();
+    if (isConnecting || status.isConnecting) return;
     
+    setConnectingId(connector.id);
     try {
-      await azguardConnector.connect();
+      await connector.connect();
       onWalletConnected?.();
-      onClose(); // Close modal after successful connection
+      onClose();
     } catch (err) {
-      console.error('Failed to connect Azguard wallet:', err);
+      console.error(`Failed to connect ${connector.label}:`, err);
+    } finally {
+      setConnectingId(null);
     }
   };
 
@@ -210,20 +216,29 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
             )}
           </div>
           
-          <div className="azguard-connect-section">
-            <label className="wallet-section-label">Browser Wallet</label>
-            <button 
-              onClick={handleAzguardConnect}
-              type="button"
-              disabled={isAzguardDisabled}
-              className="modal-action-button azguard-connect"
-              title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
-            >
-              {azguardStatus?.isConnecting ? 'Connecting...' : 
-               azguardStatus?.isConnected ? 'Azguard Connected' : 
-               'Connect Azguard Wallet'}
-            </button>
-          </div>
+          {browserWallets.length > 0 && (
+            <div className="browser-wallet-section">
+              <label className="wallet-section-label">Browser Wallet</label>
+              {browserWallets.map((connector) => {
+                const status = connector.getStatus();
+                const isThisConnecting = connectingId === connector.id;
+                return (
+                  <button
+                    key={connector.id}
+                    onClick={() => handleBrowserWalletConnect(connector)}
+                    type="button"
+                    disabled={isBrowserWalletDisabled(connector)}
+                    className="modal-action-button browser-wallet-connect"
+                    title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
+                  >
+                    {isThisConnecting || status.isConnecting ? 'Connecting...' : 
+                     status.isConnected ? `${connector.label} Connected` : 
+                     `Connect ${connector.label}`}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           
           <div className="embedded-connect-section">
             <label className="wallet-section-label">Embedded Wallet</label>
