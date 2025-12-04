@@ -1,9 +1,11 @@
+import { Buffer } from 'buffer';
 import { Fr } from '@aztec/aztec.js/fields';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { AztecWalletService } from '../core';
 import { WalletServices } from './initialization';
 import { AppConfig } from '../../../config/networks';
 import type { MessageInfo } from '../../../providers/ErrorProvider';
+import { getConfiguredAccountCredentials } from '../../../utils/accountCredentials';
 
 type AddMessageFn = (message: Omit<MessageInfo, 'id' | 'timestamp'>) => void;
 
@@ -13,7 +15,10 @@ export const createAccount = async (
   addMessage?: AddMessageFn,
   config?: AppConfig
 ): Promise<AccountWithSecretKey> => {
-  const result = await walletServices.walletService.createEcdsaAccount();
+  const configuredCredentials = await getConfiguredAccountCredentials();
+  const result = await walletServices.walletService.createEcdsaAccount(
+    configuredCredentials ?? undefined
+  );
   
   // Clear any existing account and save the new one to storage
   // ⚠️ Keys stored in plain text - for testnet only!
@@ -87,16 +92,40 @@ export const connectExistingAccount = async (
   addMessage?: AddMessageFn,
   config?: AppConfig
 ): Promise<AccountWithSecretKey | null> => {
-  const account = walletServices.storageService.getAccount();
+  let account = walletServices.storageService.getAccount();
+  let wallet: AccountWithSecretKey | null = null;
+
+  if (!account && config?.name === 'devnet') {
+    const credentials = await getConfiguredAccountCredentials();
+    if (credentials) {
+      wallet =
+        await walletServices.walletService.createEcdsaAccountFromCredentials(
+          credentials.secretKey,
+          credentials.signingKey,
+          credentials.salt
+        );
+      account = {
+        address: wallet.getAddress().toString(),
+        secretKey: credentials.secretKey.toString(),
+        signingKey: credentials.signingKey.toString('hex'),
+        salt: credentials.salt.toString(),
+      };
+      walletServices.storageService.saveAccount(account);
+    }
+  }
+
   if (!account) {
     return null;
   }
 
-  const wallet = await walletServices.walletService.createEcdsaAccountFromCredentials(
-    Fr.fromString(account.secretKey),
-    Buffer.from(account.signingKey, 'hex'),
-    Fr.fromString(account.salt)
-  );
+  if (!wallet) {
+    wallet =
+      await walletServices.walletService.createEcdsaAccountFromCredentials(
+        Fr.fromString(account.secretKey),
+        Buffer.from(account.signingKey, 'hex'),
+        Fr.fromString(account.salt)
+      );
+  }
 
   // Deploy the existing account in the background using worker if available
   if (typeof Worker !== 'undefined' && setIsDeploying) {

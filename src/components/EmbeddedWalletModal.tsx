@@ -86,6 +86,25 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     }
   };
 
+  const handleDevnetAccountConnect = async () => {
+    if (isConnecting || !embedded.connectExisting) return;
+    setIsConnecting(true);
+
+    try {
+      const wallet = await embedded.connectExisting();
+      if (wallet) {
+        onWalletConnected?.();
+        onClose();
+      } else {
+        console.warn('No stored devnet account found to connect');
+      }
+    } catch (err) {
+      console.error('Failed to connect devnet account:', err);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const networkName = event.target.value;
     console.log('🔄 Network change requested from modal:', { 
@@ -233,6 +252,17 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
                 </button>
               )}
               
+              {currentConfig?.name === 'devnet' && (
+                <button
+                  onClick={handleDevnetAccountConnect}
+                  type="button"
+                  disabled={!isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting}
+                  className="modal-action-button primary"
+                  title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
+                >
+                  {isConnecting ? 'Connecting...' : 'Connect Devnet Account'}
+                </button>
+              )}
               <button 
                 onClick={() => handleEmbeddedWalletAction('create')}
                 type="button"

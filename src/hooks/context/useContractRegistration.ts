@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { useContractRegistryContext } from '../../providers/AztecContractProvider';
@@ -6,6 +6,7 @@ import { useUniversalWallet } from './useUniversalWallet';
 import { useConfig } from './useConfig';
 import { aztecContracts, getContractsForConfig } from '../../config/contracts';
 import { WalletType } from '../../types/aztec';
+import { queuePxeCall } from '../../utils';
 import type {
   ContractConfigMap,
   ContractNames,
@@ -99,6 +100,18 @@ export function useContractRegistration<
     return proxy as unknown as TContract;
   }, [account, currentConfig, getContractDefinition, name]);
 
+  // Track if we've already created a callable contract for current wallet
+  const hasCreatedContract = useRef(false);
+  const currentWalletRef = useRef<Wallet | null>(null);
+
+  // Reset flag when wallet changes
+  useEffect(() => {
+    if (wallet !== currentWalletRef.current) {
+      hasCreatedContract.current = false;
+      currentWalletRef.current = wallet;
+    }
+  }, [wallet]);
+
   // Subscribe to registry changes and create callable contract
   useEffect(() => {
     if (!registry || isAzguardWallet) {
@@ -110,18 +123,21 @@ export function useContractRegistration<
       setStatus(currentStatus);
 
       // If ready and we have a wallet, create the callable contract
-      if (currentStatus === 'ready' && wallet) {
+      // Skip if we've already created one for this wallet
+      if (currentStatus === 'ready' && wallet && !hasCreatedContract.current) {
         const instance = registry.getInstance(name);
         const contractClass = registry.getContractClass(name);
 
         if (instance && contractClass) {
+          hasCreatedContract.current = true;
           try {
-            const callableContract = await contractClass.at(
-              instance.address,
-              wallet
+            // Queue to serialize PXE operations across all hook instances
+            const callableContract = await queuePxeCall(() =>
+              contractClass.at(instance.address, wallet)
             );
             setContract(callableContract as TContract);
           } catch (err) {
+            hasCreatedContract.current = false;
             setError(err instanceof Error ? err : new Error(String(err)));
           }
         }

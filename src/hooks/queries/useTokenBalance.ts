@@ -2,12 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback } from 'react';
 import type { SimulateViewsOperation } from '@azguardwallet/types';
 import { useContractRegistration } from '../context/useContractRegistration';
+import { useContractRegistry } from '../context/useContractRegistry';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useConfig } from '../context/useConfig';
 import { queryKeys } from './queryKeys';
 import { aztecContracts } from '../../config/contracts';
 import { WalletType } from '../../types/aztec';
-import { isAzguardProxy } from '../../utils';
+import { isAzguardProxy, queuePxeCall } from '../../utils';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { TokenContract } from '../../artifacts/Token';
 
@@ -51,15 +52,23 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, walletType, azguard } = useUniversalWallet();
+  const { account, walletType, azguard, isLoading: isWalletLoading } = useUniversalWallet();
   const { currentConfig } = useConfig();
+  const { status: registryStatus } = useContractRegistry();
   const queryClient = useQueryClient();
 
   const isAzguardWallet = walletType === WalletType.AZGUARD;
   const tokenAddress = token?.address.toString() ?? '';
   const ownerAddress = account?.getAddress().toString() ?? '';
 
+  // Wait for both registry and wallet to be fully ready before running balance queries
+  // This prevents PXE concurrency issues when contract registration or wallet initialization is in progress
+  const isRegistryReady = registryStatus === 'ready';
+  const isWalletReady = !isWalletLoading;
+
   const isQueryEnabled = Boolean(
+    isRegistryReady &&
+    isWalletReady &&
     token &&
     isTokenReady &&
     account &&
@@ -124,13 +133,17 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
 
       const fromAddress = account!.getAddress();
       
-      const privateBalance = await (token as TokenContract).methods
-        .balance_of_private(fromAddress)
-        .simulate({ from: fromAddress });
-      
-      const publicBalance = await (token as TokenContract).methods
-        .balance_of_public(fromAddress)
-        .simulate({ from: fromAddress });
+      const privateBalance = await queuePxeCall(() =>
+        (token as TokenContract).methods
+          .balance_of_private(fromAddress)
+          .simulate({ from: fromAddress })
+      );
+
+      const publicBalance = await queuePxeCall(() =>
+        (token as TokenContract).methods
+          .balance_of_public(fromAddress)
+          .simulate({ from: fromAddress })
+      );
 
       return {
         private: privateBalance as bigint,

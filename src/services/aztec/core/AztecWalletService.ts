@@ -13,7 +13,11 @@ import { getPXEConfig } from '@aztec/pxe/config';
 import { createPXE } from '@aztec/pxe/client/lazy';
 import { getInitialTestAccountsData } from '@aztec/accounts/testing/lazy';
 import { type AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { IAztecWalletService, CreateAccountResult } from '../../../types';
+import {
+  IAztecWalletService,
+  CreateAccountResult,
+  AccountCredentials,
+} from '../../../types';
 import { MinimalWallet } from '../../../utils/MinimalWallet';
 
 //TODO: This by default should be true, but set it to false to test
@@ -124,18 +128,24 @@ export class AztecWalletService implements IAztecWalletService {
    * Keys are generated fresh for each account - caller should persist them
    * using AztecStorageService for recovery.
    */
-  async createEcdsaAccount(): Promise<CreateAccountResult> {
+  async createEcdsaAccount(
+    credentials?: AccountCredentials
+  ): Promise<CreateAccountResult> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
 
-    const saltBuffer = randomBytes(32);
-    const salt = Fr.fromBuffer(saltBuffer);
+    const salt =
+      credentials?.salt ??
+      Fr.fromBuffer(randomBytes(32));
 
-    const secretBuffer = randomBytes(32);
-    const secretKey = await poseidon2Hash([Fr.fromBuffer(secretBuffer)]);
+    const secretKey =
+      credentials?.secretKey ??
+      (await poseidon2Hash([Fr.fromBuffer(randomBytes(32))]));
 
-    const signingKey = Buffer.from(secretKey.toBuffer().subarray(0, 32));
+    const signingKey =
+      credentials?.signingKey ??
+      Buffer.from(secretKey.toBuffer().subarray(0, 32));
 
     const accountContract = new EcdsaRAccountContract(signingKey);
 

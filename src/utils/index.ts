@@ -2,6 +2,7 @@ import { AztecAddress } from "@aztec/aztec.js/addresses";
 import { Fr } from "@aztec/aztec.js/fields";
 import { PLACEHOLDER_ADDRESS } from "../config/deployments";
 export { MinimalWallet } from './MinimalWallet';
+export { queuePxeCall } from './pxeQueue';
 
 /**
  * Type guard to check if a contract is an Azguard proxy marker.

@@ -50,6 +50,12 @@ export interface CreateAccountResult {
   signingKey: Buffer; // Node.js Buffer type
 }
 
+export interface AccountCredentials {
+  secretKey: Fr;
+  signingKey: Buffer;
+  salt: Fr;
+}
+
 export interface IAztecWalletService {
   // Core initialization
   initialize(nodeUrl: string): Promise<void>;
@@ -59,7 +65,7 @@ export interface IAztecWalletService {
   
   // Account management
   connectTestAccount(index: number): Promise<AccountWithSecretKey>;
-  createEcdsaAccount(deploy: boolean): Promise<CreateAccountResult>;
+  createEcdsaAccount(credentials?: AccountCredentials): Promise<CreateAccountResult>;
   createEcdsaAccountFromCredentials(
     secretKey: Fr,
     signingKey: Buffer,
