@@ -24,6 +24,7 @@ import {
   getChainId,
   type AztecChainId,
 } from '../../config/networks/constants';
+import { buildRegisterContractOperations } from '../../utils/azguard';
 
 const DEFAULT_AZGUARD_STATE: AzguardWalletState = {
   isInstalled: false,
@@ -84,7 +85,7 @@ export interface UseAzguardWalletInternalReturn {
   state: AzguardWalletState;
   actions: AzguardWalletActions;
   client: AzguardClient | null;
-  getAccountWallet: (account: CaipAccount) => Promise<AccountWithSecretKey>;
+  accountWallet: AccountWithSecretKey | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -93,10 +94,12 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
   const [azguardState, setAzguardState] = useState<AzguardWalletState>(
     DEFAULT_AZGUARD_STATE
   );
+  const [accountWallet, setAccountWallet] = useState<AccountWithSecretKey | null>(null);
 
   const azguardServiceRef = useRef<AzguardWalletService | null>(null);
   const accountAdapterRef = useRef<AzguardAccountAdapter | null>(null);
   const isInitializedRef = useRef(false);
+  const contractRegistrationRef = useRef<string | null>(null);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { addMessage } = useError();
@@ -163,6 +166,90 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
       });
     });
   };
+
+  // Auto-register contracts when connected
+  useEffect(() => {
+    if (!azguardState.isConnected || !azguardState.selectedAccount) {
+      contractRegistrationRef.current = null;
+      return;
+    }
+
+    const registrationKey = `${currentConfig.name}:${azguardState.selectedAccount}`;
+    if (contractRegistrationRef.current === registrationKey) {
+      return;
+    }
+
+    let isActive = true;
+
+    const registerContracts = async () => {
+      try {
+        const chainFromAccount = `${azguardState.selectedAccount!.split(':').slice(0, 2).join(':')}` as AztecChainId;
+
+        const operations = await buildRegisterContractOperations(
+          currentConfig,
+          undefined,
+          chainFromAccount
+        );
+
+        if (!isActive || operations.length === 0) return;
+
+        console.log(`📝 Registering ${operations.length} contracts with Azguard...`);
+        const results = await azguardServiceRef.current?.executeOperations(operations) ?? [];
+
+        const succeeded = results.filter(r => r.status === 'ok').length;
+        const failed = results.filter(r => r.status === 'failed').length;
+
+        if (failed > 0) {
+          console.warn(`⚠️ Contract registration: ${succeeded}/${operations.length} succeeded, ${failed} failed`);
+        } else {
+          console.log(`✅ All ${succeeded} contracts registered successfully`);
+        }
+
+        if (isActive) {
+          contractRegistrationRef.current = registrationKey;
+        }
+      } catch (err) {
+        console.error('❌ Failed to register contracts:', err);
+      }
+    };
+
+    registerContracts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [azguardState.isConnected, azguardState.selectedAccount, currentConfig]);
+
+  // Auto-fetch account wallet when selected account changes
+  useEffect(() => {
+    if (!azguardState.isConnected || !azguardState.selectedAccount) {
+      setAccountWallet(null);
+      return;
+    }
+
+    let isActive = true;
+
+    const fetchAccountWallet = async () => {
+      try {
+        if (!accountAdapterRef.current) return;
+        const wallet = await accountAdapterRef.current.toAccountWallet(azguardState.selectedAccount!);
+        if (isActive) {
+          setAccountWallet(wallet);
+        }
+      } catch (err) {
+        console.error('Failed to get Azguard AccountWallet:', err);
+        if (isActive) {
+          setAccountWallet(null);
+        }
+      }
+    };
+
+    fetchAccountWallet();
+
+    return () => {
+      isActive = false;
+    };
+  }, [azguardState.isConnected, azguardState.selectedAccount]);
 
   const handleConnect = useCallback(async (): Promise<void> => {
     return executeAsync(async () => {
@@ -271,15 +358,6 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
     }
   }, []);
 
-  const getAccountWallet = useCallback(async (
-    account: CaipAccount
-  ): Promise<AccountWithSecretKey> => {
-    if (!accountAdapterRef.current) {
-      throw new Error('Account adapter not initialized');
-    }
-    return accountAdapterRef.current.toAccountWallet(account);
-  }, []);
-
   const actions = useMemo(() => ({
     connect: handleConnect,
     disconnect: handleDisconnect,
@@ -291,7 +369,7 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
     state: azguardState,
     actions,
     client: azguardServiceRef.current?.getClient() ?? null,
-    getAccountWallet,
+    accountWallet,
     isLoading,
     error,
   };

@@ -3,7 +3,7 @@
  * Used by UniversalWalletProvider - not for direct consumption
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
@@ -18,7 +18,8 @@ import {
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { useConfig } from '../../hooks/context/useConfig';
 import { useError } from '../ErrorProvider';
-import type { AppConfig } from '../../config/networks';
+import { isValidConfig } from '../../utils';
+import { DEFAULT_NETWORK } from '../../config/networks';
 
 export interface EmbeddedWalletState {
   embeddedAccount: AccountWithSecretKey | null;
@@ -48,8 +49,6 @@ export interface UseEmbeddedWalletInternalReturn {
   services: EmbeddedWalletServices;
   isLoading: boolean;
   error: string | null;
-  initialize: (config: AppConfig) => Promise<void>;
-  handleNetworkSwitch: () => void;
 }
 
 export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => {
@@ -62,10 +61,10 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
   const isInitializingRef = useRef(false);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
-  const { currentConfig: config } = useConfig();
+  const { currentConfig: config, resetToDefault } = useConfig();
   const { addMessage } = useError();
 
-  const initialize = async (appConfig: AppConfig): Promise<void> => {
+  const initialize = async (): Promise<void> => {
     if (isInitializingRef.current) {
       console.log('🔄 Embedded wallet initialization already in progress, skipping');
       return;
@@ -75,7 +74,7 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
       isInitializingRef.current = true;
 
       await executeAsync(async () => {
-        const services = await initializeWalletServices(appConfig.nodeUrl);
+        const services = await initializeWalletServices(config.nodeUrl);
         walletServicesRef.current = services;
         setIsInitialized(true);
 
@@ -88,7 +87,7 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
               services,
               setIsDeploying,
               addMessage,
-              appConfig
+              config
             );
             if (wallet) {
               setEmbeddedAccount(wallet);
@@ -119,6 +118,25 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
     setForceWalletSelector(false);
     isInitializingRef.current = false;
   };
+
+  // Auto-initialize and handle network changes
+  useEffect(() => {
+    if (!isValidConfig(config)) {
+      if (config.name !== DEFAULT_NETWORK.name) {
+        console.warn(`⚠️ Invalid config for ${config.name}, falling back to default`);
+        resetToDefault();
+      } else {
+        console.error('❌ Default network config is invalid');
+      }
+      return;
+    }
+
+    if (isInitialized) {
+      handleNetworkSwitch();
+    }
+
+    initialize();
+  }, [config]);
 
   const handleCreateAccount = async (): Promise<AccountWithSecretKey> => {
     return executeAsync(async () => {
@@ -217,8 +235,6 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
     },
     isLoading,
     error,
-    initialize,
-    handleNetworkSwitch,
   };
 };
 

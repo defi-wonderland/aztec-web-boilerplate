@@ -12,10 +12,6 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { WalletType } from '../types/aztec';
 import { useEmbeddedWalletInternal, useAzguardWalletInternal } from './hooks';
 import { useConfig } from '../hooks/context/useConfig';
-import type { AztecChainId } from '../config/networks/constants';
-import { DEFAULT_NETWORK } from '../config/networks';
-import { isValidConfig } from '../utils';
-import { buildRegisterContractOperations } from '../utils/azguard';
 import type { WalletConnector, WalletConnectorId } from '../types/walletConnector';
 import { EmbeddedConnector, AzguardConnector } from '../connectors';
 import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
@@ -51,115 +47,17 @@ interface UniversalWalletProviderProps {
 export const UniversalWalletProvider: React.FC<
   UniversalWalletProviderProps
 > = ({ children }) => {
+  // Internal wallet hooks - each connector type needs its state hook wired here
   const embedded = useEmbeddedWalletInternal();
   const azguard = useAzguardWalletInternal();
-  const azguardRegistrationRef = useRef<string | null>(null);
+
   const embeddedRef = useRef(embedded);
   const azguardRef = useRef(azguard);
 
   embeddedRef.current = embedded;
   azguardRef.current = azguard;
 
-  const { currentConfig: config, resetToDefault } = useConfig();
-
-  useEffect(() => {
-    if (!isValidConfig(config)) {
-      console.warn(
-        '⚠️ Network not ready, switching to default network:',
-        config.name
-      );
-
-      if (config.name !== DEFAULT_NETWORK.name) {
-        console.log('🔄 Switching to default network due to bad configuration');
-        resetToDefault();
-        return;
-      }
-
-      console.error('❌ Default network is not ready - this should not happen');
-      return;
-    }
-
-    if (embedded.state.isInitialized) {
-      embedded.handleNetworkSwitch();
-    }
-
-    embedded.initialize(config);
-  }, [config]);
-
-  useEffect(() => {
-    if (!azguard.state.isConnected || !azguard.state.selectedAccount) {
-      azguardRegistrationRef.current = null;
-      return;
-    }
-
-    const registrationKey = `${config.name}:${azguard.state.selectedAccount}`;
-    if (azguardRegistrationRef.current === registrationKey) {
-      return;
-    }
-
-    let isActive = true;
-
-    const registerContractsWithAzguard = async () => {
-      try {
-        const chainFromAccount = azguard.state.selectedAccount
-          ? (`${azguard.state.selectedAccount.split(':').slice(0, 2).join(':')}` as AztecChainId)
-          : undefined;
-
-        const operations = await buildRegisterContractOperations(
-          config,
-          undefined,
-          chainFromAccount
-        );
-        if (!isActive || operations.length === 0) {
-          return;
-        }
-        
-        console.log(`📝 Registering ${operations.length} contracts with Azguard...`);
-        const results = await azguard.actions.executeOperations(operations);
-        
-        const succeeded = results.filter(r => r.status === 'ok').length;
-        const failed = results.filter(r => r.status === 'failed').length;
-        
-        if (failed > 0) {
-          console.warn(`⚠️ Contract registration: ${succeeded}/${operations.length} succeeded, ${failed} failed`);
-          results.forEach((result, index) => {
-            if (result.status === 'failed') {
-              const errorMsg = 'error' in result ? result.error : 'Unknown error';
-              console.error(`  - Operation ${index} failed: ${errorMsg}`);
-            }
-          });
-        } else {
-          console.log(`✅ All ${succeeded} contracts registered with Azguard successfully`);
-        }
-        
-        if (isActive) {
-          azguardRegistrationRef.current = registrationKey;
-        }
-      } catch (err) {
-        console.error('❌ Failed to register contracts with Azguard wallet:', err);
-      }
-    };
-
-    registerContractsWithAzguard();
-
-    return () => {
-      isActive = false;
-    };
-    // Note: azguard.actions is intentionally excluded - it's stable but recreated on each render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    azguard.state.isConnected,
-    azguard.state.selectedAccount,
-    config,
-  ]);
-
-  const [azguardAccountWallet, setAzguardAccountWallet] =
-    React.useState<AccountWithSecretKey | null>(null);
-  const azguardAccountWalletRef = useRef<AccountWithSecretKey | null>(null);
-
-  useEffect(() => {
-    azguardAccountWalletRef.current = azguardAccountWallet;
-  }, [azguardAccountWallet]);
+  const { currentConfig: config } = useConfig();
 
   const walletKitRef = useRef<AztecWalletKit | null>(null);
   if (!walletKitRef.current) {
@@ -183,7 +81,7 @@ export const UniversalWalletProvider: React.FC<
   if (azguardConnectorInstance instanceof AzguardConnector) {
     azguardConnectorInstance.setResolvers({
       getAzguard: () => azguardRef.current,
-      getAccountWallet: () => azguardAccountWalletRef.current,
+      getAccountWallet: () => azguardRef.current.accountWallet,
     });
   }
 
@@ -196,26 +94,6 @@ export const UniversalWalletProvider: React.FC<
   const connectWith = (connectorId: WalletConnectorId) => {
     return walletKit.connect(connectorId);
   };
-
-  useEffect(() => {
-    const updateAzguardAccount = async () => {
-      if (azguard.state.isConnected && azguard.state.selectedAccount) {
-        try {
-          const wallet = await azguard.getAccountWallet(
-            azguard.state.selectedAccount
-          );
-          setAzguardAccountWallet(wallet);
-        } catch (err) {
-          console.error('Failed to get Azguard AccountWallet:', err);
-          setAzguardAccountWallet(null);
-        }
-      } else {
-        setAzguardAccountWallet(null);
-      }
-    };
-
-    updateAzguardAccount();
-  }, [azguard.state.isConnected, azguard.state.selectedAccount]);
 
   const activeAccount = activeConnector?.getAccount() ?? null;
   const hasEmbeddedAccount = embedded.state.embeddedAccount !== null;
