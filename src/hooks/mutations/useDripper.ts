@@ -175,9 +175,9 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     onSuccess: (_data, variables) => {
       if (isAzguardWallet) {
         updateCachedBalance('private', variables?.amount ?? 0n);
-      } else {
-        invalidateBalances();
       }
+      
+      invalidateBalances();
       options.onDripToPrivateSuccess?.();
     },
     onError: (error: Error) => {
@@ -247,9 +247,9 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     onSuccess: (_data, variables) => {
       if (isAzguardWallet) {
         updateCachedBalance('public', variables?.amount ?? 0n);
-      } else {
-        invalidateBalances();
       }
+
+      invalidateBalances();
       options.onDripToPublicSuccess?.();
     },
     onError: (error: Error) => {

@@ -59,9 +59,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
   const tokenAddress = token?.address.toString() ?? '';
   const ownerAddress = account?.getAddress().toString() ?? '';
 
-  // Wait for both registry and wallet to be fully ready before running balance queries
-  // This prevents PXE concurrency issues when contract registration or wallet initialization is in progress
-  const isRegistryReady = registryStatus === 'ready';
+  const isRegistryReady = isAzguardWallet || registryStatus === 'ready';
   const isWalletReady = !isWalletLoading;
 
   const isQueryEnabled = Boolean(
@@ -197,10 +195,6 @@ export const useTokenWithAddress = () => {
 
   const tokenAddress = token?.address.toString() ?? '';
 
-  /**
-   * Invalidate all token balance queries.
-   * Useful when network changes or when balances need to be refreshed globally.
-   */
   const invalidateAllBalances = useCallback(async () => {
     await queryClient.invalidateQueries({
       queryKey: queryKeys.token.balances(),

@@ -2,15 +2,14 @@
   "network": "sandbox",
   "nodeUrl": "http://localhost:8080",
   "dripperContract": {
-    "address": "0x2cf702d1b00cb4956a4beed893bbca7c5a86140641d211921b2932d640c60e13",
-    "salt": "0x15f2021b961048164fd2782aee15724a285bb3bcbbcf84e5a5d3f037508ff7dc"
+    "address": "0x18d1b3d54691d77a1f5cbaa75da3bb39e3b0a5b911d5407920d73c8b2ff3fc8b",
+    "salt": "0x0324d7e92f0784c1fd03fd55905543cb77acdf5c6ec15941cd32730e59fa9dfe"
   },
   "tokenContract": {
-    "address": "0x1df84bd7412a842f211dac0385696337cbb5f5de020891303edbf7f0372fcd83",
-    "salt": "0x22b2b69723cb29d0273042aebeeb1bef04ffb5a1c8b2aab4c079edea1e7d0e11"
+    "address": "0x0408e9da3c0b15b792e7d4cf16c7b820207653634dca5f4f60d8ada5cfbf817c",
+    "salt": "0x12d3c86e9237b7930e7b6c6666117dc2f5991bd1076bb43df7050ec66ef59e85"
   },
-  "deployer": "0x2cbc9ecdec9a6a989e4619ab56736aa158bf1fb866cd81fc0523424353ffaf07",
+  "deployer": "0x0c1f3c425f0806716b3e6d26ba5adb7882bc282b5be5c7b97d1468aec8252647",
   "proverEnabled": false,
-  "deployedAt": "2025-12-04T14:00:57.245Z"
+  "deployedAt": "2025-12-05T06:31:47.316Z"
 }
-
