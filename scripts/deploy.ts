@@ -109,6 +109,18 @@ const getSponsoredFeePaymentMethod = async () => {
   return new SponsoredFeePaymentMethod(sponsoredPFCContract.address);
 };
 
+// These credentials could also be randomly generated, but we use a fixed one for testing purposes
+async function getDefaultCredentials() {
+  const holaSecretKey = await poseidon2Hash([
+    Fr.fromBufferReduce(Buffer.from('hola'.padEnd(32, '#'), 'utf8')),
+  ]);
+  return {
+    salt: new Fr(1337n),
+    secretKey: holaSecretKey,
+    signingKey: Buffer.alloc(32, holaSecretKey.toBuffer()),
+  };
+}
+
 async function generateCredentials() {
   if (process.env.VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE) {
     // If we have a secret phrase, we use it to generate the credentials
@@ -130,12 +142,9 @@ async function generateCredentials() {
       signingKey: Buffer.from(process.env.VITE_EMBEDDED_ACCOUNT_SIGNING_KEY!, 'hex'),
     };
   } else {
-    // Otherwise, we generate random credentials
-    return {
-      salt: Fr.random(),
-      secretKey: Fr.random(),
-      signingKey: Buffer.alloc(32, Fr.random().toBuffer()),
-    };
+    console.log('Generating default credentials...');
+    // Otherwise, we generate default credentials
+    return getDefaultCredentials();
   }
 }
 
@@ -212,14 +221,9 @@ async function deployDripperContract(
     'constructor'
   );
 
-  const salt = process.env.VITE_COMMON_SALT
-    ? Fr.fromString(process.env.VITE_COMMON_SALT)
-    : Fr.random();
-
   const receipt = await deployMethod
     .send({
       ...options,
-      contractAddressSalt: salt,
       fee: {
         paymentMethod: await getSponsoredFeePaymentMethod(),
       },
@@ -244,7 +248,7 @@ async function deployDripperContract(
   return {
     instance: instance,
     address: instance.address.toString(),
-    salt: salt.toString(),
+    salt: instance.salt.toString(),
   };
 }
 
@@ -255,10 +259,6 @@ async function deployTokenContract(
   dripperAddress: AztecAddress
 ) {
   console.log('📦 Deploying Token contract...');
-
-  const salt = process.env.VITE_COMMON_SALT
-    ? Fr.fromString(process.env.VITE_COMMON_SALT)
-    : Fr.random();
 
   // Use Wonderland token constructor_with_minter
   // Signature: constructor_with_minter(name, symbol, decimals, minter, upgrade_authority)
@@ -280,7 +280,6 @@ async function deployTokenContract(
   const receipt = await deployMethod
     .send({
       ...options,
-      contractAddressSalt: salt,
       fee: {
         paymentMethod: await getSponsoredFeePaymentMethod(),
       },
@@ -305,7 +304,7 @@ async function deployTokenContract(
   return {
     instance: instance,
     address: instance.address.toString(),
-    salt: salt.toString(),
+    salt: instance.salt.toString(),
   };
 }
 
@@ -351,21 +350,12 @@ async function writeDeploymentConfig(
 
   fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2) + '\n');
 
-  console.log(`
-╔════════════════════════════════════════════════════════════════╗
-║                    DEPLOYMENT SUCCESSFUL                       ║
-╠════════════════════════════════════════════════════════════════╣
-║  Network:  ${network.padEnd(49)}║
-║  Config:   src/config/deployments/${network}.json${' '.repeat(28 - network.length)}║
-╠════════════════════════════════════════════════════════════════╣
-║  Dripper:  ${deploymentInfo.dripperContract.address.slice(0, 20)}...  ║
-║  Token:    ${deploymentInfo.tokenContract.address.slice(0, 20)}...  ║
-║  Deployer: ${deploymentInfo.deployer.slice(0, 20)}...  ║
-╠════════════════════════════════════════════════════════════════╣
-║  TIP: You can commit this config file to version control       ║
-║       to share deployment addresses with your team.            ║
-╚════════════════════════════════════════════════════════════════╝
-`);
+  console.log('\nDeployment successful');
+  console.log(`- Network:  ${network}`);
+  console.log(`- Config:   src/config/deployments/${network}.json`);
+  console.log(`- Dripper:  ${deploymentInfo.dripperContract.address}`);
+  console.log(`- Token:    ${deploymentInfo.tokenContract.address}`);
+  console.log(`- Deployer: ${deploymentInfo.deployer}\n`);
 }
 
 async function createAccountAndDeployContract() {
@@ -389,6 +379,9 @@ async function createAccountAndDeployContract() {
 
   const deployOptions: DeployOptions = {
     from: account.getAddress(),
+    // Make this the default salt for deployments
+    contractAddressSalt: new Fr(1337n),
+    // contractAddressSalt: Fr.fromString(process.env.VITE_COMMON_SALT || '1337'),
   };
 
   // Deploy the Dripper contract first
