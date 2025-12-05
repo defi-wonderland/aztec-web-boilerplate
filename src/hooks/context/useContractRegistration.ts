@@ -4,7 +4,6 @@ import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { useContractRegistryContext } from '../../providers/AztecContractProvider';
 import { useUniversalWallet } from './useUniversalWallet';
-import { useConfig } from './useConfig';
 import { aztecContracts, getContractsForConfig } from '../../config/contracts';
 import { WalletType } from '../../types/aztec';
 import { queuePxeCall } from '../../utils';
@@ -56,9 +55,8 @@ export function useContractRegistration<
   TContract = unknown
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
-  const { connector, walletType, account } = useUniversalWallet();
+  const { connector, walletType, account, currentConfig } = useUniversalWallet();
   const wallet = connector?.getWallet?.() ?? null;
-  const { currentConfig } = useConfig();
 
   const isAzguardWallet = walletType === WalletType.AZGUARD;
 

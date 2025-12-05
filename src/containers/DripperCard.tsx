@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { useUniversalWallet, useConfig } from '../hooks';
+import { useUniversalWallet } from '../hooks';
 import { useContractRegistration } from '../hooks/context/useContractRegistration';
 import { useDripper } from '../hooks/mutations/useDripper';
 import { useError } from '../providers/ErrorProvider';
 
 export const DripperCard: React.FC = () => {
-  const { account, isInitialized, connectors, connector } = useUniversalWallet();
+  const { account, isInitialized, connectors, connector, currentConfig } = useUniversalWallet();
   const { addError } = useError();
-  const { currentConfig } = useConfig();
   
   // Get token contract status
   const { status: tokenStatus } = useContractRegistration('token');

@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useUniversalWallet } from '../context/useUniversalWallet';
-import { useConfig } from '../context/useConfig';
 import { queryKeys } from '../queries/queryKeys';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { DripperContract } from '../../artifacts/Dripper';
@@ -53,8 +52,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, walletType, connector } = useUniversalWallet();
-  const { currentConfig } = useConfig();
+  const { account, walletType, connector, currentConfig } = useUniversalWallet();
   const queryClient = useQueryClient();
   const getBalanceQueryKey = () => {
     if (!token || !account) {

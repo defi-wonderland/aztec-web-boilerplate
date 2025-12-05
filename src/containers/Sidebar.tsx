@@ -1,12 +1,11 @@
 import React from 'react';
 import { useTokenBalance } from '../hooks/queries/useTokenBalance';
-import { useConfig, useUniversalWallet } from '../hooks';
+import { useUniversalWallet } from '../hooks';
 import { AddressDisplay } from '../components/AddressDisplay';
 
 export const Sidebar: React.FC = () => {
   const { formattedBalances, isLoading: isBalanceLoading } = useTokenBalance();
-  const { currentConfig } = useConfig();
-  const { account } = useUniversalWallet();
+  const { currentConfig, account } = useUniversalWallet();
 
   const accountAddress = account?.getAddress().toString() ?? null;
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;

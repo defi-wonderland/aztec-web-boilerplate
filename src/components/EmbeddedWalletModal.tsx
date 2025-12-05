@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useUniversalWallet, useConfig } from '../hooks';
+import { useUniversalWallet } from '../hooks';
 import { EmbeddedConnector } from '../connectors';
 import type { WalletConnector } from '../types/walletConnector';
 
@@ -24,6 +24,9 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     isInitialized,
     isLoading,
     error,
+    currentConfig,
+    switchToNetwork,
+    getNetworkOptions,
   } = useUniversalWallet();
 
   const embeddedConnector = connectors.find(
@@ -34,8 +37,6 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   const browserWallets = connectors.filter(
     (conn) => !(conn instanceof EmbeddedConnector)
   );
-
-  const { currentConfig, switchToNetwork, getNetworkOptions } = useConfig();
   
   // Disable functionality when no network is selected, network is initializing, or failed
   const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';

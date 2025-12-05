@@ -16,16 +16,14 @@ import {
   connectExistingAccount,
 } from '../../services/aztec/wallet';
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';
-import { useConfig } from '../../hooks/context/useConfig';
 import { useError } from '../ErrorProvider';
 import { isValidConfig } from '../../utils';
-import { DEFAULT_NETWORK } from '../../config/networks';
+import type { NetworkConfig } from '../../config/networks';
 
 export interface EmbeddedWalletState {
   embeddedAccount: AccountWithSecretKey | null;
   isDeploying: boolean;
   isInitialized: boolean;
-  forceWalletSelector: boolean;
 }
 
 export interface EmbeddedWalletActions {
@@ -33,7 +31,6 @@ export interface EmbeddedWalletActions {
   connectTest: (index: number) => Promise<AccountWithSecretKey>;
   connectExisting: () => Promise<AccountWithSecretKey | null>;
   disconnect: () => void;
-  forceShowSelector: () => void;
   reinitialize: () => Promise<void>;
 }
 
@@ -51,18 +48,33 @@ export interface UseEmbeddedWalletInternalReturn {
   error: string | null;
 }
 
-export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => {
+interface UseEmbeddedWalletInternalOptions {
+  config: NetworkConfig;
+  resetToDefault: () => void;
+}
+
+export const useEmbeddedWalletInternal = (
+  options: UseEmbeddedWalletInternalOptions
+): UseEmbeddedWalletInternalReturn => {
+  const { config, resetToDefault } = options;
+  
   const [embeddedAccount, setEmbeddedAccount] = useState<AccountWithSecretKey | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [forceWalletSelector, setForceWalletSelector] = useState(false);
 
   const walletServicesRef = useRef<WalletServices | null>(null);
   const isInitializingRef = useRef(false);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
-  const { currentConfig: config, resetToDefault } = useConfig();
   const { addMessage } = useError();
+
+  // Helper to ensure services are initialized
+  const getServices = (): WalletServices => {
+    if (!walletServicesRef.current) {
+      throw new Error('Wallet services not initialized');
+    }
+    return walletServicesRef.current;
+  };
 
   const initialize = async (): Promise<void> => {
     if (isInitializingRef.current) {
@@ -112,44 +124,27 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
     }
   };
 
-  const handleNetworkSwitch = () => {
-    setEmbeddedAccount(null);
-    setIsInitialized(false);
-    setForceWalletSelector(false);
-    isInitializingRef.current = false;
-  };
-
   // Auto-initialize and handle network changes
   useEffect(() => {
     if (!isValidConfig(config)) {
-      if (config.name !== DEFAULT_NETWORK.name) {
-        console.warn(`⚠️ Invalid config for ${config.name}, falling back to default`);
-        resetToDefault();
-      } else {
-        console.error('❌ Default network config is invalid');
-      }
+      console.warn(`⚠️ Invalid config for ${config.name}, falling back to default`);
+      resetToDefault();
       return;
     }
 
+    // Reset state on network switch
     if (isInitialized) {
-      handleNetworkSwitch();
+      setEmbeddedAccount(null);
+      setIsInitialized(false);
+      isInitializingRef.current = false;
     }
 
     initialize();
-  }, [config]);
+  }, [config, resetToDefault]);
 
   const handleCreateAccount = async (): Promise<AccountWithSecretKey> => {
     return executeAsync(async () => {
-      if (!walletServicesRef.current) {
-        throw new Error('Wallet services not initialized');
-      }
-
-      const wallet = await createAccount(
-        walletServicesRef.current,
-        setIsDeploying,
-        addMessage,
-        config
-      );
+      const wallet = await createAccount(getServices(), setIsDeploying, addMessage, config);
       setEmbeddedAccount(wallet);
       return wallet;
     }, 'create account');
@@ -157,14 +152,7 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
 
   const handleConnectTestAccount = async (index: number): Promise<AccountWithSecretKey> => {
     return executeAsync(async () => {
-      if (!walletServicesRef.current) {
-        throw new Error('Wallet services not initialized');
-      }
-
-      const wallet = await connectTestAccount(
-        walletServicesRef.current.walletService,
-        index
-      );
+      const wallet = await connectTestAccount(getServices().walletService, index);
       setEmbeddedAccount(wallet);
       return wallet;
     }, 'connect test account');
@@ -172,19 +160,8 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
 
   const handleConnectExistingAccount = async (): Promise<AccountWithSecretKey | null> => {
     return executeAsync(async () => {
-      if (!walletServicesRef.current) {
-        throw new Error('Wallet services not initialized');
-      }
-
-      const wallet = await connectExistingAccount(
-        walletServicesRef.current,
-        setIsDeploying,
-        addMessage,
-        config
-      );
-      if (wallet) {
-        setEmbeddedAccount(wallet);
-      }
+      const wallet = await connectExistingAccount(getServices(), setIsDeploying, addMessage, config);
+      if (wallet) setEmbeddedAccount(wallet);
       return wallet;
     }, 'connect existing account');
   };
@@ -203,35 +180,23 @@ export const useEmbeddedWalletInternal = (): UseEmbeddedWalletInternalReturn => 
     }, 'reinitialize wallet');
   };
 
-  const getSponsoredFeePaymentMethod = async (): Promise<SponsoredFeePaymentMethod> => {
-    if (!walletServicesRef.current) {
-      throw new Error('Wallet services not initialized');
-    }
-    return walletServicesRef.current.walletService.getSponsoredFeePaymentMethod();
-  };
-
-  const wallet = walletServicesRef.current?.walletService.getWallet() ?? null;
-  const pxe = walletServicesRef.current?.walletService.getPXE() ?? null;
-
   return {
     state: {
       embeddedAccount,
       isDeploying,
-      isInitialized: isInitialized || forceWalletSelector,
-      forceWalletSelector,
+      isInitialized,
     },
     actions: {
       create: handleCreateAccount,
       connectTest: handleConnectTestAccount,
       connectExisting: handleConnectExistingAccount,
       disconnect: handleDisconnect,
-      forceShowSelector: () => setForceWalletSelector(true),
       reinitialize: handleReinitialize,
     },
     services: {
-      pxe,
-      wallet,
-      getSponsoredFeePaymentMethod,
+      pxe: walletServicesRef.current?.walletService.getPXE() ?? null,
+      wallet: walletServicesRef.current?.walletService.getWallet() ?? null,
+      getSponsoredFeePaymentMethod: () => getServices().walletService.getSponsoredFeePaymentMethod(),
     },
     isLoading,
     error,

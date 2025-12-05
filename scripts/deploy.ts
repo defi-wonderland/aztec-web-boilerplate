@@ -39,9 +39,9 @@ const parseArgs = (): { network: NetworkType } => {
 
   if (networkIndex !== -1 && args[networkIndex + 1]) {
     const network = args[networkIndex + 1] as NetworkType;
-    if (network !== 'sandbox' && network !== 'testnet') {
+    if (network !== 'sandbox' && network !== 'devnet') {
       console.error(
-        `Invalid network: ${network}. Must be 'sandbox' or 'testnet'`
+        `Invalid network: ${network}. Must be 'sandbox' or 'devnet'`
       );
       process.exit(1);
     }
@@ -56,7 +56,7 @@ const { network: NETWORK } = parseArgs();
 // Environment variable overrides
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || NETWORK_URLS[NETWORK];
 const PROVER_ENABLED =
-  process.env.PROVER_ENABLED === 'false' ? false : NETWORK === 'testnet';
+  process.env.PROVER_ENABLED === 'false' ? false : NETWORK === 'devnet';
 
 const DEPLOY_TIMEOUT = 960;
 const PXE_STORE_DIR = path.join(import.meta.dirname, '.store');

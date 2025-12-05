@@ -4,7 +4,6 @@ import type { SimulateViewsOperation } from '@azguardwallet/types';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useContractRegistry } from '../context/useContractRegistry';
 import { useUniversalWallet } from '../context/useUniversalWallet';
-import { useConfig } from '../context/useConfig';
 import { queryKeys } from './queryKeys';
 import { aztecContracts } from '../../config/contracts';
 import { WalletType } from '../../types/aztec';
@@ -52,8 +51,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, walletType, connector, isLoading: isWalletLoading } = useUniversalWallet();
-  const { currentConfig } = useConfig();
+  const { account, walletType, connector, isLoading: isWalletLoading, currentConfig } = useUniversalWallet();
   const { status: registryStatus } = useContractRegistry();
   const queryClient = useQueryClient();
 

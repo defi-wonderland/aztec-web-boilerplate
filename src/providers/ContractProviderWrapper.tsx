@@ -1,8 +1,7 @@
 import React, { ReactNode, useMemo } from 'react';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
-import { useConfig } from '../hooks/context/useConfig';
 import { AztecContractProvider } from './AztecContractProvider';
-import { aztecContracts, CORE_CONTRACTS, getContractsForConfig } from '../config/contracts';
+import { CORE_CONTRACTS, getContractsForConfig } from '../config/contracts';
 import { WalletType } from '../types/aztec';
 
 interface ContractProviderWrapperProps {
@@ -10,8 +9,7 @@ interface ContractProviderWrapperProps {
 }
 
 export const ContractProviderWrapper: React.FC<ContractProviderWrapperProps> = ({ children }) => {
-  const { connector, isInitialized, walletType } = useUniversalWallet();
-  const { currentConfig } = useConfig();
+  const { connector, isInitialized, walletType, currentConfig } = useUniversalWallet();
   const networkContracts = useMemo(
     () => getContractsForConfig(currentConfig),
     [currentConfig]

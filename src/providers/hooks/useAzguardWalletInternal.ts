@@ -19,12 +19,12 @@ import { AzguardWalletService } from '../../services/aztec/wallet/AzguardWalletS
 import { AzguardAccountAdapter } from '../../services/aztec/wallet/AzguardAccountAdapter';
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { useError } from '../ErrorProvider';
-import { useConfig } from '../../hooks/context/useConfig';
 import {
   getChainId,
   type AztecChainId,
 } from '../../config/networks/constants';
 import { buildRegisterContractOperations } from '../../utils/azguard';
+import type { NetworkConfig } from '../../config/networks';
 
 const DEFAULT_AZGUARD_STATE: AzguardWalletState = {
   isInstalled: false,
@@ -90,7 +90,15 @@ export interface UseAzguardWalletInternalReturn {
   error: string | null;
 }
 
-export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
+interface UseAzguardWalletInternalOptions {
+  config: NetworkConfig;
+}
+
+export const useAzguardWalletInternal = (
+  options: UseAzguardWalletInternalOptions
+): UseAzguardWalletInternalReturn => {
+  const { config: currentConfig } = options;
+  
   const [azguardState, setAzguardState] = useState<AzguardWalletState>(
     DEFAULT_AZGUARD_STATE
   );
@@ -103,7 +111,6 @@ export const useAzguardWalletInternal = (): UseAzguardWalletInternalReturn => {
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { addMessage } = useError();
-  const { currentConfig } = useConfig();
 
   useEffect(() => {
     if (isInitializedRef.current) return;

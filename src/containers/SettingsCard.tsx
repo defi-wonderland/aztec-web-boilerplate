@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-import { SandboxTab, DevnetTab, CustomTab } from '../components/settings';
+import { SandboxTab, DevnetTab } from '../components/settings';
+import type { AztecNetwork } from '../config/networks/constants';
 
 export const SettingsCard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'sandbox' | 'devnet' | 'custom'>('sandbox');
-
-  const handleTabChange = (tab: 'sandbox' | 'devnet' | 'custom') => {
-    setActiveTab(tab);
-  };
+  const [activeTab, setActiveTab] = useState<AztecNetwork>('sandbox');
 
   return (
     <div className="settings-content">
@@ -23,31 +20,23 @@ export const SettingsCard: React.FC = () => {
       <div className="settings-tabs">
         <button
           className={`settings-tab ${activeTab === 'sandbox' ? 'active' : ''}`}
-          onClick={() => handleTabChange('sandbox')}
+          onClick={() => setActiveTab('sandbox')}
         >
           <span className="tab-icon">🏠</span>
           <span className="tab-label">Sandbox</span>
         </button>
         <button
           className={`settings-tab ${activeTab === 'devnet' ? 'active' : ''}`}
-          onClick={() => handleTabChange('devnet')}
+          onClick={() => setActiveTab('devnet')}
         >
           <span className="tab-icon">🌐</span>
           <span className="tab-label">Devnet</span>
-        </button>
-        <button
-          className={`settings-tab ${activeTab === 'custom' ? 'active' : ''}`}
-          onClick={() => handleTabChange('custom')}
-        >
-          <span className="tab-icon">🔧</span>
-          <span className="tab-label">Custom</span>
         </button>
       </div>
 
       <div className="settings-tab-content">
         {activeTab === 'sandbox' && <SandboxTab />}
         {activeTab === 'devnet' && <DevnetTab />}
-        {activeTab === 'custom' && <CustomTab />}
       </div>
     </div>
   );

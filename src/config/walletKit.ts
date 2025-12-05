@@ -1,11 +1,11 @@
 import { azguard, embedded } from '../connectors';
-import type { WalletKitPreset } from '../sdk/walletKitConfig';
+import type { WalletKitConfig } from '../sdk/walletKitConfig';
 import { NETWORK_URLS } from './networks';
 
 /**
  * Edit this file to add/remove connectors or update Aztec node URLs.
  */
-export const walletKitConfig: WalletKitPreset = {
+export const walletKitConfig: WalletKitConfig = {
   connectors: [embedded(), azguard()],
   networks: [
     {

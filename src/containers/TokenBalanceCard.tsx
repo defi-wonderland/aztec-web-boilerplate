@@ -1,10 +1,10 @@
 import React from 'react';
-import { useConfig } from '../hooks/context/useConfig';
+import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
 import { useContractRegistration } from '../hooks/context/useContractRegistration';
 import { useTokenBalance } from '../hooks/queries/useTokenBalance';
 
 export const TokenBalanceCard: React.FC = () => {
-  const { currentConfig } = useConfig();
+  const { currentConfig } = useUniversalWallet();
   const { status } = useContractRegistration('token');
   const { isLoading, error } = useTokenBalance();
 
