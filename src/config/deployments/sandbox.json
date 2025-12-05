@@ -2,14 +2,14 @@
   "network": "sandbox",
   "nodeUrl": "http://localhost:8080",
   "dripperContract": {
-    "address": "0x07dc4a7091e4d42850df504bad1857493d2eba44805eebc015562bfbd1b54e96",
-    "salt": "0x028fb5cc457f86aa4cdb1881d5ee1409342028afdf6192b5b6d72b72d3e07cc1"
+    "address": "0x2cfae8b665d7ca71afc04a2f8b78211c388474b7b2e43d4d010217f8b2c76160",
+    "salt": "0x0000000000000000000000000000000000000000000000000000000000000539"
   },
   "tokenContract": {
-    "address": "0x19f2e4bc13d83200e7cf672e7e2cd8d0e3ee1ab66fcb679ece31aa38a1e0c1f1",
-    "salt": "0x06d851a99f5bcaf7acb1fd3f812160bb008c5783a4d79f18ffe80647b50c0fdf"
+    "address": "0x1caf56e0a51f133d3546b2f1de889cecd1af8602cd75300d9f36730718355928",
+    "salt": "0x0000000000000000000000000000000000000000000000000000000000000539"
   },
-  "deployer": "0x003b92c3f1816e7ff62d87ec290d33280af1463b9db60ad1701cc4bdfec51804",
+  "deployer": "0x070e0dbcef7d5dfcda1d7d7b92feeb0175145bfb9583eac6f8c96aab2d4c6cbe",
   "proverEnabled": true,
-  "deployedAt": "2025-12-05T16:34:09.657Z"
+  "deployedAt": "2025-12-05T17:42:38.320Z"
 }

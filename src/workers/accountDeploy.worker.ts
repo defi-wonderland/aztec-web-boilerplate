@@ -86,22 +86,9 @@ self.addEventListener('message', async (event: MessageEvent) => {
     );
     minimalWallet.addAccount(ecdsaWallet);
 
-    // Check if account is already deployed before attempting deployment
-    console.log('🔍 Checking if account is deployed:', {
-      address: ecdsaAccount.address.toString(),
-      secretKey: secretFr.toString(),
-      salt: saltFr.toString(),
-      signingKey: signingKeyHexStr,
-    });
-    
     const metadata = await minimalWallet.getContractMetadata(
       ecdsaAccount.address
     );
-
-    console.log('📋 Contract metadata:', {
-      isContractInitialized: metadata.isContractInitialized,
-      isContractPubliclyDeployed: metadata.isContractPubliclyDeployed,
-    });
 
     if (metadata.isContractInitialized) {
       console.log('✅ Account already deployed, skipping deployment');

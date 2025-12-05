@@ -69,8 +69,6 @@ const PXE_STORE_DIR = path.join(import.meta.dirname, '.store');
 async function setupPXE() {
   console.log(`\n🔧 Setting up PXE for ${NETWORK}...`);
   console.log(`   Node URL: ${AZTEC_NODE_URL}`);
-  console.log(`   Prover value: ${process.env.VITE_PROVER_ENABLED}\n`);
-
   console.log(`   Prover: ${PROVER_ENABLED ? 'enabled' : 'disabled'}\n`);
 
   const aztecNode = createAztecNodeClient(AZTEC_NODE_URL);
@@ -214,8 +212,8 @@ async function deployDripperContract(
     'constructor'
   );
 
-  const salt = process.env.DRIPPER_SALT
-    ? Fr.fromString(process.env.DRIPPER_SALT)
+  const salt = process.env.VITE_EMBEDDED_ACCOUNT_SALT
+    ? Fr.fromString(process.env.VITE_EMBEDDED_ACCOUNT_SALT)
     : Fr.random();
 
   const receipt = await deployMethod
@@ -258,8 +256,8 @@ async function deployTokenContract(
 ) {
   console.log('📦 Deploying Token contract...');
 
-  const salt = process.env.TOKEN_SALT
-    ? Fr.fromString(process.env.TOKEN_SALT)
+  const salt = process.env.VITE_EMBEDDED_ACCOUNT_SALT
+    ? Fr.fromString(process.env.VITE_EMBEDDED_ACCOUNT_SALT)
     : Fr.random();
 
   // Use Wonderland token constructor_with_minter
