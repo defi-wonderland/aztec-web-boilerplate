@@ -1,12 +1,11 @@
 import type { ConnectorFactory } from '../connectors/registry';
-
-export type AztecNetworkId = 'sandbox' | 'devnet';
+import type { AztecNetwork } from '../config/networks/constants';
 
 export interface WalletKitNetworkPreset {
   /**
    * Concrete Aztec network identifier (sandbox/devnet).
    */
-  aztecNetwork: AztecNetworkId;
+  aztecNetwork: AztecNetwork;
   /**
    * RPC endpoint for the Aztec node backing that network.
    */
@@ -20,7 +19,7 @@ export interface WalletKitPreset {
 
 export const resolveWalletKitNode = (
   networks: WalletKitNetworkPreset[],
-  aztecNetwork: AztecNetworkId,
+  aztecNetwork: AztecNetwork,
   fallbackNode: string
 ): string => {
   return (

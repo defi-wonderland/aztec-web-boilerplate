@@ -21,6 +21,7 @@ import { EmbeddedConnector, AzguardConnector } from '../connectors';
 import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
 import { walletKitConfig } from '../config/walletKit';
 import { resolveWalletKitNode } from '../sdk/walletKitConfig';
+import type { AztecNetwork } from '../config/networks/constants';
 
 export interface UniversalWalletContextType {
   isConnected: boolean;
@@ -164,7 +165,7 @@ export const UniversalWalletProvider: React.FC<
   if (!walletKitRef.current) {
     const resolvedNodeUrl = resolveWalletKitNode(
       walletKitConfig.networks,
-      config.name as 'sandbox' | 'devnet',
+      config.name as AztecNetwork,
       config.nodeUrl
     );
     walletKitRef.current = createAztecWalletKit({

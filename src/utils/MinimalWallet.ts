@@ -53,3 +53,4 @@ export class MinimalWallet extends BaseWallet {
   }
 }
 
+
