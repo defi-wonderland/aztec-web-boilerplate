@@ -18,50 +18,47 @@ export class EmbeddedConnector implements WalletConnector {
     canSwitchAccounts: false,
   } as const;
 
-  private resolver: (() => UseEmbeddedWalletInternalReturn) | null = null;
+  private state: UseEmbeddedWalletInternalReturn | null = null;
 
-  constructor(resolver?: () => UseEmbeddedWalletInternalReturn) {
-    if (resolver) {
-      this.resolver = resolver;
-    }
+  /**
+   * Update connector with latest hook state. Called by provider each render.
+   */
+  updateState(state: UseEmbeddedWalletInternalReturn) {
+    this.state = state;
   }
 
-  setResolver(resolver: () => UseEmbeddedWalletInternalReturn) {
-    this.resolver = resolver;
-  }
-
-  private resolve(): UseEmbeddedWalletInternalReturn {
-    if (!this.resolver) {
-      throw new Error('Embedded connector has not been bound to provider state');
+  private getState(): UseEmbeddedWalletInternalReturn {
+    if (!this.state) {
+      throw new Error('Embedded connector has not been initialized');
     }
-    return this.resolver();
+    return this.state;
   }
 
   getStatus(): ConnectorStatus {
-    const embedded = this.resolve();
+    const state = this.getState();
     return {
       isInstalled: true,
-      isConnected: embedded.state.embeddedAccount !== null,
-      isConnecting: embedded.isLoading,
-      isBusy: embedded.state.isDeploying,
-      error: embedded.error,
+      isConnected: state.state.embeddedAccount !== null,
+      isConnecting: state.isLoading,
+      isBusy: state.state.isDeploying,
+      error: state.error,
     };
   }
 
   getAccount() {
-    return this.resolve().state.embeddedAccount;
+    return this.getState().state.embeddedAccount;
   }
 
   async connect(): Promise<void> {
-    const embedded = this.resolve();
-    if (embedded.state.embeddedAccount) {
+    const state = this.getState();
+    if (state.state.embeddedAccount) {
       return;
     }
-    await embedded.actions.create();
+    await state.actions.create();
   }
 
   disconnect(): Promise<void> {
-    this.resolve().actions.disconnect();
+    this.getState().actions.disconnect();
     return Promise.resolve();
   }
 
@@ -72,31 +69,31 @@ export class EmbeddedConnector implements WalletConnector {
   }
 
   getPXE() {
-    return this.resolve().services.pxe;
+    return this.getState().services.pxe;
   }
 
   getWallet() {
-    return this.resolve().services.wallet;
+    return this.getState().services.wallet;
   }
 
   getSponsoredFeePaymentMethod() {
-    return this.resolve().services.getSponsoredFeePaymentMethod();
+    return this.getState().services.getSponsoredFeePaymentMethod();
   }
 
   createAccount() {
-    return this.resolve().actions.create();
+    return this.getState().actions.create();
   }
 
   connectTestAccount(index: number) {
-    return this.resolve().actions.connectTest(index);
+    return this.getState().actions.connectTest(index);
   }
 
   connectExistingAccount() {
-    return this.resolve().actions.connectExisting();
+    return this.getState().actions.connectExisting();
   }
 
   isDeploying() {
-    return this.resolve().state.isDeploying;
+    return this.getState().state.isDeploying;
   }
 }
 

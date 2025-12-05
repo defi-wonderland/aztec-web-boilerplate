@@ -29,41 +29,20 @@ export class AzguardConnector implements WalletConnector {
     canSwitchAccounts: true,
   } as const;
 
-  private azguardResolver: (() => UseAzguardWalletInternalReturn) | null = null;
-  private accountWalletResolver: (() => AccountWithSecretKey | null) | null = null;
+  private azguardState: UseAzguardWalletInternalReturn | null = null;
 
-  constructor(
-    getAzguard?: () => UseAzguardWalletInternalReturn,
-    getAccountWallet?: () => AccountWithSecretKey | null
-  ) {
-    if (getAzguard) {
-      this.azguardResolver = getAzguard;
-    }
-    if (getAccountWallet) {
-      this.accountWalletResolver = getAccountWallet;
-    }
-  }
-
-  setResolvers(params: {
-    getAzguard: () => UseAzguardWalletInternalReturn;
-    getAccountWallet: () => AccountWithSecretKey | null;
-  }) {
-    this.azguardResolver = params.getAzguard;
-    this.accountWalletResolver = params.getAccountWallet;
+  /**
+   * Update connector with latest hook state. Called by provider each render.
+   */
+  updateState(state: UseAzguardWalletInternalReturn) {
+    this.azguardState = state;
   }
 
   private get azguard(): UseAzguardWalletInternalReturn {
-    if (!this.azguardResolver) {
-      throw new Error('Azguard connector has not been bound to provider state');
+    if (!this.azguardState) {
+      throw new Error('Azguard connector has not been initialized');
     }
-    return this.azguardResolver();
-  }
-
-  private getAccountWallet(): AccountWithSecretKey | null {
-    if (!this.accountWalletResolver) {
-      throw new Error('Azguard connector missing account wallet resolver');
-    }
-    return this.accountWalletResolver();
+    return this.azguardState;
   }
 
   getStatus(): ConnectorStatus {
@@ -77,7 +56,7 @@ export class AzguardConnector implements WalletConnector {
   }
 
   getAccount(): AccountWithSecretKey | null {
-    return this.getAccountWallet();
+    return this.azguard.accountWallet;
   }
 
   getCaipAccount() {

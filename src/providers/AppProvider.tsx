@@ -6,6 +6,7 @@ import { ErrorProvider } from './ErrorProvider';
 import { UniversalWalletProvider } from './UniversalWalletProvider';
 import { ThemeProvider } from './ThemeProvider';
 import { ContractProviderWrapper } from './ContractProviderWrapper';
+import { walletKitConfig } from '../config/walletKit';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -17,7 +18,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       <ThemeProvider>
         <ConfigProvider>
           <ErrorProvider>
-            <UniversalWalletProvider>
+            <UniversalWalletProvider config={walletKitConfig}>
               <ContractProviderWrapper>
                 {children}
               </ContractProviderWrapper>

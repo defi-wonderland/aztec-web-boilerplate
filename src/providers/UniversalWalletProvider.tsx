@@ -7,7 +7,7 @@
  * - useAzguardWalletInternal: Manages Azguard browser extension
  */
 
-import React, { createContext, useEffect, ReactNode, useRef } from 'react';
+import React, { createContext, ReactNode, useRef } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { WalletType } from '../types/aztec';
 import { useEmbeddedWalletInternal, useAzguardWalletInternal } from './hooks';
@@ -15,8 +15,7 @@ import { useConfig } from '../hooks/context/useConfig';
 import type { WalletConnector, WalletConnectorId } from '../types/walletConnector';
 import { EmbeddedConnector, AzguardConnector } from '../connectors';
 import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
-import { walletKitConfig } from '../config/walletKit';
-import { resolveWalletKitNode } from '../sdk/walletKitConfig';
+import { resolveWalletKitNode, type WalletKitPreset } from '../sdk/walletKitConfig';
 import type { AztecNetwork } from '../config/networks/constants';
 
 export interface UniversalWalletContextType {
@@ -41,30 +40,25 @@ export const UniversalWalletContext = createContext<
 >(undefined);
 
 interface UniversalWalletProviderProps {
+  config: WalletKitPreset;
   children: ReactNode;
 }
 
 export const UniversalWalletProvider: React.FC<
   UniversalWalletProviderProps
-> = ({ children }) => {
+> = ({ config: walletKitConfig, children }) => {
   // Internal wallet hooks - each connector type needs its state hook wired here
   const embedded = useEmbeddedWalletInternal();
   const azguard = useAzguardWalletInternal();
 
-  const embeddedRef = useRef(embedded);
-  const azguardRef = useRef(azguard);
-
-  embeddedRef.current = embedded;
-  azguardRef.current = azguard;
-
-  const { currentConfig: config } = useConfig();
+  const { currentConfig: networkConfig } = useConfig();
 
   const walletKitRef = useRef<AztecWalletKit | null>(null);
   if (!walletKitRef.current) {
     const resolvedNodeUrl = resolveWalletKitNode(
       walletKitConfig.networks,
-      config.name as AztecNetwork,
-      config.nodeUrl
+      networkConfig.name as AztecNetwork,
+      networkConfig.nodeUrl
     );
     walletKitRef.current = createAztecWalletKit({
       aztecNode: resolvedNodeUrl,
@@ -73,55 +67,41 @@ export const UniversalWalletProvider: React.FC<
   }
   const walletKit = walletKitRef.current;
 
-  const embeddedConnectorInstance = walletKit.getConnector('embedded');
-  if (embeddedConnectorInstance instanceof EmbeddedConnector) {
-    embeddedConnectorInstance.setResolver(() => embeddedRef.current);
-  }
-  const azguardConnectorInstance = walletKit.getConnector('azguard');
-  if (azguardConnectorInstance instanceof AzguardConnector) {
-    azguardConnectorInstance.setResolvers({
-      getAzguard: () => azguardRef.current,
-      getAccountWallet: () => azguardRef.current.accountWallet,
-    });
-  }
-
+  // Update connectors with latest hook state
   const connectors = walletKit.getConnectors();
-  const activeConnector =
-    azguard.state.isConnected && azguardConnectorInstance instanceof AzguardConnector
-      ? azguardConnectorInstance
-      : connectors.find((connector) => connector.getAccount()) ?? null;
+  for (const connector of connectors) {
+    if (connector instanceof EmbeddedConnector) {
+      connector.updateState(embedded);
+    } else if (connector instanceof AzguardConnector) {
+      connector.updateState(azguard);
+    }
+  }
 
-  const connectWith = (connectorId: WalletConnectorId) => {
+  // Find the connected connector (only one can be connected at a time)
+  const activeConnector = connectors.find((c) => c.getStatus().isConnected) ?? null;
+
+  // Derive state from active connector (single source of truth)
+  const isConnected = activeConnector !== null;
+  const activeAccount = activeConnector?.getAccount() ?? null;
+  const activeWalletType = activeConnector?.type ?? null;
+  const isInitialized = embedded.state.isInitialized || azguard.state.isConnected;
+
+  const connectWith = async (connectorId: WalletConnectorId): Promise<WalletConnector> => {
+    // Disconnect current connector first (single connection at a time)
+    if (activeConnector && activeConnector.id !== connectorId) {
+      await activeConnector.disconnect();
+    }
     return walletKit.connect(connectorId);
   };
 
-  const activeAccount = activeConnector?.getAccount() ?? null;
-  const hasEmbeddedAccount = embedded.state.embeddedAccount !== null;
-  const hasAzguardConnection = azguard.state.isConnected;
-  const activeWalletType = hasAzguardConnection
-    ? WalletType.AZGUARD
-    : hasEmbeddedAccount
-      ? WalletType.EMBEDDED
-      : activeConnector?.type ?? null;
-  const isAnyWalletConnected = hasEmbeddedAccount || hasAzguardConnection;
-  const isProviderInitialized = embedded.state.isInitialized || hasAzguardConnection;
-
   const handleDisconnect = async (): Promise<void> => {
-    if (activeConnector) {
-      await activeConnector.disconnect();
-      return;
-    }
-
-    if (azguard.state.isConnected) {
-      await azguard.actions.disconnect();
-    }
-
-    embedded.actions.disconnect();
+    if (!activeConnector) return;
+    await activeConnector.disconnect();
   };
 
   const contextValue: UniversalWalletContextType = {
-    isConnected: isAnyWalletConnected,
-    isInitialized: isProviderInitialized,
+    isConnected,
+    isInitialized,
     isLoading: embedded.isLoading || azguard.isLoading,
     error: embedded.error || azguard.error,
     walletType: activeWalletType,
@@ -129,7 +109,6 @@ export const UniversalWalletProvider: React.FC<
     connector: activeConnector,
     connectors,
     walletKit,
-
     disconnect: handleDisconnect,
     reinitialize: embedded.actions.reinitialize,
     connectWith,
