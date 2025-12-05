@@ -9,11 +9,11 @@ import {
 import { DripperContract } from '../artifacts/Dripper.js';
 import { TokenContract } from '../artifacts/Token.js';
 import { createContractConfig } from '../contract-registry';
-import type { AppConfig } from './networks';
+import type { NetworkConfig } from './networks';
 import dripperDevnetArtifactJson from '../artifacts/devnet/dripper-Dripper.json' with { type: 'json' };
 import tokenDevnetArtifactJson from '../artifacts/devnet/token_contract-Token.json' with { type: 'json' };
 
-const getDeployerAddress = (config: AppConfig): AztecAddress => {
+const getDeployerAddress = (config: NetworkConfig): AztecAddress => {
   switch (config.name) {
     case 'sandbox':
       return AztecAddress.ZERO;
@@ -28,7 +28,7 @@ const getDeployerAddress = (config: AppConfig): AztecAddress => {
   }
 };
 
-const getTokenConstructorArgs = (config: AppConfig) => {
+const getTokenConstructorArgs = (config: NetworkConfig) => {
   const minterAddress = AztecAddress.fromString(config.dripperContractAddress);
 
   switch (config.name) {
@@ -105,7 +105,7 @@ const TOKEN_DEVNET_ARTIFACT = loadContractArtifact(
  * Devnet uses pinned artifacts that match the public deployment.
  */
 export const getContractsForConfig = (
-  config: AppConfig
+  config: NetworkConfig
 ): typeof aztecContracts => {
   if (config.name !== 'devnet') {
     return aztecContracts;

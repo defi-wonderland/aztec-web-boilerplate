@@ -3,7 +3,7 @@ import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/cont
 import { Fr } from '@aztec/aztec.js/fields';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import type { AppConfig } from '../config/networks';
+import type { NetworkConfig } from '../config/networks';
 import {
   getChainId,
   type AztecChainId,
@@ -22,7 +22,7 @@ type KnownContract = ContractNames<typeof aztecContracts>;
  * Registers app-specific contracts with full instance and artifact
  */
 export const buildRegisterContractOperations = async (
-  config: AppConfig,
+  config: NetworkConfig,
   contractNames: KnownContract[] = CORE_CONTRACTS as KnownContract[],
   chainOverride?: AztecChainId
 ): Promise<RegisterContractOperation[]> => {

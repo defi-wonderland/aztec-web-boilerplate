@@ -8,7 +8,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import type { PXE } from '@aztec/pxe/server';
-import type { AppConfig } from '../config/networks';
+import type { NetworkConfig } from '../config/networks';
 import {
   ContractRegistry,
   type ContractConfigMap,
@@ -99,7 +99,7 @@ interface AztecContractProviderProps<T extends ContractConfigMap> {
   /** PXE instance for contract registration */
   pxe: PXE;
   /** App configuration for deriving addresses and deploy params */
-  config: AppConfig;
+  config: NetworkConfig;
   /**
    * List of contract names to register at initialization.
    * - undefined (default): Register all contracts at init

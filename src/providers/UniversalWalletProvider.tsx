@@ -53,7 +53,6 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
   config: walletKitConfig, 
   children 
 }) => {
-  // Internal hooks - each manages its own state
   const network = useNetworkInternal({
     networks: walletKitConfig.networks,
   });

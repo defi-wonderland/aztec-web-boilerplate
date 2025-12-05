@@ -2,7 +2,7 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { PXE } from '@aztec/pxe/server';
 import { createLogger } from '@aztec/foundation/log';
-import type { AppConfig } from '../config/networks';
+import type { NetworkConfig } from '../config/networks';
 import type {
   ContractConfigMap,
   ContractNames,
@@ -47,7 +47,7 @@ export class ContractRegistry<T extends ContractConfigMap>
   constructor(
     private readonly pxe: PXE,
     private readonly contracts: T,
-    private readonly config: AppConfig
+    private readonly config: NetworkConfig
   ) {
     logger.info('ContractRegistry initialized', {
       contracts: Object.keys(contracts),

@@ -3,7 +3,7 @@ import { Fr } from '@aztec/aztec.js/fields';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { AztecWalletService } from '../core';
 import { WalletServices } from './initialization';
-import { AppConfig } from '../../../config/networks';
+import { NetworkConfig } from '../../../config/networks';
 import type { MessageInfo } from '../../../providers/ErrorProvider';
 import { getConfiguredAccountCredentials } from '../../../utils/accountCredentials';
 
@@ -13,7 +13,7 @@ export const createAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
   addMessage?: AddMessageFn,
-  config?: AppConfig
+  config?: NetworkConfig
 ): Promise<AccountWithSecretKey> => {
   const configuredCredentials = await getConfiguredAccountCredentials();
   const result = await walletServices.walletService.createEcdsaAccount(
@@ -90,7 +90,7 @@ export const connectExistingAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
   addMessage?: AddMessageFn,
-  config?: AppConfig
+  config?: NetworkConfig
 ): Promise<AccountWithSecretKey | null> => {
   let account = walletServices.storageService.getAccount();
   let wallet: AccountWithSecretKey | null = null;

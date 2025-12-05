@@ -1,5 +1,5 @@
 import type { ContractConfigMap, ContractConfigDefinition } from './types';
-import type { AppConfig } from '../config/networks';
+import type { NetworkConfig } from '../config/networks';
 
 /**
  * Creates a type-safe contract configuration map.
@@ -40,10 +40,10 @@ import type { AppConfig } from '../config/networks';
  * @returns The same config object with proper type inference
  */
 export const createContractConfig = <
-  T extends Record<string, ContractConfigDefinition<AppConfig>>
+  T extends Record<string, ContractConfigDefinition<NetworkConfig>>
 >(
   configs: T
-): T & ContractConfigMap<AppConfig> => {
+): T & ContractConfigMap<NetworkConfig> => {
   // Validate that all configs have required properties
   for (const [name, config] of Object.entries(configs)) {
     if (!config.artifact) {
