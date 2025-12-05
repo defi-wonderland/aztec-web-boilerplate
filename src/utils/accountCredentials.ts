@@ -35,7 +35,7 @@ const createFromSecretKey = (
  * Get account credentials from environment variables.
  *
  * Required: VITE_EMBEDDED_ACCOUNT_SECRET_KEY (the Fr hex value)
- * Optional: VITE_EMBEDDED_ACCOUNT_SALT (defaults to '1337')
+ * Optional: VITE_COMMON_SALT (defaults to '1337')
  * 
  * SigningKey is automatically derived as first 32 bytes of secretKey.
  */
@@ -43,7 +43,7 @@ export const getConfiguredAccountCredentials =
   async (): Promise<AccountCredentials | null> => {
     const env = getEnv();
     const secretKey = env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY;
-    const salt = env.VITE_EMBEDDED_ACCOUNT_SALT ?? '1337';
+    const salt = env.VITE_COMMON_SALT ?? '1337';
 
     if (!secretKey) {
       return null;

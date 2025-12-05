@@ -110,24 +110,24 @@ const getSponsoredFeePaymentMethod = async () => {
 };
 
 async function generateCredentials() {
-  if (process.env.DEPLOYER_SECRET_PHRASE) {
+  if (process.env.VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE) {
     // If we have a secret phrase, we use it to generate the credentials
     const secretKey = await poseidon2Hash([
       Fr.fromBufferReduce(
-        Buffer.from(process.env.DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')
+        Buffer.from(process.env.VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE.padEnd(32, '#'), 'utf8')
       ),
     ]);
     return {
       secretKey,
-      salt: Fr.fromString(process.env.DEPLOYER_SALT || '1337'),
+      salt: Fr.fromString(process.env.VITE_COMMON_SALT || '1337'),
       signingKey: Buffer.from(secretKey.toBuffer().subarray(0, 32)),
     };
-  } else if (process.env.DEPLOYER_SECRET_KEY && process.env.DEPLOYER_SALT) {
+  } else if (process.env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY && process.env.VITE_COMMON_SALT) {
     // If we have a secret key and salt, we use them to generate the credentials
     return {
-      salt: Fr.fromString(process.env.DEPLOYER_SALT),
-      secretKey: Fr.fromString(process.env.DEPLOYER_SECRET_KEY),
-      signingKey: Buffer.from(process.env.DEPLOYER_SIGNING_KEY!, 'hex'),
+      salt: Fr.fromString(process.env.VITE_COMMON_SALT),
+      secretKey: Fr.fromString(process.env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY),
+      signingKey: Buffer.from(process.env.VITE_EMBEDDED_ACCOUNT_SIGNING_KEY!, 'hex'),
     };
   } else {
     // Otherwise, we generate random credentials
@@ -212,8 +212,8 @@ async function deployDripperContract(
     'constructor'
   );
 
-  const salt = process.env.VITE_EMBEDDED_ACCOUNT_SALT
-    ? Fr.fromString(process.env.VITE_EMBEDDED_ACCOUNT_SALT)
+  const salt = process.env.VITE_COMMON_SALT
+    ? Fr.fromString(process.env.VITE_COMMON_SALT)
     : Fr.random();
 
   const receipt = await deployMethod
@@ -256,8 +256,8 @@ async function deployTokenContract(
 ) {
   console.log('📦 Deploying Token contract...');
 
-  const salt = process.env.VITE_EMBEDDED_ACCOUNT_SALT
-    ? Fr.fromString(process.env.VITE_EMBEDDED_ACCOUNT_SALT)
+  const salt = process.env.VITE_COMMON_SALT
+    ? Fr.fromString(process.env.VITE_COMMON_SALT)
     : Fr.random();
 
   // Use Wonderland token constructor_with_minter
