@@ -20,8 +20,7 @@ import {
 } from '../../../types';
 import { MinimalWallet } from '../../../utils/MinimalWallet';
 
-//TODO: This by default should be true, but set it to false to test
-const PROVER_ENABLED = false;
+const PROVER_ENABLED = true;
 const logger = createLogger('wallet-service');
 
 /**

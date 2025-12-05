@@ -28,7 +28,10 @@ import {
 } from '../src/artifacts/Dripper';
 import { TokenContractArtifact } from '../src/artifacts/Token';
 import { MinimalWallet } from './utils/MinimalWallet';
-import { NETWORK_URLS, type NetworkType } from '../src/config/networks/constants';
+import {
+  NETWORK_URLS,
+  type NetworkType,
+} from '../src/config/networks/constants';
 
 // Parse command line arguments
 const parseArgs = (): { network: NetworkType } => {
@@ -55,16 +58,19 @@ const { network: NETWORK } = parseArgs();
 
 // Environment variable overrides
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || NETWORK_URLS[NETWORK];
+// const PROVER_ENABLED =
+//   process.env.VITE_PROVER_ENABLED === 'false' ? false : NETWORK === 'devnet';
 const PROVER_ENABLED =
-  process.env.PROVER_ENABLED === 'false' ? false : NETWORK === 'devnet';
+  process.env.VITE_PROVER_ENABLED === 'true' ? true : false;
 
 const DEPLOY_TIMEOUT = 960;
 const PXE_STORE_DIR = path.join(import.meta.dirname, '.store');
 
-
 async function setupPXE() {
   console.log(`\n🔧 Setting up PXE for ${NETWORK}...`);
   console.log(`   Node URL: ${AZTEC_NODE_URL}`);
+  console.log(`   Prover value: ${process.env.VITE_PROVER_ENABLED}\n`);
+
   console.log(`   Prover: ${PROVER_ENABLED ? 'enabled' : 'disabled'}\n`);
 
   const aztecNode = createAztecNodeClient(AZTEC_NODE_URL);
