@@ -46,10 +46,6 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const tokenAddress = aztecContracts.token.address(currentConfig);
   const isReady = !!account;
 
-  /**
-   * Refetch balance query and wait for completion.
-   * The query itself takes time while PXE syncs.
-   */
   const refetchBalance = async () => {
     if (!account || !tokenAddress) return;
     
@@ -80,7 +76,6 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error(result.error ?? 'drip_to_private failed');
       }
 
-      // Refetch balance - waits for PXE to sync
       await refetchBalance();
     },
     onSuccess: () => {
@@ -112,7 +107,6 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error(result.error ?? 'drip_to_public failed');
       }
 
-      // Refetch balance - waits for PXE to sync
       await refetchBalance();
     },
     onSuccess: () => {
