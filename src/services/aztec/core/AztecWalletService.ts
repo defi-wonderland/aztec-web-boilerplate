@@ -1,4 +1,5 @@
 import { Fr } from '@aztec/aztec.js/fields';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { createLogger } from '@aztec/aztec.js/log';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { AccountManager, type Wallet } from '@aztec/aztec.js/wallet';
@@ -11,6 +12,7 @@ import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
 import { SchnorrAccountContract } from '@aztec/accounts/schnorr/lazy';
 import { getPXEConfig } from '@aztec/pxe/config';
 import { createPXE } from '@aztec/pxe/client/lazy';
+import { createStore } from '@aztec/kv-store/indexeddb';
 import { getInitialTestAccountsData } from '@aztec/accounts/testing/lazy';
 import { type AccountWithSecretKey } from '@aztec/aztec.js/account';
 import {
@@ -22,6 +24,7 @@ import { MinimalWallet } from '../../../utils/MinimalWallet';
 
 const PROVER_ENABLED = true;
 const logger = createLogger('wallet-service');
+const pxeLogger = createLogger('pxe');
 
 /**
  * Core service for Aztec wallet operations
@@ -33,26 +36,40 @@ export class AztecWalletService implements IAztecWalletService {
 
   /**
    * Initialize PXE service and connect to Aztec node
+   * 
+   * @param nodeUrl - URL of the Aztec node
+   * @param networkName - Optional network name (sandbox, devnet, etc.) for readable store name
    */
-  async initialize(nodeUrl: string): Promise<void> {
+  async initialize(nodeUrl: string, networkName?: string): Promise<void> {
     this.aztecNode = createAztecNodeClient(nodeUrl);
 
+    // Get L1 contracts for network-specific database and config
+    const l1Contracts = await this.aztecNode.getL1ContractAddresses();
+    const rollupAddress = l1Contracts.rollupAddress;
+
+    // Use network name for readability, fallback to rollup address for uniqueness
+    const storeName = networkName 
+      ? `aztec-pxe-${networkName}` 
+      : `aztec-pxe-${rollupAddress.toString()}`;
+
+    // Create PXE store with IndexedDB for persistence across reloads
+    const pxeStore = await createStore(
+      storeName,
+      {
+        dataDirectory: 'pxe',
+        dataStoreMapSizeKb: 2e10, // 20GB max size
+      },
+      pxeLogger
+    );
+
     const config = getPXEConfig();
+    config.l1Contracts = l1Contracts;
     config.proverEnabled = PROVER_ENABLED;
 
-    // Ensure PXE data persists between sessions by using a stable IndexedDB name
-    if (!config.dataDirectory) {
-      let dataDirectorySuffix = 'default';
-      try {
-        const { hostname, port } = new URL(nodeUrl);
-        dataDirectorySuffix = `${hostname}-${port ?? 'default'}`.replace(/[^a-z0-9-]/gi, '-');
-      } catch {
-        // Fallback to default suffix when URL parsing fails
-      }
-      config.dataDirectory = `aztec-pxe-${dataDirectorySuffix}`;
-    }
-
-    this.pxe = await createPXE(this.aztecNode, config);
+    this.pxe = await createPXE(this.aztecNode, config, {
+      store: pxeStore,
+      useLogSuffix: false,
+    });
 
     this.minimalWallet = new MinimalWallet(this.pxe, this.aztecNode);
 
@@ -177,15 +194,12 @@ export class AztecWalletService implements IAztecWalletService {
   async deployEcdsaAccount(ecdsaAccount: AccountManager): Promise<void> {
     const deployMethod = await ecdsaAccount.getDeployMethod();
     const deployOpts = {
-      contractAddressSalt: Fr.fromString(ecdsaAccount.salt.toString()),
+      from: AztecAddress.ZERO,
       fee: {
         paymentMethod: await this.getSponsoredFeePaymentMethod(),
       },
-      universalDeploy: true,
-      skipClassRegistration: true,
-      skipPublicDeployment: true,
       skipClassPublication: true,
-      from: ecdsaAccount.address,
+      skipInstancePublication: true,
     };
 
     const receipt = await deployMethod.send(deployOpts).wait({ timeout: 120 });

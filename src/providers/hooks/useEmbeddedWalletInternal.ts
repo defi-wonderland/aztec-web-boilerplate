@@ -86,7 +86,7 @@ export const useEmbeddedWalletInternal = (
       isInitializingRef.current = true;
 
       await executeAsync(async () => {
-        const services = await initializeWalletServices(config.nodeUrl);
+        const services = await initializeWalletServices(config.nodeUrl, config.name);
         walletServicesRef.current = services;
         setIsInitialized(true);
 
@@ -174,7 +174,7 @@ export const useEmbeddedWalletInternal = (
 
   const handleReinitialize = async (): Promise<void> => {
     return executeAsync(async () => {
-      const services = await initializeWalletServices(config.nodeUrl);
+      const services = await initializeWalletServices(config.nodeUrl, config.name);
       walletServicesRef.current = services;
       setIsInitialized(true);
     }, 'reinitialize wallet');

@@ -6,9 +6,12 @@ import { queryKeys } from '../queries/queryKeys';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { DripperContract } from '../../artifacts/Dripper';
 import type { TokenContract } from '../../artifacts/Token';
-import { WalletType } from '../../types/aztec';
 import { aztecContracts } from '../../config/contracts';
-import { isAzguardProxy } from '../../utils';
+import { 
+  isExternalWallet, 
+  shouldUseOperationsFlow, 
+  isProxyContract 
+} from '../../utils';
 import type { TokenBalance } from '../queries/useTokenBalance';
 
 interface DripParams {
@@ -42,18 +45,19 @@ interface UseDripperOptions {
  * ```
  */
 export const useDripper = (options: UseDripperOptions = {}) => {
-  const {
-    contract: dripper,
-    isReady: isDripperReady,
-  } = useContractRegistration<ContractConfigMap, DripperContract>('dripper');
+  const { contract: dripper, isReady: isDripperReady } =
+    useContractRegistration<ContractConfigMap, DripperContract>('dripper');
 
-  const {
-    contract: token,
-    isReady: isTokenReady,
-  } = useContractRegistration<ContractConfigMap, TokenContract>('token');
+  const { contract: token, isReady: isTokenReady } = useContractRegistration<
+    ContractConfigMap,
+    TokenContract
+  >('token');
 
-  const { account, walletType, connector, currentConfig } = useUniversalWallet();
+  const { account, connector, currentConfig } = useUniversalWallet();
   const queryClient = useQueryClient();
+  
+  const isExternal = isExternalWallet(connector);
+  
   const getBalanceQueryKey = () => {
     if (!token || !account) {
       return null;
@@ -94,11 +98,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     });
   };
 
-  const isAzguardWallet = walletType === WalletType.AZGUARD;
-  const supportsOperations =
-    Boolean(connector?.capabilities.canExecuteOperations) && typeof connector?.sendTransaction === 'function';
-  const supportsSponsoredFees =
-    Boolean(connector?.capabilities.hasSponsoredFees) && typeof connector?.getSponsoredFeePaymentMethod === 'function';
+  const canUseOperationsForPrivateDrip = 
+    Boolean(connector?.capabilities.canExecuteOperations) &&
+    typeof connector?.sendTransaction === 'function' &&
+    isProxyContract(dripper) && 
+    isProxyContract(token);
 
   const isReady = isDripperReady && isTokenReady && !!account;
 
@@ -125,15 +129,20 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       if (!account) {
         throw new Error('Account not available');
       }
+      if (!connector) {
+        throw new Error('Wallet connector not available');
+      }
 
-      if (supportsOperations && isAzguardProxy(dripper) && isAzguardProxy(token)) {
+      const useOperationsFlow = false && canUseOperationsForPrivateDrip;
+      
+      if (useOperationsFlow) {
         if (!connector) {
           throw new Error('No wallet connector available');
         }
 
         const selectedAccount = connector.getCaipAccount?.();
         if (!selectedAccount) {
-          throw new Error('Azguard account not selected');
+          throw new Error('External wallet account not selected');
         }
 
         const dripperAddress = aztecContracts.dripper.address(currentConfig);
@@ -156,27 +165,27 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         return;
       }
 
-      const fromAddress = account.getAddress();
-      const sendOptions: {
-        from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: SponsoredFeePaymentMethod };
-      } = { from: fromAddress };
-
-      if (supportsSponsoredFees && connector?.getSponsoredFeePaymentMethod) {
-        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
-        sendOptions.fee = { paymentMethod };
+      // Direct contract call path - always use sponsored fees
+      if (!connector.getSponsoredFeePaymentMethod) {
+        throw new Error('Connector does not support sponsored fees');
       }
+      
+      const fromAddress = account.getAddress();
+      const paymentMethod = await connector.getSponsoredFeePaymentMethod();
 
       await (dripper as DripperContract).methods
         .drip_to_private((token as TokenContract).address, amount)
-        .send(sendOptions)
-        .wait({ timeout: 120 });
+        .send({
+          from: fromAddress,
+          fee: { paymentMethod },
+        })
+        .wait({ timeout: 900 });
     },
     onSuccess: (_data, variables) => {
-      if (isAzguardWallet) {
+      if (isExternal) {
         updateCachedBalance('private', variables?.amount ?? 0n);
       }
-      
+
       invalidateBalances();
       options.onDripToPrivateSuccess?.();
     },
@@ -197,15 +206,17 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       if (!account) {
         throw new Error('Account not available');
       }
+      if (!connector) {
+        throw new Error('Wallet connector not available');
+      }
 
-      if (supportsOperations && isAzguardProxy(dripper) && isAzguardProxy(token)) {
-        if (!connector) {
-          throw new Error('No wallet connector available');
-        }
-
+      // Use operations flow for external wallets with proxy contracts
+      const useOperationsFlow = shouldUseOperationsFlow(connector, dripper, token);
+      
+      if (useOperationsFlow) {
         const selectedAccount = connector.getCaipAccount?.();
         if (!selectedAccount) {
-          throw new Error('Azguard account not selected');
+          throw new Error('External wallet account not selected');
         }
 
         const dripperAddress = aztecContracts.dripper.address(currentConfig);
@@ -228,24 +239,24 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         return;
       }
 
-      const fromAddress = account.getAddress();
-      const sendOptions: {
-        from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: SponsoredFeePaymentMethod };
-      } = { from: fromAddress };
-
-      if (supportsSponsoredFees && connector?.getSponsoredFeePaymentMethod) {
-        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
-        sendOptions.fee = { paymentMethod };
+      // Direct contract call path - always use sponsored fees
+      if (!connector.getSponsoredFeePaymentMethod) {
+        throw new Error('Connector does not support sponsored fees');
       }
+      
+      const fromAddress = account.getAddress();
+      const paymentMethod = await connector.getSponsoredFeePaymentMethod();
 
       await (dripper as DripperContract).methods
         .drip_to_public((token as TokenContract).address, amount)
-        .send(sendOptions)
-        .wait({ timeout: 120 });
+        .send({
+          from: fromAddress,
+          fee: { paymentMethod },
+        })
+        .wait({ timeout: 900 });
     },
     onSuccess: (_data, variables) => {
-      if (isAzguardWallet) {
+      if (isExternal) {
         updateCachedBalance('public', variables?.amount ?? 0n);
       }
 
@@ -266,15 +277,17 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       if (!account) {
         throw new Error('Account not available');
       }
+      if (!connector) {
+        throw new Error('Wallet connector not available');
+      }
 
-      if (supportsOperations && isAzguardProxy(dripper)) {
-        if (!connector) {
-          throw new Error('No wallet connector available');
-        }
-
+      // Use operations flow for external wallets with proxy contracts
+      const useOperationsFlow = shouldUseOperationsFlow(connector, dripper);
+      
+      if (useOperationsFlow) {
         const selectedAccount = connector.getCaipAccount?.();
         if (!selectedAccount) {
-          throw new Error('Azguard account not selected');
+          throw new Error('External wallet account not selected');
         }
 
         const dripperAddress = aztecContracts.dripper.address(currentConfig);
@@ -296,21 +309,21 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         return;
       }
 
-      const fromAddress = account.getAddress();
-      const sendOptions: {
-        from: ReturnType<typeof account.getAddress>;
-        fee?: { paymentMethod: SponsoredFeePaymentMethod };
-      } = { from: fromAddress };
-
-      if (supportsSponsoredFees && connector?.getSponsoredFeePaymentMethod) {
-        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
-        sendOptions.fee = { paymentMethod };
+      // Direct contract call path - always use sponsored fees
+      if (!connector.getSponsoredFeePaymentMethod) {
+        throw new Error('Connector does not support sponsored fees');
       }
+      
+      const fromAddress = account.getAddress();
+      const paymentMethod = await connector.getSponsoredFeePaymentMethod();
 
       await (dripper as DripperContract).methods
         .sync_private_state()
-        .send(sendOptions)
-        .wait({ timeout: 120 });
+        .send({
+          from: fromAddress,
+          fee: { paymentMethod },
+        })
+        .wait({ timeout: 900 });
     },
     onSuccess: () => {
       options.onSyncSuccess?.();

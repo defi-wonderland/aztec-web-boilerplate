@@ -6,8 +6,7 @@ import { useContractRegistry } from '../context/useContractRegistry';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { queryKeys } from './queryKeys';
 import { aztecContracts } from '../../config/contracts';
-import { WalletType } from '../../types/aztec';
-import { isAzguardProxy, queuePxeCall } from '../../utils';
+import { isExternalWallet, isProxyContract, queuePxeCall } from '../../utils';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { TokenContract } from '../../artifacts/Token';
 
@@ -51,15 +50,17 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, walletType, connector, isLoading: isWalletLoading, currentConfig } = useUniversalWallet();
+  const { account, connector, isLoading: isWalletLoading, currentConfig } = useUniversalWallet();
   const { status: registryStatus } = useContractRegistry();
   const queryClient = useQueryClient();
 
-  const isAzguardWallet = walletType === WalletType.AZGUARD;
+  // Wallet type detection - agnostic to specific wallet implementations
+  const isExternal = isExternalWallet(connector);
   const tokenAddress = token?.address.toString() ?? '';
   const ownerAddress = account?.getAddress().toString() ?? '';
 
-  const isRegistryReady = isAzguardWallet || registryStatus === 'ready';
+  // External wallets don't need local registry to be ready
+  const isRegistryReady = isExternal || registryStatus === 'ready';
   const isWalletReady = !isWalletLoading;
 
   const isQueryEnabled = Boolean(
@@ -71,7 +72,8 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     tokenAddress &&
     ownerAddress &&
     (options.enabled ?? true) &&
-    (!isAzguardWallet || Boolean(connector?.getCaipAccount?.()))
+    // External wallets need a CAIP account selected
+    (!isExternal || Boolean(connector?.getCaipAccount?.()))
   );
 
   const query = useQuery({
@@ -81,14 +83,17 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
         throw new Error('Token contract or owner address not available');
       }
 
-      if (isAzguardWallet && isAzguardProxy(token)) {
+      // Use operations flow for external wallets with proxy contracts
+      const useOperationsFlow = isExternal && isProxyContract(token);
+      
+      if (useOperationsFlow) {
         if (!connector?.executeOperations) {
-          throw new Error('Connector does not support Azguard operations');
+          throw new Error('Connector does not support operations execution');
         }
 
         const selectedAccount = connector.getCaipAccount?.();
         if (!selectedAccount) {
-          throw new Error('Azguard account not selected');
+          throw new Error('External wallet account not selected');
         }
 
         const tokenContractAddress = aztecContracts.token.address(currentConfig);
@@ -132,6 +137,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
         };
       }
 
+      // Direct contract call path (embedded wallets)
       const fromAddress = account!.getAddress();
       
       const privateBalance = await queuePxeCall(() =>

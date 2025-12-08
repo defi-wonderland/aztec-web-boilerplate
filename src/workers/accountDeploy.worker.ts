@@ -110,13 +110,10 @@ self.addEventListener('message', async (event: MessageEvent) => {
     const receipt = await deployMethod
       .send({
         from: AztecAddress.ZERO,
-        contractAddressSalt: saltFr,
         fee: { paymentMethod },
-        skipClassRegistration: true,
         skipClassPublication: true,
-        skipPublicDeployment: true,
-        universalDeploy: true,
-      } as Parameters<typeof deployMethod.send>[0])
+        skipInstancePublication: true,
+      })
       .wait({ timeout: DEPLOY_TIMEOUT });
 
     const response: WorkerResponse = {
