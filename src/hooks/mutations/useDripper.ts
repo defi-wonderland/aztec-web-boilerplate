@@ -5,8 +5,6 @@ import { useWriteContract } from '../contracts/useWriteContract';
 import { queryKeys } from '../queries/queryKeys';
 import { DripperContract } from '../../artifacts/Dripper';
 import { aztecContracts } from '../../config/contracts';
-import { isBrowserWalletConnector } from '../../types/walletConnector';
-import type { TokenBalance } from '../queries/useTokenBalance';
 
 interface DripParams {
   amount: bigint;
@@ -23,6 +21,9 @@ interface UseDripperOptions {
  * Hook for Dripper contract operations.
  * Returns mutation objects for each operation with independent state.
  *
+ * After a successful transaction, automatically refetches the balance query
+ * to ensure PXE has synced before calling the success callback.
+ *
  * @example
  * ```typescript
  * const { dripToPrivate, dripToPublic, isReady } = useDripper();
@@ -37,44 +38,25 @@ interface UseDripperOptions {
  * ```
  */
 export const useDripper = (options: UseDripperOptions = {}) => {
-  const { account, connector, currentConfig } = useUniversalWallet();
+  const { account, currentConfig } = useUniversalWallet();
   const { writeContract } = useWriteContract();
   const queryClient = useQueryClient();
 
-  const isExternal = isBrowserWalletConnector(connector);
   const dripperAddress = aztecContracts.dripper.address(currentConfig);
   const tokenAddress = aztecContracts.token.address(currentConfig);
-  const isReady = !!account && !!connector;
+  const isReady = !!account;
 
-  const getBalanceQueryKey = () => {
-    if (!account) return null;
+  /**
+   * Refetch balance query and wait for completion.
+   * The query itself takes time while PXE syncs.
+   */
+  const refetchBalance = async () => {
+    if (!account || !tokenAddress) return;
+    
     const ownerAddress = account.getAddress().toString();
-    if (!tokenAddress || !ownerAddress) return null;
-    return queryKeys.token.balance(tokenAddress, ownerAddress);
-  };
-
-  const updateCachedBalance = (
-    balanceType: 'private' | 'public',
-    amountToAdd: bigint
-  ) => {
-    if (amountToAdd === 0n) return;
-
-    const queryKey = getBalanceQueryKey();
-    if (!queryKey) return;
-
-    queryClient.setQueryData<TokenBalance | undefined>(queryKey, (previous) => {
-      if (!previous) return previous;
-      return {
-        ...previous,
-        [balanceType]: previous[balanceType] + amountToAdd,
-      };
-    });
-  };
-
-  const invalidateBalances = () => {
-    const balanceQueryKey = getBalanceQueryKey();
-    if (!balanceQueryKey) return;
-    queryClient.invalidateQueries({ queryKey: balanceQueryKey });
+    const queryKey = queryKeys.token.balance(tokenAddress, ownerAddress);
+    
+    await queryClient.refetchQueries({ queryKey });
   };
 
   const dripToPrivate = useMutation({
@@ -97,12 +79,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       if (!result.success) {
         throw new Error(result.error ?? 'drip_to_private failed');
       }
+
+      // Refetch balance - waits for PXE to sync
+      await refetchBalance();
     },
-    onSuccess: (_data, variables) => {
-      if (isExternal) {
-        updateCachedBalance('private', variables?.amount ?? 0n);
-      }
-      invalidateBalances();
+    onSuccess: () => {
       options.onDripToPrivateSuccess?.();
     },
     onError: (error: Error) => {
@@ -130,12 +111,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       if (!result.success) {
         throw new Error(result.error ?? 'drip_to_public failed');
       }
+
+      // Refetch balance - waits for PXE to sync
+      await refetchBalance();
     },
-    onSuccess: (_data, variables) => {
-      if (isExternal) {
-        updateCachedBalance('public', variables?.amount ?? 0n);
-      }
-      invalidateBalances();
+    onSuccess: () => {
       options.onDripToPublicSuccess?.();
     },
     onError: (error: Error) => {

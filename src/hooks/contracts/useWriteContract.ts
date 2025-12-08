@@ -134,12 +134,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           }
 
           const tx = method(...(args as unknown[]));
-          const result = await (tx as { send: (opts: unknown) => { wait: (opts: unknown) => Promise<unknown> } })
+          const sentTx = (tx as { send: (opts: unknown) => { wait: (opts: unknown) => Promise<unknown> } })
             .send({
               from: account.getAddress(),
               fee: { paymentMethod },
-            })
-            .wait({ timeout });
+            });
+          
+          const result = await sentTx.wait({ timeout });
 
           return {
             success: true,
