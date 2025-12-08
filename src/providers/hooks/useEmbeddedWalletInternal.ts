@@ -80,7 +80,6 @@ export const useEmbeddedWalletInternal = (
   const initialize = async (targetConfig: NetworkConfig): Promise<void> => {
     if (isInitializingRef.current) {
       pendingConfigRef.current = targetConfig;
-      console.log('🔄 Embedded wallet initialization already in progress, queuing new config', targetConfig.name);
       return;
     }
 

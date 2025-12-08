@@ -90,8 +90,7 @@ export interface IAztecContractService {
  */
 export enum WalletType {
   EMBEDDED = 'embedded',
-  AZGUARD = 'azguard',
-  TEST = 'test'
+  BROWSER = 'browser',
 }
 
 /**

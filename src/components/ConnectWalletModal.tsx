@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet } from '../hooks';
-import { EmbeddedConnector } from '../connectors';
-import type { WalletConnector } from '../types/walletConnector';
+import { isEmbeddedConnector, isBrowserWalletConnector, type WalletConnector } from '../types/walletConnector';
 
-interface EmbeddedWalletModalProps {
+interface ConnectWalletModalProps {
   isOpen: boolean;
   onClose: () => void;
   onWalletConnected?: () => void;
 }
 
-export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({ 
+export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({ 
   isOpen, 
   onClose, 
   onWalletConnected 
@@ -29,14 +28,10 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     getNetworkOptions,
   } = useUniversalWallet();
 
-  const embeddedConnector = connectors.find(
-    (conn): conn is EmbeddedConnector => conn instanceof EmbeddedConnector
-  );
-  
-  // Browser wallets = all connectors except embedded
-  const browserWallets = connectors.filter(
-    (conn) => !(conn instanceof EmbeddedConnector)
-  );
+  const embeddedConnector = connectors.find((conn) => isEmbeddedConnector(conn));
+
+  // Browser wallets = all non-embedded connectors
+  const browserWallets = connectors.filter((conn) => isBrowserWalletConnector(conn));
   
   // Disable functionality when no network is selected, network is initializing, or failed
   const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';
@@ -69,7 +64,7 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   }, [isOpen]);
 
   const handleEmbeddedWalletAction = async (action: 'create' | 'test') => {
-    if (isConnecting || !embeddedConnector) return;
+    if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
     
     setIsConnecting(true);
     try {
@@ -82,7 +77,7 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
           break;
       }
       onWalletConnected?.();
-      onClose(); // Close modal after successful connection
+      onClose();
     } catch (err) {
       console.error(`Failed to ${action} account:`, err);
     } finally {
@@ -107,7 +102,7 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
   };
 
   const handleDevnetAccountConnect = async () => {
-    if (isConnecting || !embeddedConnector?.connectExistingAccount) return;
+    if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
     setIsConnecting(true);
 
     try {

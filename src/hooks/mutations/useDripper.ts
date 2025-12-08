@@ -7,7 +7,7 @@ import type { DripperContract } from '../../artifacts/Dripper';
 import type { TokenContract } from '../../artifacts/Token';
 import { aztecContracts } from '../../config/contracts';
 import { 
-  isExternalWallet, 
+  isBrowserWalletConnector, 
   shouldUseOperationsFlow,
 } from '../../utils';
 import type { TokenBalance } from '../queries/useTokenBalance';
@@ -54,7 +54,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const { account, connector, currentConfig } = useUniversalWallet();
   const queryClient = useQueryClient();
   
-  const isExternal = isExternalWallet(connector);
+  const isExternal = isBrowserWalletConnector(connector);
   
   const getBalanceQueryKey = () => {
     if (!token || !account) {

@@ -4,19 +4,15 @@ import type {
   ConnectorStatus,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
-  WalletConnector,
+  EmbeddedWalletConnector,
 } from '../types/walletConnector';
 
-export class EmbeddedConnector implements WalletConnector {
-  readonly id = 'embedded';
+export const EMBEDDED_CONNECTOR_ID = 'embedded' as const;
+
+export class EmbeddedConnector implements EmbeddedWalletConnector {
+  readonly id = EMBEDDED_CONNECTOR_ID;
   readonly label = 'Embedded Wallet';
   readonly type = WalletType.EMBEDDED;
-  readonly capabilities = {
-    hasPXE: true,
-    hasSponsoredFees: true,
-    canExecuteOperations: false,
-    canSwitchAccounts: false,
-  } as const;
 
   private state: UseEmbeddedWalletInternalReturn | null = null;
 

@@ -4,16 +4,9 @@ import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
 import type { AzguardClient } from '@azguardwallet/client';
 import type { CaipAccount, Operation, OperationResult } from '@azguardwallet/types';
-import type { WalletType } from './aztec';
+import { WalletType } from './aztec';
 
-export type WalletConnectorId = 'embedded' | 'azguard' | string;
-
-export interface ConnectorCapabilities {
-  hasPXE: boolean;
-  hasSponsoredFees: boolean;
-  canExecuteOperations: boolean;
-  canSwitchAccounts: boolean;
-}
+export type WalletConnectorId = string;
 
 export interface ConnectorStatus {
   isInstalled: boolean;
@@ -45,7 +38,6 @@ export interface WalletConnector {
   readonly id: WalletConnectorId;
   readonly label: string;
   readonly type: WalletType;
-  readonly capabilities: ConnectorCapabilities;
 
   getStatus(): ConnectorStatus;
   getAccount(): AccountWithSecretKey | null;
@@ -55,17 +47,35 @@ export interface WalletConnector {
   disconnect(): Promise<void>;
 
   sendTransaction(request: ConnectorTransactionRequest): Promise<ConnectorTransactionResult>;
-
-  /**
-   * Optional helpers exposed by specific connectors.
-   * Consumers should guard usage with capability checks.
-   */
-  getPXE?(): PXE | null;
-  getWallet?(): Wallet | null;
-  getSponsoredFeePaymentMethod?(): Promise<SponsoredFeePaymentMethod>;
-  executeOperations?(operations: Operation[]): Promise<OperationResult[]>;
-  switchAccount?(account: CaipAccount): Promise<void>;
-  getClient?(): AzguardClient | null;
-  getAccounts?(): CaipAccount[];
 }
+
+export interface EmbeddedWalletConnector extends WalletConnector {
+  getPXE: () => PXE | null;
+  getWallet: () => Wallet | null;
+  getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
+  createAccount: () => Promise<AccountWithSecretKey>;
+  connectTestAccount: (index: number) => Promise<AccountWithSecretKey>;
+  connectExistingAccount: () => Promise<AccountWithSecretKey | null>;
+  isDeploying: () => boolean;
+}
+
+export interface BrowserWalletConnector extends WalletConnector {
+  getCaipAccount: () => CaipAccount | null;
+  executeOperations: (operations: Operation[]) => Promise<OperationResult[]>;
+  switchAccount: (account: CaipAccount) => Promise<void>;
+  getClient: () => AzguardClient | null;
+  getAccounts: () => CaipAccount[];
+}
+
+export const isEmbeddedConnector = (
+  connector: WalletConnector | null | undefined
+): connector is EmbeddedWalletConnector => {
+  return connector?.type === WalletType.EMBEDDED;
+};
+
+export const isBrowserWalletConnector = (
+  connector: WalletConnector | null | undefined
+): connector is BrowserWalletConnector => {
+  return connector?.type === WalletType.BROWSER;
+};
 

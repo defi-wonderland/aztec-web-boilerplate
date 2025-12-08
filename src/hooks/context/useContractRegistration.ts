@@ -5,7 +5,8 @@ import type { Wallet } from '@aztec/aztec.js/wallet';
 import { useContractRegistryContext } from '../../providers/AztecContractProvider';
 import { useUniversalWallet } from './useUniversalWallet';
 import { aztecContracts, getContractsForConfig } from '../../config/contracts';
-import { isExternalWallet, queuePxeCall } from '../../utils';
+import { queuePxeCall } from '../../utils';
+import { isBrowserWalletConnector, isEmbeddedConnector } from '../../types/walletConnector';
 import type {
   ContractConfigMap,
   ContractNames,
@@ -14,7 +15,7 @@ import type {
 } from '../../contract-registry';
 
 interface ExternalWalletContractProxy {
-  readonly __azguardProxy: true;
+  readonly __browserWalletPlaceholder: true;
   readonly address: AztecAddress;
   readonly contractName: string;
 }
@@ -51,10 +52,10 @@ export function useContractRegistration<
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
   const { connector, account, currentConfig } = useUniversalWallet();
-  const wallet = connector?.getWallet?.() ?? null;
-
+  
   // Wallet type detection - agnostic to specific wallet implementations
-  const isExternal = isExternalWallet(connector);
+  const isExternal = isBrowserWalletConnector(connector);
+  const wallet = isEmbeddedConnector(connector) ? connector.getWallet() : null;
 
   const [contract, setContract] = useState<TContract | null>(null);
   const [status, setStatus] = useState<ContractStatus>('idle');
@@ -87,7 +88,7 @@ export function useContractRegistration<
     );
 
     const proxy: ExternalWalletContractProxy = {
-      __azguardProxy: true,
+      __browserWalletPlaceholder: true,
       address: contractAddress,
       contractName: String(name),
     };

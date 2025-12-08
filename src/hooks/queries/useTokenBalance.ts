@@ -6,7 +6,8 @@ import { useContractRegistry } from '../context/useContractRegistry';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { queryKeys } from './queryKeys';
 import { aztecContracts } from '../../config/contracts';
-import { isExternalWallet, isProxyContract, queuePxeCall } from '../../utils';
+import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
+import { isBrowserWalletConnector } from '../../types/walletConnector';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { TokenContract } from '../../artifacts/Token';
 
@@ -55,7 +56,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
   const queryClient = useQueryClient();
 
   // Wallet type detection - agnostic to specific wallet implementations
-  const isExternal = isExternalWallet(connector);
+  const isExternal = isBrowserWalletConnector(connector);
   const tokenAddress = token?.address.toString() ?? '';
   const ownerAddress = account?.getAddress().toString() ?? '';
 
@@ -84,7 +85,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
       }
 
       // Use operations flow for external wallets with proxy contracts
-      const useOperationsFlow = isExternal && isProxyContract(token);
+      const useOperationsFlow = isExternal && isBrowserWalletPlaceholder(token);
       
       if (useOperationsFlow) {
         if (!connector?.executeOperations) {

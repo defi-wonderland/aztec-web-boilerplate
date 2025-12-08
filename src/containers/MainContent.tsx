@@ -4,14 +4,15 @@ import { SettingsCard } from './SettingsCard';
 import { Tabs, SecurityWarning } from '../components';
 import { TabConfig, TabType } from '../types';
 import { useUniversalWallet } from '../hooks';
-import { WalletType } from '../types/aztec';
+import { isEmbeddedConnector } from '../types/walletConnector';
 
 export const MainContent: React.FC = () => {
   const { connector } = useUniversalWallet();
   const [activeTab, setActiveTab] = useState<TabType>('mint');
   
   // Show security warning for embedded wallet (stores keys in browser localStorage)
-  const showSecurityWarning = connector?.getStatus().isConnected && connector.type === WalletType.EMBEDDED;
+  const showSecurityWarning =
+    connector?.getStatus().isConnected && isEmbeddedConnector(connector);
 
   const tabs: TabConfig[] = [
     {
