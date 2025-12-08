@@ -6,10 +6,11 @@ import type { ContractConfigMap } from '../../contract-registry';
 import type { DripperContract } from '../../artifacts/Dripper';
 import type { TokenContract } from '../../artifacts/Token';
 import { aztecContracts } from '../../config/contracts';
+import { shouldUseOperationsFlow } from '../../utils';
 import { 
   isBrowserWalletConnector, 
-  shouldUseOperationsFlow,
-} from '../../utils';
+  isEmbeddedConnector,
+} from '../../types/walletConnector';
 import type { TokenBalance } from '../queries/useTokenBalance';
 
 interface DripParams {
@@ -154,7 +155,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       }
 
       // Direct contract call path - always use sponsored fees
-      if (!connector.getSponsoredFeePaymentMethod) {
+      if (!isEmbeddedConnector(connector)) {
         throw new Error('Connector does not support sponsored fees');
       }
       
@@ -228,7 +229,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       }
 
       // Direct contract call path - always use sponsored fees
-      if (!connector.getSponsoredFeePaymentMethod) {
+      if (!isEmbeddedConnector(connector)) {
         throw new Error('Connector does not support sponsored fees');
       }
       
@@ -298,7 +299,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       }
 
       // Direct contract call path - always use sponsored fees
-      if (!connector.getSponsoredFeePaymentMethod) {
+      if (!isEmbeddedConnector(connector)) {
         throw new Error('Connector does not support sponsored fees');
       }
       
