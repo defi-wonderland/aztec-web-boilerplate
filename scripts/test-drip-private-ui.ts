@@ -7,13 +7,9 @@
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
-import {
-  Contract,
-  getContractInstanceFromInstantiationParams,
-} from '@aztec/aztec.js/contracts';
+import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import { PublicKeys } from '@aztec/aztec.js/keys';
 import { AccountManager } from '@aztec/aztec.js/wallet';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
@@ -101,6 +97,7 @@ async function createTestAccount(pxe: PXE, node: AztecNode) {
   const instance = manager.getInstance();
   const artifact = await manager.getAccountContract().getContractArtifact();
 
+  // Register the contract with wallet - same pattern as deploy.ts
   await wallet.registerContract(instance, artifact, manager.getSecretKey());
   wallet.addAccount(account);
 
@@ -111,14 +108,15 @@ async function createTestAccount(pxe: PXE, node: AztecNode) {
     console.log('   📦 Deploying account...');
     const feeMethod = await getSponsoredFeePaymentMethod();
     const deployMethod = await manager.getDeployMethod();
-    await deployMethod.send({
+    const deployOpts = {
       from: AztecAddress.ZERO,
       contractAddressSalt: salt,
       fee: { paymentMethod: feeMethod },
       universalDeploy: true,
       skipClassRegistration: true,
       skipPublicDeployment: true,
-    }).wait({ timeout: TX_TIMEOUT });
+    };
+    await deployMethod.send(deployOpts).wait({ timeout: TX_TIMEOUT });
     console.log('   ✅ Account deployed');
   }
 
@@ -136,7 +134,6 @@ async function registerContractsLikeUI(
 
   const dripperAddress = AztecAddress.fromString(config.dripperContract.address);
   const tokenAddress = AztecAddress.fromString(config.tokenContract.address);
-  const deployer = AztecAddress.fromString(config.deployer);
   const salt = new Fr(BigInt(config.dripperContract.salt));
 
   // Register Dripper - same as AztecContractService.registerContract
@@ -225,9 +222,9 @@ async function testDripToPrivateLikeUI() {
   // Register contracts exactly like UI
   const { dripperAddress, tokenAddress } = await registerContractsLikeUI(pxe, config);
 
-  // Get contract instances
-  const dripper = await Contract.at(dripperAddress, DripperContractArtifact, wallet) as DripperContract;
-  const token = await Contract.at(tokenAddress, TokenContractArtifact, wallet) as TokenContract;
+  // Get typed contract instances
+  const dripper = await DripperContract.at(dripperAddress, wallet);
+  const token = await TokenContract.at(tokenAddress, wallet);
 
   // Call drip_to_private EXACTLY like useDripper.ts
   console.log(`\n🚀 Calling drip_to_private (same as UI)...`);
@@ -241,9 +238,9 @@ async function testDripToPrivateLikeUI() {
   try {
     const feeMethod = await getSponsoredFeePaymentMethod();
 
-    // This is EXACTLY the call from useDripper.ts lines 170-173
-    await (dripper as DripperContract).methods
-      .drip_to_private((token as TokenContract).address, DRIP_AMOUNT)
+    // This is EXACTLY the call from useDripper.ts lines 176-182
+    await dripper.methods
+      .drip_to_private(token.address, DRIP_AMOUNT)
       .send({
         from: account.getAddress(),
         fee: { paymentMethod: feeMethod },

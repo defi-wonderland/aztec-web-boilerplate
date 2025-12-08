@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { queryKeys } from '../queries/queryKeys';
@@ -9,8 +8,7 @@ import type { TokenContract } from '../../artifacts/Token';
 import { aztecContracts } from '../../config/contracts';
 import { 
   isExternalWallet, 
-  shouldUseOperationsFlow, 
-  isProxyContract 
+  shouldUseOperationsFlow,
 } from '../../utils';
 import type { TokenBalance } from '../queries/useTokenBalance';
 
@@ -98,12 +96,6 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     });
   };
 
-  const canUseOperationsForPrivateDrip = 
-    Boolean(connector?.capabilities.canExecuteOperations) &&
-    typeof connector?.sendTransaction === 'function' &&
-    isProxyContract(dripper) && 
-    isProxyContract(token);
-
   const isReady = isDripperReady && isTokenReady && !!account;
 
   const invalidateBalances = () => {
@@ -133,13 +125,9 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error('Wallet connector not available');
       }
 
-      const useOperationsFlow = false && canUseOperationsForPrivateDrip;
+      const useOperationsFlow = shouldUseOperationsFlow(connector, dripper, token);
       
       if (useOperationsFlow) {
-        if (!connector) {
-          throw new Error('No wallet connector available');
-        }
-
         const selectedAccount = connector.getCaipAccount?.();
         if (!selectedAccount) {
           throw new Error('External wallet account not selected');
