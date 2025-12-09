@@ -20,7 +20,7 @@ import {
 } from '../../../types';
 import { MinimalWallet } from '../../../utils/MinimalWallet';
 
-const PROVER_ENABLED = true;
+const PROVER_ENABLED = false;
 const logger = createLogger('wallet-service');
 
 /**
