@@ -120,7 +120,9 @@ export class ContractRegistry<T extends ContractConfigMap>
     // Check if registration is already in progress
     const pending = this.pendingRegistrations.get(name);
     if (pending) {
-      logger.info(`⏳ Contract "${String(name)}" - AWAITING (registration in progress)`);
+      logger.info(
+        `⏳ Contract "${String(name)}" - AWAITING (registration in progress)`
+      );
       return pending;
     }
 
@@ -143,26 +145,32 @@ export class ContractRegistry<T extends ContractConfigMap>
 
   /**
    * Ensure multiple contracts are registered and ready.
-   * 
+   *
    * This method handles the full registration flow:
    * 1. First syncs from storage (checks which contracts are already in PXE's IndexedDB)
    * 2. Then registers any contracts not found in storage
-   * 
+   *
    * If no names provided, processes all contracts in the config.
    */
   async registerAll(names?: ContractNames<T>[]): Promise<void> {
     const contractNames =
       names ?? (Object.keys(this.contracts) as ContractNames<T>[]);
 
+    console.log('contractNames', contractNames);
+
     if (contractNames.length === 0) {
       return;
     }
+    console.log('before syncFromStorage');
 
     // 1. Sync from storage first (mark already-registered contracts as ready)
     await this.syncFromStorage(contractNames);
+    console.log('after syncFromStorage');
 
     // 2. Register any contracts still not ready
     const toRegister = contractNames.filter((name) => !this.isRegistered(name));
+
+    console.log('toRegister', toRegister);
 
     if (toRegister.length === 0) {
       logger.info('All contracts already registered (found in storage)');
@@ -186,7 +194,9 @@ export class ContractRegistry<T extends ContractConfigMap>
    * This avoids re-registering contracts that persist across page refreshes.
    */
   private async syncFromStorage(names: ContractNames<T>[]): Promise<void> {
-    logger.debug(`🔍 Checking storage for ${names.length} contracts: [${names.map(String).join(', ')}]`);
+    logger.debug(
+      `🔍 Checking storage for ${names.length} contracts: [${names.map(String).join(', ')}]`
+    );
 
     const { getContractInstanceFromInstantiationParams } = await import(
       '@aztec/aztec.js/contracts'
@@ -227,7 +237,9 @@ export class ContractRegistry<T extends ContractConfigMap>
 
           this.updateCache(name, { status: 'ready', instance });
           syncedCount++;
-          logger.info(`💾 Contract "${String(name)}" - STORAGE HIT (IndexedDB)`);
+          logger.info(
+            `💾 Contract "${String(name)}" - STORAGE HIT (IndexedDB)`
+          );
         }
       } catch {
         // Contract not in storage - will be registered fresh

@@ -4,7 +4,7 @@ import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useWriteContract } from '../contracts/useWriteContract';
 import { queryKeys } from '../queries/queryKeys';
 import { DripperContract } from '../../artifacts/Dripper';
-import { aztecContracts } from '../../config/contracts';
+import { contractsConfig } from '../../config/contracts';
 
 interface DripParams {
   amount: bigint;
@@ -42,8 +42,8 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const { writeContract } = useWriteContract();
   const queryClient = useQueryClient();
 
-  const dripperAddress = aztecContracts.dripper.address(currentConfig);
-  const tokenAddress = aztecContracts.token.address(currentConfig);
+  const dripperAddress = contractsConfig.dripper.address(currentConfig);
+  const tokenAddress = contractsConfig.token.address(currentConfig);
   const isReady = !!account;
 
   const refetchBalance = async () => {

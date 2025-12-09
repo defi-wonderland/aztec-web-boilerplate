@@ -194,7 +194,6 @@ export const useAzguardWalletInternal = (
 
         const operations = await buildRegisterContractOperations(
           currentConfig,
-          undefined,
           chainFromAccount
         );
 

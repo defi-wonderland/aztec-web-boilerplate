@@ -5,7 +5,7 @@ import { useContractRegistration } from '../context/useContractRegistration';
 import { useContractRegistry } from '../context/useContractRegistry';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { queryKeys } from './queryKeys';
-import { aztecContracts } from '../../config/contracts';
+import { contractsConfig } from '../../config/contracts';
 import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
 import { isBrowserWalletConnector } from '../../types/walletConnector';
 import type { ContractConfigMap } from '../../contract-registry';
@@ -97,7 +97,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
           throw new Error('External wallet account not selected');
         }
 
-        const tokenContractAddress = aztecContracts.token.address(currentConfig);
+        const tokenContractAddress = contractsConfig.token.address(currentConfig);
         const accountAddress = account!.getAddress().toString();
 
         const operation: SimulateViewsOperation = {

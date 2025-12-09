@@ -2,16 +2,20 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
-import { useContractRegistryContext } from '../../providers/AztecContractProvider';
+import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
 import { useUniversalWallet } from './useUniversalWallet';
-import { aztecContracts, getContractsForConfig } from '../../config/contracts';
+import { contractsConfig, getArtifactOverrides } from '../../config/contracts';
 import { queuePxeCall } from '../../utils';
-import { isBrowserWalletConnector, isEmbeddedConnector } from '../../types/walletConnector';
-import type {
-  ContractConfigMap,
-  ContractNames,
-  ContractStatus,
-  UseContractReturn,
+import {
+  isBrowserWalletConnector,
+  isEmbeddedConnector,
+} from '../../types/walletConnector';
+import {
+  getContractsForConfig,
+  type ContractConfigMap,
+  type ContractNames,
+  type ContractStatus,
+  type UseContractReturn,
 } from '../../contract-registry';
 
 interface ExternalWalletContractProxy {
@@ -48,11 +52,11 @@ interface ExternalWalletContractProxy {
  */
 export function useContractRegistration<
   T extends ContractConfigMap = ContractConfigMap,
-  TContract = unknown
+  TContract = unknown,
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
   const { connector, account, currentConfig } = useUniversalWallet();
-  
+
   // Wallet type detection - agnostic to specific wallet implementations
   const isExternal = isBrowserWalletConnector(connector);
   const wallet = isEmbeddedConnector(connector) ? connector.getWallet() : null;
@@ -61,9 +65,12 @@ export function useContractRegistration<
   const [status, setStatus] = useState<ContractStatus>('idle');
   const [error, setError] = useState<Error | null>(null);
   const getContractDefinition = useCallback(() => {
-    const contracts = getContractsForConfig(currentConfig);
+    const contracts = getContractsForConfig(
+      contractsConfig,
+      getArtifactOverrides(currentConfig.name)
+    );
     return (
-      (contracts as ContractConfigMap)[name as keyof typeof aztecContracts] ??
+      (contracts as ContractConfigMap)[name as keyof typeof contractsConfig] ??
       null
     );
   }, [currentConfig, name]);
@@ -125,10 +132,15 @@ export function useContractRegistration<
             const callableContract = await queuePxeCall(() =>
               Contract.at(instance.address, definition.artifact, wallet)
             );
-            console.log(`[useContractRegistration:${String(name)}] ✅ Callable contract created`);
+            console.log(
+              `[useContractRegistration:${String(name)}] ✅ Callable contract created`
+            );
             setContract(callableContract as TContract);
           } catch (err) {
-            console.error(`[useContractRegistration:${String(name)}] ❌ Failed to create callable contract:`, err);
+            console.error(
+              `[useContractRegistration:${String(name)}] ❌ Failed to create callable contract:`,
+              err
+            );
             hasCreatedContract.current = false;
             setError(err instanceof Error ? err : new Error(String(err)));
           }
