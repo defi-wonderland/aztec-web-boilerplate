@@ -6,8 +6,9 @@ import React, { createContext, ReactNode, useRef } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { WalletType } from '../types/aztec';
 import { useEmbeddedWalletInternal, useAzguardWalletInternal, useNetworkInternal } from './hooks';
+import { useMetaMaskAztecWalletInternal } from './hooks/useMetaMaskAztecWalletInternal';
 import type { WalletConnector, WalletConnectorId } from '../types/walletConnector';
-import { EmbeddedConnector, AzguardConnector } from '../connectors';
+import { EmbeddedConnector, AzguardConnector, MetaMaskAztecConnector } from '../connectors';
 import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
 import type { NetworkConfig } from '../config/networks';
@@ -66,6 +67,10 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
     config: network.state.currentConfig,
   });
 
+  const metamask = useMetaMaskAztecWalletInternal({
+    config: network.state.currentConfig,
+  });
+
   const walletKitRef = useRef<AztecWalletKit | null>(null);
   if (!walletKitRef.current) {
     walletKitRef.current = createAztecWalletKit({
@@ -81,6 +86,8 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
       connector.updateState(embedded);
     } else if (connector instanceof AzguardConnector) {
       connector.updateState(azguard);
+    } else if (connector instanceof MetaMaskAztecConnector) {
+      connector.updateState(metamask);
     }
   }
 
@@ -89,7 +96,7 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
   const isConnected = activeConnector !== null;
   const activeAccount = activeConnector?.getAccount() ?? null;
   const activeWalletType = activeConnector?.type ?? null;
-  const isInitialized = embedded.state.isInitialized || azguard.state.isConnected;
+  const isInitialized = embedded.state.isInitialized || azguard.state.isConnected || metamask.state.isInitialized;
 
   const connectWith = async (connectorId: WalletConnectorId): Promise<WalletConnector> => {
     if (activeConnector && activeConnector.id !== connectorId) {
@@ -109,8 +116,8 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
 
     isConnected,
     isInitialized,
-    isLoading: embedded.isLoading || azguard.isLoading,
-    error: embedded.error || azguard.error,
+    isLoading: embedded.isLoading || azguard.isLoading || metamask.state.isConnecting,
+    error: embedded.error || azguard.error || metamask.error,
     walletType: activeWalletType,
     account: activeAccount,
     connector: activeConnector,

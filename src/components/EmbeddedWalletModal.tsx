@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet } from '../hooks';
-import { EmbeddedConnector } from '../connectors';
+import { useEVMWallet } from '../hooks/context/useEVMWallet';
+import { EmbeddedConnector, MetaMaskAztecConnector } from '../connectors';
 import type { WalletConnector } from '../types/walletConnector';
 
 interface EmbeddedWalletModalProps {
@@ -29,13 +30,19 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
     getNetworkOptions,
   } = useUniversalWallet();
 
+  const { isConnected: isEVMConnected, connectWalletAsync } = useEVMWallet();
+
   const embeddedConnector = connectors.find(
     (conn): conn is EmbeddedConnector => conn instanceof EmbeddedConnector
   );
-  
-  // Browser wallets = all connectors except embedded
+
+  const metamaskAztecConnector = connectors.find(
+    (conn): conn is MetaMaskAztecConnector => conn instanceof MetaMaskAztecConnector
+  );
+
+  // Browser wallets = all connectors except embedded and MetaMask Aztec (handled separately)
   const browserWallets = connectors.filter(
-    (conn) => !(conn instanceof EmbeddedConnector)
+    (conn) => !(conn instanceof EmbeddedConnector) && !(conn instanceof MetaMaskAztecConnector)
   );
   
   // Disable functionality when no network is selected, network is initializing, or failed
@@ -122,6 +129,26 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
       console.error('Failed to connect devnet account:', err);
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const handleMetaMaskAztecConnect = async () => {
+    if (!metamaskAztecConnector) return;
+
+    setConnectingId('metamask-aztec');
+    try {
+      // Step 1: Connect EVM wallet if not connected
+      if (!isEVMConnected) {
+        await connectWalletAsync();
+      }
+      // Step 2: Create Aztec account (will sign message to recover public key)
+      await metamaskAztecConnector.connect();
+      onWalletConnected?.();
+      onClose();
+    } catch (err) {
+      console.error('Failed to connect MetaMask Aztec:', err);
+    } finally {
+      setConnectingId(null);
     }
   };
 
@@ -232,15 +259,34 @@ export const EmbeddedWalletModal: React.FC<EmbeddedWalletModalProps> = ({
                     className="modal-action-button browser-wallet-connect"
                     title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
                   >
-                    {isThisConnecting || status.isConnecting ? 'Connecting...' : 
-                     status.isConnected ? `${connector.label} Connected` : 
+                    {isThisConnecting || status.isConnecting ? 'Connecting...' :
+                     status.isConnected ? `${connector.label} Connected` :
                      `Connect ${connector.label}`}
                   </button>
                 );
               })}
             </div>
           )}
-          
+
+          {metamaskAztecConnector && (
+            <div className="browser-wallet-section">
+              <label className="wallet-section-label">EVM Wallet</label>
+              <button
+                onClick={handleMetaMaskAztecConnect}
+                type="button"
+                disabled={!isNetworkSelected || isNetworkInitializing || isNetworkFailed || connectingId === 'metamask-aztec' || metamaskAztecConnector.getStatus().isConnected}
+                className="modal-action-button browser-wallet-connect"
+                title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
+              >
+                {connectingId === 'metamask-aztec'
+                  ? 'Connecting...'
+                  : metamaskAztecConnector.getStatus().isConnected
+                    ? 'MetaMask Connected'
+                    : 'Connect MetaMask'}
+              </button>
+            </div>
+          )}
+
           <div className="embedded-connect-section">
             <label className="wallet-section-label">Embedded Wallet</label>
             

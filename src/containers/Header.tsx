@@ -6,7 +6,7 @@ import { AzguardConnector } from '../connectors/AzguardConnector';
 
 // Sub-components
 const ConnectedAccount: React.FC<{
-  walletType: 'Azguard' | 'Embedded';
+  walletType: 'Azguard' | 'Embedded' | 'MetaMask';
   address: string;
   onDisconnect: () => void;
 }> = ({ walletType, address, onDisconnect }) => (
@@ -45,23 +45,27 @@ export const Header: React.FC = () => {
   }, []);
 
   const renderAccountSection = () => {
-    // Azguard wallet takes priority
+    // Determine wallet label and address
+    let walletLabel: 'Azguard' | 'Embedded' | 'MetaMask' | null = null;
+    let address: string | null = null;
+
     if (azguardStatus?.isConnected && azguardAccount) {
-      return (
-        <ConnectedAccount
-          walletType="Azguard"
-          address={truncateCaipAddress(azguardAccount)}
-          onDisconnect={handleDisconnect}
-        />
-      );
+      walletLabel = 'Azguard';
+      address = truncateCaipAddress(azguardAccount);
+    } else if (account) {
+      address = truncateAddress(account.getAddress().toString());
+      if (walletType === WalletType.EMBEDDED) {
+        walletLabel = 'Embedded';
+      } else if (walletType === WalletType.METAMASK) {
+        walletLabel = 'MetaMask';
+      }
     }
 
-    // Embedded wallet
-    if (account && walletType === WalletType.EMBEDDED) {
+    if (walletLabel && address) {
       return (
         <ConnectedAccount
-          walletType="Embedded"
-          address={truncateAddress(account.getAddress().toString())}
+          walletType={walletLabel}
+          address={address}
           onDisconnect={handleDisconnect}
         />
       );

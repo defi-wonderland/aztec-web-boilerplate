@@ -15,11 +15,12 @@ export const ContractProviderWrapper: React.FC<ContractProviderWrapperProps> = (
     [currentConfig]
   );
 
-  // Only mount AztecContractProvider for embedded wallet
+  // Mount AztecContractProvider for embedded and MetaMask wallets
   // Azguard manages its own PXE and contract registration
   const pxe = connector?.getPXE?.() ?? null;
+  const supportsLocalPXE = walletType === WalletType.EMBEDDED || walletType === WalletType.METAMASK;
 
-  if (!isInitialized || !pxe || walletType !== WalletType.EMBEDDED) {
+  if (!isInitialized || !pxe || !supportsLocalPXE) {
     return <>{children}</>;
   }
 

@@ -16,6 +16,7 @@ export interface AccountData {
   signingKey: string;
   secretKey: string;
   salt: string;
+  evmAddress?: string; // Links account to EVM wallet identity
 }
 
 export interface IAztecStorageService {
@@ -91,6 +92,7 @@ export interface IAztecContractService {
 export enum WalletType {
   EMBEDDED = 'embedded',
   AZGUARD = 'azguard',
+  METAMASK = 'metamask',
   TEST = 'test'
 }
 
