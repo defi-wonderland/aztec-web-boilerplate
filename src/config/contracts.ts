@@ -54,6 +54,8 @@ export const contractsConfig = createContractConfig({
   },
 });
 
+//TODO: Move this to a different file, here users should have access only to config
+
 /**
  * Devnet artifact overrides (pinned to match public deployment)
  */

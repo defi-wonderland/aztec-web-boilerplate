@@ -96,7 +96,7 @@ export const connectExistingAccount = async (
   let account = walletServices.storageService.getAccount();
   let wallet: AccountWithSecretKey | null = null;
 
-  if (!account && config?.name === 'devnet') {
+  if (!account) {
     const credentials = await getConfiguredAccountCredentials();
     if (credentials) {
       wallet =

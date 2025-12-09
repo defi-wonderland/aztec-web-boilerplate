@@ -1,3 +1,13 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                              ⚠️  WARNING  ⚠️                              ║
+ * ║                                                                           ║
+ * ║   THIS FILE IS FOR TESTING/DEVELOPMENT PURPOSES ONLY                      ║
+ * ║   REMOVE THIS COMPONENT BEFORE PRODUCTION DEPLOYMENT                      ║
+ * ║                                                                           ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 

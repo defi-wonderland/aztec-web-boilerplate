@@ -14,7 +14,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   onClose, 
   onWalletConnected 
 }) => {
-  const [testAccountIndex, setTestAccountIndex] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
@@ -37,7 +36,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';
   const isNetworkInitializing = isNetworkSelected && !isInitialized && isLoading;
   const isNetworkFailed = isNetworkSelected && error && !isInitialized;
-  const isTestAccountDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting;
+  const isActionDisabled = !isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting;
   
   const isBrowserWalletDisabled = (connector: WalletConnector) => {
     const status = connector.getStatus();
@@ -63,7 +62,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     };
   }, [isOpen]);
 
-  const handleEmbeddedWalletAction = async (action: 'create' | 'test') => {
+  const handleEmbeddedWalletAction = async (action: 'create' | 'existing') => {
     if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
     
     setIsConnecting(true);
@@ -72,8 +71,12 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
         case 'create':
           await embeddedConnector.createAccount();
           break;
-        case 'test':
-          await embeddedConnector.connectTestAccount(testAccountIndex - 1);
+        case 'existing':
+          const wallet = await embeddedConnector.connectExistingAccount();
+          if (!wallet) {
+            console.warn('No stored account found to connect');
+            return;
+          }
           break;
       }
       onWalletConnected?.();
@@ -98,25 +101,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
       console.error(`Failed to connect ${connector.label}:`, err);
     } finally {
       setConnectingId(null);
-    }
-  };
-
-  const handleDevnetAccountConnect = async () => {
-    if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
-    setIsConnecting(true);
-
-    try {
-      const wallet = await embeddedConnector.connectExistingAccount();
-      if (wallet) {
-        onWalletConnected?.();
-        onClose();
-      } else {
-        console.warn('No stored devnet account found to connect');
-      }
-    } catch (err) {
-      console.error('Failed to connect devnet account:', err);
-    } finally {
-      setIsConnecting(false);
     }
   };
 
@@ -239,58 +223,20 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
           <div className="embedded-connect-section">
             <label className="wallet-section-label">Embedded Wallet</label>
             
-            {/* Only show test account section for Local Sandbox */}
-            {currentConfig?.name === 'sandbox' && (
-              <div className="test-account-selector">
-                <label htmlFor="modal-test-account-number">Test Account:</label>
-                <select 
-                  id="modal-test-account-number"
-                  value={testAccountIndex} 
-                  onChange={(e) => setTestAccountIndex(Number(e.target.value))}
-                  className="test-account-select"
-                  disabled={isTestAccountDisabled}
-                >
-                  <option value="1">Account 1</option>
-                  <option value="2">Account 2</option>
-                  <option value="3">Account 3</option>
-                </select>
-                {!isNetworkSelected && (
-                  <p className="network-notice">
-                    Please select a network to continue.
-                  </p>
-                )}
-              </div>
-            )}
-            
             <div className="modal-actions">
-              {/* Only show test account button for Local Sandbox */}
-              {currentConfig?.name === 'sandbox' && (
-                <button 
-                  onClick={() => handleEmbeddedWalletAction('test')}
-                  type="button"
-                  disabled={isTestAccountDisabled}
-                  className="modal-action-button primary"
-                  title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
-                >
-                  {isConnecting ? 'Connecting...' : 'Connect Test Account'}
-                </button>
-              )}
-              
-              {currentConfig?.name === 'devnet' && (
-                <button
-                  onClick={handleDevnetAccountConnect}
-                  type="button"
-                  disabled={!isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting}
-                  className="modal-action-button primary"
-                  title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
-                >
-                  {isConnecting ? 'Connecting...' : 'Connect Devnet Account'}
-                </button>
-              )}
+              <button
+                onClick={() => handleEmbeddedWalletAction('existing')}
+                type="button"
+                disabled={isActionDisabled}
+                className="modal-action-button primary"
+                title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
+              >
+                {isConnecting ? 'Connecting...' : 'Connect Existing Account'}
+              </button>
               <button 
                 onClick={() => handleEmbeddedWalletAction('create')}
                 type="button"
-                disabled={!isNetworkSelected || isNetworkInitializing || isNetworkFailed || isConnecting}
+                disabled={isActionDisabled}
                 className="modal-action-button primary"
                 title={!isNetworkSelected ? 'Please select a network first' : isNetworkInitializing ? 'Network is initializing...' : isNetworkFailed ? 'Network connection failed' : ''}
               >
