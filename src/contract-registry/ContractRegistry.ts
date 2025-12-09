@@ -156,21 +156,15 @@ export class ContractRegistry<T extends ContractConfigMap>
     const contractNames =
       names ?? (Object.keys(this.contracts) as ContractNames<T>[]);
 
-    console.log('contractNames', contractNames);
-
     if (contractNames.length === 0) {
       return;
     }
-    console.log('before syncFromStorage');
 
     // 1. Sync from storage first (mark already-registered contracts as ready)
     await this.syncFromStorage(contractNames);
-    console.log('after syncFromStorage');
 
     // 2. Register any contracts still not ready
     const toRegister = contractNames.filter((name) => !this.isRegistered(name));
-
-    console.log('toRegister', toRegister);
 
     if (toRegister.length === 0) {
       logger.info('All contracts already registered (found in storage)');
