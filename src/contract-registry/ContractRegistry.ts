@@ -113,14 +113,14 @@ export class ContractRegistry<T extends ContractConfigMap>
    */
   async register(name: ContractNames<T>): Promise<void> {
     if (this.isRegistered(name)) {
-      logger.debug(`Contract "${name}" already registered (memory cache hit)`);
+      logger.info(`📦 Contract "${String(name)}" - MEMORY CACHE HIT`);
       return;
     }
 
     // Check if registration is already in progress
     const pending = this.pendingRegistrations.get(name);
     if (pending) {
-      logger.debug(`Contract "${name}" registration in progress, awaiting...`);
+      logger.info(`⏳ Contract "${String(name)}" - AWAITING (registration in progress)`);
       return pending;
     }
 
@@ -186,9 +186,7 @@ export class ContractRegistry<T extends ContractConfigMap>
    * This avoids re-registering contracts that persist across page refreshes.
    */
   private async syncFromStorage(names: ContractNames<T>[]): Promise<void> {
-    logger.info(`Syncing ${names.length} contracts from storage...`, {
-      contracts: names,
-    });
+    logger.debug(`🔍 Checking storage for ${names.length} contracts: [${names.map(String).join(', ')}]`);
 
     const { getContractInstanceFromInstantiationParams } = await import(
       '@aztec/aztec.js/contracts'
@@ -229,7 +227,7 @@ export class ContractRegistry<T extends ContractConfigMap>
 
           this.updateCache(name, { status: 'ready', instance });
           syncedCount++;
-          logger.debug(`Contract "${name}" synced from storage`);
+          logger.info(`💾 Contract "${String(name)}" - STORAGE HIT (IndexedDB)`);
         }
       } catch {
         // Contract not in storage - will be registered fresh
@@ -277,7 +275,7 @@ export class ContractRegistry<T extends ContractConfigMap>
       this.notifySubscribers();
 
       logger.info(
-        `Contract "${name}" registered successfully at ${instance.address.toString()}`
+        `🆕 Contract "${String(name)}" - FRESH REGISTRATION at ${instance.address.toString()}`
       );
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -288,7 +286,7 @@ export class ContractRegistry<T extends ContractConfigMap>
       });
       this.notifySubscribers();
 
-      logger.error(`Failed to register contract "${name}"`, err);
+      logger.error(`❌ Contract "${String(name)}" - REGISTRATION FAILED`, err);
       throw err;
     }
   }
