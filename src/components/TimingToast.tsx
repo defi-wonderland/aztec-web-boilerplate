@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 interface TimingToastProps {
   elapsedMs: number;
@@ -13,48 +14,76 @@ export const TimingToast: React.FC<TimingToastProps> = ({
   fromCache,
   onClose,
 }) => {
-  const [isVisible, setIsVisible] = useState(true);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
+  console.log('[TimingToast] RENDERING JSX', { elapsedMs, contractCount, fromCache });
+
+  // Auto-dismiss after 8 seconds
   useEffect(() => {
-    setIsVisible(true);
-    const timer = window.setTimeout(() => setIsVisible(false), 8000);
-    return () => window.clearTimeout(timer);
-  }, [elapsedMs, contractCount, fromCache]);
-
-  if (!isVisible) {
-    return null;
-  }
+    console.log('[TimingToast] Effect mounted, starting 8s timer');
+    const timer = window.setTimeout(() => {
+      console.log('[TimingToast] Timer fired, calling onClose');
+      onCloseRef.current();
+    }, 8000);
+    return () => {
+      console.log('[TimingToast] Effect cleanup');
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   const labelSuffix = contractCount === 1 ? '' : 's';
   const sourceText = fromCache ? 'Cached in PXE' : 'Fresh registration';
   const icon = fromCache ? '⚡' : '🆕';
 
-  return (
+  const toast = (
     <div
-      className="fixed bottom-4 right-4 z-50 flex max-w-md items-start gap-3 rounded-lg border border-[color:var(--color-border,#334155)] bg-[color:var(--color-surface,#0f172a)] px-4 py-3 text-[color:var(--color-text,#e2e8f0)] shadow-lg"
       role="status"
       aria-live="polite"
+      style={{
+        position: 'fixed',
+        bottom: '1rem',
+        right: '1rem',
+        zIndex: 9999,
+        backgroundColor: '#0f172a',
+        color: '#e2e8f0',
+        padding: '1rem',
+        borderRadius: '0.5rem',
+        border: '3px solid red',
+        display: 'flex',
+        gap: '0.75rem',
+        maxWidth: '24rem',
+        boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)',
+      }}
     >
-      <span className="text-xl leading-none">{icon}</span>
-      <div className="flex-1">
-        <p className="text-sm font-semibold">
+      <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>{icon}</span>
+      <div style={{ flex: 1 }}>
+        <p style={{ fontSize: '0.875rem', fontWeight: 600, margin: 0 }}>
           Contracts loaded in {elapsedMs.toFixed(0)}ms
         </p>
-        <p className="text-xs opacity-80">
+        <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0 }}>
           {contractCount} contract{labelSuffix} • {sourceText}
         </p>
       </div>
       <button
         type="button"
         aria-label="Dismiss timing toast"
-        onClick={() => {
-          setIsVisible(false);
-          onClose();
+        onClick={onClose}
+        style={{
+          marginLeft: '0.5rem',
+          fontSize: '1.125rem',
+          lineHeight: 1,
+          opacity: 0.7,
+          background: 'none',
+          border: 'none',
+          color: 'inherit',
+          cursor: 'pointer',
         }}
-        className="ml-2 text-lg leading-none opacity-70 transition hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border,#334155)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-surface,#0f172a)]"
       >
         ✕
       </button>
     </div>
   );
+
+  return createPortal(toast, document.body);
 };

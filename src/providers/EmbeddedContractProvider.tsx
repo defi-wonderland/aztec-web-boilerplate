@@ -129,7 +129,6 @@ export function EmbeddedContractProvider<
         const registry = createRegistry(pxe, contracts, currentConfig);
         registryRef.current = registry;
 
-        // Check if contracts are cached (for timing toast display)
         const allCached = await checkContractsCached(
           pxe,
           initialContracts,
