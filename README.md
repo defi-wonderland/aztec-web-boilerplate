@@ -131,6 +131,10 @@ This FPC address points to the public Sponsored FPC contract that enables gasles
 
 If you want to develop locally instead of using Devnet, you'll need to run the Aztec Sandbox.
 
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+
 ### Install Aztec
 
 ```bash
