@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SandboxTab, DevnetTab } from '../components/settings';
+import { ConfigDisplay } from '../components/settings';
 import type { AztecNetwork } from '../config/networks/constants';
 
 export const SettingsCard: React.FC = () => {
@@ -35,8 +35,7 @@ export const SettingsCard: React.FC = () => {
       </div>
 
       <div className="settings-tab-content">
-        {activeTab === 'sandbox' && <SandboxTab />}
-        {activeTab === 'devnet' && <DevnetTab />}
+        <ConfigDisplay networkName={activeTab} />
       </div>
     </div>
   );

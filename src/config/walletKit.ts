@@ -9,12 +9,12 @@ export const walletKitConfig: WalletKitConfig = {
   connectors: [embedded(), azguard()],
   networks: [
     {
-      aztecNetwork: 'sandbox',
-      nodeUrl: NETWORK_URLS.sandbox,
-    },
-    {
       aztecNetwork: 'devnet',
       nodeUrl: NETWORK_URLS.devnet,
+    },
+    {
+      aztecNetwork: 'sandbox',
+      nodeUrl: NETWORK_URLS.sandbox,
     },
   ],
 };
