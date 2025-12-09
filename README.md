@@ -135,8 +135,7 @@ If you want to develop locally instead of using Devnet, you'll need to run the A
 
 ```bash
 # Install Aztec toolchain
-curl -L https://raw.githubusercontent.com/AztecProtocol/aztec-packages/master/barretenberg/cpp/installation/install | bash
-aztec-up
+bash -i <(curl -s https://install.aztec.network)
 ```
 
 ### Start Sandbox
@@ -217,22 +216,6 @@ aztec-web-boilerplate/
 
 ### Contract Development
 
-```bash
-yarn build-contracts          # Compile Noir contracts + generate TS artifacts
-yarn compile-contracts        # Compile Noir contracts only
-yarn codegen-contracts        # Generate TypeScript bindings
-yarn deploy-contracts         # Deploy to sandbox
-yarn deploy-contracts:testnet # Deploy to testnet
-```
-
-### Application Development
-
-```bash
-yarn dev                      # Start development server
-yarn build-app                # Production build
-yarn build                    # Full build (contracts + app)
-yarn serve                    # Serve production build
-```
 
 ### Testing & Quality
 
