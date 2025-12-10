@@ -5,11 +5,8 @@ import type {
   SendTransactionOperation,
   SimulateViewsOperation,
   RegisterContractOperation,
-  CallAction,
-  AddPrivateAuthwitAction,
   OperationResult
 } from '@azguardwallet/types';
-import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 
 // ============================================================================
 // AZGUARD WALLET TYPES
@@ -46,57 +43,6 @@ export interface AzguardWalletState {
   selectedAccount: CaipAccount | null;
   supportedChains: string[];
   error: string | null;
-}
-
-/**
- * Azguard wallet context type for React provider
- */
-export interface AzguardWalletContextType {
-  // State
-  state: AzguardWalletState;
-  client: AzguardClient | null;
-  
-  // Actions
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  switchAccount: (account: CaipAccount) => Promise<void>;
-  
-  // Operations
-  executeOperations: (operations: Operation[]) => Promise<OperationResult[]>;
-  
-  // Utility
-  isAccountDeployed: (account: CaipAccount) => Promise<boolean>;
-  getAccountWallet: (account: CaipAccount) => Promise<AccountWithSecretKey>;
-}
-
-/**
- * Azguard operation builder helpers
- */
-export interface AzguardOperationBuilder {
-  buildSendTransaction(
-    account: CaipAccount,
-    actions: Array<CallAction | AddPrivateAuthwitAction>
-  ): SendTransactionOperation;
-  
-  buildSimulateViews(
-    account: CaipAccount,
-    calls: CallAction[]
-  ): SimulateViewsOperation;
-  
-  buildRegisterContract(
-    chain: string,
-    address: string,
-    instance: any,
-    artifact: any
-  ): RegisterContractOperation;
-}
-
-/**
- * Azguard wallet error types
- */
-export interface AzguardWalletError extends Error {
-  code?: string;
-  data?: any;
 }
 
 /**
@@ -138,16 +84,3 @@ export interface IAzguardWalletService {
   getClient(): AzguardClient | null;
   destroy(): void;
 }
-
-// Re-export commonly used Azguard types
-export type {
-  AzguardClient,
-  CaipAccount,
-  Operation,
-  SendTransactionOperation,
-  SimulateViewsOperation,
-  RegisterContractOperation,
-  CallAction,
-  AddPrivateAuthwitAction,
-  OperationResult
-};

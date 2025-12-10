@@ -70,6 +70,21 @@ export const DripperCard: React.FC = () => {
     navigator.clipboard.writeText(currentConfig.tokenContractAddress);
   };
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    if (value === '') {
+      setAmount('');
+      return;
+    }
+    
+    const isValidPositiveInteger = /^\d+$/.test(value);
+    
+    if (isValidPositiveInteger) {
+      setAmount(value);
+    }
+  };
+
   // Show dripper form when either wallet is connected and app is initialized
   const isAnyWalletConnected =
     Boolean(account) || connectors.some((conn) => conn.getStatus().isConnected);
@@ -151,9 +166,10 @@ export const DripperCard: React.FC = () => {
               <label htmlFor="amount">Amount</label>
               <input
                 id="amount"
-                type="number"
+                type="text"
+                inputMode="numeric"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={handleAmountChange}
                 placeholder="Enter amount to mint"
                 disabled={isProcessing || !isReady}
                 className="form-input"

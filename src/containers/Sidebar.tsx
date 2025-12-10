@@ -4,7 +4,7 @@ import { useUniversalWallet } from '../hooks';
 import { AddressDisplay } from '../components/AddressDisplay';
 
 export const Sidebar: React.FC = () => {
-  const { formattedBalances, isLoading: isBalanceLoading } = useTokenBalance();
+  const { formattedBalances, isLoading: isBalanceLoading, isFetching } = useTokenBalance();
   const { currentConfig, account } = useUniversalWallet();
 
   const accountAddress = account?.getAddress().toString() ?? null;
@@ -23,6 +23,9 @@ export const Sidebar: React.FC = () => {
             <span className="title-icon">💰</span>
             Aztec Token Balance
           </h3>
+          {isFetching && !isBalanceLoading && (
+            <span className="balance-refetch-badge">Syncing</span>
+          )}
         </div>
         <div className="card-content">
           {isBalanceLoading ? (

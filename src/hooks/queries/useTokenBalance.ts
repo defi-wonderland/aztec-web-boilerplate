@@ -29,6 +29,7 @@ interface UseTokenBalanceOptions {
 interface UseTokenBalanceReturn {
   tokenBalance: TokenBalance | null;
   isLoading: boolean;
+  isFetching: boolean;
   isError: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
@@ -159,7 +160,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
       };
     },
     enabled: isQueryEnabled,
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   const formattedBalances = useMemo((): FormattedBalances | null => {
@@ -183,6 +184,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
   return {
     tokenBalance: query.data ?? null,
     isLoading: query.isLoading,
+    isFetching: query.isFetching, // True during background refetch
     isError: query.isError,
     error: query.error,
     refetch,

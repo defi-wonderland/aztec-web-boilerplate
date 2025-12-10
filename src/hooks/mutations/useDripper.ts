@@ -17,26 +17,6 @@ interface UseDripperOptions {
   onDripToPublicError?: (error: Error) => void;
 }
 
-/**
- * Hook for Dripper contract operations.
- * Returns mutation objects for each operation with independent state.
- *
- * After a successful transaction, automatically refetches the balance query
- * to ensure PXE has synced before calling the success callback.
- *
- * @example
- * ```typescript
- * const { dripToPrivate, dripToPublic, isReady } = useDripper();
- *
- * // Drip tokens
- * dripToPrivate.mutate({ amount: 1000n });
- *
- * // Check loading state
- * if (dripToPrivate.isPending) {
- *   return <Loading />;
- * }
- * ```
- */
 export const useDripper = (options: UseDripperOptions = {}) => {
   const { account, currentConfig } = useUniversalWallet();
   const { writeContract } = useWriteContract();
@@ -46,13 +26,10 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const tokenAddress = contractsConfig.token.address(currentConfig);
   const isReady = !!account;
 
-  const refetchBalance = async () => {
+  const invalidateBalance = () => {
     if (!account || !tokenAddress) return;
-    
-    const ownerAddress = account.getAddress().toString();
-    const queryKey = queryKeys.token.balance(tokenAddress, ownerAddress);
-    
-    await queryClient.refetchQueries({ queryKey });
+    const queryKey = queryKeys.token.balance(tokenAddress, account.getAddress().toString());
+    queryClient.invalidateQueries({ queryKey });
   };
 
   const dripToPrivate = useMutation({
@@ -76,14 +53,10 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error(result.error ?? 'drip_to_private failed');
       }
 
-      await refetchBalance();
+      invalidateBalance();
     },
-    onSuccess: () => {
-      options.onDripToPrivateSuccess?.();
-    },
-    onError: (error: Error) => {
-      options.onDripToPrivateError?.(error);
-    },
+    onSuccess: () => options.onDripToPrivateSuccess?.(),
+    onError: (error: Error) => options.onDripToPrivateError?.(error),
   });
 
   const dripToPublic = useMutation({
@@ -107,14 +80,10 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error(result.error ?? 'drip_to_public failed');
       }
 
-      await refetchBalance();
+      invalidateBalance();
     },
-    onSuccess: () => {
-      options.onDripToPublicSuccess?.();
-    },
-    onError: (error: Error) => {
-      options.onDripToPublicError?.(error);
-    },
+    onSuccess: () => options.onDripToPublicSuccess?.(),
+    onError: (error: Error) => options.onDripToPublicError?.(error),
   });
 
   return {

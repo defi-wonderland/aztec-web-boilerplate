@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { hasHexPrefix } from '@aztec/foundation/string';
-import type { CaipAccount } from '../types/azguard';
+import type { CaipAccount } from '@azguardwallet/types';
 import { CHAIN_ID_TO_NETWORK, NETWORK_NAMES } from '../config/networks/constants';
 
 const TRUNCATE_START = 6;

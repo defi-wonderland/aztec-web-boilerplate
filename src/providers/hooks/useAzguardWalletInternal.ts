@@ -46,6 +46,7 @@ const AZGUARD_METHODS = [
   'simulate_utility',
   'add_private_authwit',
   'call',
+  'aztec_getTxReceipt',
 ];
 
 const buildAzguardConnectionConfig = (
