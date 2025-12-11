@@ -1,7 +1,7 @@
 /**
  * EVM-related type definitions
  *
- * Includes window.ethereum type declarations for injected wallet providers.
+ * Includes window.ethereum and EIP-6963 type declarations.
  */
 
 import type { Hex } from 'viem';
@@ -11,31 +11,42 @@ import type { Hex } from 'viem';
  * @see https://eips.ethereum.org/EIPS/eip-1193
  */
 export interface EIP1193Provider {
-  /**
-   * Submit a JSON-RPC request to the provider
-   */
   request: (args: {
     method: string;
     params?: unknown[] | Record<string, unknown>;
   }) => Promise<unknown>;
-
-  /**
-   * Subscribe to provider events
-   */
   on: (event: string, handler: (...args: unknown[]) => void) => void;
-
-  /**
-   * Unsubscribe from provider events
-   */
-  removeListener: (
-    event: string,
-    handler: (...args: unknown[]) => void
-  ) => void;
-
-  /**
-   * Whether MetaMask is the provider (MetaMask-specific)
-   */
+  removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
   isMetaMask?: boolean;
+  isRabby?: boolean;
+  isCoinbaseWallet?: boolean;
+}
+
+/**
+ * EIP-6963 Provider Info
+ * @see https://eips.ethereum.org/EIPS/eip-6963
+ */
+export interface EIP6963ProviderInfo {
+  uuid: string;
+  name: string;
+  icon: string;
+  rdns: string;
+}
+
+/**
+ * EIP-6963 Provider Detail (from announceProvider event)
+ */
+export interface EIP6963ProviderDetail {
+  info: EIP6963ProviderInfo;
+  provider: EIP1193Provider;
+}
+
+/**
+ * EIP-6963 Announce Provider Event
+ */
+export interface EIP6963AnnounceProviderEvent extends CustomEvent {
+  type: 'eip6963:announceProvider';
+  detail: EIP6963ProviderDetail;
 }
 
 /**
@@ -58,10 +69,12 @@ export type EVMAddress = Hex;
  */
 export type EVMChainId = number;
 
-// Extend global Window interface
 declare global {
   interface Window {
     ethereum?: EIP1193Provider;
+  }
+  interface WindowEventMap {
+    'eip6963:announceProvider': EIP6963AnnounceProviderEvent;
   }
 }
 

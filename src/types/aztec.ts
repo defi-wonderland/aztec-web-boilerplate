@@ -106,7 +106,7 @@ export enum WalletType {
  * while the app manages the PXE connection
  */
 export enum ExternalSignerType {
-  METAMASK = 'metamask',
+  EVM_WALLET = 'evm',
   // Future possible signers:
   // WALLET_CONNECT = 'walletconnect',
 }

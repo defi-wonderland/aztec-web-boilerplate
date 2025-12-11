@@ -1,17 +1,9 @@
-import {
-  EmbeddedConnector,
-  createEmbeddedConnector,
-} from './EmbeddedConnector';
-import {
-  ExternalSignerConnector,
-  createMetaMaskConnector,
-} from './ExternalSignerConnector';
-import {
-  BrowserWalletConnector,
-  createAzguardConnector,
-} from './BrowserWalletConnector';
+import { createEmbeddedConnector } from './EmbeddedConnector';
+import { ExternalSignerConnector } from './ExternalSignerConnector';
+import { BrowserWalletConnector, createAzguardConnector } from './BrowserWalletConnector';
 import type { ConnectorFactory } from './registry';
 import { ExternalSignerType } from '../types/aztec';
+import { EVM_WALLETS, type EVMWalletId } from '../config/evmWallets';
 
 /**
  * Embedded wallet connector preset.
@@ -28,26 +20,21 @@ export const embedded = (): ConnectorFactory => createEmbeddedConnector;
 export const azguard = (): ConnectorFactory => createAzguardConnector;
 
 /**
- * MetaMask Aztec wallet connector preset.
- * Uses app-managed PXE with MetaMask as external signer.
- * Usage: connectors: [metamaskAztec()]
+ * EVM wallet connector factory.
+ * Uses app-managed PXE with any EVM wallet (MetaMask, Rabby, etc.) as external signer.
+ * 
+ * Usage: connectors: [evmWallet('metamask'), evmWallet('rabby')]
+ * 
+ * @param walletId - The wallet ID from EVM_WALLETS config
  */
-export const metamaskAztec = (): ConnectorFactory => createMetaMaskConnector;
-
-/**
- * Generic external signer connector factory.
- * Usage: connectors: [externalSigner({ signerType: ExternalSignerType.METAMASK })]
- */
-export const externalSigner = (options: {
-  signerType: ExternalSignerType;
-  id?: string;
-  label?: string;
-}): ConnectorFactory => {
+export const evmWallet = (walletId: EVMWalletId): ConnectorFactory => {
+  const config = EVM_WALLETS[walletId];
   return () =>
     new ExternalSignerConnector({
-      signerType: options.signerType,
-      id: options.id,
-      label: options.label,
+      id: config.id,
+      label: config.label,
+      signerType: ExternalSignerType.EVM_WALLET,
+      rdns: config.rdns,
     });
 };
 

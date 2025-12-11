@@ -1,4 +1,4 @@
-// New connectors (using new wallet architecture)
+// Connectors
 export {
   EmbeddedConnector,
   EMBEDDED_CONNECTOR_ID,
@@ -8,7 +8,6 @@ export {
 export {
   ExternalSignerConnector,
   EXTERNAL_SIGNER_CONNECTOR_ID,
-  createMetaMaskConnector,
 } from './ExternalSignerConnector';
 
 export {
@@ -21,7 +20,7 @@ export {
 // Registry and factories
 export { createConnectorRegistry } from './registry';
 export type { ConnectorFactory, ConnectorRegistryOptions } from './registry';
-export { embedded, azguard, metamaskAztec } from './factories';
+export { embedded, azguard, evmWallet, browserWallet } from './factories';
 
 // Legacy connectors (for backwards compatibility during transition)
 export { AzguardConnector } from './AzguardConnector';

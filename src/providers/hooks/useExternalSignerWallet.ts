@@ -189,6 +189,10 @@ export const useExternalSignerWallet = (
         const message = err instanceof Error ? err.message : 'Connection failed';
         setError(message);
         console.error('External Signer connection failed:', err);
+        
+        // Disconnect the signer so next attempt can use a different wallet
+        signer.disconnect();
+        
         addMessage({
           message: 'Failed to create Aztec account',
           type: 'error',

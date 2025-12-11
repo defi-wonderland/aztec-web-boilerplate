@@ -24,6 +24,7 @@ interface ExternalSignerConnectorConfig {
   id?: string;
   label?: string;
   signerType: ExternalSignerType;
+  rdns?: string;
 }
 
 /**
@@ -37,6 +38,7 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   readonly label: string;
   readonly type = WalletType.EXTERNAL_SIGNER;
   readonly signerType: ExternalSignerType;
+  readonly rdns?: string;
 
   private state: UseExternalSignerWalletReturn | null = null;
   private signer: ExternalSigner | null = null;
@@ -45,12 +47,13 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
     this.signerType = config.signerType;
     this.id = config.id ?? `external-${config.signerType}`;
     this.label = config.label ?? this.getDefaultLabel(config.signerType);
+    this.rdns = config.rdns;
   }
 
   private getDefaultLabel(signerType: ExternalSignerType): string {
     switch (signerType) {
-      case ExternalSignerType.METAMASK:
-        return 'MetaMask';
+      case ExternalSignerType.EVM_WALLET:
+        return 'EVM Wallet';
       default:
         return 'External Wallet';
     }
@@ -130,13 +133,3 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   }
 }
 
-/**
- * Factory function to create a MetaMask External Signer connector
- */
-export const createMetaMaskConnector = (): ExternalSignerConnector => {
-  return new ExternalSignerConnector({
-    id: 'metamask',
-    label: 'MetaMask',
-    signerType: ExternalSignerType.METAMASK,
-  });
-};

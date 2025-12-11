@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet } from '../hooks';
-import { useEVMWallet } from '../hooks/context/useEVMWallet';
 import { WalletType } from '../types/aztec';
 import {
   isEmbeddedConnector,
@@ -34,8 +33,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     switchToNetwork,
     getNetworkOptions,
   } = useUniversalWallet();
-
-  const { isConnected: isEVMConnected, connectWalletAsync } = useEVMWallet();
 
   // Get embedded connector
   const embeddedConnector = connectors.find((conn) =>
@@ -150,11 +147,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   ) => {
     setConnectingId(connector.id);
     try {
-      // Step 1: Connect EVM wallet if not connected
-      if (!isEVMConnected) {
-        await connectWalletAsync();
-      }
-      // Step 2: Create Aztec account (will sign message to recover public key)
       await connector.connect();
       onWalletConnected?.();
       onClose();

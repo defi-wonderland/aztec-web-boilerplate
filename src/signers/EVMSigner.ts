@@ -1,8 +1,9 @@
 /**
- * MetaMaskSigner - External signer implementation for MetaMask
+ * EVMSigner - External signer implementation for EVM wallets
  *
- * Uses MetaMask for signing Aztec transactions via personal_sign.
- * The user's private key never leaves MetaMask.
+ * Works with any EVM wallet via EIP-6963 discovery.
+ * Uses personal_sign for signing Aztec transactions.
+ * The user's private key never leaves the wallet.
  */
 
 import type { AuthWitnessProvider } from '@aztec/aztec.js/account';
@@ -16,30 +17,27 @@ import {
   getPublicKeyRecoveryMessage,
 } from '../utils/evmPublicKeyRecovery';
 import type { EVMWalletService } from '../services/evm/EVMWalletService';
+import { getEIP6963Service } from '../services/evm/EIP6963Service';
 
-/**
- * MetaMaskSigner implements ExternalSigner for MetaMask integration.
- *
- * Flow:
- * 1. User connects MetaMask (via EVMWalletService)
- * 2. We sign a message to recover public key
- * 3. Public key is used to create EcdsaKEthSignerAccountContract
- * 4. Each transaction calls MetaMask for signing via AuthWitnessProvider
- */
-export class MetaMaskSigner implements ExternalSigner {
-  readonly type = ExternalSignerType.METAMASK;
-  readonly label = 'MetaMask';
+export class EVMSigner implements ExternalSigner {
+  readonly type = ExternalSignerType.EVM_WALLET;
+  readonly label = 'EVM Wallet';
+  readonly rdns?: string;
 
   private evmService: EVMWalletService;
   private cachedPublicKey: ECDSAPublicKey | null = null;
   private cachedSecretKey: Buffer | null = null;
   private cachedSalt: Buffer | null = null;
 
-  constructor(evmService: EVMWalletService) {
+  constructor(evmService: EVMWalletService, rdns?: string) {
     this.evmService = evmService;
+    this.rdns = rdns;
   }
 
   isAvailable(): boolean {
+    if (this.rdns) {
+      return getEIP6963Service().isWalletAvailable(this.rdns);
+    }
     return this.evmService.isAvailable();
   }
 
@@ -52,7 +50,17 @@ export class MetaMaskSigner implements ExternalSigner {
       return;
     }
 
-    await this.evmService.connect();
+    // Get specific provider via EIP-6963 if rdns is set
+    const provider = this.rdns
+      ? getEIP6963Service().getProviderByRdns(this.rdns)
+      : null;
+
+
+    if (this.rdns && !provider) {
+      console.warn(`[EVMSigner] Wallet ${this.rdns} not found via EIP-6963, falling back to window.ethereum`);
+    }
+
+    await this.evmService.connect(provider ?? undefined);
   }
 
   disconnect(): void {
@@ -71,12 +79,12 @@ export class MetaMaskSigner implements ExternalSigner {
 
     const walletClient = this.evmService.getWalletClient();
     if (!walletClient) {
-      throw new Error('MetaMask wallet client not available');
+      throw new Error('EVM wallet client not available');
     }
 
     const address = this.evmService.getAddress();
     if (!address) {
-      throw new Error('MetaMask not connected');
+      throw new Error('EVM wallet not connected');
     }
 
     const message = getPublicKeyRecoveryMessage(address);
@@ -86,7 +94,6 @@ export class MetaMaskSigner implements ExternalSigner {
       message,
     });
 
-    // Cache the signature for deriving secret key
     this.cacheSignatureDerivatives(signature, address);
 
     const publicKey = await recoverPublicKeyFromSignature(message, signature);
@@ -100,7 +107,7 @@ export class MetaMaskSigner implements ExternalSigner {
     const address = this.evmService.getAddress();
 
     if (!walletClient || !address) {
-      throw new Error('MetaMask not connected');
+      throw new Error('EVM wallet not connected');
     }
 
     return new MetaMaskAuthWitnessProvider(walletClient, address);
@@ -111,7 +118,6 @@ export class MetaMaskSigner implements ExternalSigner {
       return this.cachedSecretKey;
     }
 
-    // Ensure we've signed the message to get the signature
     await this.getPublicKey();
 
     if (!this.cachedSecretKey) {
@@ -128,28 +134,20 @@ export class MetaMaskSigner implements ExternalSigner {
 
     const address = this.getEVMAddress();
     if (!address) {
-      throw new Error('MetaMask not connected');
+      throw new Error('EVM wallet not connected');
     }
 
-    // Derive salt from address (deterministic)
     const addressBytes = Buffer.from(address.slice(2).padStart(64, '0'), 'hex');
     this.cachedSalt = addressBytes.slice(0, 32);
 
     return this.cachedSalt;
   }
 
-  /**
-   * Cache signature derivatives for later use
-   */
   private cacheSignatureDerivatives(signature: Hex, _address: Hex): void {
-    // Derive secret key from signature hash
     const signatureHash = keccak256(toBytes(signature));
     this.cachedSecretKey = Buffer.from(signatureHash.slice(2), 'hex');
   }
 
-  /**
-   * Clear all cached values (call on disconnect)
-   */
   private clearCache(): void {
     this.cachedPublicKey = null;
     this.cachedSecretKey = null;
@@ -157,11 +155,9 @@ export class MetaMaskSigner implements ExternalSigner {
   }
 }
 
-/**
- * Factory function to create a MetaMaskSigner
- */
-export const createMetaMaskSigner = (
-  evmService: EVMWalletService
-): MetaMaskSigner => {
-  return new MetaMaskSigner(evmService);
+export const createEVMSigner = (
+  evmService: EVMWalletService,
+  rdns?: string
+): EVMSigner => {
+  return new EVMSigner(evmService, rdns);
 };

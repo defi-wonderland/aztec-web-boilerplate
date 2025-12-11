@@ -1,2 +1,2 @@
 export type { ExternalSigner, ECDSAPublicKey, ExternalSignerFactory } from './types';
-export { MetaMaskSigner, createMetaMaskSigner } from './MetaMaskSigner';
+export { EVMSigner, createEVMSigner } from './EVMSigner';

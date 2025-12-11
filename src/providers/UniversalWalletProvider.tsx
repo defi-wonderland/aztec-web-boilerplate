@@ -28,7 +28,7 @@ import {
 import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
 import type { NetworkConfig } from '../config/networks';
-import { createMetaMaskSigner } from '../signers';
+import { createEVMSigner } from '../signers';
 import type { ExternalSigner } from '../signers/types';
 import type { EVMWalletService } from '../services/evm/EVMWalletService';
 
@@ -95,18 +95,18 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
 
   const evmWallet = useEVMWalletInternal();
 
-  const signersRef = useRef<Map<ExternalSignerType, ExternalSigner>>(new Map());
-  const getSigner = (type: ExternalSignerType): ExternalSigner => {
-    let signer = signersRef.current.get(type);
+  // Store signers by rdns for EIP-6963 multi-wallet support
+  const signersRef = useRef<Map<string, ExternalSigner>>(new Map());
+  const getSignerForConnector = (connector: ExternalSignerConnector): ExternalSigner => {
+    if (connector.signerType !== ExternalSignerType.EVM_WALLET) {
+      throw new Error(`Unknown signer type: ${connector.signerType}`);
+    }
+
+    const key = connector.rdns ?? 'default';
+    let signer = signersRef.current.get(key);
     if (!signer) {
-      switch (type) {
-        case ExternalSignerType.METAMASK:
-          signer = createMetaMaskSigner(evmWallet.service);
-          break;
-        default:
-          throw new Error(`Unknown signer type: ${type}`);
-      }
-      signersRef.current.set(type, signer);
+      signer = createEVMSigner(evmWallet.service, connector.rdns);
+      signersRef.current.set(key, signer);
     }
     return signer;
   };
@@ -145,7 +145,7 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
       }
       if (connector.type === WalletType.EXTERNAL_SIGNER) {
         const extConnector = connector as ExternalSignerConnector;
-        const signer = getSigner(extConnector.signerType);
+        const signer = getSignerForConnector(extConnector);
         extConnector.updateState(externalSigner, signer);
       }
       if (connector.type === WalletType.BROWSER_WALLET) {
