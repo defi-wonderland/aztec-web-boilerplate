@@ -10,7 +10,7 @@ import { NETWORK_URLS } from './networks';
  * 2. Add evmWallet('walletId') below
  */
 export const walletKitConfig: WalletKitConfig = {
-  connectors: [embedded(), azguard(), evmWallet('metamask'), evmWallet('rabby')],
+  connectors: [embedded(), azguard(), evmWallet('metamask')],
   networks: [
     {
       aztecNetwork: 'devnet',
