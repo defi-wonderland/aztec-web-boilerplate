@@ -5,8 +5,8 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import type { SimulateViewsOperation } from '@azguardwallet/types';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import {
-  isEmbeddedConnector,
   isBrowserWalletConnector,
+  hasAppManagedPXE,
 } from '../../types/walletConnector';
 import type {
   MethodsOf,
@@ -118,8 +118,8 @@ export const useReadContract = () => {
           };
         }
 
-        // ========== EMBEDDED WALLET FLOW ==========
-        if (isEmbeddedConnector(connector)) {
+        // ========== APP-MANAGED PXE FLOW (Embedded & External Signer) ==========
+        if (hasAppManagedPXE(connector)) {
           const wallet = connector.getWallet();
           if (!wallet) {
             const errorMsg = 'Wallet instance not available';

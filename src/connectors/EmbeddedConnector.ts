@@ -1,29 +1,42 @@
-import type { UseEmbeddedWalletInternalReturn } from '../providers/hooks';
+/**
+ * EmbeddedConnector - Connector for Embedded wallets
+ *
+ * Uses app-managed PXE with internal signing.
+ * Keys are stored locally in the browser.
+ */
+
 import { WalletType } from '../types/aztec';
 import type {
+  EmbeddedWalletConnector,
   ConnectorStatus,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
-  EmbeddedWalletConnector,
 } from '../types/walletConnector';
+import type { UseEmbeddedWalletReturn } from '../providers/hooks/useEmbeddedWallet';
 
 export const EMBEDDED_CONNECTOR_ID = 'embedded' as const;
 
+/**
+ * Connector for Embedded wallets (internal signing).
+ *
+ * This connector uses app-managed PXE with keys stored locally.
+ * All signing happens within the app.
+ */
 export class EmbeddedConnector implements EmbeddedWalletConnector {
   readonly id = EMBEDDED_CONNECTOR_ID;
   readonly label = 'Embedded Wallet';
   readonly type = WalletType.EMBEDDED;
 
-  private state: UseEmbeddedWalletInternalReturn | null = null;
+  private state: UseEmbeddedWalletReturn | null = null;
 
   /**
    * Update connector with latest hook state. Called by provider each render.
    */
-  updateState(state: UseEmbeddedWalletInternalReturn) {
+  updateState(state: UseEmbeddedWalletReturn) {
     this.state = state;
   }
 
-  private getState(): UseEmbeddedWalletInternalReturn {
+  private getState(): UseEmbeddedWalletReturn {
     if (!this.state) {
       throw new Error('Embedded connector has not been initialized');
     }
@@ -93,3 +106,9 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
   }
 }
 
+/**
+ * Factory function to create an Embedded connector
+ */
+export const createEmbeddedConnector = (): EmbeddedConnector => {
+  return new EmbeddedConnector();
+};

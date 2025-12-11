@@ -5,8 +5,8 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import type { CaipChain } from '@azguardwallet/types';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import {
-  isEmbeddedConnector,
   isBrowserWalletConnector,
+  hasAppManagedPXE,
   type BrowserWalletConnector,
 } from '../../types/walletConnector';
 import type {
@@ -197,7 +197,8 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           };
         }
 
-        if (isEmbeddedConnector(connector)) {
+        // Handle both Embedded and External Signer connectors (both have app-managed PXE)
+        if (hasAppManagedPXE(connector)) {
           const wallet = connector.getWallet();
           if (!wallet) {
             const errorMsg = 'Wallet instance not available';

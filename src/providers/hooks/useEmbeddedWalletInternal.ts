@@ -1,4 +1,6 @@
 /**
+ * @deprecated Use `useEmbeddedWallet` instead.
+ *
  * Internal hook for embedded wallet management
  * Used by UniversalWalletProvider - not for direct consumption
  */

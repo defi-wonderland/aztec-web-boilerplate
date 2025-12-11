@@ -4,7 +4,8 @@ import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
 import type { AzguardClient } from '@azguardwallet/client';
 import type { CaipAccount, Operation, OperationResult } from '@azguardwallet/types';
-import { WalletType } from './aztec';
+import { WalletType, ExternalSignerType } from './aztec';
+import type { ExternalSigner } from '../signers/types';
 
 export type WalletConnectorId = string;
 
@@ -50,6 +51,8 @@ export interface WalletConnector {
 }
 
 export interface EmbeddedWalletConnector extends WalletConnector {
+  readonly type: typeof WalletType.EMBEDDED;
+
   getPXE: () => PXE | null;
   getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
@@ -59,7 +62,27 @@ export interface EmbeddedWalletConnector extends WalletConnector {
   isDeploying: () => boolean;
 }
 
+export interface ExternalSignerConnectorCapabilities {
+  signerType: ExternalSignerType;
+  hasPXE: true;
+  hasSponsoredFees: boolean;
+}
+
+export interface ExternalSignerWalletConnector extends WalletConnector {
+  readonly type: typeof WalletType.EXTERNAL_SIGNER;
+  readonly signerType: ExternalSignerType;
+
+  getPXE: () => PXE | null;
+  getWallet: () => Wallet | null;
+  getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
+  isDeploying: () => boolean;
+  getEVMAddress: () => string | null;
+  getSigner: () => ExternalSigner | null;
+}
+
 export interface BrowserWalletConnector extends WalletConnector {
+  readonly type: typeof WalletType.BROWSER_WALLET;
+
   getCaipAccount: () => CaipAccount | null;
   executeOperations: (operations: Operation[]) => Promise<OperationResult[]>;
   switchAccount: (account: CaipAccount) => Promise<void>;
@@ -73,9 +96,23 @@ export const isEmbeddedConnector = (
   return connector?.type === WalletType.EMBEDDED;
 };
 
+export const isExternalSignerConnector = (
+  connector: WalletConnector | null | undefined
+): connector is ExternalSignerWalletConnector => {
+  return connector?.type === WalletType.EXTERNAL_SIGNER;
+};
+
 export const isBrowserWalletConnector = (
   connector: WalletConnector | null | undefined
 ): connector is BrowserWalletConnector => {
-  return connector?.type === WalletType.BROWSER;
+  return connector?.type === WalletType.BROWSER_WALLET;
 };
 
+export const hasAppManagedPXE = (
+  connector: WalletConnector | null | undefined
+): connector is EmbeddedWalletConnector | ExternalSignerWalletConnector => {
+  return (
+    connector?.type === WalletType.EMBEDDED ||
+    connector?.type === WalletType.EXTERNAL_SIGNER
+  );
+};

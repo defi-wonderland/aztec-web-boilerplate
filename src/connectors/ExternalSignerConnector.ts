@@ -1,0 +1,142 @@
+/**
+ * ExternalSignerConnector - Connector for External Signer wallets
+ *
+ * Uses app-managed PXE with external signing (MetaMask, WalletConnect, etc.)
+ */
+
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { Wallet } from '@aztec/aztec.js/wallet';
+import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { PXE } from '@aztec/pxe/server';
+import { WalletType, ExternalSignerType } from '../types/aztec';
+import type {
+  ExternalSignerWalletConnector,
+  ConnectorStatus,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
+} from '../types/walletConnector';
+import type { ExternalSigner } from '../signers/types';
+import type { UseExternalSignerWalletReturn } from '../providers/hooks/useExternalSignerWallet';
+
+export const EXTERNAL_SIGNER_CONNECTOR_ID = 'external-signer' as const;
+
+interface ExternalSignerConnectorConfig {
+  id?: string;
+  label?: string;
+  signerType: ExternalSignerType;
+}
+
+/**
+ * Connector for External Signer wallets (MetaMask, WalletConnect, etc.)
+ *
+ * This connector uses app-managed PXE with external signing.
+ * The external wallet only signs transactions - all Aztec logic runs in the app.
+ */
+export class ExternalSignerConnector implements ExternalSignerWalletConnector {
+  readonly id: string;
+  readonly label: string;
+  readonly type = WalletType.EXTERNAL_SIGNER;
+  readonly signerType: ExternalSignerType;
+
+  private state: UseExternalSignerWalletReturn | null = null;
+  private signer: ExternalSigner | null = null;
+
+  constructor(config: ExternalSignerConnectorConfig) {
+    this.signerType = config.signerType;
+    this.id = config.id ?? `external-${config.signerType}`;
+    this.label = config.label ?? this.getDefaultLabel(config.signerType);
+  }
+
+  private getDefaultLabel(signerType: ExternalSignerType): string {
+    switch (signerType) {
+      case ExternalSignerType.METAMASK:
+        return 'MetaMask';
+      default:
+        return 'External Wallet';
+    }
+  }
+
+  /**
+   * Update connector with latest hook state. Called by provider each render.
+   */
+  updateState(state: UseExternalSignerWalletReturn, signer: ExternalSigner | null) {
+    this.state = state;
+    this.signer = signer;
+  }
+
+  private getState(): UseExternalSignerWalletReturn {
+    if (!this.state) {
+      throw new Error('External Signer connector has not been initialized');
+    }
+    return this.state;
+  }
+
+  getStatus(): ConnectorStatus {
+    const state = this.getState();
+    return {
+      isInstalled: this.signer?.isAvailable() ?? false,
+      isConnected: state.state.aztecAccount !== null,
+      isConnecting: state.state.isConnecting,
+      isBusy: state.state.isDeploying,
+      error: state.error,
+    };
+  }
+
+  getAccount(): AccountWithSecretKey | null {
+    return this.getState().state.aztecAccount;
+  }
+
+  async connect(): Promise<void> {
+    if (!this.signer) {
+      throw new Error('No signer configured for this connector');
+    }
+    await this.getState().actions.connect(this.signer);
+  }
+
+  async disconnect(): Promise<void> {
+    this.getState().actions.disconnect();
+  }
+
+  async sendTransaction(
+    _request: ConnectorTransactionRequest
+  ): Promise<ConnectorTransactionResult> {
+    throw new Error(
+      'sendTransaction is not directly supported - use Aztec SDK with the account'
+    );
+  }
+
+  getPXE(): PXE | null {
+    return this.getState().services.pxe;
+  }
+
+  getWallet(): Wallet | null {
+    return this.getState().services.wallet;
+  }
+
+  getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
+    return this.getState().services.getSponsoredFeePaymentMethod();
+  }
+
+  isDeploying(): boolean {
+    return this.getState().state.isDeploying;
+  }
+
+  getEVMAddress(): string | null {
+    return this.signer?.getEVMAddress() ?? null;
+  }
+
+  getSigner(): ExternalSigner | null {
+    return this.signer;
+  }
+}
+
+/**
+ * Factory function to create a MetaMask External Signer connector
+ */
+export const createMetaMaskConnector = (): ExternalSignerConnector => {
+  return new ExternalSignerConnector({
+    id: 'metamask',
+    label: 'MetaMask',
+    signerType: ExternalSignerType.METAMASK,
+  });
+};

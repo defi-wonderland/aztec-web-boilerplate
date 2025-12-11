@@ -1,14 +1,11 @@
 import type { PXE } from '@aztec/pxe/server';
 import type { Fr } from '@aztec/aztec.js/fields';
 import type { AztecAddress } from '@aztec/aztec.js/addresses';
-import type {
-  ContractInstanceWithAddress,
-  ContractFunctionInteraction,
-} from '@aztec/aztec.js/contracts';
+import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
-import type { CaipAccount, Operation, CallAction } from '@azguardwallet/types';
+import type { CaipAccount, Operation } from '@azguardwallet/types';
 
 // ============================================================================
 // STORAGE SERVICE INTERFACES
@@ -88,16 +85,35 @@ export interface IAztecContractService {
 }
 
 // ============================================================================
-// AZGUARD WALLET INTERFACES
+// WALLET TYPE DEFINITIONS
 // ============================================================================
 
 /**
  * Wallet type enumeration for different wallet implementations
+ *
+ * - EMBEDDED: App manages PXE + internal signing (keys stored in app)
+ * - EXTERNAL_SIGNER: App manages PXE + external signing (MetaMask, WalletConnect, Ledger)
+ * - BROWSER_WALLET: External PXE + external signing (Azguard extension)
  */
 export enum WalletType {
   EMBEDDED = 'embedded',
-  BROWSER = 'browser',
+  EXTERNAL_SIGNER = 'external',
+  BROWSER_WALLET = 'browser',
 }
+
+/**
+ * External signer types for wallets that delegate signing to external wallets
+ * while the app manages the PXE connection
+ */
+export enum ExternalSignerType {
+  METAMASK = 'metamask',
+  // Future possible signers:
+  // WALLET_CONNECT = 'walletconnect',
+}
+
+// ============================================================================
+// AZGUARD WALLET INTERFACES
+// ============================================================================
 
 /**
  * Azguard account adapter interface

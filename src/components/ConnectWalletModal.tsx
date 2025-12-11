@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet } from '../hooks';
 import { useEVMWallet } from '../hooks/context/useEVMWallet';
-import { MetaMaskAztecConnector } from '../connectors';
+import { WalletType } from '../types/aztec';
 import {
   isEmbeddedConnector,
   isBrowserWalletConnector,
+  isExternalSignerConnector,
   type WalletConnector,
+  type ExternalSignerWalletConnector,
 } from '../types/walletConnector';
 
 interface ConnectWalletModalProps {
@@ -35,17 +37,19 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
 
   const { isConnected: isEVMConnected, connectWalletAsync } = useEVMWallet();
 
-  const metamaskAztecConnector = connectors.find(
-    (conn): conn is MetaMaskAztecConnector =>
-      conn instanceof MetaMaskAztecConnector
-  );
-
+  // Get embedded connector
   const embeddedConnector = connectors.find((conn) =>
     isEmbeddedConnector(conn)
   );
 
-  // Browser wallets = all non-embedded connectors
-  const browserWallets = connectors.filter((conn) =>
+  // Get external signer connectors (MetaMask, etc.)
+  const externalSignerConnectors = connectors.filter(
+    (conn): conn is ExternalSignerWalletConnector =>
+      isExternalSignerConnector(conn)
+  );
+
+  // Get browser wallet connectors (Azguard, etc.)
+  const browserWalletConnectors = connectors.filter((conn) =>
     isBrowserWalletConnector(conn)
   );
 
@@ -60,15 +64,20 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     isNetworkFailed ||
     isConnecting;
 
-  const isBrowserWalletDisabled = (connector: WalletConnector) => {
-    const status = connector.getStatus();
-    return (
-      !isNetworkSelected ||
-      isNetworkInitializing ||
-      isNetworkFailed ||
-      isConnecting ||
-      status.isConnected
-    );
+  const isConnectorDisabled = (connector: WalletConnector) => {
+    try {
+      const status = connector.getStatus();
+      return (
+        !isNetworkSelected ||
+        isNetworkInitializing ||
+        isNetworkFailed ||
+        isConnecting ||
+        status.isConnected
+      );
+    } catch {
+      // Connector not initialized yet
+      return true;
+    }
   };
 
   // Apply modal-open class to root when modal is open
@@ -82,7 +91,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
       }
     }
 
-    // Cleanup on unmount
     return () => {
       if (rootElement) {
         rootElement.classList.remove('modal-open');
@@ -117,8 +125,13 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   };
 
   const handleBrowserWalletConnect = async (connector: WalletConnector) => {
-    const status = connector.getStatus();
-    if (isConnecting || status.isConnecting) return;
+    try {
+      const status = connector.getStatus();
+      if (isConnecting || status.isConnecting) return;
+    } catch {
+      // Connector not initialized
+      return;
+    }
 
     setConnectingId(connector.id);
     try {
@@ -132,21 +145,21 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     }
   };
 
-  const handleMetaMaskAztecConnect = async () => {
-    if (!metamaskAztecConnector) return;
-
-    setConnectingId('metamask-aztec');
+  const handleExternalSignerConnect = async (
+    connector: ExternalSignerWalletConnector
+  ) => {
+    setConnectingId(connector.id);
     try {
       // Step 1: Connect EVM wallet if not connected
       if (!isEVMConnected) {
         await connectWalletAsync();
       }
       // Step 2: Create Aztec account (will sign message to recover public key)
-      await metamaskAztecConnector.connect();
+      await connector.connect();
       onWalletConnected?.();
       onClose();
     } catch (err) {
-      console.error('Failed to connect MetaMask Aztec:', err);
+      console.error(`Failed to connect ${connector.label}:`, err);
     } finally {
       setConnectingId(null);
     }
@@ -157,11 +170,24 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     console.log('🔄 Network change requested from modal:', {
       from: currentConfig.name,
       to: networkName,
-      currentConfig,
     });
 
     if (networkName && networkName !== currentConfig.name) {
       switchToNetwork(networkName);
+    }
+  };
+
+  const getConnectorStatus = (connector: WalletConnector) => {
+    try {
+      return connector.getStatus();
+    } catch {
+      return {
+        isInstalled: false,
+        isConnected: false,
+        isConnecting: false,
+        isBusy: false,
+        error: null,
+      };
     }
   };
 
@@ -249,18 +275,18 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
             )}
           </div>
 
-          {browserWallets.length > 0 && (
+          {browserWalletConnectors.length > 0 && (
             <div className="browser-wallet-section">
               <label className="wallet-section-label">Browser Wallet</label>
-              {browserWallets.map((connector) => {
-                const status = connector.getStatus();
+              {browserWalletConnectors.map((connector) => {
+                const status = getConnectorStatus(connector);
                 const isThisConnecting = connectingId === connector.id;
                 return (
                   <button
                     key={connector.id}
                     onClick={() => handleBrowserWalletConnect(connector)}
                     type="button"
-                    disabled={isBrowserWalletDisabled(connector)}
+                    disabled={isConnectorDisabled(connector)}
                     className="modal-action-button browser-wallet-connect"
                     title={
                       !isNetworkSelected
@@ -283,36 +309,37 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
             </div>
           )}
 
-          {metamaskAztecConnector && (
+          {externalSignerConnectors.length > 0 && (
             <div className="browser-wallet-section">
-              <label className="wallet-section-label">EVM Wallet</label>
-              <button
-                onClick={handleMetaMaskAztecConnect}
-                type="button"
-                disabled={
-                  !isNetworkSelected ||
-                  isNetworkInitializing ||
-                  isNetworkFailed ||
-                  connectingId === 'metamask-aztec' ||
-                  metamaskAztecConnector.getStatus().isConnected
-                }
-                className="modal-action-button browser-wallet-connect"
-                title={
-                  !isNetworkSelected
-                    ? 'Please select a network first'
-                    : isNetworkInitializing
-                      ? 'Network is initializing...'
-                      : isNetworkFailed
-                        ? 'Network connection failed'
-                        : ''
-                }
-              >
-                {connectingId === 'metamask-aztec'
-                  ? 'Connecting...'
-                  : metamaskAztecConnector.getStatus().isConnected
-                    ? 'MetaMask Connected'
-                    : 'Connect MetaMask'}
-              </button>
+              <label className="wallet-section-label">External Signer</label>
+              {externalSignerConnectors.map((connector) => {
+                const status = getConnectorStatus(connector);
+                const isThisConnecting = connectingId === connector.id;
+                return (
+                  <button
+                    key={connector.id}
+                    onClick={() => handleExternalSignerConnect(connector)}
+                    type="button"
+                    disabled={isConnectorDisabled(connector)}
+                    className="modal-action-button browser-wallet-connect"
+                    title={
+                      !isNetworkSelected
+                        ? 'Please select a network first'
+                        : isNetworkInitializing
+                          ? 'Network is initializing...'
+                          : isNetworkFailed
+                            ? 'Network connection failed'
+                            : ''
+                    }
+                  >
+                    {isThisConnecting || status.isConnecting
+                      ? 'Connecting...'
+                      : status.isConnected
+                        ? `${connector.label} Connected`
+                        : `Connect ${connector.label}`}
+                  </button>
+                );
+              })}
             </div>
           )}
 

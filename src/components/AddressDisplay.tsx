@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAddressUtils } from '../hooks/useAddressUtils';
 import { copyToClipboard } from '../utils/clipboard';
+import { truncateAddress, formatAddress } from '../utils';
 import { useError } from '../providers/ErrorProvider';
 
 interface AddressDisplayProps {
@@ -18,7 +18,6 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
   onCopy,
   className = ''
 }) => {
-  const { truncateAddress, formatAddress } = useAddressUtils();
   const { addMessage } = useError();
 
   const displayAddress = truncateAddress(address);

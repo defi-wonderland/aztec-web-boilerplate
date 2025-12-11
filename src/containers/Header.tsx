@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { useUniversalWallet, useAddressUtils } from '../hooks';
+import { useUniversalWallet } from '../hooks';
 import { ThemeToggle, ConnectWalletModal } from '../components';
 import { WalletType } from '../types/aztec';
+import { truncateAddress, truncateCaipAddress } from '../utils';
 
 // Sub-components
 const ConnectedAccount: React.FC<{
@@ -26,7 +27,6 @@ const ConnectButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 
 export const Header: React.FC = () => {
   const { account, walletType, disconnect, connector } = useUniversalWallet();
-  const { truncateAddress, truncateCaipAddress } = useAddressUtils();
   const [showWalletModal, setShowWalletModal] = useState(false);
 
   const handleDisconnect = useCallback(async () => {
@@ -44,7 +44,7 @@ export const Header: React.FC = () => {
       connector?.label ??
       (walletType === WalletType.EMBEDDED
         ? 'Embedded'
-        : walletType === WalletType.BROWSER
+        : walletType === WalletType.BROWSER_WALLET
           ? 'Browser'
           : 'Wallet');
     const displayAddress = caipAccount

@@ -1,8 +1,8 @@
 /**
- * @deprecated Use `useBrowserWallet` instead.
+ * useBrowserWallet - Hook for Browser Wallet management
  *
- * Internal hook for Azguard wallet management
- * Used by UniversalWalletProvider - not for direct consumption
+ * Manages wallets with external PXE (browser extension like Azguard).
+ * The extension manages both signing and PXE - we just communicate via CAIP.
  */
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -28,7 +28,7 @@ import {
 import { buildRegisterContractOperations } from '../../utils/azguard';
 import type { NetworkConfig } from '../../config/networks';
 
-const DEFAULT_AZGUARD_STATE: AzguardWalletState = {
+const DEFAULT_BROWSER_WALLET_STATE: AzguardWalletState = {
   isInstalled: false,
   isConnected: false,
   isConnecting: false,
@@ -51,9 +51,7 @@ const AZGUARD_METHODS = [
   'aztec_getTxReceipt',
 ];
 
-const buildAzguardConnectionConfig = (
-  networkName: string
-): AzguardConnectionConfig => {
+const buildConnectionConfig = (networkName: string): AzguardConnectionConfig => {
   const requiredChain: AztecChainId = getChainId(networkName);
 
   return {
@@ -72,42 +70,46 @@ const buildAzguardConnectionConfig = (
         methods: AZGUARD_METHODS,
       },
     ],
-    // Only request permissions for the current network
-    // Users can reconnect if they switch networks
   };
 };
 
-export interface AzguardWalletActions {
+export interface BrowserWalletActions {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   switchAccount: (account: CaipAccount) => Promise<void>;
   executeOperations: (ops: Operation[]) => Promise<OperationResult[]>;
 }
 
-export interface UseAzguardWalletInternalReturn {
+export interface UseBrowserWalletReturn {
   state: AzguardWalletState;
-  actions: AzguardWalletActions;
+  actions: BrowserWalletActions;
   client: AzguardClient | null;
   accountWallet: AccountWithSecretKey | null;
   isLoading: boolean;
   error: string | null;
 }
 
-interface UseAzguardWalletInternalOptions {
+interface UseBrowserWalletOptions {
   config: NetworkConfig;
 }
 
-export const useAzguardWalletInternal = (
-  options: UseAzguardWalletInternalOptions
-): UseAzguardWalletInternalReturn => {
+/**
+ * Hook for managing Browser Wallets (Azguard, etc.)
+ *
+ * These wallets have their own PXE running in the extension.
+ * We communicate via CAIP protocol.
+ */
+export const useBrowserWallet = (
+  options: UseBrowserWalletOptions
+): UseBrowserWalletReturn => {
   const { config: currentConfig } = options;
-  
-  const [azguardState, setAzguardState] = useState<AzguardWalletState>(
-    DEFAULT_AZGUARD_STATE
+
+  const [walletState, setWalletState] = useState<AzguardWalletState>(
+    DEFAULT_BROWSER_WALLET_STATE
   );
   const [accountWallet, setAccountWallet] = useState<AccountWithSecretKey | null>(null);
 
-  const azguardServiceRef = useRef<AzguardWalletService | null>(null);
+  const walletServiceRef = useRef<AzguardWalletService | null>(null);
   const accountAdapterRef = useRef<AzguardAccountAdapter | null>(null);
   const isInitializedRef = useRef(false);
   const contractRegistrationRef = useRef<string | null>(null);
@@ -115,46 +117,47 @@ export const useAzguardWalletInternal = (
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { addMessage } = useError();
 
+  // Initialize wallet service
   useEffect(() => {
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
 
-    const initAzguard = async () => {
+    const initWallet = async () => {
       try {
-        const azguardService = new AzguardWalletService();
-        const accountAdapter = new AzguardAccountAdapter(azguardService);
+        const walletService = new AzguardWalletService();
+        const accountAdapter = new AzguardAccountAdapter(walletService);
 
-        azguardServiceRef.current = azguardService;
+        walletServiceRef.current = walletService;
         accountAdapterRef.current = accountAdapter;
 
-        await azguardService.initialize();
-        setAzguardState(azguardService.getState());
-        setupEventListeners(azguardService);
+        await walletService.initialize();
+        setWalletState(walletService.getState());
+        setupEventListeners(walletService);
 
-        console.log('✅ Azguard wallet service initialized');
+        console.log('✅ Browser wallet service initialized');
       } catch (err) {
-        console.error('❌ Failed to initialize Azguard wallet service:', err);
-        setAzguardState((prev) => ({
+        console.error('❌ Failed to initialize browser wallet service:', err);
+        setWalletState((prev) => ({
           ...prev,
           error:
             err instanceof Error
               ? err.message
-              : 'Failed to initialize Azguard wallet',
+              : 'Failed to initialize browser wallet',
         }));
       }
     };
 
-    initAzguard();
+    initWallet();
 
     return () => {
-      azguardServiceRef.current?.destroy();
+      walletServiceRef.current?.destroy();
       accountAdapterRef.current?.destroy();
     };
   }, []);
 
   const setupEventListeners = (service: AzguardWalletService) => {
     service.onAccountsChanged((accounts: CaipAccount[]) => {
-      setAzguardState((prev) => ({
+      setWalletState((prev) => ({
         ...prev,
         accounts,
         selectedAccount: accounts.length > 0 ? accounts[0] : null,
@@ -162,7 +165,7 @@ export const useAzguardWalletInternal = (
     });
 
     service.onDisconnected(() => {
-      setAzguardState((prev) => ({
+      setWalletState((prev) => ({
         ...prev,
         isConnected: false,
         accounts: [],
@@ -170,21 +173,21 @@ export const useAzguardWalletInternal = (
       }));
 
       addMessage({
-        message: 'Azguard wallet disconnected',
+        message: 'Browser wallet disconnected',
         type: 'info',
-        source: 'azguard',
+        source: 'wallet',
       });
     });
   };
 
   // Auto-register contracts when connected
   useEffect(() => {
-    if (!azguardState.isConnected || !azguardState.selectedAccount) {
+    if (!walletState.isConnected || !walletState.selectedAccount) {
       contractRegistrationRef.current = null;
       return;
     }
 
-    const registrationKey = `${currentConfig.name}:${azguardState.selectedAccount}`;
+    const registrationKey = `${currentConfig.name}:${walletState.selectedAccount}`;
     if (contractRegistrationRef.current === registrationKey) {
       return;
     }
@@ -193,7 +196,8 @@ export const useAzguardWalletInternal = (
 
     const registerContracts = async () => {
       try {
-        const chainFromAccount = `${azguardState.selectedAccount!.split(':').slice(0, 2).join(':')}` as AztecChainId;
+        const chainFromAccount =
+          `${walletState.selectedAccount!.split(':').slice(0, 2).join(':')}` as AztecChainId;
 
         const operations = await buildRegisterContractOperations(
           currentConfig,
@@ -202,16 +206,19 @@ export const useAzguardWalletInternal = (
 
         if (!isActive || operations.length === 0) return;
 
-        console.log(`📝 Registering ${operations.length} contracts with Azguard...`);
-        const results = await azguardServiceRef.current?.executeOperations(operations) ?? [];
+        console.log(`📝 Registering ${operations.length} contracts...`);
+        const results =
+          (await walletServiceRef.current?.executeOperations(operations)) ?? [];
 
-        const succeeded = results.filter(r => r.status === 'ok').length;
-        const failed = results.filter(r => r.status === 'failed').length;
+        const succeeded = results.filter((r) => r.status === 'ok').length;
+        const failed = results.filter((r) => r.status === 'failed').length;
 
         if (failed > 0) {
-          console.warn(`⚠️ Contract registration: ${succeeded}/${operations.length} succeeded, ${failed} failed`);
+          console.warn(
+            `⚠️ Contract registration: ${succeeded}/${operations.length} succeeded`
+          );
         } else {
-          console.log(`✅ All ${succeeded} contracts registered successfully`);
+          console.log(`✅ All ${succeeded} contracts registered`);
         }
 
         if (isActive) {
@@ -227,11 +234,11 @@ export const useAzguardWalletInternal = (
     return () => {
       isActive = false;
     };
-  }, [azguardState.isConnected, azguardState.selectedAccount, currentConfig]);
+  }, [walletState.isConnected, walletState.selectedAccount, currentConfig]);
 
   // Auto-fetch account wallet when selected account changes
   useEffect(() => {
-    if (!azguardState.isConnected || !azguardState.selectedAccount) {
+    if (!walletState.isConnected || !walletState.selectedAccount) {
       setAccountWallet(null);
       return;
     }
@@ -241,12 +248,14 @@ export const useAzguardWalletInternal = (
     const fetchAccountWallet = async () => {
       try {
         if (!accountAdapterRef.current) return;
-        const wallet = await accountAdapterRef.current.toAccountWallet(azguardState.selectedAccount!);
+        const wallet = await accountAdapterRef.current.toAccountWallet(
+          walletState.selectedAccount!
+        );
         if (isActive) {
           setAccountWallet(wallet);
         }
       } catch (err) {
-        console.error('Failed to get Azguard AccountWallet:', err);
+        console.error('Failed to get AccountWallet:', err);
         if (isActive) {
           setAccountWallet(null);
         }
@@ -258,27 +267,23 @@ export const useAzguardWalletInternal = (
     return () => {
       isActive = false;
     };
-  }, [azguardState.isConnected, azguardState.selectedAccount]);
+  }, [walletState.isConnected, walletState.selectedAccount]);
 
   const handleConnect = useCallback(async (): Promise<void> => {
     return executeAsync(async () => {
-      if (!azguardServiceRef.current) {
-        throw new Error('Azguard service not initialized');
+      if (!walletServiceRef.current) {
+        throw new Error('Browser wallet service not initialized');
       }
 
-      const connectionConfig = buildAzguardConnectionConfig(currentConfig.name);
+      const connectionConfig = buildConnectionConfig(currentConfig.name);
 
-      const supportedChains = azguardServiceRef.current.getSupportedChains();
-      console.log('🔗 Supported chains from Azguard:', supportedChains);
-      console.log('🔧 Azguard connection config:', connectionConfig);
-
-      const accounts = await azguardServiceRef.current.connect(
+      const accounts = await walletServiceRef.current.connect(
         connectionConfig.dappMetadata,
         connectionConfig.requiredPermissions,
         connectionConfig.optionalPermissions
       );
 
-      setAzguardState((prev) => ({
+      setWalletState((prev) => ({
         ...prev,
         isConnected: true,
         isConnecting: false,
@@ -288,22 +293,22 @@ export const useAzguardWalletInternal = (
       }));
 
       addMessage({
-        message: `Connected to Azguard wallet with ${accounts.length} account(s)`,
+        message: `Connected with ${accounts.length} account(s)`,
         type: 'success',
-        source: 'azguard',
+        source: 'wallet',
       });
 
-      console.log('✅ Connected to Azguard wallet:', accounts);
-    }, 'connect to Azguard wallet');
+      console.log('✅ Browser wallet connected:', accounts);
+    }, 'connect to browser wallet');
   }, [currentConfig.name, executeAsync, addMessage]);
 
   const handleDisconnect = useCallback(async (): Promise<void> => {
     return executeAsync(async () => {
-      if (!azguardServiceRef.current) return;
+      if (!walletServiceRef.current) return;
 
-      await azguardServiceRef.current.disconnect();
+      await walletServiceRef.current.disconnect();
 
-      setAzguardState((prev) => ({
+      setWalletState((prev) => ({
         ...prev,
         isConnected: false,
         accounts: [],
@@ -312,72 +317,66 @@ export const useAzguardWalletInternal = (
       }));
 
       addMessage({
-        message: 'Disconnected from Azguard wallet',
+        message: 'Disconnected from browser wallet',
         type: 'info',
-        source: 'azguard',
+        source: 'wallet',
       });
 
-      console.log('✅ Disconnected from Azguard wallet');
-    }, 'disconnect from Azguard wallet');
+      console.log('✅ Browser wallet disconnected');
+    }, 'disconnect from browser wallet');
   }, [executeAsync, addMessage]);
 
-  const handleSwitchAccount = useCallback(async (
-    newAccount: CaipAccount
-  ): Promise<void> => {
-    return executeAsync(async () => {
-      setAzguardState((prev) => {
-        if (!prev.accounts.includes(newAccount)) {
-          throw new Error('Account not found in connected accounts');
-        }
-        return {
-          ...prev,
-          selectedAccount: newAccount,
-        };
-      });
+  const handleSwitchAccount = useCallback(
+    async (newAccount: CaipAccount): Promise<void> => {
+      return executeAsync(async () => {
+        setWalletState((prev) => {
+          if (!prev.accounts.includes(newAccount)) {
+            throw new Error('Account not found');
+          }
+          return {
+            ...prev,
+            selectedAccount: newAccount,
+          };
+        });
 
-      console.log('✅ Switched to Azguard account:', newAccount);
-    }, 'switch Azguard account');
-  }, [executeAsync]);
+        console.log('✅ Switched account:', newAccount);
+      }, 'switch account');
+    },
+    [executeAsync]
+  );
 
-  const handleExecuteOperations = useCallback(async (
-    operations: Operation[]
-  ): Promise<OperationResult[]> => {
-    if (!azguardServiceRef.current) {
-      throw new Error('Azguard service not initialized');
-    }
-
-    try {
-      const results =
-        await azguardServiceRef.current.executeOperations(operations);
-      
-      const failedResults = results.filter(r => r.status === 'failed');
-      if (failedResults.length > 0) {
-        const errors = failedResults
-          .map((r, i) => `Operation ${i}: ${'error' in r ? r.error : 'Unknown error'}`)
-          .join('; ');
-        console.error('❌ Some Azguard operations failed:', errors);
-      } else {
-        console.log('✅ All Azguard operations completed successfully');
+  const handleExecuteOperations = useCallback(
+    async (operations: Operation[]): Promise<OperationResult[]> => {
+      if (!walletServiceRef.current) {
+        throw new Error('Browser wallet service not initialized');
       }
-      
-      return results;
-    } catch (err) {
-      console.error('❌ Failed to execute Azguard operations:', err);
-      throw err;
-    }
-  }, []);
 
-  const actions = useMemo(() => ({
-    connect: handleConnect,
-    disconnect: handleDisconnect,
-    switchAccount: handleSwitchAccount,
-    executeOperations: handleExecuteOperations,
-  }), [handleConnect, handleDisconnect, handleSwitchAccount, handleExecuteOperations]);
+      const results = await walletServiceRef.current.executeOperations(operations);
+
+      const failedResults = results.filter((r) => r.status === 'failed');
+      if (failedResults.length > 0) {
+        console.error('❌ Some operations failed');
+      }
+
+      return results;
+    },
+    []
+  );
+
+  const actions = useMemo(
+    () => ({
+      connect: handleConnect,
+      disconnect: handleDisconnect,
+      switchAccount: handleSwitchAccount,
+      executeOperations: handleExecuteOperations,
+    }),
+    [handleConnect, handleDisconnect, handleSwitchAccount, handleExecuteOperations]
+  );
 
   return {
-    state: azguardState,
+    state: walletState,
     actions,
-    client: azguardServiceRef.current?.getClient() ?? null,
+    client: walletServiceRef.current?.getClient() ?? null,
     accountWallet,
     isLoading,
     error,

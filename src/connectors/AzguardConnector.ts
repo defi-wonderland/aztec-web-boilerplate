@@ -3,12 +3,15 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { UseAzguardWalletInternalReturn } from '../providers/hooks';
 import { WalletType } from '../types/aztec';
 import type {
-  BrowserWalletConnector,
   ConnectorStatus,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
+  WalletConnector,
 } from '../types/walletConnector';
 
+/**
+ * @deprecated Use `BrowserWalletConnector` instead.
+ */
 export const AZGUARD_CONNECTOR_ID = 'azguard' as const;
 
 const toSendTransactionAction = (
@@ -22,10 +25,13 @@ const toSendTransactionAction = (
   ),
 });
 
-export class AzguardConnector implements BrowserWalletConnector {
+/**
+ * @deprecated Use `BrowserWalletConnector` instead.
+ */
+export class AzguardConnector implements WalletConnector {
   readonly id = AZGUARD_CONNECTOR_ID;
   readonly label = 'Azguard Wallet';
-  readonly type = WalletType.BROWSER;
+  readonly type = WalletType.BROWSER_WALLET;
 
   private azguardState: UseAzguardWalletInternalReturn | null = null;
 
