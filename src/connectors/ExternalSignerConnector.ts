@@ -76,9 +76,10 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
 
   getStatus(): ConnectorStatus {
     const state = this.getState();
+    const isSignerConnected = this.signer?.isConnected() ?? false;
     return {
       isInstalled: this.signer?.isAvailable() ?? false,
-      isConnected: state.state.aztecAccount !== null,
+      isConnected: state.state.aztecAccount !== null && isSignerConnected,
       isConnecting: state.state.isConnecting,
       isBusy: state.state.isDeploying,
       error: state.error,

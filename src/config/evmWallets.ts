@@ -24,6 +24,12 @@ export const EVM_WALLETS = {
     icon: '🦊',
     rdns: 'io.metamask',
   },
+  rabby: {
+    id: 'rabby',
+    label: 'Rabby',
+    icon: '🐰',
+    rdns: 'io.rabby',
+  },
   // Add more wallets here as needed:
   // coinbase: {
   //   id: 'coinbase',

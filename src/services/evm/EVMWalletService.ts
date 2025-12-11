@@ -19,12 +19,14 @@ export interface EVMWalletState {
   address: Hex | null;
   isConnected: boolean;
   chainId: number | null;
+  connectedRdns: string | null;
 }
 
 export class EVMWalletService {
   private walletClient: WalletClient | null = null;
   private address: Hex | null = null;
   private chainId: number | null = null;
+  private connectedRdns: string | null = null;
   private listeners: Set<EVMWalletListener> = new Set();
   private isListeningToEvents = false;
   private currentProvider: EIP1193Provider | null = null;
@@ -42,7 +44,12 @@ export class EVMWalletService {
       address: this.address,
       isConnected: this.isConnected(),
       chainId: this.chainId,
+      connectedRdns: this.connectedRdns,
     };
+  }
+
+  getConnectedRdns(): string | null {
+    return this.connectedRdns;
   }
 
   getAddress(): Hex | null {
@@ -56,8 +63,9 @@ export class EVMWalletService {
   /**
    * Connect to a wallet provider
    * @param provider - Specific EIP-1193 provider (from EIP-6963) or uses window.ethereum
+   * @param rdns - Optional rdns identifier for the connected wallet (for multi-wallet tracking)
    */
-  async connect(provider?: EIP1193Provider): Promise<Hex> {
+  async connect(provider?: EIP1193Provider, rdns?: string): Promise<Hex> {
     // Disconnect any previous connection first
     if (this.currentProvider) {
       this.disconnect();
@@ -93,6 +101,7 @@ export class EVMWalletService {
       this.address = address;
       this.chainId = chainId;
       this.currentProvider = ethereum;
+      this.connectedRdns = rdns ?? null;
 
       this.setupEventListeners();
       this.notifyListeners();
@@ -104,6 +113,7 @@ export class EVMWalletService {
       this.address = null;
       this.chainId = null;
       this.currentProvider = null;
+      this.connectedRdns = null;
       throw error;
     }
   }
@@ -114,6 +124,7 @@ export class EVMWalletService {
     this.address = null;
     this.chainId = null;
     this.currentProvider = null;
+    this.connectedRdns = null;
     this.notifyListeners();
   }
 

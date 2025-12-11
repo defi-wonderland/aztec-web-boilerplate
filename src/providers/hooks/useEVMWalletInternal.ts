@@ -84,7 +84,7 @@ export const useEVMWalletInternal = (): UseEVMWalletInternalReturn => {
           console.warn(`Wallet ${rdns} not found via EIP-6963, falling back to window.ethereum`);
         }
 
-        const connectedAddress = await service.connect(provider ?? undefined);
+        const connectedAddress = await service.connect(provider ?? undefined, rdns);
         return connectedAddress;
       } catch (err) {
         const message =

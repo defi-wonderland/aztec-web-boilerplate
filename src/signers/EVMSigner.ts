@@ -42,11 +42,19 @@ export class EVMSigner implements ExternalSigner {
   }
 
   isConnected(): boolean {
-    return this.evmService.isConnected();
+    if (!this.evmService.isConnected()) {
+      return false;
+    }
+    const connectedRdns = this.evmService.getConnectedRdns();
+    if (!this.rdns) {
+      return true;
+    }
+    return connectedRdns === this.rdns;
   }
 
   async connect(): Promise<void> {
-    if (this.evmService.isConnected()) {
+    // If already connected to this specific wallet, skip
+    if (this.isConnected()) {
       return;
     }
 
@@ -55,12 +63,11 @@ export class EVMSigner implements ExternalSigner {
       ? getEIP6963Service().getProviderByRdns(this.rdns)
       : null;
 
-
     if (this.rdns && !provider) {
       console.warn(`[EVMSigner] Wallet ${this.rdns} not found via EIP-6963, falling back to window.ethereum`);
     }
 
-    await this.evmService.connect(provider ?? undefined);
+    await this.evmService.connect(provider ?? undefined, this.rdns);
   }
 
   disconnect(): void {
