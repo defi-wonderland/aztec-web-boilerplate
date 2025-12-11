@@ -277,7 +277,6 @@ export const useEmbeddedWallet = (
       const pxeInstance = await sharedPXE.actions.initialize();
       const wallet = pxeInstance.wallet;
 
-      // First, try to connect using env credentials
       const envCredentials = await getConfiguredAccountCredentials();
       if (envCredentials) {
         console.log('🔑 Connecting with configured credentials from env...');
@@ -285,7 +284,6 @@ export const useEmbeddedWallet = (
         return account;
       }
 
-      // Fall back to localStorage
       const saved = getSavedAccount();
       if (saved) {
         console.log('🔄 Connecting with saved credentials from localStorage...');
@@ -317,11 +315,9 @@ export const useEmbeddedWallet = (
   }, [sharedPXE]);
 
   const hasSavedAccount = useCallback((): boolean => {
-    // Check if env credentials are configured
     if (hasConfiguredCredentials()) {
       return true;
     }
-    // Fall back to checking localStorage
     return getSavedAccount() !== null;
   }, []);
 

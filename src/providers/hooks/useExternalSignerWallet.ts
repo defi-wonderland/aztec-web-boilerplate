@@ -152,14 +152,10 @@ export const useExternalSignerWallet = (
 
             await deployMethod
               .send({
-                contractAddressSalt: salt,
-                fee: { paymentMethod },
-                skipClassRegistration: true,
-                skipClassPublication: true,
-                skipPublicDeployment: true,
-                universalDeploy: true,
-                skipTxValidation: true,
                 from: AztecAddress.ZERO,
+                fee: { paymentMethod },
+                skipClassPublication: true,
+                skipInstancePublication: true,
               })
               .wait({ timeout: 120 });
             console.log('✅ Account deployed successfully');

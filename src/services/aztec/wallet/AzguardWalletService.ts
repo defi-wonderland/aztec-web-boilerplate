@@ -12,7 +12,7 @@ import type {
   AzguardConnectionConfig,
   AzguardWalletState
 } from '../../../types/azguard';
-import { SUPPORTED_CHAINS, type AztecChainId } from '../../../config/networks/constants';
+import { SUPPORTED_CHAINS } from '../../../config/networks/constants';
 
 /**
  * Service class for interacting with Azguard wallet via RPC
