@@ -2,10 +2,12 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
-import type { AzguardClient } from '@azguardwallet/client';
-import type { CaipAccount, Operation, OperationResult } from '@azguardwallet/types';
 import { WalletType, ExternalSignerType } from './aztec';
 import type { ExternalSigner } from '../signers/types';
+import type {
+  BrowserWalletOperation,
+  BrowserWalletOperationResult,
+} from './browserWallet';
 
 export type WalletConnectorId = string;
 
@@ -42,12 +44,14 @@ export interface WalletConnector {
 
   getStatus(): ConnectorStatus;
   getAccount(): AccountWithSecretKey | null;
-  getCaipAccount?(): CaipAccount | null;
+  getCaipAccount?(): string | null;
 
   connect(): Promise<void>;
   disconnect(): Promise<void>;
 
-  sendTransaction(request: ConnectorTransactionRequest): Promise<ConnectorTransactionResult>;
+  sendTransaction(
+    request: ConnectorTransactionRequest
+  ): Promise<ConnectorTransactionResult>;
 }
 
 export interface EmbeddedWalletConnector extends WalletConnector {
@@ -84,11 +88,10 @@ export interface ExternalSignerWalletConnector extends WalletConnector {
 export interface BrowserWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.BROWSER_WALLET;
 
-  getCaipAccount: () => CaipAccount | null;
-  executeOperations: (operations: Operation[]) => Promise<OperationResult[]>;
-  switchAccount: (account: CaipAccount) => Promise<void>;
-  getClient: () => AzguardClient | null;
-  getAccounts: () => CaipAccount[];
+  getCaipAccount: () => string | null;
+  executeOperations: (
+    operations: BrowserWalletOperation[]
+  ) => Promise<BrowserWalletOperationResult[]>;
 }
 
 export const isEmbeddedConnector = (

@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { CaipChain } from '@azguardwallet/types';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import {
   isBrowserWalletConnector,
@@ -14,6 +13,7 @@ import type {
   ArgsOf,
   WriteContractResult,
 } from '../../types/contractTypes';
+import type { GetTxReceiptOp } from '../../types/browserWallet';
 
 /** Default polling settings for browser wallet receipt */
 const RECEIPT_POLL_INTERVAL_MS = 2000;
@@ -69,9 +69,12 @@ const waitForBrowserWalletReceipt = async (
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const [result] = await connector.executeOperations([
-        { kind: 'aztec_getTxReceipt', chain: chain as CaipChain, txHash },
-      ]);
+      const operation: GetTxReceiptOp = {
+        kind: 'aztec_getTxReceipt',
+        chain,
+        txHash,
+      };
+      const [result] = await connector.executeOperations([operation]);
 
       if (!result) {
         await new Promise((resolve) => setTimeout(resolve, intervalMs));

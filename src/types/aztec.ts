@@ -116,32 +116,6 @@ export enum ExternalSignerType {
 // ============================================================================
 
 /**
- * Azguard account adapter interface
- * Bridges between CAIP account format and AccountWithSecretKey interface
- */
-export interface IAzguardAccountAdapter {
-  /**
-   * Convert CAIP account to AccountWithSecretKey-compatible interface
-   */
-  toAccountWallet(caipAccount: CaipAccount): Promise<AccountWithSecretKey>;
-
-  /**
-   * Get the Aztec address from CAIP account
-   */
-  getAztecAddress(caipAccount: CaipAccount): AztecAddress;
-
-  /**
-   * Execute Azguard-specific operations
-   */
-  executeOperation(operation: Operation): Promise<unknown>;
-
-  /**
-   * Check if account is deployed on the network
-   */
-  isAccountDeployed(caipAccount: CaipAccount): Promise<boolean>;
-}
-
-/**
  * Azguard-specific account data for storage
  */
 export interface AzguardAccountData {

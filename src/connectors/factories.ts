@@ -1,9 +1,10 @@
 import { createEmbeddedConnector } from './EmbeddedConnector';
 import { ExternalSignerConnector } from './ExternalSignerConnector';
-import { BrowserWalletConnector, createAzguardConnector } from './BrowserWalletConnector';
+import { BrowserWalletConnector } from './BrowserWalletConnector';
 import type { ConnectorFactory } from './registry';
 import { ExternalSignerType } from '../types/aztec';
 import { EVM_WALLETS, type EVMWalletId } from '../config/evmWallets';
+import { createAzguardAdapter } from '../adapters';
 
 /**
  * Embedded wallet connector preset.
@@ -17,14 +18,19 @@ export const embedded = (): ConnectorFactory => createEmbeddedConnector;
  * Uses external PXE (browser extension).
  * Usage: connectors: [azguard()]
  */
-export const azguard = (): ConnectorFactory => createAzguardConnector;
+export const azguard = (): ConnectorFactory => () =>
+  new BrowserWalletConnector({
+    id: 'azguard',
+    label: 'Azguard Wallet',
+    adapterFactory: createAzguardAdapter,
+  });
 
 /**
  * EVM wallet connector factory.
  * Uses app-managed PXE with any EVM wallet (MetaMask, Rabby, etc.) as external signer.
- * 
+ *
  * Usage: connectors: [evmWallet('metamask'), evmWallet('rabby')]
- * 
+ *
  * @param walletId - The wallet ID from EVM_WALLETS config
  */
 export const evmWallet = (walletId: EVMWalletId): ConnectorFactory => {
@@ -36,15 +42,4 @@ export const evmWallet = (walletId: EVMWalletId): ConnectorFactory => {
       signerType: ExternalSignerType.EVM_WALLET,
       rdns: config.rdns,
     });
-};
-
-/**
- * Browser wallet connector factory.
- * Usage: connectors: [browserWallet({ id: 'custom', label: 'Custom Wallet' })]
- */
-export const browserWallet = (options?: {
-  id?: string;
-  label?: string;
-}): ConnectorFactory => {
-  return () => new BrowserWalletConnector(options);
 };

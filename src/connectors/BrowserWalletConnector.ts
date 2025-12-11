@@ -2,10 +2,9 @@
  * BrowserWalletConnector - Connector for Browser Wallet extensions
  *
  * Uses external PXE (browser extension manages everything).
- * Currently supports Azguard wallet.
+ * Supports any wallet that implements IBrowserWalletAdapter.
  */
 
-import type { SendTransactionOperation } from '@azguardwallet/types';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { WalletType } from '../types/aztec';
 import type {
@@ -15,42 +14,60 @@ import type {
   ConnectorTransactionResult,
 } from '../types/walletConnector';
 import type { UseBrowserWalletReturn } from '../providers/hooks/useBrowserWallet';
+import type {
+  IBrowserWalletAdapter,
+  BrowserWalletAdapterFactory,
+  BrowserWalletOperation,
+  SendTransactionOp,
+  ContractCall,
+} from '../types/browserWallet';
 
 export const BROWSER_WALLET_CONNECTOR_ID = 'browser-wallet' as const;
-export const AZGUARD_CONNECTOR_ID = 'azguard' as const;
 
-const toSendTransactionAction = (
+const toContractCall = (
   action: ConnectorTransactionRequest['actions'][number]
-): SendTransactionOperation['actions'][number] => ({
+): ContractCall => ({
   kind: 'call',
   contract: action.contract,
   method: action.method,
-  args: action.args.map((arg) =>
-    typeof arg === 'bigint' ? arg.toString() : String(arg)
-  ),
+  args: action.args,
 });
 
 interface BrowserWalletConnectorConfig {
-  id?: string;
-  label?: string;
+  id: string;
+  label: string;
+  adapterFactory: BrowserWalletAdapterFactory;
 }
 
 /**
- * Connector for Browser Wallet extensions (Azguard, etc.)
+ * Connector for Browser Wallet extensions (Azguard, Obsidian, etc.)
  *
  * These wallets have their own PXE running in the extension.
- * We communicate via CAIP protocol.
+ * We communicate via the adapter interface.
  */
 export class BrowserWalletConnector implements IBrowserWalletConnector {
   readonly id: string;
   readonly label: string;
   readonly type = WalletType.BROWSER_WALLET;
+  readonly adapterFactory: BrowserWalletAdapterFactory;
 
   private state: UseBrowserWalletReturn | null = null;
+  private _adapter: IBrowserWalletAdapter | null = null;
 
-  constructor(config?: BrowserWalletConnectorConfig) {
-    this.id = config?.id ?? AZGUARD_CONNECTOR_ID;
-    this.label = config?.label ?? 'Azguard Wallet';
+  constructor(config: BrowserWalletConnectorConfig) {
+    this.id = config.id;
+    this.label = config.label;
+    this.adapterFactory = config.adapterFactory;
+  }
+
+  /**
+   * Get or create the adapter instance.
+   */
+  getAdapter(): IBrowserWalletAdapter {
+    if (!this._adapter) {
+      this._adapter = this.adapterFactory();
+    }
+    return this._adapter;
   }
 
   /**
@@ -99,21 +116,23 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   ): Promise<ConnectorTransactionResult> {
     const state = this.getState();
     const account = state.state.selectedAccount;
+    const chain = state.state.supportedChains[0] ?? '';
 
     if (!account) {
       throw new Error('No account selected');
     }
 
-    const operation: SendTransactionOperation = {
+    const operation: SendTransactionOp = {
       kind: 'send_transaction',
       account,
-      actions: request.actions.map(toSendTransactionAction),
+      chain,
+      calls: request.actions.map(toContractCall),
     };
 
     const [result] = await state.actions.executeOperations([operation]);
 
     if (result.status !== 'ok') {
-      const message = 'error' in result ? result.error : 'Transaction failed';
+      const message = 'error' in result && result.error ? result.error : 'Transaction failed';
       return {
         status: 'failed',
         error: message,
@@ -127,33 +146,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     };
   }
 
-  executeOperations(
-    operations: Parameters<UseBrowserWalletReturn['actions']['executeOperations']>[0]
-  ) {
+  executeOperations(operations: BrowserWalletOperation[]) {
     return this.getState().actions.executeOperations(operations);
   }
-
-  switchAccount(
-    account: Parameters<UseBrowserWalletReturn['actions']['switchAccount']>[0]
-  ) {
-    return this.getState().actions.switchAccount(account);
-  }
-
-  getClient() {
-    return this.getState().client;
-  }
-
-  getAccounts() {
-    return this.getState().state.accounts;
-  }
 }
-
-/**
- * Factory function to create an Azguard connector
- */
-export const createAzguardConnector = (): BrowserWalletConnector => {
-  return new BrowserWalletConnector({
-    id: AZGUARD_CONNECTOR_ID,
-    label: 'Azguard Wallet',
-  });
-};

@@ -1,89 +1,37 @@
 /**
  * useBrowserWallet - Hook for Browser Wallet management
  *
- * Manages wallets with external PXE (browser extension like Azguard).
- * The extension manages both signing and PXE - we just communicate via CAIP.
+ * Manages wallets with external PXE (browser extensions like Azguard, Obsidian, etc.)
+ * The extension manages both signing and PXE - we communicate via the adapter interface.
+ *
+ * This hook is wallet-agnostic. Wallet-specific logic lives in adapters
+ * that implement IBrowserWalletAdapter.
  */
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { AzguardClient } from '@azguardwallet/client';
 import type {
-  CaipAccount,
-  Operation,
-  OperationResult,
-} from '@azguardwallet/types';
-import type {
-  AzguardWalletState,
-  AzguardConnectionConfig,
-} from '../../types/azguard';
-import { AzguardWalletService } from '../../services/aztec/wallet/AzguardWalletService';
-import { AzguardAccountAdapter } from '../../services/aztec/wallet/AzguardAccountAdapter';
+  IBrowserWalletAdapter,
+  BrowserWalletState,
+  BrowserWalletOperation,
+  BrowserWalletOperationResult,
+} from '../../types/browserWallet';
+import { DEFAULT_BROWSER_WALLET_STATE } from '../../types/browserWallet';
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { useError } from '../ErrorProvider';
-import {
-  getChainId,
-  type AztecChainId,
-} from '../../config/networks/constants';
-import { buildRegisterContractOperations } from '../../utils/azguard';
+import { buildRegisterContractOperations } from '../../utils/browserWallet';
 import type { NetworkConfig } from '../../config/networks';
-
-const DEFAULT_BROWSER_WALLET_STATE: AzguardWalletState = {
-  isInstalled: false,
-  isConnected: false,
-  isConnecting: false,
-  accounts: [],
-  selectedAccount: null,
-  supportedChains: [],
-  error: null,
-};
-
-/**
- * Azguard methods we request permission for
- */
-const AZGUARD_METHODS = [
-  'register_contract',
-  'send_transaction',
-  'simulate_views',
-  'simulate_utility',
-  'add_private_authwit',
-  'call',
-  'aztec_getTxReceipt',
-];
-
-const buildConnectionConfig = (networkName: string): AzguardConnectionConfig => {
-  const requiredChain: AztecChainId = getChainId(networkName);
-
-  return {
-    dappMetadata: {
-      name: 'Aztec Web Boilerplate',
-      description: 'Privacy-first application built on Aztec Network',
-      url: typeof window !== 'undefined' ? window.location.origin : '',
-      icon:
-        typeof window !== 'undefined'
-          ? `${window.location.origin}/favicon.ico`
-          : '',
-    },
-    requiredPermissions: [
-      {
-        chains: [requiredChain],
-        methods: AZGUARD_METHODS,
-      },
-    ],
-  };
-};
+import type { AztecChainId } from '../../config/networks/constants';
 
 export interface BrowserWalletActions {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
-  switchAccount: (account: CaipAccount) => Promise<void>;
-  executeOperations: (ops: Operation[]) => Promise<OperationResult[]>;
+  executeOperations: (ops: BrowserWalletOperation[]) => Promise<BrowserWalletOperationResult[]>;
 }
 
 export interface UseBrowserWalletReturn {
-  state: AzguardWalletState;
+  state: BrowserWalletState;
   actions: BrowserWalletActions;
-  client: AzguardClient | null;
   accountWallet: AccountWithSecretKey | null;
   isLoading: boolean;
   error: string | null;
@@ -91,58 +39,68 @@ export interface UseBrowserWalletReturn {
 
 interface UseBrowserWalletOptions {
   config: NetworkConfig;
+  adapter: IBrowserWalletAdapter | null;
 }
 
 /**
- * Hook for managing Browser Wallets (Azguard, etc.)
- *
- * These wallets have their own PXE running in the extension.
- * We communicate via CAIP protocol.
+ * Hook for managing Browser Wallets via adapter pattern.
+ * Wallet-specific logic is delegated to the provided adapter.
+ * If no adapter is provided, returns a no-op state.
  */
 export const useBrowserWallet = (
   options: UseBrowserWalletOptions
 ): UseBrowserWalletReturn => {
-  const { config: currentConfig } = options;
+  const { config: currentConfig, adapter } = options;
 
-  const [walletState, setWalletState] = useState<AzguardWalletState>(
+  const [walletState, setWalletState] = useState<BrowserWalletState>(
     DEFAULT_BROWSER_WALLET_STATE
   );
   const [accountWallet, setAccountWallet] = useState<AccountWithSecretKey | null>(null);
 
-  const walletServiceRef = useRef<AzguardWalletService | null>(null);
-  const accountAdapterRef = useRef<AzguardAccountAdapter | null>(null);
   const isInitializedRef = useRef(false);
   const contractRegistrationRef = useRef<string | null>(null);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { addMessage } = useError();
 
-  // Initialize wallet service
   useEffect(() => {
-    if (isInitializedRef.current) return;
+    if (!adapter || isInitializedRef.current) return;
     isInitializedRef.current = true;
 
     const initWallet = async () => {
       try {
-        const walletService = new AzguardWalletService();
-        const accountAdapter = new AzguardAccountAdapter(walletService);
+        await adapter.initialize();
+        setWalletState(adapter.getState());
 
-        walletServiceRef.current = walletService;
-        accountAdapterRef.current = accountAdapter;
+        adapter.onAccountsChanged((accounts) => {
+          setWalletState((prev) => ({
+            ...prev,
+            accounts,
+            selectedAccount: accounts.length > 0 ? accounts[0] : null,
+          }));
+        });
 
-        await walletService.initialize();
-        setWalletState(walletService.getState());
-        setupEventListeners(walletService);
+        adapter.onDisconnected(() => {
+          setWalletState((prev) => ({
+            ...prev,
+            isConnected: false,
+            accounts: [],
+            selectedAccount: null,
+          }));
 
-        console.log('✅ Browser wallet service initialized');
+          addMessage({
+            message: 'Browser wallet disconnected',
+            type: 'info',
+            source: 'wallet',
+          });
+        });
+
+        console.log(`✅ ${adapter.label} initialized`);
       } catch (err) {
-        console.error('❌ Failed to initialize browser wallet service:', err);
+        console.error(`❌ Failed to initialize ${adapter.label}:`, err);
         setWalletState((prev) => ({
           ...prev,
-          error:
-            err instanceof Error
-              ? err.message
-              : 'Failed to initialize browser wallet',
+          error: err instanceof Error ? err.message : 'Failed to initialize browser wallet',
         }));
       }
     };
@@ -150,39 +108,13 @@ export const useBrowserWallet = (
     initWallet();
 
     return () => {
-      walletServiceRef.current?.destroy();
-      accountAdapterRef.current?.destroy();
+      adapter.destroy();
     };
-  }, []);
-
-  const setupEventListeners = (service: AzguardWalletService) => {
-    service.onAccountsChanged((accounts: CaipAccount[]) => {
-      setWalletState((prev) => ({
-        ...prev,
-        accounts,
-        selectedAccount: accounts.length > 0 ? accounts[0] : null,
-      }));
-    });
-
-    service.onDisconnected(() => {
-      setWalletState((prev) => ({
-        ...prev,
-        isConnected: false,
-        accounts: [],
-        selectedAccount: null,
-      }));
-
-      addMessage({
-        message: 'Browser wallet disconnected',
-        type: 'info',
-        source: 'wallet',
-      });
-    });
-  };
+  }, [adapter, addMessage]);
 
   // Auto-register contracts when connected
   useEffect(() => {
-    if (!walletState.isConnected || !walletState.selectedAccount) {
+    if (!adapter || !walletState.isConnected || !walletState.selectedAccount) {
       contractRegistrationRef.current = null;
       return;
     }
@@ -207,16 +139,13 @@ export const useBrowserWallet = (
         if (!isActive || operations.length === 0) return;
 
         console.log(`📝 Registering ${operations.length} contracts...`);
-        const results =
-          (await walletServiceRef.current?.executeOperations(operations)) ?? [];
+        const results = await adapter.executeOperations(operations);
 
         const succeeded = results.filter((r) => r.status === 'ok').length;
         const failed = results.filter((r) => r.status === 'failed').length;
 
         if (failed > 0) {
-          console.warn(
-            `⚠️ Contract registration: ${succeeded}/${operations.length} succeeded`
-          );
+          console.warn(`⚠️ Contract registration: ${succeeded}/${operations.length} succeeded`);
         } else {
           console.log(`✅ All ${succeeded} contracts registered`);
         }
@@ -234,11 +163,11 @@ export const useBrowserWallet = (
     return () => {
       isActive = false;
     };
-  }, [walletState.isConnected, walletState.selectedAccount, currentConfig]);
+  }, [walletState.isConnected, walletState.selectedAccount, currentConfig, adapter]);
 
   // Auto-fetch account wallet when selected account changes
   useEffect(() => {
-    if (!walletState.isConnected || !walletState.selectedAccount) {
+    if (!adapter || !walletState.isConnected || !walletState.selectedAccount) {
       setAccountWallet(null);
       return;
     }
@@ -247,10 +176,7 @@ export const useBrowserWallet = (
 
     const fetchAccountWallet = async () => {
       try {
-        if (!accountAdapterRef.current) return;
-        const wallet = await accountAdapterRef.current.toAccountWallet(
-          walletState.selectedAccount!
-        );
+        const wallet = await adapter.toAccountWallet(walletState.selectedAccount!);
         if (isActive) {
           setAccountWallet(wallet);
         }
@@ -267,21 +193,14 @@ export const useBrowserWallet = (
     return () => {
       isActive = false;
     };
-  }, [walletState.isConnected, walletState.selectedAccount]);
+  }, [walletState.isConnected, walletState.selectedAccount, adapter]);
 
   const handleConnect = useCallback(async (): Promise<void> => {
+    if (!adapter) {
+      throw new Error('No browser wallet adapter configured');
+    }
     return executeAsync(async () => {
-      if (!walletServiceRef.current) {
-        throw new Error('Browser wallet service not initialized');
-      }
-
-      const connectionConfig = buildConnectionConfig(currentConfig.name);
-
-      const accounts = await walletServiceRef.current.connect(
-        connectionConfig.dappMetadata,
-        connectionConfig.requiredPermissions,
-        connectionConfig.optionalPermissions
-      );
+      const accounts = await adapter.connect(currentConfig.name);
 
       setWalletState((prev) => ({
         ...prev,
@@ -298,15 +217,14 @@ export const useBrowserWallet = (
         source: 'wallet',
       });
 
-      console.log('✅ Browser wallet connected:', accounts);
-    }, 'connect to browser wallet');
-  }, [currentConfig.name, executeAsync, addMessage]);
+      console.log(`✅ ${adapter.label} connected:`, accounts);
+    }, `connect to ${adapter.label}`);
+  }, [currentConfig.name, executeAsync, addMessage, adapter]);
 
   const handleDisconnect = useCallback(async (): Promise<void> => {
+    if (!adapter) return;
     return executeAsync(async () => {
-      if (!walletServiceRef.current) return;
-
-      await walletServiceRef.current.disconnect();
+      await adapter.disconnect();
 
       setWalletState((prev) => ({
         ...prev,
@@ -317,41 +235,21 @@ export const useBrowserWallet = (
       }));
 
       addMessage({
-        message: 'Disconnected from browser wallet',
+        message: `Disconnected from ${adapter.label}`,
         type: 'info',
         source: 'wallet',
       });
 
-      console.log('✅ Browser wallet disconnected');
-    }, 'disconnect from browser wallet');
-  }, [executeAsync, addMessage]);
-
-  const handleSwitchAccount = useCallback(
-    async (newAccount: CaipAccount): Promise<void> => {
-      return executeAsync(async () => {
-        setWalletState((prev) => {
-          if (!prev.accounts.includes(newAccount)) {
-            throw new Error('Account not found');
-          }
-          return {
-            ...prev,
-            selectedAccount: newAccount,
-          };
-        });
-
-        console.log('✅ Switched account:', newAccount);
-      }, 'switch account');
-    },
-    [executeAsync]
-  );
+      console.log(`✅ ${adapter.label} disconnected`);
+    }, `disconnect from ${adapter.label}`);
+  }, [executeAsync, addMessage, adapter]);
 
   const handleExecuteOperations = useCallback(
-    async (operations: Operation[]): Promise<OperationResult[]> => {
-      if (!walletServiceRef.current) {
-        throw new Error('Browser wallet service not initialized');
+    async (operations: BrowserWalletOperation[]): Promise<BrowserWalletOperationResult[]> => {
+      if (!adapter) {
+        throw new Error('No browser wallet adapter configured');
       }
-
-      const results = await walletServiceRef.current.executeOperations(operations);
+      const results = await adapter.executeOperations(operations);
 
       const failedResults = results.filter((r) => r.status === 'failed');
       if (failedResults.length > 0) {
@@ -360,23 +258,21 @@ export const useBrowserWallet = (
 
       return results;
     },
-    []
+    [adapter]
   );
 
   const actions = useMemo(
     () => ({
       connect: handleConnect,
       disconnect: handleDisconnect,
-      switchAccount: handleSwitchAccount,
       executeOperations: handleExecuteOperations,
     }),
-    [handleConnect, handleDisconnect, handleSwitchAccount, handleExecuteOperations]
+    [handleConnect, handleDisconnect, handleExecuteOperations]
   );
 
   return {
     state: walletState,
     actions,
-    client: walletServiceRef.current?.getClient() ?? null,
     accountWallet,
     isLoading,
     error,

@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { SimulateViewsOperation } from '@azguardwallet/types';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import {
   isBrowserWalletConnector,
@@ -13,6 +12,7 @@ import type {
   ArgsOf,
   ReadContractResult,
 } from '../../types/contractTypes';
+import type { SimulateViewsOp } from '../../types/browserWallet';
 
 /**
  * Type helper to extract contract type from a contract class.
@@ -88,7 +88,7 @@ export const useReadContract = () => {
             return { success: false, error: errorMsg };
           }
 
-          const operation: SimulateViewsOperation = {
+          const operation: SimulateViewsOp = {
             kind: 'simulate_views',
             account: selectedAccount,
             calls: [
@@ -96,9 +96,7 @@ export const useReadContract = () => {
                 kind: 'call',
                 contract: address,
                 method: String(functionName),
-                args: (args as unknown[]).map((arg) =>
-                  typeof arg === 'bigint' ? arg.toString() : String(arg)
-                ),
+                args: args as unknown[],
               },
             ],
           };
@@ -107,7 +105,7 @@ export const useReadContract = () => {
           const result = results[0];
 
           if (result.status !== 'ok') {
-            const errorMsg = 'error' in result ? result.error : 'Simulation failed';
+            const errorMsg = 'error' in result && result.error ? result.error : 'Simulation failed';
             setError(errorMsg);
             return { success: false, error: errorMsg };
           }

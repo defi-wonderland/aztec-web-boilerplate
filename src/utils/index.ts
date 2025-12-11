@@ -1,13 +1,15 @@
 import { AztecAddress } from "@aztec/aztec.js/addresses";
 import { Fr } from "@aztec/aztec.js/fields";
 import { hasHexPrefix } from '@aztec/foundation/string';
-import type { CaipAccount } from '@azguardwallet/types';
 import { PLACEHOLDER_ADDRESS } from "../config/deployments";
 import type { WalletConnector } from "../types/walletConnector";
 import { isBrowserWalletConnector } from "../types/walletConnector";
 import { CHAIN_ID_TO_NETWORK, NETWORK_NAMES } from '../config/networks/constants';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
+
+/** CAIP account format: "namespace:chainId:address" (e.g., "aztec:1:0x123...") */
+type CaipAccountString = string;
 
 // ============================================================================
 // ADDRESS UTILITIES
@@ -28,7 +30,7 @@ export const formatAddress = (address: string | undefined): string => {
   return hasHexPrefix(address) ? address : `0x${address}`;
 };
 
-export const truncateCaipAddress = (caipAccount: CaipAccount | undefined): string => {
+export const truncateCaipAddress = (caipAccount: CaipAccountString | undefined): string => {
   if (!caipAccount) return '';
   const address = caipAccount.split(':')[2];
   const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
@@ -36,7 +38,7 @@ export const truncateCaipAddress = (caipAccount: CaipAccount | undefined): strin
   return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
 };
 
-export const getCaipChainName = (caipAccount: CaipAccount): string => {
+export const getCaipChainName = (caipAccount: CaipAccountString): string => {
   const chainId = caipAccount.split(':')[1];
   const network = CHAIN_ID_TO_NETWORK[chainId];
   return network ? NETWORK_NAMES[network] : `Chain ${chainId}`;
