@@ -1,20 +1,48 @@
 import { AztecAddress } from "@aztec/aztec.js/addresses";
 import { Fr } from "@aztec/aztec.js/fields";
 import { PLACEHOLDER_ADDRESS } from "../config/deployments";
+import type { WalletConnector } from "../types/walletConnector";
+import { isBrowserWalletConnector } from "../types/walletConnector";
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
 
+// ============================================================================
+// CONTRACT UTILITIES
+// ============================================================================
+
 /**
- * Type guard to check if a contract is an Azguard proxy marker.
- * Azguard proxies don't have real contract methods - all calls go through Azguard's execute API.
+ * Checks if an object is a browser wallet placeholder (not a real contract).
+ * Browser wallets can't create real contract instances, so they use placeholders.
  */
-export const isAzguardProxy = (contract: unknown): boolean => {
+export const isBrowserWalletPlaceholder = (contract: unknown): boolean => {
   return (
     typeof contract === 'object' &&
     contract !== null &&
-    '__azguardProxy' in contract &&
-    (contract as { __azguardProxy: boolean }).__azguardProxy === true
+    '__browserWalletPlaceholder' in contract &&
+    (contract as { __browserWalletPlaceholder: boolean }).__browserWalletPlaceholder === true
   );
+};
+
+/**
+ * Determines if the operations-based flow should be used for transactions.
+ * This is typically for browser wallets where contracts are proxy markers.
+ * 
+ * @param connector - The wallet connector
+ * @param contracts - The contracts to check (all must be proxy contracts)
+ * @returns true if operations flow should be used
+ */
+export const shouldUseOperationsFlow = (
+  connector: WalletConnector | null,
+  ...contracts: unknown[]
+): boolean => {
+  if (!connector) return false;
+  
+  // Must be a browser wallet that supports operations execution
+  if (!isBrowserWalletConnector(connector)) return false;
+  if (typeof connector.sendTransaction !== 'function') return false;
+  
+  // All provided contracts must be browser wallet placeholders
+  return contracts.every(isBrowserWalletPlaceholder);
 };
 
 /**

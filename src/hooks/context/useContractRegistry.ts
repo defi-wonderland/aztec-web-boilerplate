@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useContractRegistryContext } from '../../providers/AztecContractProvider';
+import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
 import type {
   ContractConfigMap,
   ContractNames,
@@ -22,7 +22,7 @@ import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
  *   register,
  *   registerMany,
  *   status,
- * } = useContractRegistry<typeof aztecContracts>();
+ * } = useContractRegistry<typeof contractsConfig>();
  *
  * // Check if a contract is ready
  * if (isRegistered('dripper')) {
@@ -37,7 +37,7 @@ import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
  * ```
  */
 export function useContractRegistry<
-  T extends ContractConfigMap = ContractConfigMap
+  T extends ContractConfigMap = ContractConfigMap,
 >(): UseContractRegistryReturn<T> {
   const { registry, status, error } = useContractRegistryContext<T>();
 
@@ -109,6 +109,3 @@ export function useContractRegistry<
     ]
   );
 }
-
-
-

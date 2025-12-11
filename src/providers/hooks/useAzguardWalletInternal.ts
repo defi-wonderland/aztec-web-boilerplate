@@ -46,6 +46,7 @@ const AZGUARD_METHODS = [
   'simulate_utility',
   'add_private_authwit',
   'call',
+  'aztec_getTxReceipt',
 ];
 
 const buildAzguardConnectionConfig = (
@@ -194,7 +195,6 @@ export const useAzguardWalletInternal = (
 
         const operations = await buildRegisterContractOperations(
           currentConfig,
-          undefined,
           chainFromAccount
         );
 

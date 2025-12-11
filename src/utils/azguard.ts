@@ -4,31 +4,29 @@ import { Fr } from '@aztec/aztec.js/fields';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import type { NetworkConfig } from '../config/networks';
-import {
-  getChainId,
-  type AztecChainId,
-} from '../config/networks/constants';
-import {
-  aztecContracts,
-  CORE_CONTRACTS,
-  getContractsForConfig,
-} from '../config/contracts';
-import type { ContractNames } from '../contract-registry';
-
-type KnownContract = ContractNames<typeof aztecContracts>;
+import { getChainId, type AztecChainId } from '../config/networks/constants';
+import { contractsConfig, getArtifactOverrides } from '../config/contracts';
+import { getContractsForConfig, type ContractNames } from '../contract-registry';
 
 /**
- * Build all contract registration operations for Azguard
- * Registers app-specific contracts with full instance and artifact
+ * Build all contract registration operations for Azguard.
+ * Registers ALL app contracts (lazyRegister is ignored for browser wallets
+ * since they manage their own PXE and don't support lazy loading).
  */
 export const buildRegisterContractOperations = async (
   config: NetworkConfig,
-  contractNames: KnownContract[] = CORE_CONTRACTS as KnownContract[],
   chainOverride?: AztecChainId
 ): Promise<RegisterContractOperation[]> => {
   const chain = chainOverride ?? getChainId(config.name);
   const operations: RegisterContractOperation[] = [];
-  const contracts = getContractsForConfig(config);
+  const contracts = getContractsForConfig(
+    contractsConfig,
+    getArtifactOverrides(config.name)
+  );
+
+  const contractNames = Object.keys(contracts) as ContractNames<
+    typeof contractsConfig
+  >[];
 
   for (const name of contractNames) {
     const definition = contracts[name];

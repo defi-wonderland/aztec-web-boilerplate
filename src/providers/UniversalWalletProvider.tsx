@@ -82,12 +82,13 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
 
   const connectors = walletKit.getConnectors();
   for (const connector of connectors) {
-    if (connector instanceof EmbeddedConnector) {
-      connector.updateState(embedded);
-    } else if (connector instanceof AzguardConnector) {
-      connector.updateState(azguard);
-    } else if (connector instanceof MetaMaskAztecConnector) {
-      connector.updateState(metamask);
+    if ('updateState' in connector && typeof connector.updateState === 'function') {
+      if (connector.type === WalletType.EMBEDDED) {
+        (connector as EmbeddedConnector).updateState(embedded);
+      }
+      if (connector.type === WalletType.BROWSER) {
+        (connector as AzguardConnector).updateState(azguard);
+      }
     }
   }
 

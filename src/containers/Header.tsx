@@ -1,17 +1,16 @@
 import React, { useState, useCallback } from 'react';
 import { useUniversalWallet, useAddressUtils } from '../hooks';
-import { ThemeToggle, EmbeddedWalletModal } from '../components';
+import { ThemeToggle, ConnectWalletModal } from '../components';
 import { WalletType } from '../types/aztec';
-import { AzguardConnector } from '../connectors/AzguardConnector';
 
 // Sub-components
 const ConnectedAccount: React.FC<{
-  walletType: 'Azguard' | 'Embedded' | 'MetaMask';
+  walletName: string;
   address: string;
   onDisconnect: () => void;
-}> = ({ walletType, address, onDisconnect }) => (
+}> = ({ walletName, address, onDisconnect }) => (
   <div className="connected-account-section">
-    <span className="wallet-type">{walletType}</span>
+    <span className="wallet-type">{walletName}</span>
     <span className="account-address">{address}</span>
     <button onClick={onDisconnect} type="button" className="disconnect-button">
       Disconnect
@@ -26,14 +25,8 @@ const ConnectButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 );
 
 export const Header: React.FC = () => {
-  const { account, walletType, disconnect, connectors } = useUniversalWallet();
+  const { account, walletType, disconnect, connector } = useUniversalWallet();
   const { truncateAddress, truncateCaipAddress } = useAddressUtils();
-  const azguardConnector = connectors.find(
-    (conn): conn is AzguardConnector => conn instanceof AzguardConnector
-  );
-  const azguardStatus = azguardConnector?.getStatus();
-  const azguardAccount = azguardConnector?.getCaipAccount?.();
-  
   const [showWalletModal, setShowWalletModal] = useState(false);
 
   const handleDisconnect = useCallback(async () => {
@@ -45,27 +38,26 @@ export const Header: React.FC = () => {
   }, []);
 
   const renderAccountSection = () => {
-    // Determine wallet label and address
-    let walletLabel: 'Azguard' | 'Embedded' | 'MetaMask' | null = null;
-    let address: string | null = null;
+    const status = connector?.getStatus();
+    const caipAccount = connector?.getCaipAccount?.();
+    const walletName =
+      connector?.label ??
+      (walletType === WalletType.EMBEDDED
+        ? 'Embedded'
+        : walletType === WalletType.BROWSER
+          ? 'Browser'
+          : 'Wallet');
+    const displayAddress = caipAccount
+      ? truncateCaipAddress(caipAccount)
+      : account
+        ? truncateAddress(account.getAddress().toString())
+        : null;
 
-    if (azguardStatus?.isConnected && azguardAccount) {
-      walletLabel = 'Azguard';
-      address = truncateCaipAddress(azguardAccount);
-    } else if (account) {
-      address = truncateAddress(account.getAddress().toString());
-      if (walletType === WalletType.EMBEDDED) {
-        walletLabel = 'Embedded';
-      } else if (walletType === WalletType.METAMASK) {
-        walletLabel = 'MetaMask';
-      }
-    }
-
-    if (walletLabel && address) {
+    if (status?.isConnected && displayAddress) {
       return (
         <ConnectedAccount
-          walletType={walletLabel}
-          address={address}
+          walletName={walletName}
+          address={displayAddress}
           onDisconnect={handleDisconnect}
         />
       );
@@ -81,15 +73,13 @@ export const Header: React.FC = () => {
         <div className="nav-container">
           <div className="nav-title">Aztec Web Boilerplate</div>
           <div className="nav-controls">
-            <div className="account-controls">
-              {renderAccountSection()}
-            </div>
+            <div className="account-controls">{renderAccountSection()}</div>
             <ThemeToggle />
           </div>
         </div>
       </nav>
-      
-      <EmbeddedWalletModal
+
+      <ConnectWalletModal
         isOpen={showWalletModal}
         onClose={() => setShowWalletModal(false)}
         onWalletConnected={handleWalletConnected}

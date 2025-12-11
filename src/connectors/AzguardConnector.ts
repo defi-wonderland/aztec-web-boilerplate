@@ -3,11 +3,13 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { UseAzguardWalletInternalReturn } from '../providers/hooks';
 import { WalletType } from '../types/aztec';
 import type {
+  BrowserWalletConnector,
   ConnectorStatus,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
-  WalletConnector,
 } from '../types/walletConnector';
+
+export const AZGUARD_CONNECTOR_ID = 'azguard' as const;
 
 const toSendTransactionAction = (
   action: ConnectorTransactionRequest['actions'][number]
@@ -15,19 +17,15 @@ const toSendTransactionAction = (
   kind: 'call',
   contract: action.contract,
   method: action.method,
-  args: action.args.map((arg) => (typeof arg === 'bigint' ? arg.toString() : String(arg))),
+  args: action.args.map((arg) =>
+    typeof arg === 'bigint' ? arg.toString() : String(arg)
+  ),
 });
 
-export class AzguardConnector implements WalletConnector {
-  readonly id = 'azguard';
+export class AzguardConnector implements BrowserWalletConnector {
+  readonly id = AZGUARD_CONNECTOR_ID;
   readonly label = 'Azguard Wallet';
-  readonly type = WalletType.AZGUARD;
-  readonly capabilities = {
-    hasPXE: false,
-    hasSponsoredFees: false,
-    canExecuteOperations: true,
-    canSwitchAccounts: true,
-  } as const;
+  readonly type = WalletType.BROWSER;
 
   private azguardState: UseAzguardWalletInternalReturn | null = null;
 
@@ -71,7 +69,9 @@ export class AzguardConnector implements WalletConnector {
     return this.azguard.actions.disconnect();
   }
 
-  async sendTransaction(request: ConnectorTransactionRequest): Promise<ConnectorTransactionResult> {
+  async sendTransaction(
+    request: ConnectorTransactionRequest
+  ): Promise<ConnectorTransactionResult> {
     const account = this.azguard.state.selectedAccount;
     if (!account) {
       throw new Error('No Azguard account selected');
@@ -100,11 +100,19 @@ export class AzguardConnector implements WalletConnector {
     };
   }
 
-  executeOperations(operations: Parameters<UseAzguardWalletInternalReturn['actions']['executeOperations']>[0]) {
+  executeOperations(
+    operations: Parameters<
+      UseAzguardWalletInternalReturn['actions']['executeOperations']
+    >[0]
+  ) {
     return this.azguard.actions.executeOperations(operations);
   }
 
-  switchAccount(account: Parameters<UseAzguardWalletInternalReturn['actions']['switchAccount']>[0]) {
+  switchAccount(
+    account: Parameters<
+      UseAzguardWalletInternalReturn['actions']['switchAccount']
+    >[0]
+  ) {
     return this.azguard.actions.switchAccount(account);
   }
 
@@ -116,4 +124,3 @@ export class AzguardConnector implements WalletConnector {
     return this.azguard.state.accounts;
   }
 }
-

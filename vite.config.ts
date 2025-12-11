@@ -111,12 +111,19 @@ export default defineConfig({
     port: 3000,
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-      // Additional headers for WASM support
+      'Cross-Origin-Embedder-Policy': 'credentialless',
       'Cross-Origin-Resource-Policy': 'cross-origin',
     },
     fs: {
       allow: ['..'],
+    },
+  },
+  preview: {
+    port: 3000,
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+      'Cross-Origin-Resource-Policy': 'cross-origin',
     },
   },
   build: {
@@ -157,24 +164,21 @@ export default defineConfig({
       'stream-browserify',
       'util',
       'path-browserify',
-      '@aztec/bb.js',
-      '@rainbow-me/rainbowkit',
       '@tanstack/react-query',
-      'wagmi',
-      'viem',
     ],
     exclude: [
+      '@aztec/bb.js',
       '@aztec/pxe',
       '@aztec/pxe/client/lazy',
       '@aztec/foundation',
       '@aztec/circuits.js',
       '@aztec/noir-contracts.js',
       '@aztec/ethereum',
+      '@aztec/accounts',
       '@defi-wonderland/aztec-standards',
       'noirc_abi_wasm',
     ],
     esbuildOptions: {
-      // Handle Node.js built-in modules
       define: {
         global: 'globalThis',
       },

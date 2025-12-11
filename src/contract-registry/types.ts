@@ -43,6 +43,8 @@ export interface ContractConfigDefinition<TConfig = NetworkConfig, TContract = u
   address: (config: TConfig) => string;
   /** Function to derive deployment parameters from app config */
   deployParams: (config: TConfig) => ContractDeployParams;
+  /** If true, contract won't be registered at init (on-demand only). Default: false */
+  lazyRegister?: boolean;
 }
 
 /**

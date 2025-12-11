@@ -5,7 +5,7 @@ import { AztecStorageService } from '../storage';
 /**
  * Wallet services returned from initialization.
  * 
- * Note: Contract registration is now handled separately via AztecContractProvider.
+ * Note: Contract registration is now handled separately via EmbeddedContractProvider.
  * Use the useContract or useContractRegistry hooks to access registered contracts.
  */
 export interface WalletServices {
@@ -22,27 +22,24 @@ export interface WalletServices {
  * @example
  * ```tsx
  * // In your provider setup:
- * const services = await initializeWalletServices(nodeUrl, config);
+ * const services = await initializeWalletServices(nodeUrl, 'sandbox');
  * 
- * // Then wrap with AztecContractProvider to register contracts:
- * <AztecContractProvider
- *   contracts={aztecContracts}
- *   pxe={services.walletService.getPXE()}
- *   config={config}
- * >
+ * // Then wrap with EmbeddedContractProvider to register contracts:
+ * <EmbeddedContractProvider>
  *   {children}
- * </AztecContractProvider>
+ * </EmbeddedContractProvider>
  * ```
  */
 export const initializeWalletServices = async (
-  nodeUrl: string
+  nodeUrl: string,
+  networkName?: string
 ): Promise<WalletServices> => {
   // Initialize storage service
   const storageService = new AztecStorageService();
 
   // Initialize wallet service (creates PXE connection)
   const walletService = new AztecWalletService();
-  await walletService.initialize(nodeUrl);
+  await walletService.initialize(nodeUrl, networkName);
 
   // Register saved senders with PXE
   await registerSavedSenders(walletService, storageService);

@@ -42,6 +42,7 @@ export const createAccount = async (
       deployWorker.deploy(
         {
           nodeUrl: config?.nodeUrl || 'http://localhost:8080',
+          networkName: config?.name,
           secretKey: result.secretKey.toString(),
           signingKeyHex: result.signingKey.toString('hex'),
           salt: result.salt.toString(),
@@ -95,7 +96,7 @@ export const connectExistingAccount = async (
   let account = walletServices.storageService.getAccount();
   let wallet: AccountWithSecretKey | null = null;
 
-  if (!account && config?.name === 'devnet') {
+  if (!account) {
     const credentials = await getConfiguredAccountCredentials();
     if (credentials) {
       wallet =
@@ -139,6 +140,7 @@ export const connectExistingAccount = async (
       deployWorker.deploy(
         {
           nodeUrl: config?.nodeUrl || 'http://localhost:8080',
+          networkName: config?.name,
           secretKey: account.secretKey,
           signingKeyHex: account.signingKey,
           salt: account.salt,

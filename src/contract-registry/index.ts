@@ -12,8 +12,13 @@ export type {
   IContractRegistry,
 } from './types';
 
-// Config helper
-export { createContractConfig } from './createContractConfig';
+export {
+  createContractConfig,
+  getDeployerAddress,
+  getTokenConstructorArgs,
+  getContractsForConfig,
+  type ArtifactOverrides,
+} from './helpers';
 
 // Registry class
 export { ContractRegistry } from './ContractRegistry';

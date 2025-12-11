@@ -6,7 +6,7 @@ import { wagmiConfig } from '../config/wagmi';
 import { ErrorProvider } from './ErrorProvider';
 import { UniversalWalletProvider } from './UniversalWalletProvider';
 import { ThemeProvider } from './ThemeProvider';
-import { ContractProviderWrapper } from './ContractProviderWrapper';
+import { EmbeddedContractProvider } from './EmbeddedContractProvider';
 import { walletKitConfig } from '../config/walletKit';
 
 interface AppProviderProps {
@@ -20,7 +20,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         <ThemeProvider>
           <ErrorProvider>
             <UniversalWalletProvider config={walletKitConfig}>
-              <ContractProviderWrapper>{children}</ContractProviderWrapper>
+              <EmbeddedContractProvider>{children}</EmbeddedContractProvider>
             </UniversalWalletProvider>
           </ErrorProvider>
         </ThemeProvider>

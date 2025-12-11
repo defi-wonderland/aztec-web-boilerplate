@@ -64,6 +64,7 @@ export const useEmbeddedWalletInternal = (
 
   const walletServicesRef = useRef<WalletServices | null>(null);
   const isInitializingRef = useRef(false);
+  const pendingConfigRef = useRef<NetworkConfig | null>(null);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
   const { addMessage } = useError();
@@ -76,17 +77,18 @@ export const useEmbeddedWalletInternal = (
     return walletServicesRef.current;
   };
 
-  const initialize = async (): Promise<void> => {
+  const initialize = async (targetConfig: NetworkConfig): Promise<void> => {
     if (isInitializingRef.current) {
-      console.log('🔄 Embedded wallet initialization already in progress, skipping');
+      pendingConfigRef.current = targetConfig;
       return;
     }
 
     try {
       isInitializingRef.current = true;
+      pendingConfigRef.current = null;
 
       await executeAsync(async () => {
-        const services = await initializeWalletServices(config.nodeUrl);
+        const services = await initializeWalletServices(targetConfig.nodeUrl, targetConfig.name);
         walletServicesRef.current = services;
         setIsInitialized(true);
 
@@ -99,7 +101,7 @@ export const useEmbeddedWalletInternal = (
               services,
               setIsDeploying,
               addMessage,
-              config
+              targetConfig
             );
             if (wallet) {
               setEmbeddedAccount(wallet);
@@ -121,6 +123,11 @@ export const useEmbeddedWalletInternal = (
       console.error('Embedded wallet initialization failed:', err);
     } finally {
       isInitializingRef.current = false;
+      if (pendingConfigRef.current && pendingConfigRef.current.name !== targetConfig.name) {
+        const nextConfig = pendingConfigRef.current;
+        pendingConfigRef.current = null;
+        initialize(nextConfig);
+      }
     }
   };
 
@@ -139,7 +146,7 @@ export const useEmbeddedWalletInternal = (
       isInitializingRef.current = false;
     }
 
-    initialize();
+    initialize(config);
   }, [config, resetToDefault]);
 
   const handleCreateAccount = async (): Promise<AccountWithSecretKey> => {
@@ -173,11 +180,7 @@ export const useEmbeddedWalletInternal = (
   };
 
   const handleReinitialize = async (): Promise<void> => {
-    return executeAsync(async () => {
-      const services = await initializeWalletServices(config.nodeUrl);
-      walletServicesRef.current = services;
-      setIsInitialized(true);
-    }, 'reinitialize wallet');
+    return initialize(config);
   };
 
   return {
