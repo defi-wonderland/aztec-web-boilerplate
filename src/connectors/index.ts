@@ -21,6 +21,3 @@ export {
 export { createConnectorRegistry } from './registry';
 export type { ConnectorFactory, ConnectorRegistryOptions } from './registry';
 export { embedded, azguard, evmWallet, browserWallet } from './factories';
-
-// Legacy connectors (for backwards compatibility during transition)
-export { AzguardConnector } from './AzguardConnector';

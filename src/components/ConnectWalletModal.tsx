@@ -39,6 +39,11 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     isEmbeddedConnector(conn)
   );
 
+  // Check if embedded connector has a saved account
+  const hasSavedEmbeddedAccount = embeddedConnector && isEmbeddedConnector(embeddedConnector)
+    ? embeddedConnector.hasSavedAccount()
+    : false;
+
   // Get external signer connectors (MetaMask, etc.)
   const externalSignerConnectors = connectors.filter(
     (conn): conn is ExternalSignerWalletConnector =>
@@ -342,7 +347,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
               <button
                 onClick={() => handleEmbeddedWalletAction('existing')}
                 type="button"
-                disabled={isActionDisabled}
+                disabled={isActionDisabled || !hasSavedEmbeddedAccount}
                 className="modal-action-button primary"
                 title={
                   !isNetworkSelected
@@ -351,7 +356,9 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                       ? 'Network is initializing...'
                       : isNetworkFailed
                         ? 'Network connection failed'
-                        : ''
+                        : !hasSavedEmbeddedAccount
+                          ? 'No saved account found'
+                          : ''
                 }
               >
                 {isConnecting ? 'Connecting...' : 'Connect Existing Account'}

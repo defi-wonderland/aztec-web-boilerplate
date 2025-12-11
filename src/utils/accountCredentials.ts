@@ -7,6 +7,15 @@ const getEnv = () =>
   }).env;
 
 /**
+ * Check if account credentials are configured in environment variables.
+ * This is a synchronous check that can be used for UI state.
+ */
+export const hasConfiguredCredentials = (): boolean => {
+  const env = getEnv();
+  return !!env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY;
+};
+
+/**
  * Normalize hex string by removing 0x prefix if present
  */
 const normalizeHex = (value: string): string => {

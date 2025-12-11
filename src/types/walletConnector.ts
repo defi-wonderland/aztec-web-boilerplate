@@ -59,6 +59,7 @@ export interface EmbeddedWalletConnector extends WalletConnector {
   createAccount: () => Promise<AccountWithSecretKey>;
   connectTestAccount: (index: number) => Promise<AccountWithSecretKey>;
   connectExistingAccount: () => Promise<AccountWithSecretKey | null>;
+  hasSavedAccount: () => boolean;
   isDeploying: () => boolean;
 }
 

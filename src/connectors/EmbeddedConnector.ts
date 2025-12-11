@@ -101,6 +101,10 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
     return this.getState().actions.connectExisting();
   }
 
+  hasSavedAccount() {
+    return this.getState().actions.hasSavedAccount();
+  }
+
   isDeploying() {
     return this.getState().state.isDeploying;
   }
