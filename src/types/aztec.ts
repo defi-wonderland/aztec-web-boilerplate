@@ -1,11 +1,9 @@
-import type { PXE } from '@aztec/pxe/server';
 import type { Fr } from '@aztec/aztec.js/fields';
 import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
-import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
-import type { CaipAccount, Operation } from '@azguardwallet/types';
+import type { CaipAccount } from '@azguardwallet/types';
 
 // ============================================================================
 // STORAGE SERVICE INTERFACES
@@ -46,28 +44,6 @@ export interface AccountCredentials {
   secretKey: Fr;
   signingKey: Buffer;
   salt: Fr;
-}
-
-export interface IAztecWalletService {
-  // Core initialization
-  initialize(nodeUrl: string): Promise<void>;
-
-  // PXE access
-  getPXE(): PXE;
-
-  // Account management
-  connectTestAccount(index: number): Promise<AccountWithSecretKey>;
-  createEcdsaAccount(
-    credentials?: AccountCredentials
-  ): Promise<CreateAccountResult>;
-  createEcdsaAccountFromCredentials(
-    secretKey: Fr,
-    signingKey: Buffer,
-    salt: Fr
-  ): Promise<AccountWithSecretKey>;
-
-  // Payment methods (public API)
-  getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod>;
 }
 
 // ============================================================================
