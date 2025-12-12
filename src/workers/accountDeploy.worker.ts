@@ -22,8 +22,8 @@ declare const self: DedicatedWorkerGlobalScope;
 const DEPLOY_TIMEOUT = 120;
 const pxeLogger = createLogger('pxe-worker');
 
-const getStoreName = (networkName: string | undefined, rollupAddress: AztecAddress) =>
-  networkName ? `aztec-pxe-${networkName}` : `aztec-pxe-${rollupAddress.toString()}`;
+const getStoreName = (networkName: string | undefined, rollupAddress: string) =>
+  networkName ? `aztec-pxe-${networkName}` : `aztec-pxe-${rollupAddress}`;
 
 async function getSponsoredPFCContract() {
   const { getContractInstanceFromInstantiationParams } = await import(
@@ -56,7 +56,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
     const l1Contracts = await aztecNode.getL1ContractAddresses();
     config.l1Contracts = l1Contracts;
 
-    const storeName = getStoreName(networkName, l1Contracts.rollupAddress);
+    const storeName = getStoreName(networkName, l1Contracts.rollupAddress.toString());
     const pxeStore = await createStore(
       storeName,
       {

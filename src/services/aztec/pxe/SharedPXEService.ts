@@ -12,10 +12,11 @@ import { createStore } from '@aztec/kv-store/indexeddb';
 import { MinimalWallet } from '../../../utils/MinimalWallet';
 import { AztecStorageService } from '../storage';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { getEnv } from '../../../utils/env';
 
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
-const PROVER_ENABLED = false;
+const PROVER_ENABLED = getEnv().proverEnabled;
 
 export interface SharedPXEInstance {
   pxe: PXE;

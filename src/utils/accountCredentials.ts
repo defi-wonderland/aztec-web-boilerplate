@@ -1,10 +1,6 @@
 import { Fr } from '@aztec/aztec.js/fields';
 import type { AccountCredentials } from '../types/aztec';
-
-const getEnv = () =>
-  (import.meta as unknown as {
-    env: Record<string, string | undefined>;
-  }).env;
+import { getEnv } from './env';
 
 /**
  * Check if account credentials are configured in environment variables.
@@ -12,7 +8,7 @@ const getEnv = () =>
  */
 export const hasConfiguredCredentials = (): boolean => {
   const env = getEnv();
-  return !!env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY;
+  return !!env.embeddedAccountSecretKey;
 };
 
 /**
@@ -51,8 +47,8 @@ const createFromSecretKey = (
 export const getConfiguredAccountCredentials =
   async (): Promise<AccountCredentials | null> => {
     const env = getEnv();
-    const secretKey = env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY;
-    const salt = env.VITE_COMMON_SALT ?? '1337';
+    const secretKey = env.embeddedAccountSecretKey;
+    const salt = env.commonSalt ?? '1337';
 
     if (!secretKey) {
       return null;
