@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useAccount, useWalletClient, useSignMessage, useConfig } from 'wagmi';
+import { useAccount, useWalletClient, useSignMessage, useConfig, useChainId } from 'wagmi';
 import { getWalletClient } from 'wagmi/actions';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { Wallet } from '@aztec/aztec.js/wallet';
@@ -66,6 +66,7 @@ export const useMetaMaskAztecWalletInternal = (
 
   // Wagmi hooks for MetaMask
   const wagmiConfig = useConfig();
+  const chainId = useChainId();
   const { address: evmAddress, isConnected: isEVMConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { signMessageAsync } = useSignMessage();
@@ -132,9 +133,11 @@ export const useMetaMaskAztecWalletInternal = (
       publicKeyRef.current = { x, y };
 
       // Step 3: Create the auth witness provider (will call MetaMask for each tx)
+      // Pass chainId for EIP-712 domain; accountAddress will be set after AccountManager creation
       const authWitnessProvider = new MetaMaskAuthWitnessProvider(
         currentWalletClient,
-        currentAddress
+        currentAddress,
+        chainId
       );
 
       // Step 4: Create the account contract
@@ -181,6 +184,10 @@ export const useMetaMaskAztecWalletInternal = (
       minimalWallet.addAccount(wallet);
 
       const accountAddress = accountManager.address;
+
+      // Update the auth witness provider with the actual account address for EIP-712 domain
+      authWitnessProvider.setAccountAddress(`0x${accountAddress.toString().slice(2)}` as Hex);
+
       console.log('✅ MetaMask Aztec account created:', accountAddress.toString());
 
       // Deploy the account
@@ -192,6 +199,15 @@ export const useMetaMaskAztecWalletInternal = (
           const deployMethod = await accountManager.getDeployMethod();
           const paymentMethod =
             await services.walletService.getSponsoredFeePaymentMethod();
+
+          // On testnets (devnet), we need to register the contract class if not already done.
+          // On sandbox, classes are auto-registered locally so we can skip.
+          // First deployment on a testnet will register the class; subsequent ones will skip.
+          const skipClassRegistration = !config.isTestnet;
+          if (!skipClassRegistration) {
+            console.log('📝 Testnet detected, will attempt class registration...');
+          }
+
           // Use AztecAddress.ZERO as sender - this triggers SignerlessAccount in MinimalWallet,
           // allowing deployment without requiring the (not-yet-existing) account to authorize itself.
           // skipTxValidation: true - skip simulation that fails trying to read non-existent note
@@ -199,8 +215,8 @@ export const useMetaMaskAztecWalletInternal = (
             .send({
               contractAddressSalt: salt,
               fee: { paymentMethod },
-              skipClassRegistration: true,
-              skipClassPublication: true,
+              skipClassRegistration,
+              skipClassPublication: skipClassRegistration,
               skipPublicDeployment: true,
               universalDeploy: true,
               skipTxValidation: true,
@@ -238,7 +254,7 @@ export const useMetaMaskAztecWalletInternal = (
     } finally {
       setIsConnecting(false);
     }
-  }, [wagmiConfig, signMessageAsync, addMessage]);
+  }, [wagmiConfig, chainId, signMessageAsync, addMessage]);
 
   const disconnect = useCallback(() => {
     setAztecAccount(null);
