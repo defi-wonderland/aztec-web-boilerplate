@@ -1,8 +1,4 @@
-export { 
-  AztecStorageService,
-  AztecContractService, 
-  AztecAccountDeployService
-} from './aztec';
+export { AztecStorageService } from './aztec';
 
 export {
   EVMWalletService,

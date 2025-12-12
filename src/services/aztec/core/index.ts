@@ -1,1 +1,0 @@
-export { AztecContractService } from './AztecContractService';

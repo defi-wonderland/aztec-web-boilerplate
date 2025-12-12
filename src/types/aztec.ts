@@ -1,8 +1,5 @@
 import type { Fr } from '@aztec/aztec.js/fields';
-import type { AztecAddress } from '@aztec/aztec.js/addresses';
-import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { FunctionAbi, type ContractArtifact } from '@aztec/stdlib/abi';
 import type { CaipAccount } from '@azguardwallet/types';
 
 // ============================================================================
@@ -44,20 +41,6 @@ export interface AccountCredentials {
   secretKey: Fr;
   signingKey: Buffer;
   salt: Fr;
-}
-
-// ============================================================================
-// CONTRACT SERVICE INTERFACES
-// ============================================================================
-
-export interface IAztecContractService {
-  registerContract(
-    artifact: ContractArtifact,
-    deployer: AztecAddress,
-    deploymentSalt: Fr,
-    constructorArgs?: any[],
-    constructor?: FunctionAbi | string
-  ): Promise<ContractInstanceWithAddress>;
 }
 
 // ============================================================================
