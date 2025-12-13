@@ -6,10 +6,8 @@ import { useContractRegistryContext } from '../../providers/EmbeddedContractProv
 import { useUniversalWallet } from './useUniversalWallet';
 import { contractsConfig, getArtifactOverrides } from '../../config/contracts';
 import { queuePxeCall } from '../../utils';
-import {
-  isBrowserWalletConnector,
-  isEmbeddedConnector,
-} from '../../types/walletConnector';
+import { isEmbeddedConnector } from '../../types/walletConnector';
+import { WalletType } from '../../types/aztec';
 import {
   getContractsForConfig,
   type ContractConfigMap,
@@ -55,10 +53,9 @@ export function useContractRegistration<
   TContract = unknown,
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
-  const { connector, account, currentConfig } = useUniversalWallet();
+  const { connector, account, currentConfig, walletType } = useUniversalWallet();
 
-  // Wallet type detection - agnostic to specific wallet implementations
-  const isExternal = isBrowserWalletConnector(connector);
+  const isExternal = walletType === WalletType.BROWSER;
   const wallet = isEmbeddedConnector(connector) ? connector.getWallet() : null;
 
   const [contract, setContract] = useState<TContract | null>(null);

@@ -7,6 +7,7 @@ import { useUniversalWallet } from '../context/useUniversalWallet';
 import { queryKeys } from './queryKeys';
 import { contractsConfig } from '../../config/contracts';
 import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
+import { WalletType } from '../../types/aztec';
 import { isBrowserWalletConnector } from '../../types/walletConnector';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { TokenContract } from '../../artifacts/Token';
@@ -52,12 +53,12 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
     isReady: isTokenReady,
   } = useContractRegistration<ContractConfigMap, TokenContract>('token');
 
-  const { account, connector, isLoading: isWalletLoading, currentConfig } = useUniversalWallet();
+  const { account, connector, isLoading: isWalletLoading, currentConfig, walletType } = useUniversalWallet();
   const { status: registryStatus } = useContractRegistry();
   const queryClient = useQueryClient();
 
-  // Wallet type detection - agnostic to specific wallet implementations
-  const isExternal = isBrowserWalletConnector(connector);
+  // Wallet type detection
+  const isExternal = walletType === WalletType.BROWSER;
   const tokenAddress = token?.address.toString() ?? '';
   const ownerAddress = account?.getAddress().toString() ?? '';
 
@@ -85,15 +86,12 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
         throw new Error('Token contract or owner address not available');
       }
 
-      // Use operations flow for external wallets with proxy contracts
+      // Use operations flow for browser wallets with proxy contracts
       const useOperationsFlow = isExternal && isBrowserWalletPlaceholder(token);
       
-      if (useOperationsFlow) {
-        if (!connector?.executeOperations) {
-          throw new Error('Connector does not support operations execution');
-        }
-
-        const selectedAccount = connector.getCaipAccount?.();
+      // Type guard needed here to access browser wallet specific methods
+      if (useOperationsFlow && isBrowserWalletConnector(connector)) {
+        const selectedAccount = connector.getCaipAccount();
         if (!selectedAccount) {
           throw new Error('External wallet account not selected');
         }
