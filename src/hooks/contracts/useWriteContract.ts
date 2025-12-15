@@ -43,7 +43,7 @@ type ContractClassFor<TContract extends ContractBase> = {
 
 interface WriteContractParams<
   TContract extends ContractBase,
-  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>
+  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
 > {
   /** Contract class - used for type inference and artifact */
   contract: ContractClassFor<TContract>;
@@ -66,12 +66,15 @@ const waitForBrowserWalletReceipt = async (
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const result = await connector.executeOperation(
-        { kind: 'aztec_getTxReceipt', chain: chain as CaipChain, txHash }
-      );
+      const result = await connector.executeOperation({
+        kind: 'aztec_getTxReceipt',
+        chain: chain as CaipChain,
+        txHash,
+      });
 
       if (result.status === 'failed') {
-        const errorMsg = 'error' in result ? String(result.error) : 'Failed to get receipt';
+        const errorMsg =
+          'error' in result ? String(result.error) : 'Failed to get receipt';
         return { success: false, error: errorMsg };
       }
 
@@ -83,10 +86,13 @@ const waitForBrowserWalletReceipt = async (
           return { success: true };
         }
 
-        if (txStatus === 'dropped' || txStatus === 'failed' || txStatus === 'reverted') {
+        if (
+          txStatus === 'dropped' ||
+          txStatus === 'failed' ||
+          txStatus === 'reverted'
+        ) {
           return { success: false, error: `Transaction ${txStatus}` };
         }
-
       }
     } catch {
       // Network error - continue polling
@@ -103,11 +109,11 @@ const waitForBrowserWalletReceipt = async (
 /**
  * Hook for executing write operations on Aztec contracts.
  * Handles both embedded and browser wallet flows automatically.
- * 
+ *
  * @example
  * ```tsx
  * const { writeContract, isPending } = useWriteContract();
- * 
+ *
  * // TypeScript infers the method type from functionName
  * await writeContract({
  *   contract: DripperContract,
@@ -126,7 +132,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const writeContract = useCallback(
     async <
       TContract extends ContractBase,
-      TMethod extends MethodsOf<TContract> = MethodsOf<TContract>
+      TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
     >(
       params: WriteContractParams<TContract, TMethod>
     ): Promise<WriteContractResult> => {
@@ -183,7 +189,11 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
           if (!receiptResult.success) {
             setError(receiptResult.error);
-            return { success: false, error: receiptResult.error, txHash: response.txHash };
+            return {
+              success: false,
+              error: receiptResult.error,
+              txHash: response.txHash,
+            };
           }
 
           return {
@@ -203,10 +213,10 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
           const paymentMethod = await connector.getSponsoredFeePaymentMethod();
           const contractAddress = AztecAddress.fromString(address);
-          
+
           // Create contract instance
           const contract = await Contract.at(contractAddress, artifact, wallet);
-          
+
           const method = getContractMethod(contract, String(functionName));
           if (!method) {
             const errorMsg = `Method ${String(functionName)} not found on contract`;
@@ -222,13 +232,22 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
           // Get txHash before waiting (available immediately after send)
           const txHash = (await sentTx.getTxHash()).toString();
-          const result = await sentTx.wait({ timeout });
 
-          return {
-            success: true,
-            txHash,
-            data: result,
-          };
+          try {
+            const result = await sentTx.wait({ timeout });
+            return {
+              success: true,
+              txHash,
+              data: result,
+            };
+          } catch (waitErr) {
+            const errorMsg =
+              waitErr instanceof Error
+                ? waitErr.message
+                : 'Transaction confirmation failed';
+            setError(errorMsg);
+            return { success: false, error: errorMsg, txHash };
+          }
         }
 
         const errorMsg = 'Unknown wallet type';
