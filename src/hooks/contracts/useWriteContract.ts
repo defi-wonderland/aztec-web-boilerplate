@@ -14,6 +14,7 @@ import type {
   ArgsOf,
   WriteContractResult,
 } from '../../types/contractTypes';
+import { getContractMethod } from '../../utils';
 
 /** Default polling settings for browser wallet receipt */
 const RECEIPT_POLL_INTERVAL_MS = 2000;
@@ -206,27 +207,26 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           // Create contract instance
           const contract = await Contract.at(contractAddress, artifact, wallet);
           
-          // Get the method and call it
-          const method = (contract as unknown as { methods: Record<string, (...args: unknown[]) => unknown> })
-            .methods[String(functionName)];
-          
+          const method = getContractMethod(contract, String(functionName));
           if (!method) {
             const errorMsg = `Method ${String(functionName)} not found on contract`;
             setError(errorMsg);
             return { success: false, error: errorMsg };
           }
 
-          const tx = method(...(args as unknown[]));
-          const sentTx = (tx as { send: (opts: unknown) => { wait: (opts: unknown) => Promise<unknown> } })
-            .send({
-              from: account.getAddress(),
-              fee: { paymentMethod },
-            });
-          
+          // Cast safe: args validated by ArgsOf<TContract, TMethod> at call site
+          const sentTx = method(...(args as unknown[])).send({
+            from: account.getAddress(),
+            fee: { paymentMethod },
+          });
+
+          // Get txHash before waiting (available immediately after send)
+          const txHash = (await sentTx.getTxHash()).toString();
           const result = await sentTx.wait({ timeout });
 
           return {
             success: true,
+            txHash,
             data: result,
           };
         }
@@ -242,7 +242,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
         setIsPending(false);
       }
     },
-    [connector, account, timeout]
+    [connector, account, timeout, receiptPolling]
   );
 
   const reset = useCallback(() => {

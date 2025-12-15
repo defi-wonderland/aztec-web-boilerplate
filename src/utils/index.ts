@@ -6,10 +6,6 @@ import { isBrowserWalletConnector } from "../types/walletConnector";
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
 
-// ============================================================================
-// CONTRACT UTILITIES
-// ============================================================================
-
 /**
  * Checks if an object is a browser wallet placeholder (not a real contract).
  * Browser wallets can't create real contract instances, so they use placeholders.

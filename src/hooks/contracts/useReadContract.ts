@@ -13,6 +13,7 @@ import type {
   ArgsOf,
   ReadContractResult,
 } from '../../types/contractTypes';
+import { getContractMethod } from './utils';
 
 /**
  * Type helper to extract contract type from a contract class.
@@ -129,17 +130,17 @@ export const useReadContract = () => {
           const contractAddress = AztecAddress.fromString(address);
           const contract = await Contract.at(contractAddress, artifact, wallet);
 
-          const method = (contract as unknown as { methods: Record<string, (...args: unknown[]) => unknown> })
-            .methods[String(functionName)];
-
+          const method = getContractMethod(contract, String(functionName));
           if (!method) {
             const errorMsg = `Method ${String(functionName)} not found on contract`;
             setError(errorMsg);
             return { success: false, error: errorMsg };
           }
 
-          const tx = method(...(args as unknown[]));
-          const result = await (tx as { simulate: () => Promise<unknown> }).simulate();
+          // Cast safe: args validated by ArgsOf<TContract, TMethod> at call site
+          const result = await method(...(args as unknown[])).simulate({
+            from: account.getAddress(),
+          });
 
           return {
             success: true,
