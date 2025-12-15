@@ -1,4 +1,4 @@
-import type { RegisterContractOperation } from '@azguardwallet/types';
+import type { RegisterContractOperation, CaipAccount } from '@azguardwallet/types';
 import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
@@ -7,6 +7,18 @@ import type { NetworkConfig } from '../config/networks';
 import { getChainId, type AztecChainId } from '../config/networks/constants';
 import { contractsConfig, getArtifactOverrides } from '../config/contracts';
 import { getContractsForConfig, type ContractNames } from '../contract-registry';
+
+/**
+ * Extracts the chain identifier from a CAIP account string.
+ * CAIP format: namespace:chainId:address (e.g., "aztec:testnet:0x1234...")
+ *
+ * @param caipAccount - The full CAIP account string
+ * @returns The chain identifier (e.g., "aztec:testnet")
+ */
+export const getChainFromCaipAccount = (caipAccount: CaipAccount): string => {
+  const [namespace, chainId] = caipAccount.split(':');
+  return `${namespace}:${chainId}`;
+};
 
 /**
  * Build all contract registration operations for Azguard.

@@ -15,6 +15,7 @@ import type {
   WriteContractResult,
 } from '../../types/contractTypes';
 import { getContractMethod } from './utils';
+import { getChainFromCaipAccount } from '../../utils/azguard';
 
 /** Default polling settings for browser wallet receipt */
 const RECEIPT_POLL_INTERVAL_MS = 2000;
@@ -53,11 +54,6 @@ interface WriteContractParams<
   /** Method arguments */
   args: ArgsOf<TContract, TMethod>;
 }
-
-const getChainFromCaipAccount = (caipAccount: string): string => {
-  const parts = caipAccount.split(':');
-  return `${parts[0]}:${parts[1]}`;
-};
 
 const waitForBrowserWalletReceipt = async (
   connector: BrowserWalletConnector,

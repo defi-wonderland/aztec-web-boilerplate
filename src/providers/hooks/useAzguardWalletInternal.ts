@@ -23,7 +23,7 @@ import {
   getChainId,
   type AztecChainId,
 } from '../../config/networks/constants';
-import { buildRegisterContractOperations } from '../../utils/azguard';
+import { buildRegisterContractOperations, getChainFromCaipAccount } from '../../utils/azguard';
 import type { NetworkConfig } from '../../config/networks';
 
 const DEFAULT_AZGUARD_STATE: AzguardWalletState = {
@@ -177,12 +177,13 @@ export const useAzguardWalletInternal = (
 
   // Auto-register contracts when connected
   useEffect(() => {
-    if (!azguardState.isConnected || !azguardState.selectedAccount) {
+    const selectedAccount = azguardState.selectedAccount;
+    if (!azguardState.isConnected || !selectedAccount) {
       contractRegistrationRef.current = null;
       return;
     }
 
-    const registrationKey = `${currentConfig.name}:${azguardState.selectedAccount}`;
+    const registrationKey = `${currentConfig.name}:${selectedAccount}`;
     if (contractRegistrationRef.current === registrationKey) {
       return;
     }
@@ -191,7 +192,7 @@ export const useAzguardWalletInternal = (
 
     const registerContracts = async () => {
       try {
-        const chainFromAccount = `${azguardState.selectedAccount!.split(':').slice(0, 2).join(':')}` as AztecChainId;
+        const chainFromAccount = getChainFromCaipAccount(selectedAccount) as AztecChainId;
 
         const operations = await buildRegisterContractOperations(
           currentConfig,
