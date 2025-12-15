@@ -5,14 +5,13 @@ import type {
   SendTransactionOperation,
   SimulateViewsOperation,
   RegisterContractOperation,
-  OperationResult
+  OperationResult,
 } from '@azguardwallet/types';
 import type {
   IAzguardWalletService,
-  AzguardConnectionConfig,
-  AzguardWalletState
+  AzguardWalletState,
 } from '../../../types/azguard';
-import { SUPPORTED_CHAINS, type AztecChainId } from '../../../config/networks/constants';
+import { SUPPORTED_CHAINS } from '../../../config/networks/constants';
 
 /**
  * Service class for interacting with Azguard wallet via RPC
@@ -27,7 +26,7 @@ export class AzguardWalletService implements IAzguardWalletService {
     accounts: [],
     selectedAccount: null,
     supportedChains: [],
-    error: null
+    error: null,
   };
   private eventListeners: Map<string, Set<Function>> = new Map();
   private accountsChangedHandler?: (accounts: CaipAccount[]) => void;
@@ -45,10 +44,10 @@ export class AzguardWalletService implements IAzguardWalletService {
       if (isInstalled) {
         // Create the client instance
         this.client = await AzguardClient.create();
-        
+
         // Set up event listeners
         this.setupEventListeners();
-        
+
         // Get supported chains
         const supportedChains = this.getSupportedChains();
         this.updateState({ supportedChains });
@@ -56,14 +55,18 @@ export class AzguardWalletService implements IAzguardWalletService {
         console.log('Azguard wallet service initialized successfully');
       } else {
         console.warn('⚠️ Azguard wallet is not installed');
-        this.updateState({ 
-          error: 'Azguard wallet extension is not installed. Please install it from the Chrome Web Store.' 
+        this.updateState({
+          error:
+            'Azguard wallet extension is not installed. Please install it from the Chrome Web Store.',
         });
       }
     } catch (error) {
       console.error('Failed to initialize Azguard wallet service:', error);
-      this.updateState({ 
-        error: error instanceof Error ? error.message : 'Failed to initialize Azguard wallet service' 
+      this.updateState({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to initialize Azguard wallet service',
       });
       throw error;
     }
@@ -124,26 +127,32 @@ export class AzguardWalletService implements IAzguardWalletService {
         isConnected: true,
         isConnecting: false,
         accounts,
-        selectedAccount
+        selectedAccount,
       });
 
-      console.log('Connected to Azguard wallet:', { accounts, selectedAccount });
+      console.log('Connected to Azguard wallet:', {
+        accounts,
+        selectedAccount,
+      });
       return accounts;
     } catch (error) {
       console.error('Failed to connect to Azguard wallet:', error);
-      
+
       // Enhanced error logging
       if (error instanceof Error) {
         console.error('Error details:', {
           message: error.message,
           stack: error.stack,
-          name: error.name
+          name: error.name,
         });
       }
-      
+
       this.updateState({
         isConnecting: false,
-        error: error instanceof Error ? error.message : 'Failed to connect to Azguard wallet'
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to connect to Azguard wallet',
       });
       throw error;
     }
@@ -244,12 +253,12 @@ export class AzguardWalletService implements IAzguardWalletService {
 
     try {
       await this.client.disconnect();
-      
+
       this.updateState({
         isConnected: false,
         accounts: [],
         selectedAccount: null,
-        error: null
+        error: null,
       });
 
       console.log('Disconnected from Azguard wallet');
@@ -294,9 +303,10 @@ export class AzguardWalletService implements IAzguardWalletService {
 
     try {
       const [result] = await this.client.execute([operation]);
-      
+
       if (result.status !== 'ok') {
-        const errorMessage = 'error' in result ? result.error : 'Transaction failed';
+        const errorMessage =
+          'error' in result ? result.error : 'Transaction failed';
         throw new Error(errorMessage || 'Transaction failed');
       }
 
@@ -318,9 +328,10 @@ export class AzguardWalletService implements IAzguardWalletService {
 
     try {
       const [result] = await this.client.execute([operation]);
-      
+
       if (result.status !== 'ok') {
-        const errorMessage = 'error' in result ? result.error : 'Simulation failed';
+        const errorMessage =
+          'error' in result ? result.error : 'Simulation failed';
         throw new Error(errorMessage || 'Simulation failed');
       }
 
@@ -342,9 +353,10 @@ export class AzguardWalletService implements IAzguardWalletService {
 
     try {
       const [result] = await this.client.execute([operation]);
-      
+
       if (result.status !== 'ok') {
-        const errorMessage = 'error' in result ? result.error : 'Contract registration failed';
+        const errorMessage =
+          'error' in result ? result.error : 'Contract registration failed';
         throw new Error(errorMessage || 'Contract registration failed');
       }
 
@@ -365,14 +377,16 @@ export class AzguardWalletService implements IAzguardWalletService {
 
     try {
       const results = await this.client.execute(operations);
-      
+
       // Log individual operation results
-      const succeeded = results.filter(r => r.status === 'ok').length;
-      const failed = results.filter(r => r.status === 'failed').length;
-      const skipped = results.filter(r => r.status === 'skipped').length;
-      
-      console.log(`📋 Batch operations completed: ${succeeded} ok, ${failed} failed, ${skipped} skipped`);
-      
+      const succeeded = results.filter((r) => r.status === 'ok').length;
+      const failed = results.filter((r) => r.status === 'failed').length;
+      const skipped = results.filter((r) => r.status === 'skipped').length;
+
+      console.log(
+        `📋 Batch operations completed: ${succeeded} ok, ${failed} failed, ${skipped} skipped`
+      );
+
       // Log details for failed operations
       results.forEach((result, index) => {
         if (result.status === 'failed') {
@@ -382,7 +396,7 @@ export class AzguardWalletService implements IAzguardWalletService {
           console.warn(`⏭️ Operation ${index} skipped`);
         }
       });
-      
+
       return results;
     } catch (error) {
       console.error('❌ Failed to execute operations:', error);
@@ -460,7 +474,11 @@ export class AzguardWalletService implements IAzguardWalletService {
     this.state = { ...this.state, ...updates };
 
     // Emit account changes if accounts changed
-    if (updates.accounts && JSON.stringify(previousState.accounts) !== JSON.stringify(updates.accounts)) {
+    if (
+      updates.accounts &&
+      JSON.stringify(previousState.accounts) !==
+        JSON.stringify(updates.accounts)
+    ) {
       this.emitEvent('accountsChanged', updates.accounts);
     }
   }
@@ -481,7 +499,7 @@ export class AzguardWalletService implements IAzguardWalletService {
   private emitEvent(event: string, ...args: any[]): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
-      listeners.forEach(callback => {
+      listeners.forEach((callback) => {
         try {
           callback(...args);
         } catch (error) {
@@ -497,7 +515,9 @@ export class AzguardWalletService implements IAzguardWalletService {
   destroy(): void {
     if (this.client) {
       if (this.accountsChangedHandler) {
-        this.client.onAccountsChanged.removeHandler(this.accountsChangedHandler);
+        this.client.onAccountsChanged.removeHandler(
+          this.accountsChangedHandler
+        );
       }
       if (this.disconnectedHandler) {
         this.client.onDisconnected.removeHandler(this.disconnectedHandler);
@@ -514,7 +534,7 @@ export class AzguardWalletService implements IAzguardWalletService {
       accounts: [],
       selectedAccount: null,
       supportedChains: [],
-      error: null
+      error: null,
     };
   }
 }
