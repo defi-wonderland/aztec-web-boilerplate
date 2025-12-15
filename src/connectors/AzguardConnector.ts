@@ -83,7 +83,7 @@ export class AzguardConnector implements BrowserWalletConnector {
       actions: request.actions.map(toSendTransactionAction),
     };
 
-    const [result] = await this.azguard.actions.executeOperations([operation]);
+    const result = await this.executeOperation(operation);
 
     if (result.status !== 'ok') {
       const message = 'error' in result ? result.error : 'Transaction failed';
@@ -100,12 +100,22 @@ export class AzguardConnector implements BrowserWalletConnector {
     };
   }
 
-  executeOperations(
-    operations: Parameters<
+  /**
+   * Execute a single operation and return the result directly.
+   * Throws if no result is returned.
+   */
+  async executeOperation(
+    operation: Parameters<
       UseAzguardWalletInternalReturn['actions']['executeOperations']
-    >[0]
+    >[0][number]
   ) {
-    return this.azguard.actions.executeOperations(operations);
+    const results = await this.azguard.actions.executeOperations([operation]);
+
+    if (!results.length) {
+      throw new Error('No result returned from wallet operation');
+    }
+
+    return results[0];
   }
 
   switchAccount(

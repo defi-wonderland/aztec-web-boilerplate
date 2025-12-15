@@ -103,8 +103,7 @@ export const useReadContract = () => {
             ],
           };
 
-          const results = await connector.executeOperations([operation]);
-          const result = results[0];
+          const result = await connector.executeOperation(operation);
 
           if (result.status !== 'ok') {
             const errorMsg = 'error' in result ? result.error : 'Simulation failed';

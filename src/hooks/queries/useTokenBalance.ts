@@ -118,8 +118,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
           ],
         };
 
-        const results = await connector.executeOperations([operation]);
-        const result = results[0];
+        const result = await connector.executeOperation(operation);
 
         if (result.status !== 'ok') {
           const errorMessage = 'error' in result ? result.error : 'Failed to fetch balance';

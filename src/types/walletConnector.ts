@@ -61,7 +61,7 @@ export interface EmbeddedWalletConnector extends WalletConnector {
 
 export interface BrowserWalletConnector extends WalletConnector {
   getCaipAccount: () => CaipAccount | null;
-  executeOperations: (operations: Operation[]) => Promise<OperationResult[]>;
+  executeOperation: (operation: Operation) => Promise<OperationResult>;
   switchAccount: (account: CaipAccount) => Promise<void>;
   getClient: () => AzguardClient | null;
   getAccounts: () => CaipAccount[];

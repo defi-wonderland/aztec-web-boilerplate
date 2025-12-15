@@ -69,14 +69,9 @@ const waitForBrowserWalletReceipt = async (
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const [result] = await connector.executeOperations([
-        { kind: 'aztec_getTxReceipt', chain: chain as CaipChain, txHash },
-      ]);
-
-      if (!result) {
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-        continue;
-      }
+      const result = await connector.executeOperation(
+        { kind: 'aztec_getTxReceipt', chain: chain as CaipChain, txHash }
+      );
 
       if (result.status === 'failed') {
         const errorMsg = 'error' in result ? String(result.error) : 'Failed to get receipt';
