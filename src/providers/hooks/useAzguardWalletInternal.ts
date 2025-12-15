@@ -23,6 +23,7 @@ import {
   getChainId,
   type AztecChainId,
 } from '../../config/networks/constants';
+import { getDappMetadata } from '../../config/dapp';
 import { buildRegisterContractOperations, getChainFromCaipAccount } from '../../utils/azguard';
 import type { NetworkConfig } from '../../config/networks';
 
@@ -55,15 +56,7 @@ const buildAzguardConnectionConfig = (
   const requiredChain: AztecChainId = getChainId(networkName);
 
   return {
-    dappMetadata: {
-      name: 'Aztec Web Boilerplate',
-      description: 'Privacy-first application built on Aztec Network',
-      url: typeof window !== 'undefined' ? window.location.origin : '',
-      icon:
-        typeof window !== 'undefined'
-          ? `${window.location.origin}/favicon.ico`
-          : '',
-    },
+    dappMetadata: getDappMetadata(),
     requiredPermissions: [
       {
         chains: [requiredChain],
