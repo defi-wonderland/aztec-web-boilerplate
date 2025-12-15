@@ -14,7 +14,7 @@ import type {
   ArgsOf,
   WriteContractResult,
 } from '../../types/contractTypes';
-import { getContractMethod } from '../../utils';
+import { getContractMethod } from './utils';
 
 /** Default polling settings for browser wallet receipt */
 const RECEIPT_POLL_INTERVAL_MS = 2000;
@@ -146,6 +146,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
       try {
         if (isBrowserWalletConnector(connector)) {
+          const caipAccount = connector.getCaipAccount();
+          if (!caipAccount) {
+            const errorMsg = 'No account selected';
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+          }
+
           const response = await connector.sendTransaction({
             actions: [
               {
@@ -164,13 +171,10 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          const caipAccount = connector.getCaipAccount();
-          if (!caipAccount || !response.txHash) {
-            return {
-              success: true,
-              txHash: response.txHash,
-              data: response.rawResult,
-            };
+          if (!response.txHash) {
+            const errorMsg = 'Transaction submitted but no txHash returned';
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
           }
 
           const chain = getChainFromCaipAccount(caipAccount);
@@ -181,7 +185,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             receiptPolling
           );
 
-          if (receiptResult.success === false) {
+          if (!receiptResult.success) {
             setError(receiptResult.error);
             return { success: false, error: receiptResult.error, txHash: response.txHash };
           }
