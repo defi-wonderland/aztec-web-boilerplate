@@ -7,13 +7,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { PXE } from '@aztec/pxe/server';
-import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import {
   SharedPXEService,
   type SharedPXEInstance,
 } from '../../services/aztec/pxe';
 import type { AztecStorageService } from '../../services/aztec/storage';
+import type { MinimalWallet } from '../../utils/MinimalWallet';
 import type { NetworkConfig } from '../../config/networks';
 
 export interface SharedPXEState {
@@ -24,7 +24,7 @@ export interface SharedPXEState {
 
 export interface SharedPXEServices {
   pxe: PXE | null;
-  wallet: Wallet | null;
+  wallet: MinimalWallet | null;
   storageService: AztecStorageService | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }

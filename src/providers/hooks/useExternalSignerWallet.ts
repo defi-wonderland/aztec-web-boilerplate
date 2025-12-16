@@ -7,7 +7,6 @@
 
 import { useState, useCallback, useRef } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
 import { Fr } from '@aztec/aztec.js/fields';
@@ -20,6 +19,7 @@ import { EcdsaKEthSignerAccountContract } from '../../accounts/EcdsaKEthSignerAc
 import { useSharedPXE, type UseSharedPXEReturn } from './useSharedPXE';
 import { useError } from '../ErrorProvider';
 import type { NetworkConfig } from '../../config/networks';
+import type { MinimalWallet } from '../../utils/MinimalWallet';
 
 export interface ExternalSignerWalletState {
   aztecAccount: AccountWithSecretKey | null;
@@ -36,7 +36,7 @@ export interface ExternalSignerWalletActions {
 
 export interface ExternalSignerWalletServices {
   pxe: PXE | null;
-  wallet: Wallet | null;
+  wallet: MinimalWallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
@@ -132,7 +132,7 @@ export const useExternalSignerWallet = (
         );
 
         // Add account to wallet
-        (wallet as any).addAccount(account);
+        wallet.addAccount(account);
 
         const accountAddress = accountManager.address;
         console.log(

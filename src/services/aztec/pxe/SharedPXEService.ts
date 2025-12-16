@@ -1,6 +1,5 @@
 import { createLogger } from '@aztec/aztec.js/log';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
-import type { Wallet } from '@aztec/aztec.js/wallet';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
@@ -21,7 +20,7 @@ const PROVER_ENABLED = getEnv().proverEnabled;
 export interface SharedPXEInstance {
   pxe: PXE;
   aztecNode: AztecNode;
-  wallet: Wallet;
+  wallet: MinimalWallet;
   storageService: AztecStorageService;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }

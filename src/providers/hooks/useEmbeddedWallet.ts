@@ -7,7 +7,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
 import { Fr } from '@aztec/aztec.js/fields';
@@ -23,6 +22,7 @@ import { isValidConfig } from '../../utils';
 import { getConfiguredAccountCredentials, hasConfiguredCredentials } from '../../utils/accountCredentials';
 import type { NetworkConfig } from '../../config/networks';
 import type { AccountCredentials } from '../../types/aztec';
+import type { MinimalWallet } from '../../utils/MinimalWallet';
 
 export interface EmbeddedWalletState {
   embeddedAccount: AccountWithSecretKey | null;
@@ -41,7 +41,7 @@ export interface EmbeddedWalletActions {
 
 export interface EmbeddedWalletServices {
   pxe: PXE | null;
-  wallet: Wallet | null;
+  wallet: MinimalWallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
@@ -112,7 +112,7 @@ export const useEmbeddedWallet = (
 
   const connectWithCredentials = async (
     credentials: AccountCredentials,
-    wallet: Wallet
+    wallet: MinimalWallet
   ): Promise<AccountWithSecretKey> => {
     const accountContract = new EcdsaRAccountContract(credentials.signingKey);
     const accountManager = await AccountManager.create(
@@ -126,7 +126,7 @@ export const useEmbeddedWallet = (
     const instance = accountManager.getInstance();
     const artifact = await accountManager.getAccountContract().getContractArtifact();
     await wallet.registerContract(instance, artifact, accountManager.getSecretKey());
-    (wallet as any).addAccount(account);
+    wallet.addAccount(account);
 
     setEmbeddedAccount(account);
     console.log('✅ Connected to account:', account.getAddress().toString());
@@ -134,7 +134,7 @@ export const useEmbeddedWallet = (
     return account;
   };
 
-  const reconnectExisting = async (saved: StoredAccountData, wallet?: Wallet): Promise<AccountWithSecretKey> => {
+  const reconnectExisting = async (saved: StoredAccountData, wallet?: MinimalWallet): Promise<AccountWithSecretKey> => {
     const walletInstance = wallet ?? sharedPXE.services.wallet;
     if (!walletInstance) {
       throw new Error('Wallet not initialized');
@@ -175,7 +175,7 @@ export const useEmbeddedWallet = (
       const instance = accountManager.getInstance();
       const artifact = await accountManager.getAccountContract().getContractArtifact();
       await wallet.registerContract(instance, artifact, accountManager.getSecretKey());
-      (wallet as any).addAccount(account);
+      wallet.addAccount(account);
 
       console.log('✅ New embedded account created:', accountManager.address.toString());
 
@@ -253,7 +253,7 @@ export const useEmbeddedWallet = (
       const instance = accountManager.getInstance();
       const artifact = await accountManager.getAccountContract().getContractArtifact();
       await wallet.registerContract(instance, artifact, accountManager.getSecretKey());
-      (wallet as any).addAccount(account);
+      wallet.addAccount(account);
 
       console.log('✅ Test account connected:', account.getAddress().toString());
       setEmbeddedAccount(account);
