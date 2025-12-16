@@ -262,6 +262,92 @@ yarn lint                     # Check code formatting
 
 ---
 
+## Adding a New Browser Wallet
+
+To add support for a new browser wallet (e.g., Obsidian), follow these steps:
+
+### 1. Create the Adapter Folder
+
+Create a new folder under `src/adapters/` with your wallet name:
+
+```
+src/adapters/obsidian/
+├── ObsidianAdapter.ts       # Implements IBrowserWalletAdapter interface
+├── ObsidianWalletService.ts # Handles extension communication
+└── index.ts                 # Exports adapter and factory
+```
+
+### 2. Implement the Wallet Service
+
+Create `ObsidianWalletService.ts` to handle communication with the browser extension:
+
+```typescript
+export class ObsidianWalletService {
+  async initialize(): Promise<void> { /* detect extension */ }
+  async connect(...): Promise<string[]> { /* connect to wallet */ }
+  async disconnect(): Promise<void> { /* disconnect */ }
+  async executeOperations(ops: Operation[]): Promise<OperationResult[]> { /* execute ops */ }
+  getState(): WalletState { /* return current state */ }
+  onAccountsChanged(cb: (accounts: string[]) => void): void { /* event handler */ }
+  onDisconnected(cb: () => void): void { /* event handler */ }
+  destroy(): void { /* cleanup resources */ }
+}
+```
+
+### 3. Implement the Adapter
+
+Create `ObsidianAdapter.ts` implementing the `IBrowserWalletAdapter` interface:
+
+```typescript
+import type { IBrowserWalletAdapter } from '../../types/browserWallet';
+
+export class ObsidianAdapter implements IBrowserWalletAdapter {
+  readonly id = 'obsidian';
+  readonly label = 'Obsidian Wallet';
+  
+  private service: ObsidianWalletService;
+
+  // Implement all IBrowserWalletAdapter methods
+  // Translate generic operations to wallet-specific format
+}
+
+export const createObsidianAdapter = (): IBrowserWalletAdapter => new ObsidianAdapter();
+```
+
+### 4. Add the Factory Function
+
+In `src/connectors/factories.ts`, add your wallet factory:
+
+```typescript
+import { createObsidianAdapter } from '../adapters';
+
+export const obsidian = (): ConnectorFactory => () =>
+  new BrowserWalletConnector({
+    id: 'obsidian',
+    label: 'Obsidian Wallet',
+    adapterFactory: createObsidianAdapter,
+  });
+```
+
+### 5. Enable the Wallet
+
+In `src/config/walletKit.ts`, add your connector:
+
+```typescript
+connectors: [embedded(), azguard(), obsidian()],
+```
+
+### 6. Export from Index Files
+
+Make sure to properly export your adapter and factory from:
+- `src/adapters/obsidian/index.ts`
+- `src/adapters/index.ts`
+- `src/connectors/index.ts`
+
+> **Note:** No changes are needed to hooks, providers, or the `BrowserWalletConnector` class. The adapter pattern handles all wallet-specific logic.
+
+---
+
 ## Network Information
 
 | Network | Node URL | Chain ID |

@@ -18,7 +18,7 @@ import {
   type ContractRegistryContextValue,
 } from '../contract-registry';
 import { contractsConfig, getArtifactOverrides } from '../config/contracts';
-import { isEmbeddedConnector } from '../types/walletConnector';
+import { hasAppManagedPXE } from '../types/walletConnector';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
 import { TimingToast } from '../components';
 
@@ -63,8 +63,9 @@ export function EmbeddedContractProvider<
 }: EmbeddedContractProviderProps<T>): React.ReactElement {
   const { connector, isInitialized, currentConfig } = useUniversalWallet();
 
-  const embeddedConnector = isEmbeddedConnector(connector) ? connector : null;
-  const pxe = embeddedConnector?.getPXE() ?? null;
+  // Works with both Embedded and External Signer connectors (both have app-managed PXE)
+  const appManagedConnector = hasAppManagedPXE(connector) ? connector : null;
+  const pxe = appManagedConnector?.getPXE() ?? null;
 
   const contracts = useMemo(
     () =>
@@ -171,7 +172,7 @@ export function EmbeddedContractProvider<
     [status, error]
   );
 
-  if (!isInitialized || !embeddedConnector || !pxe) {
+  if (!isInitialized || !appManagedConnector || !pxe) {
     return <>{children}</>;
   }
 

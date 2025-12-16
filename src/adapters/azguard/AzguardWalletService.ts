@@ -2,84 +2,55 @@ import { AzguardClient } from '@azguardwallet/client';
 import type {
   CaipAccount,
   Operation,
-  SendTransactionOperation,
-  SimulateViewsOperation,
-  RegisterContractOperation,
-  OperationResult
+  OperationResult,
 } from '@azguardwallet/types';
-import type {
-  IAzguardWalletService,
-  AzguardConnectionConfig,
-  AzguardWalletState
-} from '../../../types/azguard';
-import { SUPPORTED_CHAINS, type AztecChainId } from '../../../config/networks/constants';
+import type { AzguardWalletState } from '../../types/azguard';
+import { SUPPORTED_CHAINS } from '../../config/networks/constants';
 
-/**
- * Service class for interacting with Azguard wallet via RPC
- * Implements the IAzguardWalletService interface
- */
-export class AzguardWalletService implements IAzguardWalletService {
+export class AzguardWalletService {
   private client: AzguardClient | null = null;
   private state: AzguardWalletState = {
     isInstalled: false,
-    isConnected: false,
-    isConnecting: false,
+    status: 'disconnected',
     accounts: [],
     selectedAccount: null,
     supportedChains: [],
-    error: null
+    error: null,
   };
   private eventListeners: Map<string, Set<Function>> = new Map();
   private accountsChangedHandler?: (accounts: CaipAccount[]) => void;
   private disconnectedHandler?: () => void;
 
-  /**
-   * Initialize the Azguard wallet service
-   */
   async initialize(): Promise<void> {
     try {
-      // Check if Azguard wallet is installed
       const isInstalled = await AzguardClient.isAzguardInstalled();
       this.updateState({ isInstalled });
 
       if (isInstalled) {
-        // Create the client instance
         this.client = await AzguardClient.create();
-        
-        // Set up event listeners
+
         this.setupEventListeners();
-        
-        // Get supported chains
+
         const supportedChains = this.getSupportedChains();
         this.updateState({ supportedChains });
 
         console.log('Azguard wallet service initialized successfully');
       } else {
         console.warn('⚠️ Azguard wallet is not installed');
-        this.updateState({ 
-          error: 'Azguard wallet extension is not installed. Please install it from the Chrome Web Store.' 
+        this.updateState({
+          error:
+            'Azguard wallet extension is not installed. Please install it from the Chrome Web Store.',
         });
       }
     } catch (error) {
       console.error('Failed to initialize Azguard wallet service:', error);
-      this.updateState({ 
-        error: error instanceof Error ? error.message : 'Failed to initialize Azguard wallet service' 
+      this.updateState({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to initialize Azguard wallet service',
       });
       throw error;
-    }
-  }
-
-  /**
-   * Check if Azguard wallet is installed
-   */
-  async isInstalled(): Promise<boolean> {
-    try {
-      const isInstalled = await AzguardClient.isAzguardInstalled();
-      this.updateState({ isInstalled });
-      return isInstalled;
-    } catch (error) {
-      console.error('Error checking Azguard installation:', error);
-      return false;
     }
   }
 
@@ -96,7 +67,7 @@ export class AzguardWalletService implements IAzguardWalletService {
     }
 
     try {
-      this.updateState({ isConnecting: true, error: null });
+      this.updateState({ status: 'connecting', error: null });
 
       // Validate connection parameters
       this.validateConnectionParams(
@@ -121,29 +92,34 @@ export class AzguardWalletService implements IAzguardWalletService {
       const selectedAccount = accounts.length > 0 ? accounts[0] : null;
 
       this.updateState({
-        isConnected: true,
-        isConnecting: false,
+        status: 'connected',
         accounts,
-        selectedAccount
+        selectedAccount,
       });
 
-      console.log('Connected to Azguard wallet:', { accounts, selectedAccount });
+      console.log('Connected to Azguard wallet:', {
+        accounts,
+        selectedAccount,
+      });
       return accounts;
     } catch (error) {
       console.error('Failed to connect to Azguard wallet:', error);
-      
+
       // Enhanced error logging
       if (error instanceof Error) {
         console.error('Error details:', {
           message: error.message,
           stack: error.stack,
-          name: error.name
+          name: error.name,
         });
       }
-      
+
       this.updateState({
-        isConnecting: false,
-        error: error instanceof Error ? error.message : 'Failed to connect to Azguard wallet'
+        status: 'disconnected',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to connect to Azguard wallet',
       });
       throw error;
     }
@@ -244,12 +220,12 @@ export class AzguardWalletService implements IAzguardWalletService {
 
     try {
       await this.client.disconnect();
-      
+
       this.updateState({
-        isConnected: false,
+        status: 'disconnected',
         accounts: [],
         selectedAccount: null,
-        error: null
+        error: null,
       });
 
       console.log('Disconnected from Azguard wallet');
@@ -260,119 +236,25 @@ export class AzguardWalletService implements IAzguardWalletService {
   }
 
   /**
-   * Get connected accounts
-   */
-  async getAccounts(): Promise<CaipAccount[]> {
-    if (!this.client || !this.state.isConnected) {
-      return [];
-    }
-
-    try {
-      const accounts = this.client.accounts;
-      this.updateState({ accounts });
-      return accounts;
-    } catch (error) {
-      console.error('❌ Failed to get accounts:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get currently selected account
-   */
-  getSelectedAccount(): CaipAccount | null {
-    return this.state.selectedAccount;
-  }
-
-  /**
-   * Send transaction through Azguard wallet
-   */
-  async sendTransaction(operation: SendTransactionOperation): Promise<string> {
-    if (!this.client || !this.state.isConnected) {
-      throw new Error('Azguard wallet not connected');
-    }
-
-    try {
-      const [result] = await this.client.execute([operation]);
-      
-      if (result.status !== 'ok') {
-        const errorMessage = 'error' in result ? result.error : 'Transaction failed';
-        throw new Error(errorMessage || 'Transaction failed');
-      }
-
-      console.log('Transaction sent successfully:', result.result);
-      return result.result as string;
-    } catch (error) {
-      console.error('Failed to send transaction:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Simulate view functions
-   */
-  async simulateViews(operation: SimulateViewsOperation): Promise<unknown> {
-    if (!this.client || !this.state.isConnected) {
-      throw new Error('Azguard wallet not connected');
-    }
-
-    try {
-      const [result] = await this.client.execute([operation]);
-      
-      if (result.status !== 'ok') {
-        const errorMessage = 'error' in result ? result.error : 'Simulation failed';
-        throw new Error(errorMessage || 'Simulation failed');
-      }
-
-      console.log('✅ View simulation completed:', result.result);
-      return result.result;
-    } catch (error) {
-      console.error('❌ Failed to simulate views:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Register contract with Azguard wallet
-   */
-  async registerContract(operation: RegisterContractOperation): Promise<void> {
-    if (!this.client || !this.state.isConnected) {
-      throw new Error('Azguard wallet not connected');
-    }
-
-    try {
-      const [result] = await this.client.execute([operation]);
-      
-      if (result.status !== 'ok') {
-        const errorMessage = 'error' in result ? result.error : 'Contract registration failed';
-        throw new Error(errorMessage || 'Contract registration failed');
-      }
-
-      console.log('✅ Contract registered successfully');
-    } catch (error) {
-      console.error('❌ Failed to register contract:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Execute multiple operations in batch
    */
   async executeOperations(operations: Operation[]): Promise<OperationResult[]> {
-    if (!this.client || !this.state.isConnected) {
+    if (!this.client || this.state.status !== 'connected') {
       throw new Error('Azguard wallet not connected');
     }
 
     try {
       const results = await this.client.execute(operations);
-      
+
       // Log individual operation results
-      const succeeded = results.filter(r => r.status === 'ok').length;
-      const failed = results.filter(r => r.status === 'failed').length;
-      const skipped = results.filter(r => r.status === 'skipped').length;
-      
-      console.log(`📋 Batch operations completed: ${succeeded} ok, ${failed} failed, ${skipped} skipped`);
-      
+      const succeeded = results.filter((r) => r.status === 'ok').length;
+      const failed = results.filter((r) => r.status === 'failed').length;
+      const skipped = results.filter((r) => r.status === 'skipped').length;
+
+      console.log(
+        `📋 Batch operations completed: ${succeeded} ok, ${failed} failed, ${skipped} skipped`
+      );
+
       // Log details for failed operations
       results.forEach((result, index) => {
         if (result.status === 'failed') {
@@ -382,7 +264,7 @@ export class AzguardWalletService implements IAzguardWalletService {
           console.warn(`⏭️ Operation ${index} skipped`);
         }
       });
-      
+
       return results;
     } catch (error) {
       console.error('❌ Failed to execute operations:', error);
@@ -400,13 +282,13 @@ export class AzguardWalletService implements IAzguardWalletService {
       this.updateState({
         accounts,
         selectedAccount: accounts.length > 0 ? accounts[0] : null,
-        isConnected: accounts.length > 0,
+        status: accounts.length > 0 ? 'connected' : 'disconnected',
       });
     };
 
     this.disconnectedHandler = () => {
       this.updateState({
-        isConnected: false,
+        status: 'disconnected',
         accounts: [],
         selectedAccount: null,
       });
@@ -431,10 +313,7 @@ export class AzguardWalletService implements IAzguardWalletService {
     this.addEventListener('disconnected', callback);
   }
 
-  /**
-   * Get supported chains
-   */
-  getSupportedChains(): string[] {
+  private getSupportedChains(): string[] {
     return [...SUPPORTED_CHAINS];
   }
 
@@ -446,13 +325,6 @@ export class AzguardWalletService implements IAzguardWalletService {
   }
 
   /**
-   * Get the underlying AzguardClient instance
-   */
-  getClient(): AzguardClient | null {
-    return this.client;
-  }
-
-  /**
    * Update wallet state and notify listeners
    */
   private updateState(updates: Partial<AzguardWalletState>): void {
@@ -460,7 +332,11 @@ export class AzguardWalletService implements IAzguardWalletService {
     this.state = { ...this.state, ...updates };
 
     // Emit account changes if accounts changed
-    if (updates.accounts && JSON.stringify(previousState.accounts) !== JSON.stringify(updates.accounts)) {
+    if (
+      updates.accounts &&
+      JSON.stringify(previousState.accounts) !==
+        JSON.stringify(updates.accounts)
+    ) {
       this.emitEvent('accountsChanged', updates.accounts);
     }
   }
@@ -481,7 +357,7 @@ export class AzguardWalletService implements IAzguardWalletService {
   private emitEvent(event: string, ...args: any[]): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
-      listeners.forEach(callback => {
+      listeners.forEach((callback) => {
         try {
           callback(...args);
         } catch (error) {
@@ -497,7 +373,9 @@ export class AzguardWalletService implements IAzguardWalletService {
   destroy(): void {
     if (this.client) {
       if (this.accountsChangedHandler) {
-        this.client.onAccountsChanged.removeHandler(this.accountsChangedHandler);
+        this.client.onAccountsChanged.removeHandler(
+          this.accountsChangedHandler
+        );
       }
       if (this.disconnectedHandler) {
         this.client.onDisconnected.removeHandler(this.disconnectedHandler);
@@ -509,12 +387,11 @@ export class AzguardWalletService implements IAzguardWalletService {
     this.client = null;
     this.state = {
       isInstalled: false,
-      isConnected: false,
-      isConnecting: false,
+      status: 'disconnected',
       accounts: [],
       selectedAccount: null,
       supportedChains: [],
-      error: null
+      error: null,
     };
   }
 }

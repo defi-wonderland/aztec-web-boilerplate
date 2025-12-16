@@ -1,48 +1,46 @@
-import { useAccount, useConnect, useDisconnect, useChainId } from 'wagmi';
-import { base } from 'wagmi/chains';
-import { useCallback } from 'react';
-import type { Address } from 'viem';
+import { useCallback, useState } from 'react';
+import type { Hex } from 'viem';
+import { useUniversalWallet } from './useUniversalWallet';
 
 export const useEVMWallet = () => {
-  const { address, isConnected, isConnecting, connector } = useAccount();
-  const { connect, connectAsync, connectors, error: connectError, isPending } = useConnect();
-  const { disconnect, isPending: isDisconnecting } = useDisconnect();
-  const chainId = useChainId();
+  const { signer, needsSigner } = useUniversalWallet();
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const connectWallet = useCallback(() => {
-    const injectedConnector = connectors.find((c) => c.id === 'injected');
-    if (injectedConnector) {
-      connect({ connector: injectedConnector, chainId: base.id });
+    signer.connect().catch((err) => {
+      console.error('Failed to connect wallet:', err);
+    });
+  }, [signer]);
+
+  const connectWalletAsync = useCallback(async (): Promise<Hex | undefined> => {
+    setIsConnecting(true);
+    try {
+      return await signer.connect();
+    } finally {
+      setIsConnecting(false);
     }
-  }, [connect, connectors]);
+  }, [signer]);
 
-  const connectWalletAsync = useCallback(async (): Promise<Address | undefined> => {
-    const injectedConnector = connectors.find((c) => c.id === 'injected');
-    if (injectedConnector) {
-      const result = await connectAsync({ connector: injectedConnector, chainId: base.id });
-      return result.accounts[0];
+  const disconnect = useCallback(() => {
+    setIsDisconnecting(true);
+    try {
+      signer.disconnect();
+    } finally {
+      setIsDisconnecting(false);
     }
-    return undefined;
-  }, [connectAsync, connectors]);
-
-  const truncateAddress = useCallback((addr: string | undefined): string => {
-    if (!addr) return '';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  }, []);
-
-  const isWrongChain = isConnected && chainId !== base.id;
+  }, [signer]);
 
   return {
-    address,
-    isConnected,
-    isConnecting: isConnecting || isPending,
+    address: signer.address,
+    isConnected: signer.address !== null,
+    isConnecting,
     isDisconnecting,
-    connector,
-    connectError,
-    isWrongChain,
+    isAvailable: signer.isAvailable,
+    needsSigner,
     connectWallet,
     connectWalletAsync,
     disconnect,
-    truncateAddress,
+    getService: signer.getService,
   };
 };

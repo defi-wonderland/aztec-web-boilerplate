@@ -1,4 +1,3 @@
-import type { RegisterContractOperation } from '@azguardwallet/types';
 import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
@@ -7,18 +6,19 @@ import type { NetworkConfig } from '../config/networks';
 import { getChainId, type AztecChainId } from '../config/networks/constants';
 import { contractsConfig, getArtifactOverrides } from '../config/contracts';
 import { getContractsForConfig, type ContractNames } from '../contract-registry';
+import type { RegisterContractOp } from '../types/browserWallet';
 
 /**
- * Build all contract registration operations for Azguard.
+ * Build all contract registration operations for browser wallets.
  * Registers ALL app contracts (lazyRegister is ignored for browser wallets
  * since they manage their own PXE and don't support lazy loading).
  */
 export const buildRegisterContractOperations = async (
   config: NetworkConfig,
   chainOverride?: AztecChainId
-): Promise<RegisterContractOperation[]> => {
+): Promise<RegisterContractOp[]> => {
   const chain = chainOverride ?? getChainId(config.name);
-  const operations: RegisterContractOperation[] = [];
+  const operations: RegisterContractOp[] = [];
   const contracts = getContractsForConfig(
     contractsConfig,
     getArtifactOverrides(config.name)

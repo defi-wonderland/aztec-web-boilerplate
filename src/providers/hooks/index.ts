@@ -1,32 +1,46 @@
-export { useEmbeddedWalletInternal } from './useEmbeddedWalletInternal';
-export { useAzguardWalletInternal } from './useAzguardWalletInternal';
-export { useMetaMaskAztecWalletInternal } from './useMetaMaskAztecWalletInternal';
+// Hooks
+export { useSharedPXE } from './useSharedPXE';
+export { useEmbeddedWallet } from './useEmbeddedWallet';
+export { useExternalSignerWallet } from './useExternalSignerWallet';
+export { useBrowserWallet } from './useBrowserWallet';
+export { useEVMWalletInternal } from './useEVMWalletInternal';
 export { useNetworkInternal } from './useNetworkInternal';
+
+// Types
+export type {
+  SharedPXEState,
+  SharedPXEServices,
+  SharedPXEActions,
+  UseSharedPXEReturn,
+} from './useSharedPXE';
 
 export type {
   EmbeddedWalletState,
   EmbeddedWalletActions,
   EmbeddedWalletServices,
-  UseEmbeddedWalletInternalReturn,
-} from './useEmbeddedWalletInternal';
+  UseEmbeddedWalletReturn,
+} from './useEmbeddedWallet';
 
 export type {
-  AzguardWalletActions,
-  UseAzguardWalletInternalReturn,
-} from './useAzguardWalletInternal';
+  ExternalSignerWalletState,
+  ExternalSignerWalletActions,
+  ExternalSignerWalletServices,
+  UseExternalSignerWalletReturn,
+} from './useExternalSignerWallet';
 
 export type {
-  MetaMaskAztecWalletState,
-  MetaMaskAztecWalletActions,
-  MetaMaskAztecWalletServices,
-  UseMetaMaskAztecWalletInternalReturn,
-} from './useMetaMaskAztecWalletInternal';
+  BrowserWalletActions,
+  UseBrowserWalletReturn,
+} from './useBrowserWallet';
+
+export type {
+  EVMWalletState,
+  EVMWalletActions,
+  UseEVMWalletInternalReturn,
+} from './useEVMWalletInternal';
 
 export type {
   NetworkState,
   NetworkActions,
   UseNetworkInternalReturn,
 } from './useNetworkInternal';
-
-
-

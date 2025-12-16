@@ -1,12 +1,16 @@
-import { azguard, embedded, metamaskAztec } from '../connectors';
+import { azguard, embedded, evmWallet } from '../connectors';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
 import { NETWORK_URLS } from './networks';
 
 /**
  * Edit this file to add/remove connectors or update Aztec node URLs.
+ *
+ * To add a new EVM wallet:
+ * 1. Add entry to src/config/evmWallets.ts
+ * 2. Add evmWallet('walletId') below
  */
 export const walletKitConfig: WalletKitConfig = {
-  connectors: [embedded(), azguard(), metamaskAztec()],
+  connectors: [embedded(), azguard(), evmWallet('metamask'), evmWallet('rabby')],
   networks: [
     {
       aztecNetwork: 'devnet',

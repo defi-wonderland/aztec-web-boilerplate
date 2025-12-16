@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback } from 'react';
-import type { SimulateViewsOperation } from '@azguardwallet/types';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useContractRegistry } from '../context/useContractRegistry';
 import { useUniversalWallet } from '../context/useUniversalWallet';
@@ -10,6 +9,7 @@ import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
 import { isBrowserWalletConnector } from '../../types/walletConnector';
 import type { ContractConfigMap } from '../../contract-registry';
 import type { TokenContract } from '../../artifacts/Token';
+import type { SimulateViewsOp } from '../../types/browserWallet';
 
 export interface TokenBalance {
   private: bigint;
@@ -101,7 +101,7 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
         const tokenContractAddress = contractsConfig.token.address(currentConfig);
         const accountAddress = account!.getAddress().toString();
 
-        const operation: SimulateViewsOperation = {
+        const operation: SimulateViewsOp = {
           kind: 'simulate_views',
           account: selectedAccount,
           calls: [

@@ -1,60 +1,72 @@
-import type { UseEmbeddedWalletInternalReturn } from '../providers/hooks';
+/**
+ * EmbeddedConnector - Connector for Embedded wallets
+ *
+ * Uses app-managed PXE with internal signing.
+ * Keys are stored locally in the browser.
+ */
+
 import { WalletType } from '../types/aztec';
 import type {
+  EmbeddedWalletConnector,
   ConnectorStatus,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
-  EmbeddedWalletConnector,
 } from '../types/walletConnector';
+import type { UseEmbeddedWalletReturn } from '../providers/hooks/useEmbeddedWallet';
 
 export const EMBEDDED_CONNECTOR_ID = 'embedded' as const;
 
+/**
+ * Connector for Embedded wallets (internal signing).
+ *
+ * This connector uses app-managed PXE with keys stored locally.
+ * All signing happens within the app.
+ */
 export class EmbeddedConnector implements EmbeddedWalletConnector {
   readonly id = EMBEDDED_CONNECTOR_ID;
   readonly label = 'Embedded Wallet';
   readonly type = WalletType.EMBEDDED;
 
-  private state: UseEmbeddedWalletInternalReturn | null = null;
+  private _embeddedState: UseEmbeddedWalletReturn | null = null;
 
   /**
    * Update connector with latest hook state. Called by provider each render.
    */
-  updateState(state: UseEmbeddedWalletInternalReturn) {
-    this.state = state;
+  updateState(state: UseEmbeddedWalletReturn) {
+    this._embeddedState = state;
   }
 
-  private getState(): UseEmbeddedWalletInternalReturn {
-    if (!this.state) {
+  private getEmbeddedState(): UseEmbeddedWalletReturn {
+    if (!this._embeddedState) {
       throw new Error('Embedded connector has not been initialized');
     }
-    return this.state;
+    return this._embeddedState;
   }
 
   getStatus(): ConnectorStatus {
-    const state = this.getState();
+    const { state, error } = this.getEmbeddedState();
+
     return {
       isInstalled: true,
-      isConnected: state.state.embeddedAccount !== null,
-      isConnecting: state.isLoading,
-      isBusy: state.state.isDeploying,
-      error: state.error,
+      status: state.status,
+      error,
     };
   }
 
   getAccount() {
-    return this.getState().state.embeddedAccount;
+    return this.getEmbeddedState().state.embeddedAccount;
   }
 
   async connect(): Promise<void> {
-    const state = this.getState();
-    if (state.state.embeddedAccount) {
+    const { state, actions } = this.getEmbeddedState();
+    if (state.embeddedAccount) {
       return;
     }
-    await state.actions.create();
+    await actions.create();
   }
 
   disconnect(): Promise<void> {
-    this.getState().actions.disconnect();
+    this.getEmbeddedState().actions.disconnect();
     return Promise.resolve();
   }
 
@@ -65,31 +77,41 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
   }
 
   getPXE() {
-    return this.getState().services.pxe;
+    return this.getEmbeddedState().services.pxe;
   }
 
   getWallet() {
-    return this.getState().services.wallet;
+    return this.getEmbeddedState().services.wallet;
   }
 
   getSponsoredFeePaymentMethod() {
-    return this.getState().services.getSponsoredFeePaymentMethod();
+    return this.getEmbeddedState().services.getSponsoredFeePaymentMethod();
   }
 
   createAccount() {
-    return this.getState().actions.create();
+    return this.getEmbeddedState().actions.create();
   }
 
   connectTestAccount(index: number) {
-    return this.getState().actions.connectTest(index);
+    return this.getEmbeddedState().actions.connectTest(index);
   }
 
   connectExistingAccount() {
-    return this.getState().actions.connectExisting();
+    return this.getEmbeddedState().actions.connectExisting();
+  }
+
+  hasSavedAccount() {
+    return this.getEmbeddedState().actions.hasSavedAccount();
   }
 
   isDeploying() {
-    return this.getState().state.isDeploying;
+    return this.getEmbeddedState().state.status === 'deploying';
   }
 }
 
+/**
+ * Factory function to create an Embedded connector
+ */
+export const createEmbeddedConnector = (): EmbeddedConnector => {
+  return new EmbeddedConnector();
+};

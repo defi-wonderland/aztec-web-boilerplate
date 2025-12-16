@@ -9,6 +9,8 @@ import { queuePxeCall } from '../../utils';
 import {
   isBrowserWalletConnector,
   isEmbeddedConnector,
+  isExternalSignerConnector,
+  hasAppManagedPXE,
 } from '../../types/walletConnector';
 import {
   getContractsForConfig,
@@ -57,9 +59,11 @@ export function useContractRegistration<
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
   const { connector, account, currentConfig } = useUniversalWallet();
 
-  // Wallet type detection - agnostic to specific wallet implementations
+  // Wallet type detection - handles all connector types
+  // Browser wallets (Azguard) use external PXE, so no app-managed contract registration
   const isExternal = isBrowserWalletConnector(connector);
-  const wallet = isEmbeddedConnector(connector) ? connector.getWallet() : null;
+  // Both Embedded and External Signer connectors have app-managed PXE with a wallet
+  const wallet = hasAppManagedPXE(connector) ? connector.getWallet() : null;
 
   const [contract, setContract] = useState<TContract | null>(null);
   const [status, setStatus] = useState<ContractStatus>('idle');

@@ -1,10 +1,48 @@
 import { AztecAddress } from "@aztec/aztec.js/addresses";
 import { Fr } from "@aztec/aztec.js/fields";
+import { hasHexPrefix } from '@aztec/foundation/string';
 import { PLACEHOLDER_ADDRESS } from "../config/deployments";
 import type { WalletConnector } from "../types/walletConnector";
 import { isBrowserWalletConnector } from "../types/walletConnector";
+import { CHAIN_ID_TO_NETWORK, NETWORK_NAMES } from '../config/networks/constants';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
+
+/** CAIP account format: "namespace:chainId:address" (e.g., "aztec:1:0x123...") */
+type CaipAccountString = string;
+
+// ============================================================================
+// ADDRESS UTILITIES
+// ============================================================================
+
+const TRUNCATE_START = 6;
+const TRUNCATE_END = 4;
+
+export const truncateAddress = (address: string | undefined): string => {
+  if (!address) return '';
+  const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
+  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END) return formattedAddress;
+  return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
+};
+
+export const formatAddress = (address: string | undefined): string => {
+  if (!address) return '';
+  return hasHexPrefix(address) ? address : `0x${address}`;
+};
+
+export const truncateCaipAddress = (caipAccount: CaipAccountString | undefined): string => {
+  if (!caipAccount) return '';
+  const address = caipAccount.split(':')[2];
+  const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
+  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END) return formattedAddress;
+  return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
+};
+
+export const getCaipChainName = (caipAccount: CaipAccountString): string => {
+  const chainId = caipAccount.split(':')[1];
+  const network = CHAIN_ID_TO_NETWORK[chainId];
+  return network ? NETWORK_NAMES[network] : `Chain ${chainId}`;
+};
 
 // ============================================================================
 // CONTRACT UTILITIES
