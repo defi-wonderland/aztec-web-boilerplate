@@ -17,7 +17,8 @@ import {
   type ContractNames,
   type ContractRegistryContextValue,
 } from '../contract-registry';
-import { contractsConfig, getArtifactOverrides } from '../config/contracts';
+import { getArtifactOverrides } from '../artifacts/artifactOverrides';
+import { contractsConfig } from '../config/contracts';
 import { isEmbeddedConnector } from '../types/walletConnector';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
 import { TimingToast } from '../components';

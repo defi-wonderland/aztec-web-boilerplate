@@ -4,7 +4,7 @@ import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
 import { useUniversalWallet } from './useUniversalWallet';
-import { contractsConfig, getArtifactOverrides } from '../../config/contracts';
+import { contractsConfig } from '../../config/contracts';
 import { queuePxeCall } from '../../utils';
 import { isEmbeddedConnector } from '../../types/walletConnector';
 import { WalletType } from '../../types/aztec';
@@ -15,6 +15,7 @@ import {
   type ContractStatus,
   type UseContractReturn,
 } from '../../contract-registry';
+import { getArtifactOverrides } from '../../artifacts/artifactOverrides';
 
 interface ExternalWalletContractProxy {
   readonly __browserWalletPlaceholder: true;

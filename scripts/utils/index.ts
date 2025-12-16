@@ -1,3 +1,2 @@
 export { MinimalWallet } from './MinimalWallet';
 
-

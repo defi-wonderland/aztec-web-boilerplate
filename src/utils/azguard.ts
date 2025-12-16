@@ -5,8 +5,9 @@ import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/Sponsored
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import type { NetworkConfig } from '../config/networks';
 import { getChainId, type AztecChainId } from '../config/networks/constants';
-import { contractsConfig, getArtifactOverrides } from '../config/contracts';
+import { contractsConfig } from '../config/contracts';
 import { getContractsForConfig, type ContractNames } from '../contract-registry';
+import { getArtifactOverrides } from '../artifacts/artifactOverrides';
 
 /**
  * Extracts the chain identifier from a CAIP account string.
