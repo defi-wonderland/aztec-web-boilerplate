@@ -74,7 +74,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
         isNetworkInitializing ||
         isNetworkFailed ||
         isConnecting ||
-        status.isConnected
+        status.status === 'connected'
       );
     } catch {
       // Connector not initialized yet
@@ -129,7 +129,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const handleBrowserWalletConnect = async (connector: WalletConnector) => {
     try {
       const status = connector.getStatus();
-      if (isConnecting || status.isConnecting) return;
+      if (isConnecting || status.status === 'connecting') return;
     } catch {
       // Connector not initialized
       return;
@@ -180,9 +180,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     } catch {
       return {
         isInstalled: false,
-        isConnected: false,
-        isConnecting: false,
-        isBusy: false,
+        status: 'disconnected' as const,
         error: null,
       };
     }
@@ -295,9 +293,9 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                             : ''
                     }
                   >
-                    {isThisConnecting || status.isConnecting
+                    {isThisConnecting || status.status === 'connecting'
                       ? 'Connecting...'
-                      : status.isConnected
+                      : status.status === 'connected'
                         ? `${connector.label} Connected`
                         : `Connect ${connector.label}`}
                   </button>
@@ -329,9 +327,9 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                             : ''
                     }
                   >
-                    {isThisConnecting || status.isConnecting
+                    {isThisConnecting || status.status === 'connecting'
                       ? 'Connecting...'
-                      : status.isConnected
+                      : status.status === 'connected'
                         ? `${connector.label} Connected`
                         : `Connect ${connector.label}`}
                   </button>

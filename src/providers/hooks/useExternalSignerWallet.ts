@@ -15,6 +15,7 @@ import { AccountManager } from '@aztec/aztec.js/wallet';
 import { poseidon2Hash } from '@aztec/foundation/crypto';
 import type { ExternalSigner } from '../../signers/types';
 import { ExternalSignerType } from '../../types/aztec';
+import type { ConnectionStatus } from '../../types/walletConnector';
 import { EcdsaKEthSignerAccountContract } from '../../accounts/EcdsaKEthSignerAccountContract';
 import { useSharedPXE, type UseSharedPXEReturn } from './useSharedPXE';
 import { useError } from '../ErrorProvider';
@@ -24,8 +25,7 @@ import type { MinimalWallet } from '../../utils/MinimalWallet';
 export interface ExternalSignerWalletState {
   aztecAccount: AccountWithSecretKey | null;
   signerType: ExternalSignerType | null;
-  isConnecting: boolean;
-  isDeploying: boolean;
+  status: ConnectionStatus;
   isInitialized: boolean;
 }
 
@@ -68,8 +68,7 @@ export const useExternalSignerWallet = (
   // Local state
   const [aztecAccount, setAztecAccount] = useState<AccountWithSecretKey | null>(null);
   const [signerType, setSignerType] = useState<ExternalSignerType | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isDeploying, setIsDeploying] = useState(false);
+  const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
   const currentSignerRef = useRef<ExternalSigner | null>(null);
@@ -77,7 +76,7 @@ export const useExternalSignerWallet = (
 
   const connect = useCallback(
     async (signer: ExternalSigner): Promise<AccountWithSecretKey> => {
-      setIsConnecting(true);
+      setStatus('connecting');
       setError(null);
 
       try {
@@ -141,7 +140,7 @@ export const useExternalSignerWallet = (
         );
 
         // Step 8: Deploy account if needed
-        setIsDeploying(true);
+        setStatus('deploying');
         try {
           const metadata = await wallet.getContractMetadata(accountAddress);
           if (!metadata.isContractInitialized) {
@@ -171,19 +170,19 @@ export const useExternalSignerWallet = (
             details:
               deployErr instanceof Error ? deployErr.message : String(deployErr),
           });
-        } finally {
-          setIsDeploying(false);
         }
 
         // Update state
         currentSignerRef.current = signer;
         setAztecAccount(account);
         setSignerType(signer.type);
+        setStatus('connected');
 
         return account;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Connection failed';
         setError(message);
+        setStatus('disconnected');
         console.error('External Signer connection failed:', err);
         
         // Disconnect the signer so next attempt can use a different wallet
@@ -196,8 +195,6 @@ export const useExternalSignerWallet = (
           details: message,
         });
         throw err;
-      } finally {
-        setIsConnecting(false);
       }
     },
     [sharedPXE, addMessage]
@@ -211,15 +208,14 @@ export const useExternalSignerWallet = (
     setAztecAccount(null);
     setSignerType(null);
     setError(null);
-    setIsDeploying(false);
+    setStatus('disconnected');
   }, []);
 
   return {
     state: {
       aztecAccount,
       signerType,
-      isConnecting,
-      isDeploying,
+      status,
       isInitialized: sharedPXE.state.isInitialized,
     },
     actions: {

@@ -22,11 +22,12 @@ import { isValidConfig } from '../../utils';
 import { getConfiguredAccountCredentials, hasConfiguredCredentials } from '../../utils/accountCredentials';
 import type { NetworkConfig } from '../../config/networks';
 import type { AccountCredentials } from '../../types/aztec';
+import type { ConnectionStatus } from '../../types/walletConnector';
 import type { MinimalWallet } from '../../utils/MinimalWallet';
 
 export interface EmbeddedWalletState {
   embeddedAccount: AccountWithSecretKey | null;
-  isDeploying: boolean;
+  status: ConnectionStatus;
   isInitialized: boolean;
 }
 
@@ -82,8 +83,7 @@ export const useEmbeddedWallet = (
 
   // Local state
   const [embeddedAccount, setEmbeddedAccount] = useState<AccountWithSecretKey | null>(null);
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
   const { addMessage } = useError();
@@ -129,6 +129,7 @@ export const useEmbeddedWallet = (
     wallet.addAccount(account);
 
     setEmbeddedAccount(account);
+    setStatus('connected');
     console.log('✅ Connected to account:', account.getAddress().toString());
 
     return account;
@@ -150,7 +151,7 @@ export const useEmbeddedWallet = (
   };
 
   const create = useCallback(async (): Promise<AccountWithSecretKey> => {
-    setIsLoading(true);
+    setStatus('connecting');
     setError(null);
 
     try {
@@ -180,7 +181,7 @@ export const useEmbeddedWallet = (
       console.log('✅ New embedded account created:', accountManager.address.toString());
 
       // Deploy account
-      setIsDeploying(true);
+      setStatus('deploying');
       try {
         const metadata = await wallet.getContractMetadata(accountManager.address);
         if (!metadata.isContractInitialized) {
@@ -207,8 +208,6 @@ export const useEmbeddedWallet = (
           source: 'wallet',
           details: deployErr instanceof Error ? deployErr.message : String(deployErr),
         });
-      } finally {
-        setIsDeploying(false);
       }
 
       // Save account credentials
@@ -220,18 +219,18 @@ export const useEmbeddedWallet = (
       });
 
       setEmbeddedAccount(account);
+      setStatus('connected');
       return account;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create account';
       setError(message);
+      setStatus('disconnected');
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   }, [sharedPXE, addMessage]);
 
   const connectTest = useCallback(async (index: number): Promise<AccountWithSecretKey> => {
-    setIsLoading(true);
+    setStatus('connecting');
     setError(null);
 
     try {
@@ -257,19 +256,19 @@ export const useEmbeddedWallet = (
 
       console.log('✅ Test account connected:', account.getAddress().toString());
       setEmbeddedAccount(account);
+      setStatus('connected');
 
       return account;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to connect test account';
       setError(message);
+      setStatus('disconnected');
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   }, [sharedPXE]);
 
   const connectExisting = useCallback(async (): Promise<AccountWithSecretKey | null> => {
-    setIsLoading(true);
+    setStatus('connecting');
     setError(null);
 
     try {
@@ -292,25 +291,26 @@ export const useEmbeddedWallet = (
       }
 
       console.warn('No configured or saved account found');
+      setStatus('disconnected');
       return null;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to connect existing account';
       setError(message);
+      setStatus('disconnected');
       return null;
-    } finally {
-      setIsLoading(false);
     }
   }, [sharedPXE]);
 
   const disconnect = useCallback(() => {
     setEmbeddedAccount(null);
-    setIsDeploying(false);
+    setStatus('disconnected');
     clearSavedAccount();
   }, []);
 
   const reinitialize = useCallback(async (): Promise<void> => {
     sharedPXE.actions.reset();
     setEmbeddedAccount(null);
+    setStatus('disconnected');
     await sharedPXE.actions.initialize();
   }, [sharedPXE]);
 
@@ -321,10 +321,12 @@ export const useEmbeddedWallet = (
     return getSavedAccount() !== null;
   }, []);
 
+  const isLoading = status === 'connecting' || status === 'deploying' || sharedPXE.state.isInitializing;
+
   return {
     state: {
       embeddedAccount,
-      isDeploying,
+      status,
       isInitialized: sharedPXE.state.isInitialized,
     },
     actions: {
@@ -341,7 +343,7 @@ export const useEmbeddedWallet = (
       getSponsoredFeePaymentMethod: sharedPXE.services.getSponsoredFeePaymentMethod,
     },
     sharedPXE,
-    isLoading: isLoading || sharedPXE.state.isInitializing,
+    isLoading,
     error: error || sharedPXE.state.error,
   };
 };

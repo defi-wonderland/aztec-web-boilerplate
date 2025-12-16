@@ -1,12 +1,12 @@
 import type { CaipAccount } from '@azguardwallet/types';
+import type { ConnectionStatus } from './walletConnector';
 
 /**
  * Azguard wallet connection state
  */
 export interface AzguardWalletState {
   isInstalled: boolean;
-  isConnected: boolean;
-  isConnecting: boolean;
+  status: ConnectionStatus;
   accounts: CaipAccount[];
   selectedAccount: CaipAccount | null;
   supportedChains: string[];

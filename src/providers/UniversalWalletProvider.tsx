@@ -174,7 +174,7 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
   const activeConnector = useMemo(() => {
     return connectors.find((c) => {
       try {
-        return c.getStatus().isConnected;
+        return c.getStatus().status === 'connected';
       } catch {
         return false;
       }
@@ -183,7 +183,7 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
     connectors,
     embedded.state.embeddedAccount,
     externalSigner.state.aztecAccount,
-    browserWallet.state.isConnected,
+    browserWallet.state.status,
   ]);
 
   const activeAccount = activeConnector?.getAccount() ?? null;
@@ -225,7 +225,8 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
   const isLoading =
     embedded.isLoading ||
     browserWallet.isLoading ||
-    externalSigner.state.isConnecting ||
+    externalSigner.state.status === 'connecting' ||
+    externalSigner.state.status === 'deploying' ||
     (activeWalletType === WalletType.EXTERNAL_SIGNER && evmWallet.state.isConnecting);
 
   // Compute error state

@@ -27,47 +27,46 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
   readonly label = 'Embedded Wallet';
   readonly type = WalletType.EMBEDDED;
 
-  private state: UseEmbeddedWalletReturn | null = null;
+  private _embeddedState: UseEmbeddedWalletReturn | null = null;
 
   /**
    * Update connector with latest hook state. Called by provider each render.
    */
   updateState(state: UseEmbeddedWalletReturn) {
-    this.state = state;
+    this._embeddedState = state;
   }
 
-  private getState(): UseEmbeddedWalletReturn {
-    if (!this.state) {
+  private getEmbeddedState(): UseEmbeddedWalletReturn {
+    if (!this._embeddedState) {
       throw new Error('Embedded connector has not been initialized');
     }
-    return this.state;
+    return this._embeddedState;
   }
 
   getStatus(): ConnectorStatus {
-    const state = this.getState();
+    const { state, error } = this.getEmbeddedState();
+
     return {
       isInstalled: true,
-      isConnected: state.state.embeddedAccount !== null,
-      isConnecting: state.isLoading,
-      isBusy: state.state.isDeploying,
-      error: state.error,
+      status: state.status,
+      error,
     };
   }
 
   getAccount() {
-    return this.getState().state.embeddedAccount;
+    return this.getEmbeddedState().state.embeddedAccount;
   }
 
   async connect(): Promise<void> {
-    const state = this.getState();
-    if (state.state.embeddedAccount) {
+    const { state, actions } = this.getEmbeddedState();
+    if (state.embeddedAccount) {
       return;
     }
-    await state.actions.create();
+    await actions.create();
   }
 
   disconnect(): Promise<void> {
-    this.getState().actions.disconnect();
+    this.getEmbeddedState().actions.disconnect();
     return Promise.resolve();
   }
 
@@ -78,35 +77,35 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
   }
 
   getPXE() {
-    return this.getState().services.pxe;
+    return this.getEmbeddedState().services.pxe;
   }
 
   getWallet() {
-    return this.getState().services.wallet;
+    return this.getEmbeddedState().services.wallet;
   }
 
   getSponsoredFeePaymentMethod() {
-    return this.getState().services.getSponsoredFeePaymentMethod();
+    return this.getEmbeddedState().services.getSponsoredFeePaymentMethod();
   }
 
   createAccount() {
-    return this.getState().actions.create();
+    return this.getEmbeddedState().actions.create();
   }
 
   connectTestAccount(index: number) {
-    return this.getState().actions.connectTest(index);
+    return this.getEmbeddedState().actions.connectTest(index);
   }
 
   connectExistingAccount() {
-    return this.getState().actions.connectExisting();
+    return this.getEmbeddedState().actions.connectExisting();
   }
 
   hasSavedAccount() {
-    return this.getState().actions.hasSavedAccount();
+    return this.getEmbeddedState().actions.hasSavedAccount();
   }
 
   isDeploying() {
-    return this.getState().state.isDeploying;
+    return this.getEmbeddedState().state.status === 'deploying';
   }
 }
 

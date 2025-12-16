@@ -52,7 +52,8 @@ export const DripperCard: React.FC = () => {
   });
 
   const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
-  const isBusy = connector?.getStatus().isBusy ?? false;
+  const connectorStatus = connector?.getStatus().status;
+  const isWalletBusy = connectorStatus === 'connecting' || connectorStatus === 'deploying';
 
   const handleDrip = () => {
     if (!amount || !isReady) return;
@@ -87,7 +88,7 @@ export const DripperCard: React.FC = () => {
 
   // Show dripper form when either wallet is connected and app is initialized
   const isAnyWalletConnected =
-    Boolean(account) || connectors.some((conn) => conn.getStatus().isConnected);
+    Boolean(account) || connectors.some((conn) => conn.getStatus().status === 'connected');
   const showDripForm = isAnyWalletConnected && isInitialized;
 
   if (!showDripForm) {
@@ -197,14 +198,14 @@ export const DripperCard: React.FC = () => {
             <button
               type="button"
               onClick={handleDrip}
-              disabled={!amount || isProcessing || isBusy || !isReady}
+              disabled={!amount || isProcessing || isWalletBusy || !isReady}
               className="btn btn-primary"
               aria-label={`Drip tokens to ${dripType} balance`}
             >
               <span className="btn-icon">
                 {dripType === 'private' ? '🛡️' : '🌐'}
               </span>
-              {isBusy
+              {isWalletBusy
                 ? 'Wallet Busy...'
                 : isProcessing
                   ? 'Processing...'

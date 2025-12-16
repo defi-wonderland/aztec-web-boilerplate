@@ -1,12 +1,12 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { ConnectionStatus } from './walletConnector';
 
 /**
  * Generic state for any browser wallet extension.
  */
 export interface BrowserWalletState {
   isInstalled: boolean;
-  isConnected: boolean;
-  isConnecting: boolean;
+  status: ConnectionStatus;
   accounts: string[];
   selectedAccount: string | null;
   supportedChains: string[];
@@ -119,8 +119,7 @@ export type BrowserWalletAdapterFactory = () => IBrowserWalletAdapter;
  */
 export const DEFAULT_BROWSER_WALLET_STATE: BrowserWalletState = {
   isInstalled: false,
-  isConnected: false,
-  isConnecting: false,
+  status: 'disconnected',
   accounts: [],
   selectedAccount: null,
   supportedChains: [],

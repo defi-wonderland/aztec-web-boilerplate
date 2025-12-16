@@ -11,8 +11,7 @@ export class AzguardWalletService {
   private client: AzguardClient | null = null;
   private state: AzguardWalletState = {
     isInstalled: false,
-    isConnected: false,
-    isConnecting: false,
+    status: 'disconnected',
     accounts: [],
     selectedAccount: null,
     supportedChains: [],
@@ -68,7 +67,7 @@ export class AzguardWalletService {
     }
 
     try {
-      this.updateState({ isConnecting: true, error: null });
+      this.updateState({ status: 'connecting', error: null });
 
       // Validate connection parameters
       this.validateConnectionParams(
@@ -93,8 +92,7 @@ export class AzguardWalletService {
       const selectedAccount = accounts.length > 0 ? accounts[0] : null;
 
       this.updateState({
-        isConnected: true,
-        isConnecting: false,
+        status: 'connected',
         accounts,
         selectedAccount,
       });
@@ -117,7 +115,7 @@ export class AzguardWalletService {
       }
 
       this.updateState({
-        isConnecting: false,
+        status: 'disconnected',
         error:
           error instanceof Error
             ? error.message
@@ -224,7 +222,7 @@ export class AzguardWalletService {
       await this.client.disconnect();
 
       this.updateState({
-        isConnected: false,
+        status: 'disconnected',
         accounts: [],
         selectedAccount: null,
         error: null,
@@ -241,7 +239,7 @@ export class AzguardWalletService {
    * Execute multiple operations in batch
    */
   async executeOperations(operations: Operation[]): Promise<OperationResult[]> {
-    if (!this.client || !this.state.isConnected) {
+    if (!this.client || this.state.status !== 'connected') {
       throw new Error('Azguard wallet not connected');
     }
 
@@ -284,13 +282,13 @@ export class AzguardWalletService {
       this.updateState({
         accounts,
         selectedAccount: accounts.length > 0 ? accounts[0] : null,
-        isConnected: accounts.length > 0,
+        status: accounts.length > 0 ? 'connected' : 'disconnected',
       });
     };
 
     this.disconnectedHandler = () => {
       this.updateState({
-        isConnected: false,
+        status: 'disconnected',
         accounts: [],
         selectedAccount: null,
       });
@@ -389,8 +387,7 @@ export class AzguardWalletService {
     this.client = null;
     this.state = {
       isInstalled: false,
-      isConnected: false,
-      isConnecting: false,
+      status: 'disconnected',
       accounts: [],
       selectedAccount: null,
       supportedChains: [],

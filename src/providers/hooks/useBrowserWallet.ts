@@ -83,7 +83,7 @@ export const useBrowserWallet = (
         adapter.onDisconnected(() => {
           setWalletState((prev) => ({
             ...prev,
-            isConnected: false,
+            status: 'disconnected',
             accounts: [],
             selectedAccount: null,
           }));
@@ -114,7 +114,7 @@ export const useBrowserWallet = (
 
   // Auto-register contracts when connected
   useEffect(() => {
-    if (!adapter || !walletState.isConnected || !walletState.selectedAccount) {
+    if (!adapter || walletState.status !== 'connected' || !walletState.selectedAccount) {
       contractRegistrationRef.current = null;
       return;
     }
@@ -163,11 +163,11 @@ export const useBrowserWallet = (
     return () => {
       isActive = false;
     };
-  }, [walletState.isConnected, walletState.selectedAccount, currentConfig, adapter]);
+  }, [walletState.status, walletState.selectedAccount, currentConfig, adapter]);
 
   // Auto-fetch account wallet when selected account changes
   useEffect(() => {
-    if (!adapter || !walletState.isConnected || !walletState.selectedAccount) {
+    if (!adapter || walletState.status !== 'connected' || !walletState.selectedAccount) {
       setAccountWallet(null);
       return;
     }
@@ -193,7 +193,7 @@ export const useBrowserWallet = (
     return () => {
       isActive = false;
     };
-  }, [walletState.isConnected, walletState.selectedAccount, adapter]);
+  }, [walletState.status, walletState.selectedAccount, adapter]);
 
   const handleConnect = useCallback(async (): Promise<void> => {
     if (!adapter) {
@@ -204,8 +204,7 @@ export const useBrowserWallet = (
 
       setWalletState((prev) => ({
         ...prev,
-        isConnected: true,
-        isConnecting: false,
+        status: 'connected',
         accounts,
         selectedAccount: accounts.length > 0 ? accounts[0] : null,
         error: null,
@@ -228,7 +227,7 @@ export const useBrowserWallet = (
 
       setWalletState((prev) => ({
         ...prev,
-        isConnected: false,
+        status: 'disconnected',
         accounts: [],
         selectedAccount: null,
         error: null,

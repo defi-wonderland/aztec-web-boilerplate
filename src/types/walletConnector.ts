@@ -11,11 +11,11 @@ import type {
 
 export type WalletConnectorId = string;
 
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'deploying' | 'connected';
+
 export interface ConnectorStatus {
   isInstalled: boolean;
-  isConnected: boolean;
-  isConnecting: boolean;
-  isBusy: boolean;
+  status: ConnectionStatus;
   error: string | null;
 }
 

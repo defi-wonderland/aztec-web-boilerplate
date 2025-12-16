@@ -40,7 +40,7 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   readonly signerType: ExternalSignerType;
   readonly rdns?: string;
 
-  private state: UseExternalSignerWalletReturn | null = null;
+  private _signerState: UseExternalSignerWalletReturn | null = null;
   private signer: ExternalSigner | null = null;
 
   constructor(config: ExternalSignerConnectorConfig) {
@@ -63,42 +63,48 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
    * Update connector with latest hook state. Called by provider each render.
    */
   updateState(state: UseExternalSignerWalletReturn, signer: ExternalSigner | null) {
-    this.state = state;
+    this._signerState = state;
     this.signer = signer;
   }
 
-  private getState(): UseExternalSignerWalletReturn {
-    if (!this.state) {
+  private getSignerState(): UseExternalSignerWalletReturn {
+    if (!this._signerState) {
       throw new Error('External Signer connector has not been initialized');
     }
-    return this.state;
+    return this._signerState;
   }
 
   getStatus(): ConnectorStatus {
-    const state = this.getState();
+    const { state, error } = this.getSignerState();
     const isSignerConnected = this.signer?.isConnected() ?? false;
+    
+    // If aztec account exists but EVM signer disconnected, still show as connected
+    // (the EVM signer can be reconnected)
+    let status = state.status;
+    if (status === 'connected' && !isSignerConnected && state.aztecAccount) {
+      status = 'connected'; // Keep connected status, UI will handle signer reconnection
+    }
+
     return {
       isInstalled: this.signer?.isAvailable() ?? false,
-      isConnected: state.state.aztecAccount !== null && isSignerConnected,
-      isConnecting: state.state.isConnecting,
-      isBusy: state.state.isDeploying,
-      error: state.error,
+      status,
+      error,
     };
   }
 
   getAccount(): AccountWithSecretKey | null {
-    return this.getState().state.aztecAccount;
+    return this.getSignerState().state.aztecAccount;
   }
 
   async connect(): Promise<void> {
     if (!this.signer) {
       throw new Error('No signer configured for this connector');
     }
-    await this.getState().actions.connect(this.signer);
+    await this.getSignerState().actions.connect(this.signer);
   }
 
   async disconnect(): Promise<void> {
-    this.getState().actions.disconnect();
+    this.getSignerState().actions.disconnect();
   }
 
   async sendTransaction(
@@ -110,19 +116,19 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   }
 
   getPXE(): PXE | null {
-    return this.getState().services.pxe;
+    return this.getSignerState().services.pxe;
   }
 
   getWallet(): Wallet | null {
-    return this.getState().services.wallet;
+    return this.getSignerState().services.wallet;
   }
 
   getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
-    return this.getState().services.getSponsoredFeePaymentMethod();
+    return this.getSignerState().services.getSponsoredFeePaymentMethod();
   }
 
   isDeploying(): boolean {
-    return this.getState().state.isDeploying;
+    return this.getSignerState().state.status === 'deploying';
   }
 
   getEVMAddress(): string | null {

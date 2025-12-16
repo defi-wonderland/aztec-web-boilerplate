@@ -51,7 +51,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   readonly type = WalletType.BROWSER_WALLET;
   readonly adapterFactory: BrowserWalletAdapterFactory;
 
-  private state: UseBrowserWalletReturn | null = null;
+  private _browserState: UseBrowserWalletReturn | null = null;
   private _adapter: IBrowserWalletAdapter | null = null;
 
   constructor(config: BrowserWalletConnectorConfig) {
@@ -74,49 +74,48 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
    * Update connector with latest hook state. Called by provider each render.
    */
   updateState(state: UseBrowserWalletReturn) {
-    this.state = state;
+    this._browserState = state;
   }
 
-  private getState(): UseBrowserWalletReturn {
-    if (!this.state) {
+  private getBrowserState(): UseBrowserWalletReturn {
+    if (!this._browserState) {
       throw new Error('Browser wallet connector has not been initialized');
     }
-    return this.state;
+    return this._browserState;
   }
 
   getStatus(): ConnectorStatus {
-    const state = this.getState();
+    const { state } = this.getBrowserState();
+
     return {
-      isInstalled: state.state.isInstalled,
-      isConnected: state.state.isConnected,
-      isConnecting: state.state.isConnecting,
-      isBusy: state.state.isConnecting,
-      error: state.state.error,
+      isInstalled: state.isInstalled,
+      status: state.status,
+      error: state.error,
     };
   }
 
   getAccount(): AccountWithSecretKey | null {
-    return this.getState().accountWallet;
+    return this.getBrowserState().accountWallet;
   }
 
   getCaipAccount() {
-    return this.getState().state.selectedAccount;
+    return this.getBrowserState().state.selectedAccount;
   }
 
   connect(): Promise<void> {
-    return this.getState().actions.connect();
+    return this.getBrowserState().actions.connect();
   }
 
   disconnect(): Promise<void> {
-    return this.getState().actions.disconnect();
+    return this.getBrowserState().actions.disconnect();
   }
 
   async sendTransaction(
     request: ConnectorTransactionRequest
   ): Promise<ConnectorTransactionResult> {
-    const state = this.getState();
-    const account = state.state.selectedAccount;
-    const chain = state.state.supportedChains[0] ?? '';
+    const { state, actions } = this.getBrowserState();
+    const account = state.selectedAccount;
+    const chain = state.supportedChains[0] ?? '';
 
     if (!account) {
       throw new Error('No account selected');
@@ -129,7 +128,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
       calls: request.actions.map(toContractCall),
     };
 
-    const [result] = await state.actions.executeOperations([operation]);
+    const [result] = await actions.executeOperations([operation]);
 
     if (result.status !== 'ok') {
       const message = 'error' in result && result.error ? result.error : 'Transaction failed';
@@ -147,6 +146,6 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   }
 
   executeOperations(operations: BrowserWalletOperation[]) {
-    return this.getState().actions.executeOperations(operations);
+    return this.getBrowserState().actions.executeOperations(operations);
   }
 }

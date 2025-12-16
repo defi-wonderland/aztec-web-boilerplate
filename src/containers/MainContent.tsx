@@ -12,7 +12,7 @@ export const MainContent: React.FC = () => {
   
   // Show security warning for embedded wallet (stores keys in browser localStorage)
   const showSecurityWarning =
-    connector?.getStatus().isConnected && isEmbeddedConnector(connector);
+    connector?.getStatus().status === 'connected' && isEmbeddedConnector(connector);
 
   const tabs: TabConfig[] = [
     {

@@ -53,7 +53,7 @@ export const Header: React.FC = () => {
         ? truncateAddress(account.getAddress().toString())
         : null;
 
-    if (status?.isConnected && displayAddress) {
+    if (status?.status === 'connected' && displayAddress) {
       return (
         <ConnectedAccount
           walletName={walletName}
