@@ -43,6 +43,6 @@ export const contractsConfig = createContractConfig({
       constructorArgs: [...getTokenConstructorArgs(config)],
       constructorArtifact: 'constructor_with_minter',
     }),
-    lazyRegister: false,
+    lazyRegister: true,
   },
 });

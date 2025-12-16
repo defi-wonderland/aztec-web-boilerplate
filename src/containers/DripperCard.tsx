@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useUniversalWallet } from '../hooks';
-import { useContractRegistration } from '../hooks/context/useContractRegistration';
+import { useUniversalWallet, useRequiredContracts } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
 import { useError } from '../providers/ErrorProvider';
 
@@ -8,8 +7,13 @@ export const DripperCard: React.FC = () => {
   const { account, isInitialized, connectors, connector, currentConfig } = useUniversalWallet();
   const { addError } = useError();
   
-  // Get token contract status
-  const { status: tokenStatus } = useContractRegistration('token');
+  const {
+    isReady: contractsReady,
+    isLoading: contractsLoading,
+    hasError: contractsHasError,
+    failedContracts,
+    pendingContracts,
+  } = useRequiredContracts(['dripper', 'token'] as const);
 
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
@@ -94,21 +98,21 @@ export const DripperCard: React.FC = () => {
     return null;
   }
 
-  // Get contract loading status for UI
-  const getContractStatus = () => {
-    if (tokenStatus === 'registering') {
-      return 'Registering contracts...';
-    }
-    if (tokenStatus === 'error') {
-      return 'Contract registration failed';
-    }
-    return null;
-  };
-
-  const contractStatusMessage = getContractStatus();
-
-  // Show loading state while contracts are being registered
-  const isContractsLoading = tokenStatus === 'idle' || tokenStatus === 'registering';
+  if (contractsHasError) {
+    return (
+      <div className="dripper-content">
+        <div className="content-header">
+          <div className="icon-container">
+            <span className="icon">⚠️</span>
+          </div>
+          <div>
+            <h3>Contract Registration Failed</h3>
+            <p>Failed to register: {failedContracts.join(', ')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dripper-content">
@@ -123,21 +127,17 @@ export const DripperCard: React.FC = () => {
       </div>
 
       <div className="mint-form-container">
-        {isContractsLoading ? (
+        {contractsLoading ? (
           <div className="form-section">
             <div className="flex flex-col items-center justify-center py-2rem gap-1rem opacity-70">
               <div className="animate-spin rounded-full h-2rem w-2rem border-b-2 border-current" />
-              <p className="text-0.875rem">Loading contracts...</p>
+              <p className="text-0.875rem">
+                Loading contracts: {pendingContracts.join(', ')}...
+              </p>
             </div>
           </div>
         ) : (
           <div className="form-section">
-            {contractStatusMessage && (
-              <div className="contract-status">
-                <span className="status-icon">⏳</span>
-                {contractStatusMessage}
-              </div>
-            )}
 
             <div className="form-group">
               <label htmlFor="token-address">Token Address</label>
@@ -197,7 +197,7 @@ export const DripperCard: React.FC = () => {
             <button
               type="button"
               onClick={handleDrip}
-              disabled={!amount || isProcessing || isBusy || !isReady}
+              disabled={!amount || isProcessing || isBusy || !isReady || !contractsReady}
               className="btn btn-primary"
               aria-label={`Drip tokens to ${dripType} balance`}
             >

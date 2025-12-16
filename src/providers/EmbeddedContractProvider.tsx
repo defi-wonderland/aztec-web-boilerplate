@@ -41,6 +41,15 @@ const getInitialContracts = <T extends ContractConfigMap>(
     .map(([name]) => name);
 };
 
+/**
+ * Get all contract names from config
+ */
+const getAllContractNames = <T extends ContractConfigMap>(
+  contracts: T
+): ContractNames<T>[] => {
+  return Object.keys(contracts) as ContractNames<T>[];
+};
+
 interface EmbeddedContractProviderProps<
   T extends ContractConfigMap = ContractConfigMap,
 > {
@@ -81,6 +90,11 @@ export function EmbeddedContractProvider<
     [contracts]
   );
 
+  const allContractNames = useMemo(
+    () => getAllContractNames(contracts),
+    [contracts]
+  );
+
   const [status, setStatus] = useState<'initializing' | 'ready' | 'error'>(
     'initializing'
   );
@@ -99,8 +113,8 @@ export function EmbeddedContractProvider<
         pxeInstance: PXE,
         contractsList: ContractNames<T>[],
         networkConfig: NetworkConfig
-      ): Promise<boolean> => {
-        if (contractsList.length === 0) return true;
+      ): Promise<{ allCached: boolean; cachedCount: number }> => {
+        if (contractsList.length === 0) return { allCached: true, cachedCount: 0 };
         const results = await Promise.all(
           contractsList.map(async (name) => {
             const contractConfig = contracts[name];
@@ -113,7 +127,8 @@ export function EmbeddedContractProvider<
             return Boolean(existing);
           })
         );
-        return results.every(Boolean);
+        const cachedCount = results.filter(Boolean).length;
+        return { allCached: results.every(Boolean), cachedCount };
       },
     [contracts]
   );
@@ -130,20 +145,29 @@ export function EmbeddedContractProvider<
         const registry = createRegistry(pxe, contracts, currentConfig);
         registryRef.current = registry;
 
-        const allCached = await checkContractsCached(
+        const { cachedCount: cachedBefore } = await checkContractsCached(
           pxe,
-          initialContracts,
+          allContractNames,
           currentConfig
         );
+
         const start = performance.now();
         await registry.registerAll(initialContracts);
         const elapsedMs = performance.now() - start;
 
+        const { cachedCount: cachedAfter } = await checkContractsCached(
+          pxe,
+          allContractNames,
+          currentConfig
+        );
+
+        const fromCache = cachedBefore === cachedAfter && cachedBefore > 0;
+
         if (showTimingToast) {
           setTimingInfo({
             elapsedMs,
-            contractCount: initialContracts.length,
-            fromCache: allCached,
+            contractCount: cachedAfter,
+            fromCache,
           });
         }
 
@@ -161,7 +185,7 @@ export function EmbeddedContractProvider<
     };
 
     initializeRegistry();
-  }, [contracts, currentConfig, initialContracts, isInitialized, pxe, showTimingToast, checkContractsCached]);
+  }, [contracts, currentConfig, initialContracts, allContractNames, isInitialized, pxe, showTimingToast, checkContractsCached]);
 
   const contextValue = useMemo<ContractContextValue<T>>(
     () => ({
