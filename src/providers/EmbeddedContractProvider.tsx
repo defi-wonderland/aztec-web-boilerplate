@@ -17,7 +17,7 @@ import {
   type ContractNames,
   type ContractRegistryContextValue,
 } from '../contract-registry';
-import { getArtifactOverrides } from '../artifacts/artifactOverrides';
+import { getNetworkArtifacts } from '../config/networkArtifacts';
 import { contractsConfig } from '../config/contracts';
 import { isEmbeddedConnector } from '../types/walletConnector';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
@@ -71,7 +71,7 @@ export function EmbeddedContractProvider<
     () =>
       getContractsForConfig(
         contractsConfig,
-        getArtifactOverrides(currentConfig.name)
+        getNetworkArtifacts(currentConfig.name)
       ) as unknown as T,
     [currentConfig]
   );

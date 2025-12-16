@@ -15,7 +15,7 @@ import {
   type ContractStatus,
   type UseContractReturn,
 } from '../../contract-registry';
-import { getArtifactOverrides } from '../../artifacts/artifactOverrides';
+import { getNetworkArtifacts } from '../../config/networkArtifacts';
 
 interface ExternalWalletContractProxy {
   readonly __browserWalletPlaceholder: true;
@@ -65,7 +65,7 @@ export function useContractRegistration<
   const getContractDefinition = useCallback(() => {
     const contracts = getContractsForConfig(
       contractsConfig,
-      getArtifactOverrides(currentConfig.name)
+      getNetworkArtifacts(currentConfig.name)
     );
     return (
       (contracts as ContractConfigMap)[name as keyof typeof contractsConfig] ??

@@ -7,7 +7,7 @@ import type { NetworkConfig } from '../config/networks';
 import { getChainId, type AztecChainId } from '../config/networks/constants';
 import { contractsConfig } from '../config/contracts';
 import { getContractsForConfig, type ContractNames } from '../contract-registry';
-import { getArtifactOverrides } from '../artifacts/artifactOverrides';
+import { getNetworkArtifacts } from '../config/networkArtifacts';
 
 /**
  * Extracts the chain identifier from a CAIP account string.
@@ -34,7 +34,7 @@ export const buildRegisterContractOperations = async (
   const operations: RegisterContractOperation[] = [];
   const contracts = getContractsForConfig(
     contractsConfig,
-    getArtifactOverrides(config.name)
+    getNetworkArtifacts(config.name)
   );
 
   const contractNames = Object.keys(contracts) as ContractNames<
