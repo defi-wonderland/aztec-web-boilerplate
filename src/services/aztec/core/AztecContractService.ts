@@ -1,9 +1,7 @@
-import {
-  AztecAddress,
-  ContractInstanceWithAddress,
-  Fr,
-  type PXE,
-} from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
+import { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
+import type { PXE } from '@aztec/pxe/server';
 import {
   type ContractArtifact,
   FunctionAbi,
@@ -53,8 +51,8 @@ export class AztecContractService implements IAztecContractService {
     constructorArgs: any[],
     constructor: FunctionAbi | string
   }) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, {
+    const { getContractInstanceFromInstantiationParams } = await import('@aztec/aztec.js/contracts');
+    return await getContractInstanceFromInstantiationParams(artifact, {
       constructorArgs: params.constructorArgs,
       salt: params.salt,
       constructorArtifact: params.constructor,

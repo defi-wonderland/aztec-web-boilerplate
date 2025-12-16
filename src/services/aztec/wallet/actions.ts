@@ -1,43 +1,27 @@
-import { type AccountWallet, Fr } from '@aztec/aztec.js';
-import { AztecWalletService, AztecContractService } from '../core';
-import { AztecDripperService, AztecTokenService } from '../features';
-import { AztecStorageService } from '../storage';
+import { Buffer } from 'buffer';
+import { Fr } from '@aztec/aztec.js/fields';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import { AztecWalletService } from '../core';
 import { WalletServices } from './initialization';
-import { AppConfig } from '../../../config/networks';
+import { NetworkConfig } from '../../../config/networks';
+import type { MessageInfo } from '../../../providers/ErrorProvider';
+import { getConfiguredAccountCredentials } from '../../../utils/accountCredentials';
 
-export interface WalletActionServices {
-  dripperService: AztecDripperService;
-  tokenService: AztecTokenService;
-}
-
-export const createWalletActionServices = (
-  walletServices: WalletServices,
-  config: AppConfig,
-  getConnectedAccount: () => AccountWallet | null
-): WalletActionServices => {
-  const dripperService = new AztecDripperService(
-    () => walletServices.walletService.getSponsoredFeePaymentMethod(),
-    config.dripperContractAddress,
-    getConnectedAccount
-  );
-
-  const tokenService = new AztecTokenService(getConnectedAccount);
-
-  return {
-    dripperService,
-    tokenService,
-  };
-};
+type AddMessageFn = (message: Omit<MessageInfo, 'id' | 'timestamp'>) => void;
 
 export const createAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
-  addMessage?: (message: any) => void,
-  config?: AppConfig
-): Promise<AccountWallet> => {
-  const result = await walletServices.walletService.createEcdsaAccount();
+  addMessage?: AddMessageFn,
+  config?: NetworkConfig
+): Promise<AccountWithSecretKey> => {
+  const configuredCredentials = await getConfiguredAccountCredentials();
+  const result = await walletServices.walletService.createEcdsaAccount(
+    configuredCredentials ?? undefined
+  );
   
   // Clear any existing account and save the new one to storage
+  // ⚠️ Keys stored in plain text - for testnet only!
   walletServices.storageService.clearAccount();
   walletServices.storageService.saveAccount({
     address: result.wallet.getAddress().toString(),
@@ -58,35 +42,32 @@ export const createAccount = async (
       deployWorker.deploy(
         {
           nodeUrl: config?.nodeUrl || 'http://localhost:8080',
+          networkName: config?.name,
           secretKey: result.secretKey.toString(),
           signingKeyHex: result.signingKey.toString('hex'),
           salt: result.salt.toString(),
         },
         {
-          onSuccess: (response: any) => {
-            console.log('✅ Account deployed successfully', response.payload);
+          onSuccess: (response: unknown) => {
+            const payload = response as { status: string; txHash: string | null };
+            if (payload.status === 'already_deployed') {
+              console.log('✅ Account was already deployed');
+            } else {
+              console.log('✅ Account deployed successfully', response);
+            }
             setIsDeploying(false);
           },
           onError: (error: string) => {
-            // Check if the error is due to account already being deployed
-            if (
-              error.includes('Existing nullifier') ||
-              error.includes('Invalid tx: Existing nullifier')
-            ) {
-              console.log('✅ Account was already deployed');
-              setIsDeploying(false);
-            } else {
-              console.error('❌ Failed to deploy account in background:', error);
-              if (addMessage) {
-                addMessage({
-                  message: 'Failed to deploy account in background',
-                  type: 'error',
-                  source: 'wallet',
-                  details: error,
-                });
-              }
-              setIsDeploying(false);
+            console.error('❌ Failed to deploy account in background:', error);
+            if (addMessage) {
+              addMessage({
+                message: 'Failed to deploy account in background',
+                type: 'error',
+                source: 'wallet',
+                details: error,
+              });
             }
+            setIsDeploying(false);
           },
         }
       );
@@ -102,26 +83,50 @@ export const createAccount = async (
 export const connectTestAccount = async (
   walletService: AztecWalletService,
   index: number
-): Promise<AccountWallet> => {
+): Promise<AccountWithSecretKey> => {
   return await walletService.connectTestAccount(index);
 };
 
 export const connectExistingAccount = async (
   walletServices: WalletServices,
   setIsDeploying: (deploying: boolean) => void,
-  addMessage?: (message: any) => void,
-  config?: AppConfig
-): Promise<AccountWallet | null> => {
-  const account = walletServices.storageService.getAccount();
+  addMessage?: AddMessageFn,
+  config?: NetworkConfig
+): Promise<AccountWithSecretKey | null> => {
+  let account = walletServices.storageService.getAccount();
+  let wallet: AccountWithSecretKey | null = null;
+
+  if (!account) {
+    const credentials = await getConfiguredAccountCredentials();
+    if (credentials) {
+      wallet =
+        await walletServices.walletService.createEcdsaAccountFromCredentials(
+          credentials.secretKey,
+          credentials.signingKey,
+          credentials.salt
+        );
+      account = {
+        address: wallet.getAddress().toString(),
+        secretKey: credentials.secretKey.toString(),
+        signingKey: credentials.signingKey.toString('hex'),
+        salt: credentials.salt.toString(),
+      };
+      walletServices.storageService.saveAccount(account);
+    }
+  }
+
   if (!account) {
     return null;
   }
 
-  const wallet = await walletServices.walletService.createEcdsaAccountFromCredentials(
-    Fr.fromString(account.secretKey),
-    Buffer.from(account.signingKey, 'hex'),
-    Fr.fromString(account.salt)
-  );
+  if (!wallet) {
+    wallet =
+      await walletServices.walletService.createEcdsaAccountFromCredentials(
+        Fr.fromString(account.secretKey),
+        Buffer.from(account.signingKey, 'hex'),
+        Fr.fromString(account.salt)
+      );
+  }
 
   // Deploy the existing account in the background using worker if available
   if (typeof Worker !== 'undefined' && setIsDeploying) {
@@ -135,32 +140,30 @@ export const connectExistingAccount = async (
       deployWorker.deploy(
         {
           nodeUrl: config?.nodeUrl || 'http://localhost:8080',
+          networkName: config?.name,
           secretKey: account.secretKey,
           signingKeyHex: account.signingKey,
           salt: account.salt,
         },
         {
-          onSuccess: (response: any) => {
-            console.log('✅ Existing account deployed successfully', response.payload);
+          onSuccess: (response: unknown) => {
+            const payload = response as { status: string; txHash: string | null };
+            if (payload.status === 'already_deployed') {
+              console.log('✅ Existing account was already deployed');
+            } else {
+              console.log('✅ Existing account deployed successfully', response);
+            }
             setIsDeploying(false);
           },
           onError: (error: string) => {
-            // Check if the error is due to account already being deployed
-            if (
-              error.includes('Existing nullifier') ||
-              error.includes('Invalid tx: Existing nullifier')
-            ) {
-              console.log('✅ Existing account was already deployed');
-            } else {
-              console.error('❌ Failed to deploy existing account in background:', error);
-              if (addMessage) {
-                addMessage({
-                  message: 'Failed to deploy existing account in background',
-                  type: 'error',
-                  source: 'wallet',
-                  details: error,
-                });
-              }
+            console.error('❌ Failed to deploy existing account in background:', error);
+            if (addMessage) {
+              addMessage({
+                message: 'Failed to deploy existing account in background',
+                type: 'error',
+                source: 'wallet',
+                details: error,
+              });
             }
             setIsDeploying(false);
           },

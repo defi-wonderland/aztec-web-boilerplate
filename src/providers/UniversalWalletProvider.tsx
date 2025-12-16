@@ -1,110 +1,127 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { type AccountWallet } from '@aztec/aztec.js';
-import { useAztecWallet, useAzguardWallet } from '../hooks';
-import { WalletType } from '../types/aztec';
+/**
+ * Universal Wallet Provider
+ */
 
-interface UniversalWalletContextType {
-  // Current active wallet
-  activeWalletType: WalletType | null;
-  activeAccount: AccountWallet | null;
-  isConnected: boolean;
-  
-  // Wallet switching
-  switchToEmbedded: () => Promise<void>;
-  switchToAzguard: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  
-  // Account information
-  getAccountAddress: () => string | null;
-  getWalletType: () => WalletType | null;
+import React, { createContext, ReactNode, useRef } from 'react';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import { WalletType } from '../types/aztec';
+import { useEmbeddedWalletInternal, useAzguardWalletInternal, useNetworkInternal } from './hooks';
+import type { WalletConnector, WalletConnectorId } from '../types/walletConnector';
+import { EmbeddedConnector, AzguardConnector } from '../connectors';
+import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
+import type { WalletKitConfig } from '../sdk/walletKitConfig';
+import type { NetworkConfig } from '../config/networks';
+
+export interface NetworkContextType {
+  currentConfig: NetworkConfig;
+  getNetworkOptions: () => Array<{
+    value: string;
+    label: string;
+    description: string;
+    disabled: boolean;
+  }>;
+  switchToNetwork: (networkName: string) => boolean;
+  resetToDefault: () => void;
 }
+
+export interface WalletContextType {
+  isConnected: boolean;
+  isInitialized: boolean;
+  isLoading: boolean;
+  error: string | null;
+  walletType: WalletType | null;
+  account: AccountWithSecretKey | null;
+  connector: WalletConnector | null;
+  connectors: WalletConnector[];
+  walletKit: AztecWalletKit;
+  disconnect: () => Promise<void>;
+  reinitialize: () => Promise<void>;
+  connectWith: (connectorId: WalletConnectorId) => Promise<WalletConnector>;
+}
+
+// Combined context type
+export interface UniversalWalletContextType extends NetworkContextType, WalletContextType {}
 
 export const UniversalWalletContext = createContext<UniversalWalletContextType | undefined>(undefined);
 
 interface UniversalWalletProviderProps {
+  config: WalletKitConfig;
   children: ReactNode;
 }
 
-export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = ({ children }) => {
-  const [activeWalletType, setActiveWalletType] = useState<WalletType | null>(null);
-  const [activeAccount, setActiveAccount] = useState<AccountWallet | null>(null);
-  
-  const { connectedAccount: embeddedAccount, disconnectWallet: disconnectEmbedded } = useAztecWallet();
-  const { 
-    state: azguardState, 
-    disconnect: disconnectAzguard, 
-    getAccountWallet 
-  } = useAzguardWallet();
+export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = ({ 
+  config: walletKitConfig, 
+  children 
+}) => {
+  const network = useNetworkInternal({
+    networks: walletKitConfig.networks,
+  });
 
-  // Update active wallet based on connection states
-  useEffect(() => {
-    const updateActiveWallet = async () => {
-      if (azguardState.isConnected && azguardState.selectedAccount) {
-        try {
-          const azguardAccountWallet = await getAccountWallet(azguardState.selectedAccount);
-          setActiveWalletType(WalletType.AZGUARD);
-          setActiveAccount(azguardAccountWallet);
-        } catch (error) {
-          console.error('Failed to get Azguard AccountWallet:', error);
-          setActiveWalletType(null);
-          setActiveAccount(null);
-        }
-      } else if (embeddedAccount) {
-        setActiveWalletType(WalletType.EMBEDDED);
-        setActiveAccount(embeddedAccount);
-      } else {
-        setActiveWalletType(null);
-        setActiveAccount(null);
+  const embedded = useEmbeddedWalletInternal({
+    config: network.state.currentConfig,
+    resetToDefault: network.actions.resetToDefault,
+  });
+
+  const azguard = useAzguardWalletInternal({
+    config: network.state.currentConfig,
+  });
+
+  const walletKitRef = useRef<AztecWalletKit | null>(null);
+  if (!walletKitRef.current) {
+    walletKitRef.current = createAztecWalletKit({
+      aztecNode: network.state.currentConfig.nodeUrl,
+      connectors: walletKitConfig.connectors,
+    });
+  }
+  const walletKit = walletKitRef.current;
+
+  const connectors = walletKit.getConnectors();
+  for (const connector of connectors) {
+    if ('updateState' in connector && typeof connector.updateState === 'function') {
+      if (connector.type === WalletType.EMBEDDED) {
+        (connector as EmbeddedConnector).updateState(embedded);
       }
-    };
-
-    updateActiveWallet();
-  }, [embeddedAccount, azguardState.isConnected, azguardState.selectedAccount, getAccountWallet]);
-
-  const switchToEmbedded = async () => {
-    // Disconnect Azguard if connected
-    if (azguardState.isConnected) {
-      await disconnectAzguard();
+      if (connector.type === WalletType.BROWSER) {
+        (connector as AzguardConnector).updateState(azguard);
+      }
     }
-    // The embedded wallet connection should be handled by the user through the UI
-  };
+  }
 
-  const switchToAzguard = async () => {
-    // Disconnect embedded wallet if connected
-    if (embeddedAccount) {
-      disconnectEmbedded();
+  const activeConnector = connectors.find((c) => c.getStatus().isConnected) ?? null;
+
+  const isConnected = activeConnector !== null;
+  const activeAccount = activeConnector?.getAccount() ?? null;
+  const activeWalletType = activeConnector?.type ?? null;
+  const isInitialized = embedded.state.isInitialized || azguard.state.isConnected;
+
+  const connectWith = async (connectorId: WalletConnectorId): Promise<WalletConnector> => {
+    if (activeConnector && activeConnector.id !== connectorId) {
+      await activeConnector.disconnect();
     }
-    // The Azguard wallet connection should be handled by the user through the UI
+    return walletKit.connect(connectorId);
   };
 
-  const disconnect = async () => {
-    if (activeWalletType === WalletType.AZGUARD) {
-      await disconnectAzguard();
-    } else if (activeWalletType === WalletType.EMBEDDED) {
-      disconnectEmbedded();
-    }
+  const handleDisconnect = async (): Promise<void> => {
+    if (!activeConnector) return;
+    await activeConnector.disconnect();
   };
-
-  const getAccountAddress = (): string | null => {
-    if (!activeAccount) return null;
-    return activeAccount.getAddress().toString();
-  };
-
-  const getWalletType = (): WalletType | null => {
-    return activeWalletType;
-  };
-
-  const isConnected = activeAccount !== null;
 
   const contextValue: UniversalWalletContextType = {
-    activeWalletType,
-    activeAccount,
+    currentConfig: network.state.currentConfig,
+    ...network.actions,
+
     isConnected,
-    switchToEmbedded,
-    switchToAzguard,
-    disconnect,
-    getAccountAddress,
-    getWalletType,
+    isInitialized,
+    isLoading: embedded.isLoading || azguard.isLoading,
+    error: embedded.error || azguard.error,
+    walletType: activeWalletType,
+    account: activeAccount,
+    connector: activeConnector,
+    connectors,
+    walletKit,
+    disconnect: handleDisconnect,
+    reinitialize: embedded.actions.reinitialize,
+    connectWith,
   };
 
   return (

@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-import { SandboxTab, TestnetTab, CustomTab } from '../components/settings';
+import { ConfigDisplay } from '../components/settings';
+import type { AztecNetwork } from '../config/networks/constants';
 
 export const SettingsCard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'sandbox' | 'testnet' | 'custom'>('sandbox');
-
-  const handleTabChange = (tab: 'sandbox' | 'testnet' | 'custom') => {
-    setActiveTab(tab);
-  };
+  const [activeTab, setActiveTab] = useState<AztecNetwork>('sandbox');
 
   return (
     <div className="settings-content">
@@ -23,31 +20,22 @@ export const SettingsCard: React.FC = () => {
       <div className="settings-tabs">
         <button
           className={`settings-tab ${activeTab === 'sandbox' ? 'active' : ''}`}
-          onClick={() => handleTabChange('sandbox')}
+          onClick={() => setActiveTab('sandbox')}
         >
           <span className="tab-icon">🏠</span>
           <span className="tab-label">Sandbox</span>
         </button>
         <button
-          className={`settings-tab ${activeTab === 'testnet' ? 'active' : ''}`}
-          onClick={() => handleTabChange('testnet')}
+          className={`settings-tab ${activeTab === 'devnet' ? 'active' : ''}`}
+          onClick={() => setActiveTab('devnet')}
         >
           <span className="tab-icon">🌐</span>
-          <span className="tab-label">Testnet</span>
-        </button>
-        <button
-          className={`settings-tab ${activeTab === 'custom' ? 'active' : ''}`}
-          onClick={() => handleTabChange('custom')}
-        >
-          <span className="tab-icon">🔧</span>
-          <span className="tab-label">Custom</span>
+          <span className="tab-label">Devnet</span>
         </button>
       </div>
 
       <div className="settings-tab-content">
-        {activeTab === 'sandbox' && <SandboxTab />}
-        {activeTab === 'testnet' && <TestnetTab />}
-        {activeTab === 'custom' && <CustomTab />}
+        <ConfigDisplay networkName={activeTab} />
       </div>
     </div>
   );

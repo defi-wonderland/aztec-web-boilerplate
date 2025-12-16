@@ -1,11 +1,11 @@
 import React, { ReactNode } from 'react';
-import { ConfigProvider } from './ConfigProvider';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../lib/queryClient';
 import { ErrorProvider } from './ErrorProvider';
-import { AztecWalletProvider } from './AztecWalletProvider';
-import { TokenProvider } from './TokenProvider';
-import { AzguardWalletProvider } from './AzguardWalletProvider';
 import { UniversalWalletProvider } from './UniversalWalletProvider';
 import { ThemeProvider } from './ThemeProvider';
+import { EmbeddedContractProvider } from './EmbeddedContractProvider';
+import { walletKitConfig } from '../config/walletKit';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -13,20 +13,16 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
-    <ThemeProvider>
-      <ConfigProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
         <ErrorProvider>
-          <AzguardWalletProvider>
-            <AztecWalletProvider>
-              <UniversalWalletProvider>
-                <TokenProvider>
-                  {children}
-                </TokenProvider>
-              </UniversalWalletProvider>
-            </AztecWalletProvider>
-          </AzguardWalletProvider>
+          <UniversalWalletProvider config={walletKitConfig}>
+            <EmbeddedContractProvider>
+              {children}
+            </EmbeddedContractProvider>
+          </UniversalWalletProvider>
         </ErrorProvider>
-      </ConfigProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 };

@@ -1,24 +1,35 @@
 /// <reference lib="webworker" />
 
 import { Buffer } from 'buffer';
-import {
-  Fr,
-  createPXEClient,
-  SponsoredFeePaymentMethod,
-} from '@aztec/aztec.js';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
+import { createAztecNodeClient } from '@aztec/aztec.js/node';
+import { createLogger } from '@aztec/aztec.js/log';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import { AccountManager } from '@aztec/aztec.js/wallet';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import { getEcdsaRAccount } from '@aztec/accounts/ecdsa/lazy';
-
+import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
+import { createPXE, getPXEConfig } from '@aztec/pxe/client/lazy';
+import type { PXE } from '@aztec/pxe/server';
+import { createStore } from '@aztec/kv-store/indexeddb';
+import { MinimalWallet } from '../utils/MinimalWallet';
 import type { WorkerRequest, WorkerResponse } from './messages';
 
 declare const self: DedicatedWorkerGlobalScope;
 
+/** Maximum time to wait for account deployment transaction (in seconds) */
+const DEPLOY_TIMEOUT = 120;
+const pxeLogger = createLogger('pxe-worker');
+
+const getStoreName = (networkName: string | undefined, rollupAddress: AztecAddress) =>
+  networkName ? `aztec-pxe-${networkName}` : `aztec-pxe-${rollupAddress.toString()}`;
+
 async function getSponsoredPFCContract() {
-  const { getContractInstanceFromDeployParams } = await import(
-    '@aztec/aztec.js'
+  const { getContractInstanceFromInstantiationParams } = await import(
+    '@aztec/aztec.js/contracts'
   );
-  return await getContractInstanceFromDeployParams(
+  return await getContractInstanceFromInstantiationParams(
     SponsoredFPCContractArtifact,
     {
       salt: new Fr(SPONSORED_FPC_SALT),
@@ -31,97 +42,116 @@ self.addEventListener('message', async (event: MessageEvent) => {
   if (!msg || msg.type !== 'deployEcdsaAccount') return;
 
   try {
-    const { nodeUrl, secretKey, signingKeyHex, salt } = msg.payload;
-    console.log('🔧 Worker received:', { nodeUrl: !!nodeUrl, secretKey: typeof secretKey, signingKeyHex: typeof signingKeyHex, salt: typeof salt });
+    const { nodeUrl, secretKey, signingKeyHex, salt, networkName } = msg.payload;
+    console.log('🔧 Worker received:', {
+      nodeUrl,
+      secretKey: typeof secretKey,
+      signingKeyHex: typeof signingKeyHex,
+      salt: typeof salt,
+    });
 
-    // Connect to existing PXE instead of creating a new one
-    const pxe = createPXEClient('http://localhost:8080');
+    const aztecNode = createAztecNodeClient(nodeUrl);
+    const config = getPXEConfig();
+    config.proverEnabled = true;
+    const l1Contracts = await aztecNode.getL1ContractAddresses();
+    config.l1Contracts = l1Contracts;
+
+    const storeName = getStoreName(networkName, l1Contracts.rollupAddress);
+    const pxeStore = await createStore(
+      storeName,
+      {
+        dataDirectory: 'pxe',
+        dataStoreMapSizeKb: 2e10,
+      },
+      pxeLogger
+    );
+
+    const pxe = await createPXE(aztecNode, config, {
+      store: pxeStore,
+      useLogSuffix: false,
+    });
+
+    const minimalWallet = new MinimalWallet(pxe as unknown as PXE, aztecNode);
 
     await pxe.registerContract({
       instance: await getSponsoredPFCContract(),
       artifact: SponsoredFPCContractArtifact,
     });
 
-    // Ensure we have strings
     const secretKeyStr = String(secretKey);
     const saltStr = String(salt);
     const signingKeyHexStr = String(signingKeyHex);
-    
+
     const secretFr = Fr.fromString(secretKeyStr);
     const saltFr = Fr.fromString(saltStr);
     const signingKey = Buffer.from(signingKeyHexStr, 'hex');
 
-    const ecdsaAccount = await getEcdsaRAccount(
-      pxe,
+    const accountContract = new EcdsaRAccountContract(signingKey);
+
+    const ecdsaAccount = await AccountManager.create(
+      minimalWallet,
       secretFr,
-      signingKey,
+      accountContract,
       saltFr
     );
 
-    console.log(await pxe.getContractMetadata(ecdsaAccount.getAddress()))
-    
-    // Always register the account in the worker context to ensure proper PXE state
-    try {
-      await ecdsaAccount.register();
-      console.log('✅ Account registered with worker PXE');
-    } catch (registerError) {
-      console.warn('⚠️ Account registration with worker PXE failed (may already be registered)', registerError);
-      // Continue with deployment even if registration fails
+    const ecdsaWallet = await ecdsaAccount.getAccount();
+    const instance = ecdsaAccount.getInstance();
+    const artifact = await ecdsaAccount
+      .getAccountContract()
+      .getContractArtifact();
+    await minimalWallet.registerContract(
+      instance,
+      artifact,
+      ecdsaAccount.getSecretKey()
+    );
+    minimalWallet.addAccount(ecdsaWallet);
+
+    const metadata = await minimalWallet.getContractMetadata(
+      ecdsaAccount.address
+    );
+
+    if (metadata.isContractInitialized) {
+      console.log('✅ Account already deployed, skipping deployment');
+      const response: WorkerResponse = {
+        type: 'deployed',
+        payload: {
+          status: 'already_deployed',
+          txHash: null,
+        },
+      };
+      self.postMessage(response);
+      return;
     }
 
     const deployMethod = await ecdsaAccount.getDeployMethod();
     const sponsoredPFC = await getSponsoredPFCContract();
-    const paymentMethod = await ecdsaAccount.getSelfPaymentMethod(
-      new SponsoredFeePaymentMethod(sponsoredPFC.address)
-    );
+    const paymentMethod = new SponsoredFeePaymentMethod(sponsoredPFC.address);
 
-    try {
-      const provenInteraction = await deployMethod.prove({
-        contractAddressSalt: saltFr,
+    const receipt = await deployMethod
+      .send({
+        from: AztecAddress.ZERO,
         fee: { paymentMethod },
-        universalDeploy: true,
-        skipClassRegistration: true,
-        skipPublicDeployment: true,
-      });
-      const receipt = await provenInteraction.send().wait({ timeout: 120 });
+        skipClassPublication: true,
+        skipInstancePublication: true,
+      })
+      .wait({ timeout: DEPLOY_TIMEOUT });
 
-      const response: WorkerResponse = {
-        type: 'deployed',
-        payload: {
-          status: String(receipt.status),
-          txHash: receipt.txHash ? receipt.txHash.toString() : null,
-        },
-      };
-      self.postMessage(response);
-    } catch (deployError) {
-      const deployMessage =
-        deployError instanceof Error
-          ? deployError.message
-          : String(deployError);
-
-      // Check if the error is due to account already being deployed
-      if (
-        deployMessage.includes('Existing nullifier') ||
-        deployMessage.includes('Invalid tx: Existing nullifier')
-      ) {
-        // Account is already deployed, just return success
-        const response: WorkerResponse = {
-          type: 'deployed',
-          payload: {
-            status: 'success',
-            txHash: null,
-          },
-        };
-        self.postMessage(response);
-      } else {
-        // Re-throw other deployment errors
-        throw deployError;
-      }
-    }
+    const response: WorkerResponse = {
+      type: 'deployed',
+      payload: {
+        status: String(receipt.status),
+        txHash: receipt.txHash ? receipt.txHash.toString() : null,
+      },
+    };
+    self.postMessage(response);
   } catch (error) {
     console.error('❌ Worker deployment error:', error);
     const message = error instanceof Error ? error.message : String(error);
-    const response: WorkerResponse = { type: 'error', error: `Worker error: ${message}` };
+    const response: WorkerResponse = {
+      type: 'error',
+      error: `Worker error: ${message}`,
+    };
     self.postMessage(response);
   }
 });

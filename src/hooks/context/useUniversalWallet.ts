@@ -1,10 +1,6 @@
 import { useContext } from 'react';
 import { UniversalWalletContext } from '../../providers/UniversalWalletProvider';
 
-/**
- * Hook to access the universal wallet context
- * Provides a unified interface for both embedded and Azguard wallets
- */
 export const useUniversalWallet = () => {
   const context = useContext(UniversalWalletContext);
   
@@ -14,3 +10,6 @@ export const useUniversalWallet = () => {
   
   return context;
 };
+
+
+

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AzguardWalletService } from '../../../src/services/aztec/wallet/AzguardWalletService';
+import { SUPPORTED_CHAINS } from '../../../src/config/networks/constants';
 import { TestUtils, TEST_CONSTANTS } from '../../setup';
 
 // Mock the AzguardClient
@@ -24,8 +25,13 @@ describe('AzguardWalletService', () => {
       execute: vi.fn(),
       accounts: [],
       onDisconnected: {
-        addHandler: vi.fn()
-      }
+        addHandler: vi.fn(),
+        removeHandler: vi.fn(),
+      },
+      onAccountsChanged: {
+        addHandler: vi.fn(),
+        removeHandler: vi.fn(),
+      },
     };
 
     // Reset mocks
@@ -49,10 +55,12 @@ describe('AzguardWalletService', () => {
       // Assert
       expect(AzguardClient.isAzguardInstalled).toHaveBeenCalled();
       expect(AzguardClient.create).toHaveBeenCalled();
+      expect(mockClient.onAccountsChanged.addHandler).toHaveBeenCalled();
+      expect(mockClient.onDisconnected.addHandler).toHaveBeenCalled();
       
       const state = service.getState();
       expect(state.isInstalled).toBe(true);
-      expect(state.supportedChains).toContain('aztec:31337');
+      expect(state.supportedChains).toContain('aztec:0');
     });
 
     it('handles case when Azguard is not installed', async () => {
@@ -138,14 +146,14 @@ describe('AzguardWalletService', () => {
       // Arrange
       const mockAccounts = [
         TestUtils.createMockCaipAccount(),
-        TestUtils.createMockCaipAccount('aztec:31337', '0xabcdef1234567890abcdef1234567890abcdef12')
+        TestUtils.createMockCaipAccount('aztec:0', '0xabcdef1234567890abcdef1234567890abcdef12')
       ];
       
       mockClient.connect = vi.fn().mockResolvedValue(undefined);
       mockClient.accounts = mockAccounts;
 
       const dappMetadata = { name: 'Test Dapp' };
-      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
+      const permissions = [{ chains: ['aztec:0'], methods: ['send_transaction'] }];
 
       // Act
       const accounts = await service.connect(dappMetadata, permissions);
@@ -166,7 +174,7 @@ describe('AzguardWalletService', () => {
       mockClient.connect = vi.fn().mockRejectedValue(error);
       
       const dappMetadata = { name: 'Test Dapp' };
-      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
+      const permissions = [{ chains: ['aztec:0'], methods: ['send_transaction'] }];
 
       // Act & Assert
       await expect(service.connect(dappMetadata, permissions)).rejects.toThrow('Connection failed');
@@ -180,7 +188,7 @@ describe('AzguardWalletService', () => {
       // Arrange
       const uninitializedService = new AzguardWalletService();
       const dappMetadata = { name: 'Test Dapp' };
-      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
+      const permissions = [{ chains: ['aztec:0'], methods: ['send_transaction'] }];
 
       // Act & Assert
       await expect(uninitializedService.connect(dappMetadata, permissions)).rejects.toThrow('not initialized');
@@ -197,7 +205,7 @@ describe('AzguardWalletService', () => {
       
       mockClient.accounts = [TestUtils.createMockCaipAccount()];
       const dappMetadata = { name: 'Test Dapp' };
-      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
+      const permissions = [{ chains: ['aztec:0'], methods: ['send_transaction'] }];
       await service.connect(dappMetadata, permissions);
     });
 
@@ -237,7 +245,7 @@ describe('AzguardWalletService', () => {
       
       mockClient.accounts = [TestUtils.createMockCaipAccount()];
       const dappMetadata = { name: 'Test Dapp' };
-      const permissions = [{ chains: ['aztec:31337'], methods: ['send_transaction'] }];
+      const permissions = [{ chains: ['aztec:0'], methods: ['send_transaction'] }];
       await service.connect(dappMetadata, permissions);
     });
 
@@ -316,15 +324,42 @@ describe('AzguardWalletService', () => {
     });
   });
 
+  describe('event handling', () => {
+    beforeEach(async () => {
+      const { AzguardClient } = await import('@azguardwallet/client');
+      vi.mocked(AzguardClient.isAzguardInstalled).mockResolvedValue(true);
+      vi.mocked(AzguardClient.create).mockResolvedValue(mockClient);
+      await service.initialize();
+    });
+
+    it('updates state when accounts change', () => {
+      const accountsChangedHandler =
+        mockClient.onAccountsChanged.addHandler.mock.calls[0][0];
+
+      const accounts = [
+        TestUtils.createMockCaipAccount(),
+        TestUtils.createMockCaipAccount(
+          'aztec:0',
+          '0xabcdef1234567890abcdef1234567890abcdef12'
+        ),
+      ];
+
+      accountsChangedHandler(accounts);
+
+      const state = service.getState();
+      expect(state.accounts).toEqual(accounts);
+      expect(state.selectedAccount).toBe(accounts[0]);
+      expect(state.isConnected).toBe(true);
+    });
+  });
+
   describe('utility methods', () => {
     it('returns supported chains', () => {
       // Act
       const chains = service.getSupportedChains();
 
       // Assert
-      expect(chains).toContain('aztec:31337');
-      expect(chains).toContain('aztec:11155111');
-      expect(chains).toContain('aztec:1337');
+      expect(chains).toEqual(SUPPORTED_CHAINS);
     });
 
     it('returns current state', () => {

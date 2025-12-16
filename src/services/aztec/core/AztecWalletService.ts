@@ -1,74 +1,108 @@
-import {
-  Fr,
-  createLogger,
-  createAztecNodeClient,
-  type PXE,
-  AccountWallet,
-  AccountManager,
-} from '@aztec/aztec.js';
+import { Fr } from '@aztec/aztec.js/fields';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { createLogger } from '@aztec/aztec.js/log';
+import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
+import { AccountManager, type Wallet } from '@aztec/aztec.js/wallet';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { PXE } from '@aztec/pxe/server';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash, randomBytes } from '@aztec/foundation/crypto';
-import { getEcdsaRAccount } from '@aztec/accounts/ecdsa/lazy';
-import { getSchnorrAccount } from '@aztec/accounts/schnorr/lazy';
-import { getPXEServiceConfig } from '@aztec/pxe/config';
-import { createPXEService } from '@aztec/pxe/client/lazy';
-import { getInitialTestAccounts } from '@aztec/accounts/testing';
-import { SponsoredFeePaymentMethod } from '@aztec/aztec.js';
-import { IAztecWalletService, CreateAccountResult } from '../../../types';
+import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
+import { SchnorrAccountContract } from '@aztec/accounts/schnorr/lazy';
+import { getPXEConfig } from '@aztec/pxe/config';
+import { createPXE } from '@aztec/pxe/client/lazy';
+import { createStore } from '@aztec/kv-store/indexeddb';
+import { getInitialTestAccountsData } from '@aztec/accounts/testing/lazy';
+import { type AccountWithSecretKey } from '@aztec/aztec.js/account';
+import {
+  IAztecWalletService,
+  CreateAccountResult,
+  AccountCredentials,
+} from '../../../types';
+import { MinimalWallet } from '../../../utils/MinimalWallet';
 
 const PROVER_ENABLED = true;
 const logger = createLogger('wallet-service');
+const pxeLogger = createLogger('pxe');
 
 /**
  * Core service for Aztec wallet operations
  */
 export class AztecWalletService implements IAztecWalletService {
   private pxe!: PXE;
+  private aztecNode!: AztecNode;
+  private minimalWallet!: MinimalWallet;
 
   /**
    * Initialize PXE service and connect to Aztec node
+   * 
+   * @param nodeUrl - URL of the Aztec node
+   * @param networkName - Optional network name (sandbox, devnet, etc.) for readable store name
    */
-  async initialize(nodeUrl: string): Promise<void> {
-    // Create Aztec Node Client
-    
-    const aztecNode = await createAztecNodeClient(nodeUrl);
+  async initialize(nodeUrl: string, networkName?: string): Promise<void> {
+    this.aztecNode = createAztecNodeClient(nodeUrl);
 
-    // Create PXE Service
-    const config = getPXEServiceConfig();
-    config.l1Contracts = await aztecNode.getL1ContractAddresses();
+    // Get L1 contracts for network-specific database and config
+    const l1Contracts = await this.aztecNode.getL1ContractAddresses();
+    const rollupAddress = l1Contracts.rollupAddress;
+
+    // Use network name for readability, fallback to rollup address for uniqueness
+    const storeName = networkName 
+      ? `aztec-pxe-${networkName}` 
+      : `aztec-pxe-${rollupAddress.toString()}`;
+
+    // Create PXE store with IndexedDB for persistence across reloads
+    const pxeStore = await createStore(
+      storeName,
+      {
+        dataDirectory: 'pxe',
+        dataStoreMapSizeKb: 2e10, // 20GB max size
+      },
+      pxeLogger
+    );
+
+    const config = getPXEConfig();
+    config.l1Contracts = l1Contracts;
     config.proverEnabled = PROVER_ENABLED;
-    this.pxe = await createPXEService(aztecNode, config);
 
-    // Register Sponsored FPC Contract with PXE
+    this.pxe = await createPXE(this.aztecNode, config, {
+      store: pxeStore,
+      useLogSuffix: false,
+    });
+
+    this.minimalWallet = new MinimalWallet(this.pxe, this.aztecNode);
+
     await this.pxe.registerContract({
       instance: await this.getSponsoredPFCContract(),
       artifact: SponsoredFPCContractArtifact,
     });
 
-    // Log the Node Info
-    const nodeInfo = await this.pxe.getNodeInfo();
+    const nodeInfo = await this.aztecNode.getNodeInfo();
     logger.info('PXE Connected to node', nodeInfo);
   }
 
-  /**
-   * Get the PXE instance
-   */
   getPXE(): PXE {
     return this.pxe;
   }
 
-  /**
-   * Helper method to create contract instance from deploy params
-   */
-  private async getContractInstanceFromDeployParams(artifact: any, params: any) {
-    const { getContractInstanceFromDeployParams } = await import('@aztec/aztec.js');
-    return await getContractInstanceFromDeployParams(artifact, params);
+  getWallet(): Wallet {
+    return this.minimalWallet;
   }
 
-  /**
-   * Get the Sponsored FPC Contract for fee payment
-   */
+  private async getContractInstanceFromDeployParams(
+    artifact: unknown,
+    params: unknown
+  ) {
+    const { getContractInstanceFromInstantiationParams } = await import(
+      '@aztec/aztec.js/contracts'
+    );
+    return await getContractInstanceFromInstantiationParams(
+      artifact as Parameters<typeof getContractInstanceFromInstantiationParams>[0],
+      params as Parameters<typeof getContractInstanceFromInstantiationParams>[1]
+    );
+  }
+
   private async getSponsoredPFCContract() {
     const instance = await this.getContractInstanceFromDeployParams(
       SponsoredFPCContractArtifact,
@@ -80,56 +114,73 @@ export class AztecWalletService implements IAztecWalletService {
     return instance;
   }
 
-  /**
-   * Connect to a test account
-   */
-  async connectTestAccount(index: number): Promise<AccountWallet> {
-    const testAccounts = await getInitialTestAccounts();
+  async connectTestAccount(index: number): Promise<AccountWithSecretKey> {
+    const testAccounts = await getInitialTestAccountsData();
     const account = testAccounts[index];
-    const schnorrAccount = await getSchnorrAccount(this.pxe, account.secret, account.signingKey, account.salt);
 
-    await schnorrAccount.register();
-    const wallet = await schnorrAccount.getWallet();
+    const accountContract = new SchnorrAccountContract(account.signingKey);
+
+    const accountManager = await AccountManager.create(
+      this.minimalWallet,
+      account.secret,
+      accountContract,
+      account.salt
+    );
+
+    const wallet = await accountManager.getAccount();
+
+    const instance = accountManager.getInstance();
+    const artifact = await accountManager.getAccountContract().getContractArtifact();
+    await this.minimalWallet.registerContract(instance, artifact, accountManager.getSecretKey());
+    this.minimalWallet.addAccount(wallet);
+
+    logger.info('Test account connected', wallet.getAddress().toString());
 
     return wallet;
   }
 
   /**
-   * Create a new ECDSA account
+   * Create a new ECDSA account with randomly generated credentials.
+   * Keys are generated fresh for each account - caller should persist them
+   * using AztecStorageService for recovery.
    */
-  async createEcdsaAccount(): Promise<CreateAccountResult> {
+  async createEcdsaAccount(
+    credentials?: AccountCredentials
+  ): Promise<CreateAccountResult> {
     if (!this.pxe) {
       throw new Error('PXE not initialized');
     }
 
-    // Generate a random salt, secret key, and signing key
-    const DEPLOYER_SECRET_PHRASE = process.env.DEPLOYER_SECRET_PHRASE || 'hola';
-    const DEPLOYER_SALT = process.env.DEPLOYER_SALT || '1337';
-    const DEPLOYER_SECRET = await poseidon2Hash([
-      Fr.fromBufferReduce(Buffer.from(DEPLOYER_SECRET_PHRASE.padEnd(32, '#'), 'utf8')),
-    ]);
-    const secretKey = DEPLOYER_SECRET;
-    const salt = Fr.fromString(DEPLOYER_SALT); 
-    const signingKey = Buffer.from(DEPLOYER_SECRET.toBuffer().subarray(0, 32));
-    console.log({
-      secretKey: DEPLOYER_SECRET.toString(),
-      salt: DEPLOYER_SALT,
-      signingKey: signingKey.toString('hex'),
-    })
+    const salt =
+      credentials?.salt ??
+      Fr.fromBuffer(randomBytes(32));
 
-    // Create an ECDSA account
-    const ecdsaAccount = await getEcdsaRAccount(
-      this.pxe,
+    const secretKey =
+      credentials?.secretKey ??
+      (await poseidon2Hash([Fr.fromBuffer(randomBytes(32))]));
+
+    const signingKey =
+      credentials?.signingKey ??
+      Buffer.from(secretKey.toBuffer().subarray(0, 32));
+
+    const accountContract = new EcdsaRAccountContract(signingKey);
+
+    const ecdsaAccount = await AccountManager.create(
+      this.minimalWallet,
       secretKey,
-      signingKey,
+      accountContract,
       salt
     );
 
-    // Get the wallet
-    const ecdsaWallet = await ecdsaAccount.getWallet();
+    // Get thewallet
+    const ecdsaWallet = await ecdsaAccount.getAccount();
 
-    // Register the account with PXE
-    await ecdsaAccount.register();
+    const instance = ecdsaAccount.getInstance();
+    const artifact = await ecdsaAccount.getAccountContract().getContractArtifact();
+    await this.minimalWallet.registerContract(instance, artifact, ecdsaAccount.getSecretKey());
+    this.minimalWallet.addAccount(ecdsaWallet);
+
+    logger.info('New ECDSA account created', ecdsaAccount.address.toString());
 
     return {
       account: ecdsaAccount,
@@ -140,25 +191,17 @@ export class AztecWalletService implements IAztecWalletService {
     };
   }
 
-  /**
-   * Deploy an ECDSA account
-   */
   async deployEcdsaAccount(ecdsaAccount: AccountManager): Promise<void> {
-    // Deploy the account
     const deployMethod = await ecdsaAccount.getDeployMethod();
     const deployOpts = {
-      contractAddressSalt: Fr.fromString(ecdsaAccount.salt.toString()),
+      from: AztecAddress.ZERO,
       fee: {
-        paymentMethod: await ecdsaAccount.getSelfPaymentMethod(
-          await this.getSponsoredFeePaymentMethod()
-        ),
+        paymentMethod: await this.getSponsoredFeePaymentMethod(),
       },
-      universalDeploy: true,
-      skipClassRegistration: true,
-      skipPublicDeployment: true,
+      skipClassPublication: true,
+      skipInstancePublication: true,
     };
 
-    // Generate proof and send deployment transaction
     const receipt = await deployMethod.send(deployOpts).wait({ timeout: 120 });
 
     logger.info('Account deployed', receipt);
@@ -172,24 +215,24 @@ export class AztecWalletService implements IAztecWalletService {
     secretKey: Fr,
     signingKey: Buffer,
     salt: Fr
-  ): Promise<AccountWallet> {
-    const ecdsaAccount = await getEcdsaRAccount(
-      this.pxe,
+  ): Promise<AccountWithSecretKey> {
+    const accountContract = new EcdsaRAccountContract(signingKey);
+
+    const ecdsaAccount = await AccountManager.create(
+      this.minimalWallet,
       secretKey,
-      signingKey,
+      accountContract,
       salt
     );
 
-    // Register the account with PXE so it can manage private state
-    try {
-      await ecdsaAccount.register();
-      logger.info('Account registered with PXE', ecdsaAccount.getAddress().toString());
-    } catch (err) {
-      logger.warn('Account registration with PXE failed (may already be registered)', err);
-      // For existing accounts, this is expected and we should continue
-    }
-    
-    const ecdsaWallet = await ecdsaAccount.getWallet();
+    logger.info('Account created from credentials', ecdsaAccount.address.toString());
+
+    const ecdsaWallet = await ecdsaAccount.getAccount();
+
+    const instance = ecdsaAccount.getInstance();
+    const artifact = await ecdsaAccount.getAccountContract().getContractArtifact();
+    await this.minimalWallet.registerContract(instance, artifact, ecdsaAccount.getSecretKey());
+    this.minimalWallet.addAccount(ecdsaWallet);
 
     return ecdsaWallet;
   }
@@ -198,11 +241,13 @@ export class AztecWalletService implements IAztecWalletService {
    * Get the SponsoredFeePaymentMethod instance (cached)
    */
   private cachedPaymentMethod: SponsoredFeePaymentMethod | null = null;
-  
+
   async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
     if (!this.cachedPaymentMethod) {
       const sponsoredPFCContract = await this.getSponsoredPFCContract();
-      this.cachedPaymentMethod = new SponsoredFeePaymentMethod(sponsoredPFCContract.address);
+      this.cachedPaymentMethod = new SponsoredFeePaymentMethod(
+        sponsoredPFCContract.address
+      );
     }
     return this.cachedPaymentMethod;
   }

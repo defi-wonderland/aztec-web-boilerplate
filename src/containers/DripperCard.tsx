@@ -1,94 +1,117 @@
 import React, { useState } from 'react';
-import { useAztecWallet, useAzguardWallet } from '../hooks';
-import { useToken } from '../hooks/context/useToken';
+import { useUniversalWallet, useRequiredContracts } from '../hooks';
+import { useDripper } from '../hooks/mutations/useDripper';
 import { useError } from '../providers/ErrorProvider';
 
 export const DripperCard: React.FC = () => {
-  const { 
-    connectedAccount, 
-    isInitialized,
-    dripperService,
-    isDeploying
-  } = useAztecWallet();
-  
-  const { state: azguardState } = useAzguardWallet();
-  const { refreshBalance, currentTokenAddress, setTokenAddress, clearTokenAddress } = useToken();
+  const { account, isInitialized, connectors, connector, currentConfig } = useUniversalWallet();
   const { addError } = useError();
   
+  const {
+    isReady: contractsReady,
+    isLoading: contractsLoading,
+    hasError: contractsHasError,
+    failedContracts,
+    pendingContracts,
+  } = useRequiredContracts(['dripper', 'token'] as const);
+
   const [amount, setAmount] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
 
-  const handleDrip = async () => {
-    if (!currentTokenAddress || !amount || !dripperService) return;
-
-    setIsProcessing(true);
-    try {
-      const amountBigInt = BigInt(amount);
-      
-      if (dripType === 'private') {
-        await dripperService.dripToPrivate(currentTokenAddress, amountBigInt);
-      } else {
-        await dripperService.dripToPublic(currentTokenAddress, amountBigInt);
-      }
-      
-      // Refresh balance after successful drip
-      await refreshBalance();
-      
-      // Show success message
+  const { dripToPrivate, dripToPublic, isReady } = useDripper({
+    onDripToPrivateSuccess: () => {
       addError({
-        message: `Successfully minted ${amount} tokens to ${dripType} balance`,
+        message: `Successfully minted ${amount} tokens to private balance`,
         type: 'info',
-        source: 'dripper'
+        source: 'dripper',
       });
-      
-      // Clear form after successful drip
       setAmount('');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to mint tokens';
+    },
+    onDripToPrivateError: (error) => {
       addError({
-        message: errorMessage,
+        message: error.message,
         type: 'error',
         source: 'dripper',
-        details: 'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.'
+        details:
+          'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.',
       });
-    } finally {
-      setIsProcessing(false);
+    },
+    onDripToPublicSuccess: () => {
+      addError({
+        message: `Successfully minted ${amount} tokens to public balance`,
+        type: 'info',
+        source: 'dripper',
+      });
+      setAmount('');
+    },
+    onDripToPublicError: (error) => {
+      addError({
+        message: error.message,
+        type: 'error',
+        source: 'dripper',
+        details:
+          'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.',
+      });
+    },
+  });
+
+  const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
+  const isBusy = connector?.getStatus().isBusy ?? false;
+
+  const handleDrip = () => {
+    if (!amount || !isReady) return;
+
+    const amountBigInt = BigInt(amount);
+
+    if (dripType === 'private') {
+      dripToPrivate.mutate({ amount: amountBigInt });
+    } else {
+      dripToPublic.mutate({ amount: amountBigInt });
     }
   };
 
-  const handleSyncPrivateState = async () => {
-    if (!dripperService) return;
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText(currentConfig.tokenContractAddress);
+  };
 
-    setIsProcessing(true);
-    try {
-      await dripperService.syncPrivateState();
-      
-      // Show success message
-      addError({
-        message: 'Successfully synced private state',
-        type: 'info',
-        source: 'dripper'
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync private state';
-      addError({
-        message: errorMessage,
-        type: 'error',
-        source: 'dripper',
-        details: 'Private state synchronization failed. This might be due to network issues or contract problems.'
-      });
-    } finally {
-      setIsProcessing(false);
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    if (value === '') {
+      setAmount('');
+      return;
+    }
+    
+    const isValidPositiveInteger = /^\d+$/.test(value);
+    
+    if (isValidPositiveInteger) {
+      setAmount(value);
     }
   };
 
   // Show dripper form when either wallet is connected and app is initialized
-  const isAnyWalletConnected = !!connectedAccount || azguardState.isConnected;
+  const isAnyWalletConnected =
+    Boolean(account) || connectors.some((conn) => conn.getStatus().isConnected);
   const showDripForm = isAnyWalletConnected && isInitialized;
 
   if (!showDripForm) {
     return null;
+  }
+
+  if (contractsHasError) {
+    return (
+      <div className="dripper-content">
+        <div className="content-header">
+          <div className="icon-container">
+            <span className="icon">⚠️</span>
+          </div>
+          <div>
+            <h3>Contract Registration Failed</h3>
+            <p>Failed to register: {failedContracts.join(', ')}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -104,87 +127,91 @@ export const DripperCard: React.FC = () => {
       </div>
 
       <div className="mint-form-container">
-        <div className="form-section">
-          <div className="form-group">
-            <label htmlFor="token-address">Token Address</label>
-            <div className="input-with-copy">
-                          <input
-              id="token-address"
-              type="text"
-              value={currentTokenAddress}
-              onChange={(e) => setTokenAddress(e.target.value)}
-              placeholder="Enter token contract address"
-              disabled={isProcessing}
-              className="form-input"
-            />
-              <button
-                type="button"
-                className="copy-button"
-                onClick={() => navigator.clipboard.writeText(currentTokenAddress)}
-                title="Copy to clipboard"
-              >
-                📋
-              </button>
+        {contractsLoading ? (
+          <div className="form-section">
+            <div className="flex flex-col items-center justify-center py-2rem gap-1rem opacity-70">
+              <div className="animate-spin rounded-full h-2rem w-2rem border-b-2 border-current" />
+              <p className="text-0.875rem">
+                Loading contracts: {pendingContracts.join(', ')}...
+              </p>
             </div>
           </div>
+        ) : (
+          <div className="form-section">
 
-          <div className="form-group">
-            <label htmlFor="amount">Amount</label>
-            <input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount to mint"
-              disabled={isProcessing}
-              className="form-input"
-            />
-          </div>
+            <div className="form-group">
+              <label htmlFor="token-address">Token Address</label>
+              <div className="input-with-copy">
+                <input
+                  id="token-address"
+                  type="text"
+                  value={currentConfig.tokenContractAddress}
+                  readOnly
+                  className="form-input"
+                  aria-label="Token contract address"
+                />
+                <button
+                  type="button"
+                  className="copy-button"
+                  onClick={handleCopyAddress}
+                  title="Copy to clipboard"
+                  aria-label="Copy address to clipboard"
+                >
+                  📋
+                </button>
+              </div>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="drip-type">Drip Type</label>
-            <select
-              id="drip-type"
-              value={dripType}
-              onChange={(e) => setDripType(e.target.value as 'private' | 'public')}
-              disabled={isProcessing}
-              className="form-select"
+            <div className="form-group">
+              <label htmlFor="amount">Amount</label>
+              <input
+                id="amount"
+                type="text"
+                inputMode="numeric"
+                value={amount}
+                onChange={handleAmountChange}
+                placeholder="Enter amount to mint"
+                disabled={isProcessing || !isReady}
+                className="form-input"
+                aria-label="Amount to mint"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="drip-type">Drip Type</label>
+              <select
+                id="drip-type"
+                value={dripType}
+                onChange={(e) =>
+                  setDripType(e.target.value as 'private' | 'public')
+                }
+                disabled={isProcessing || !isReady}
+                className="form-select"
+                aria-label="Select drip type"
+              >
+                <option value="private">Private Balance</option>
+                <option value="public">Public Balance</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDrip}
+              disabled={!amount || isProcessing || isBusy || !isReady || !contractsReady}
+              className="btn btn-primary"
+              aria-label={`Drip tokens to ${dripType} balance`}
             >
-              <option value="private">Private Balance</option>
-              <option value="public">Public Balance</option>
-            </select>
+              <span className="btn-icon">
+                {dripType === 'private' ? '🛡️' : '🌐'}
+              </span>
+              {isBusy
+                ? 'Wallet Busy...'
+                : isProcessing
+                  ? 'Processing...'
+                  : `Drip to ${dripType}`}
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={handleDrip}
-            disabled={!currentTokenAddress || !amount || isProcessing || isDeploying}
-            className="btn btn-primary"
-          >
-            <span className="btn-icon">{dripType === 'private' ? '🛡️' : '🌐'}</span>
-            {isDeploying ? 'Deploying Account...' : isProcessing ? 'Processing...' : `Drip to ${dripType}`}
-          </button>
-        </div>
-      </div>
-
-      <div className="sync-section">
-        <div className="content-header">
-          <div className="icon-container">
-            <span className="icon">🛡️</span>
-          </div>
-          <div>
-            <h4>Private State Management</h4>
-            <p>Synchronize your private state with the Aztec network</p>
-          </div>
-        </div>
-        <button
-          onClick={handleSyncPrivateState}
-          disabled={isProcessing || isDeploying}
-          className="btn btn-secondary"
-        >
-          <span className="btn-icon">⚡</span>
-          {isDeploying ? 'Deploying Account...' : isProcessing ? 'Processing...' : 'Sync Private State'}
-        </button>
+        )}
       </div>
     </div>
   );

@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
-import { SendersCard } from './SendersCard';
-import { Tabs } from '../components';
+import { Tabs, SecurityWarning } from '../components';
 import { TabConfig, TabType } from '../types';
-import { useAzguardWallet } from '../hooks';
+import { useUniversalWallet } from '../hooks';
+import { isEmbeddedConnector } from '../types/walletConnector';
 
 export const MainContent: React.FC = () => {
-  const { state: azguardState } = useAzguardWallet();
+  const { connector } = useUniversalWallet();
   const [activeTab, setActiveTab] = useState<TabType>('mint');
   
-  const allTabs: TabConfig[] = [
+  // Show security warning for embedded wallet (stores keys in browser localStorage)
+  const showSecurityWarning =
+    connector?.getStatus().isConnected && isEmbeddedConnector(connector);
+
+  const tabs: TabConfig[] = [
     {
       id: 'mint',
       label: 'Mint Tokens',
@@ -23,28 +27,11 @@ export const MainContent: React.FC = () => {
       icon: '⚙️',
       component: <SettingsCard />
     },
-    {
-      id: 'senders',
-      label: 'Senders',
-      icon: '👥',
-      component: <SendersCard />
-    }
   ];
-
-  // Filter out Senders tab when Azguard wallet is connected
-  const tabs = azguardState.isConnected 
-    ? allTabs.filter(tab => tab.id !== 'senders')
-    : allTabs;
-
-  // If user is on Senders tab and Azguard wallet connects, switch to Mint tab
-  useEffect(() => {
-    if (azguardState.isConnected && activeTab === 'senders') {
-      setActiveTab('mint');
-    }
-  }, [azguardState.isConnected, activeTab]);
 
   return (
     <main className="main-content">
+      {showSecurityWarning && <SecurityWarning />}
       <Tabs 
         tabs={tabs} 
         defaultTab={activeTab}

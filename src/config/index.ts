@@ -1,3 +1,3 @@
 export * from './networks';
-export * from './evm';
-export * from './bridgeConstants';
+export * from './dapp';
+export * from './networkArtifacts';

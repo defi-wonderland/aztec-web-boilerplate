@@ -1,15 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { useAztecWallet, useAzguardWallet, useAddressUtils } from '../hooks';
-import { ThemeToggle, EmbeddedWalletModal } from '../components';
+import { useUniversalWallet, useAddressUtils } from '../hooks';
+import { ThemeToggle, ConnectWalletModal } from '../components';
+import { WalletType } from '../types/aztec';
 
 // Sub-components
 const ConnectedAccount: React.FC<{
-  walletType: 'Azguard' | 'Embedded';
+  walletName: string;
   address: string;
   onDisconnect: () => void;
-}> = ({ walletType, address, onDisconnect }) => (
+}> = ({ walletName, address, onDisconnect }) => (
   <div className="connected-account-section">
-    <span className="wallet-type">{walletType}</span>
+    <span className="wallet-type">{walletName}</span>
     <span className="account-address">{address}</span>
     <button onClick={onDisconnect} type="button" className="disconnect-button">
       Disconnect
@@ -24,42 +25,35 @@ const ConnectButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 );
 
 export const Header: React.FC = () => {
-  const { connectedAccount, disconnectWallet } = useAztecWallet();
-  const { state: azguardState, disconnect: disconnectAzguard } = useAzguardWallet();
+  const { account, walletType, disconnect, connector } = useUniversalWallet();
   const { truncateAddress, truncateCaipAddress } = useAddressUtils();
-  
   const [showWalletModal, setShowWalletModal] = useState(false);
 
-  const handleDisconnect = useCallback(() => {
-    if (azguardState.isConnected) {
-      disconnectAzguard();
-    } else if (connectedAccount) {
-      disconnectWallet();
-    }
-  }, [azguardState.isConnected, connectedAccount, disconnectAzguard, disconnectWallet]);
+  const handleDisconnect = useCallback(async () => {
+    await disconnect();
+  }, [disconnect]);
 
   const handleWalletConnected = useCallback(() => {
     setShowWalletModal(false);
   }, []);
 
   const renderAccountSection = () => {
-    // Azguard wallet takes priority
-    if (azguardState.isConnected && azguardState.selectedAccount) {
-      return (
-        <ConnectedAccount
-          walletType="Azguard"
-          address={truncateCaipAddress(azguardState.selectedAccount)}
-          onDisconnect={handleDisconnect}
-        />
-      );
-    }
+    const status = connector?.getStatus();
+    const caipAccount = connector?.getCaipAccount?.();
+    const walletName =
+      connector?.label ??
+      (walletType === WalletType.EMBEDDED ? 'Embedded' : walletType === WalletType.BROWSER ? 'Browser' : 'Wallet');
+    const displayAddress = caipAccount
+      ? truncateCaipAddress(caipAccount)
+      : account
+        ? truncateAddress(account.getAddress().toString())
+        : null;
 
-    // Embedded wallet
-    if (connectedAccount) {
+    if (status?.isConnected && displayAddress) {
       return (
         <ConnectedAccount
-          walletType="Embedded"
-          address={truncateAddress(connectedAccount.getAddress().toString())}
+          walletName={walletName}
+          address={displayAddress}
           onDisconnect={handleDisconnect}
         />
       );
@@ -83,7 +77,7 @@ export const Header: React.FC = () => {
         </div>
       </nav>
       
-      <EmbeddedWalletModal
+      <ConnectWalletModal
         isOpen={showWalletModal}
         onClose={() => setShowWalletModal(false)}
         onWalletConnected={handleWalletConnected}

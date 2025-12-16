@@ -1,10 +1,7 @@
 export { Tabs } from './Tabs';
 export { AddressDisplay } from './AddressDisplay';
-export { WalletSelector } from './WalletSelector';
-export { WalletDropdown } from './WalletDropdown';
-export { AzguardAccountDisplay } from './AzguardAccountDisplay';
-export { AzguardConnectButton } from './AzguardConnectButton';
-export { EmbeddedWalletButton } from './EmbeddedWalletButton';
-export { EmbeddedWalletModal } from './EmbeddedWalletModal';
+export { ConnectWalletModal } from './ConnectWalletModal';
 export { ThemeToggle } from './ThemeToggle';
+export { SecurityWarning } from './SecurityWarning';
+export { TimingToast } from './TimingToast';
 export * from './settings';

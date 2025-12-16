@@ -1,24 +1,23 @@
 import React from 'react';
-import { NetworkConfig } from '../../config/networks/types';
+import { AVAILABLE_NETWORKS } from '../../config/networks';
+import type { NetworkConfig } from '../../config/networks/types';
+import type { AztecNetwork } from '../../config/networks/constants';
 
 interface ConfigDisplayProps {
-  config: NetworkConfig;
-  title: string;
+  networkName: AztecNetwork;
 }
 
 interface ConfigField {
   key: keyof NetworkConfig;
   label: string;
-  formatter?: (value: any) => string;
+  formatter?: (value: boolean) => string;
 }
 
-const configFields: ConfigField[] = [
+const CONFIG_FIELDS: ConfigField[] = [
   { key: 'nodeUrl', label: 'Node URL' },
-  { key: 'contractAddress', label: 'Contract Address' },
   { key: 'tokenContractAddress', label: 'Token Contract' },
   { key: 'dripperContractAddress', label: 'Dripper Contract' },
   { key: 'deployerAddress', label: 'Deployer Address' },
-  { key: 'deploymentSalt', label: 'Deployment Salt' },
   { key: 'dripperDeploymentSalt', label: 'Dripper Salt' },
   { key: 'tokenDeploymentSalt', label: 'Token Salt' },
   { 
@@ -28,21 +27,31 @@ const configFields: ConfigField[] = [
   }
 ];
 
-export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({ config, title }) => (
-  <div className="config-display">
-    <h4>{title}</h4>
-    <div className="config-grid">
-      {configFields.map(({ key, label, formatter }) => {
-        const value = config?.[key];
-        const displayValue = formatter ? formatter(value) : (value || 'Not configured');
-        
-        return (
-          <div key={key} className="config-row">
-            <span className="config-label">{label}</span>
-            <span className="config-value">{displayValue}</span>
-          </div>
-        );
-      })}
+export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({ networkName }) => {
+  const config = AVAILABLE_NETWORKS.find(network => network.name === networkName);
+
+  if (!config) {
+    return null;
+  }
+
+  return (
+    <div className="config-display">
+      <h4>{config.displayName} Configuration</h4>
+      <div className="config-grid">
+        {CONFIG_FIELDS.map(({ key, label, formatter }) => {
+          const value = config[key];
+          const displayValue = formatter 
+            ? formatter(value as boolean) 
+            : (value || 'Not configured');
+          
+          return (
+            <div key={key} className="config-row">
+              <span className="config-label">{label}</span>
+              <span className="config-value">{displayValue}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+};

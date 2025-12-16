@@ -5,11 +5,8 @@ import type {
   SendTransactionOperation,
   SimulateViewsOperation,
   RegisterContractOperation,
-  CallAction,
-  AddPrivateAuthwitAction,
   OperationResult
 } from '@azguardwallet/types';
-import { type AccountWallet } from '@aztec/aztec.js';
 
 // ============================================================================
 // AZGUARD WALLET TYPES
@@ -25,7 +22,11 @@ export interface AzguardConnectionConfig {
     url?: string;
     icon?: string;
   };
-  permissions: Array<{
+  requiredPermissions: Array<{
+    chains: string[];
+    methods: string[];
+  }>;
+  optionalPermissions?: Array<{
     chains: string[];
     methods: string[];
   }>;
@@ -45,65 +46,41 @@ export interface AzguardWalletState {
 }
 
 /**
- * Azguard wallet context type for React provider
+ * Azguard wallet service interface
+ * Handles communication with Azguard wallet extension
  */
-export interface AzguardWalletContextType {
-  // State
-  state: AzguardWalletState;
-  client: AzguardClient | null;
+export interface IAzguardWalletService {
+  // Core initialization
+  initialize(): Promise<void>;
   
-  // Actions
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  switchAccount: (account: CaipAccount) => Promise<void>;
+  // Wallet detection and connection
+  isInstalled(): Promise<boolean>;
+  connect(
+    dappMetadata: AzguardConnectionConfig['dappMetadata'],
+    requiredPermissions: AzguardConnectionConfig['requiredPermissions'],
+    optionalPermissions?: AzguardConnectionConfig['optionalPermissions']
+  ): Promise<CaipAccount[]>;
+  disconnect(): Promise<void>;
   
-  // Operations
-  executeOperations: (operations: Operation[]) => Promise<OperationResult[]>;
+  // Account management
+  getAccounts(): Promise<CaipAccount[]>;
+  getSelectedAccount(): CaipAccount | null;
+  
+  // Transaction operations
+  sendTransaction(operation: SendTransactionOperation): Promise<string>;
+  simulateViews(operation: SimulateViewsOperation): Promise<unknown>;
+  registerContract(operation: RegisterContractOperation): Promise<void>;
+  
+  // Batch operations
+  executeOperations(operations: Operation[]): Promise<OperationResult[]>;
+  
+  // Event handling
+  onAccountsChanged(callback: (accounts: CaipAccount[]) => void): void;
+  onDisconnected(callback: () => void): void;
   
   // Utility
-  isAccountDeployed: (account: CaipAccount) => Promise<boolean>;
-  getAccountWallet: (account: CaipAccount) => Promise<AccountWallet>;
+  getSupportedChains(): string[];
+  getState(): AzguardWalletState;
+  getClient(): AzguardClient | null;
+  destroy(): void;
 }
-
-/**
- * Azguard operation builder helpers
- */
-export interface AzguardOperationBuilder {
-  buildSendTransaction(
-    account: CaipAccount,
-    actions: Array<CallAction | AddPrivateAuthwitAction>
-  ): SendTransactionOperation;
-  
-  buildSimulateViews(
-    account: CaipAccount,
-    calls: CallAction[]
-  ): SimulateViewsOperation;
-  
-  buildRegisterContract(
-    chain: string,
-    address: string,
-    instance: any,
-    artifact: any
-  ): RegisterContractOperation;
-}
-
-/**
- * Azguard wallet error types
- */
-export interface AzguardWalletError extends Error {
-  code?: string;
-  data?: any;
-}
-
-// Re-export commonly used Azguard types
-export type {
-  AzguardClient,
-  CaipAccount,
-  Operation,
-  SendTransactionOperation,
-  SimulateViewsOperation,
-  RegisterContractOperation,
-  CallAction,
-  AddPrivateAuthwitAction,
-  OperationResult
-};

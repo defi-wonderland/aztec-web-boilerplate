@@ -5,7 +5,7 @@ export interface MessageInfo {
   message: string;
   type: 'error' | 'warning' | 'info' | 'success';
   timestamp: Date;
-  source?: string; // e.g., 'voting', 'dripper', 'wallet'
+  source?: string; // e.g., 'dripper', 'wallet'
   details?: string;
 }
 

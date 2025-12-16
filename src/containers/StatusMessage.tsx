@@ -1,10 +1,10 @@
 import React from 'react';
-import { useAztecWallet } from '../hooks';
+import { useUniversalWallet } from '../hooks';
 import { useError } from '../providers/ErrorProvider';
 
 export const StatusMessage: React.FC = () => {
-  const { error: walletError, isLoading, isInitialized } = useAztecWallet();
-  const { messages: globalMessages, clearMessage, clearAllMessages, hasMessages } = useError();
+  const { error: walletError, isLoading, isInitialized } = useUniversalWallet();
+  const { messages: globalMessages, clearMessage, hasMessages } = useError();
 
   const renderStatus = () => {
     if (!isInitialized) {
@@ -26,14 +26,12 @@ export const StatusMessage: React.FC = () => {
   const hasWalletError = walletError && isInitialized;
   const shouldShow = statusText && isInitialized;
 
-  // Don't render if no status to show and no global messages
   if (!shouldShow && !hasMessages) {
     return null;
   }
 
   return (
     <div className="status-messages-container">
-      {/* Wallet/Provider Status */}
       {shouldShow && (
         <div 
           id="status-message" 
@@ -43,7 +41,6 @@ export const StatusMessage: React.FC = () => {
         </div>
       )}
 
-      {/* Global Messages */}
       {globalMessages.map((message) => (
         <div 
           key={message.id}

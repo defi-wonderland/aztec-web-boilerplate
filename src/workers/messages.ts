@@ -3,6 +3,7 @@ export type DeployEcdsaAccountPayload = {
   secretKey: string;
   signingKeyHex: string;
   salt: string;
+  networkName?: string;
 };
 
 export type DeployEcdsaAccountMessage = {

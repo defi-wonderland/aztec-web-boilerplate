@@ -1,15 +1,13 @@
 import React from 'react';
-import { useToken } from '../hooks/context/useToken';
-import { useConfig } from '../hooks';
+import { useTokenBalance } from '../hooks/queries/useTokenBalance';
 import { useUniversalWallet } from '../hooks';
 import { AddressDisplay } from '../components/AddressDisplay';
 
 export const Sidebar: React.FC = () => {
-  const { formattedBalances, isBalanceLoading } = useToken();
-  const { currentConfig } = useConfig();
-  const { activeAccount, getAccountAddress } = useUniversalWallet();
+  const { formattedBalances, isLoading: isBalanceLoading, isFetching } = useTokenBalance();
+  const { currentConfig, account } = useUniversalWallet();
 
-  const accountAddress = getAccountAddress();
+  const accountAddress = account?.getAddress().toString() ?? null;
   const privateBalance = formattedBalances ? parseInt(formattedBalances.private) : 0;
   const publicBalance = formattedBalances ? parseInt(formattedBalances.public) : 0;
   const totalBalance = privateBalance + publicBalance;
@@ -25,6 +23,9 @@ export const Sidebar: React.FC = () => {
             <span className="title-icon">💰</span>
             Aztec Token Balance
           </h3>
+          {isFetching && !isBalanceLoading && (
+            <span className="balance-refetch-badge">Syncing</span>
+          )}
         </div>
         <div className="card-content">
           {isBalanceLoading ? (
