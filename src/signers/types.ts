@@ -34,6 +34,12 @@ export interface ExternalSigner {
   readonly label: string;
 
   /**
+   * Reverse domain name identifier (for EIP-6963 wallet discovery)
+   * Used to identify specific EVM wallets (e.g., 'io.metamask', 'io.rabby')
+   */
+  readonly rdns?: string;
+
+  /**
    * Check if the external wallet is installed/available
    */
   isAvailable(): boolean;

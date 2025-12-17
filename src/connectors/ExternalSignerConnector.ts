@@ -62,7 +62,10 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   /**
    * Update connector with latest hook state. Called by provider each render.
    */
-  updateState(state: UseExternalSignerWalletReturn, signer: ExternalSigner | null) {
+  updateState(
+    state: UseExternalSignerWalletReturn,
+    signer: ExternalSigner | null
+  ) {
     this._signerState = state;
     this.signer = signer;
   }
@@ -76,24 +79,26 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
 
   getStatus(): ConnectorStatus {
     const { state, error } = this.getSignerState();
-    const isSignerConnected = this.signer?.isConnected() ?? false;
-    
-    // If aztec account exists but EVM signer disconnected, still show as connected
-    // (the EVM signer can be reconnected)
-    let status = state.status;
-    if (status === 'connected' && !isSignerConnected && state.aztecAccount) {
-      status = 'connected'; // Keep connected status, UI will handle signer reconnection
-    }
+
+    const isThisConnectorConnected =
+      state.status === 'connected' && state.connectedRdns === this.rdns;
+
+    const status =
+      state.status === 'connected' && !isThisConnectorConnected
+        ? 'disconnected'
+        : state.status;
 
     return {
       isInstalled: this.signer?.isAvailable() ?? false,
       status,
-      error,
+      error: isThisConnectorConnected ? error : null,
     };
   }
 
   getAccount(): AccountWithSecretKey | null {
-    return this.getSignerState().state.aztecAccount;
+    const { state } = this.getSignerState();
+    // Only return account if this connector's rdns matches the connected one
+    return state.connectedRdns === this.rdns ? state.aztecAccount : null;
   }
 
   async connect(): Promise<void> {
@@ -139,4 +144,3 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
     return this.signer;
   }
 }
-

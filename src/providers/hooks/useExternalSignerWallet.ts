@@ -25,6 +25,7 @@ import type { MinimalWallet } from '../../utils/MinimalWallet';
 export interface ExternalSignerWalletState {
   aztecAccount: AccountWithSecretKey | null;
   signerType: ExternalSignerType | null;
+  connectedRdns: string | null;
   status: ConnectionStatus;
   isInitialized: boolean;
 }
@@ -68,6 +69,7 @@ export const useExternalSignerWallet = (
   // Local state
   const [aztecAccount, setAztecAccount] = useState<AccountWithSecretKey | null>(null);
   const [signerType, setSignerType] = useState<ExternalSignerType | null>(null);
+  const [connectedRdns, setConnectedRdns] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
@@ -176,6 +178,7 @@ export const useExternalSignerWallet = (
         currentSignerRef.current = signer;
         setAztecAccount(account);
         setSignerType(signer.type);
+        setConnectedRdns(signer.rdns ?? null);
         setStatus('connected');
 
         return account;
@@ -207,6 +210,7 @@ export const useExternalSignerWallet = (
     }
     setAztecAccount(null);
     setSignerType(null);
+    setConnectedRdns(null);
     setError(null);
     setStatus('disconnected');
   }, []);
@@ -215,6 +219,7 @@ export const useExternalSignerWallet = (
     state: {
       aztecAccount,
       signerType,
+      connectedRdns,
       status,
       isInitialized: sharedPXE.state.isInitialized,
     },

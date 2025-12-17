@@ -194,6 +194,7 @@ export const UniversalWalletProvider: React.FC<
     connectors,
     embedded.state.embeddedAccount,
     externalSigner.state.aztecAccount,
+    externalSigner.state.connectedRdns,
     browserWallet.state.status,
     browserWallet.accountWallet,
   ]);
