@@ -3,7 +3,7 @@
  * 
  * ⚠️ SECURITY WARNING: Account keys are stored in localStorage in plain text.
  * This is suitable for TESTNET ONLY. For production apps with real funds,
- * use hardware wallets (like Azguard) or external wallet providers.
+ * use an external wallet provider (like Azguard).
  * 
  * The embedded wallet is designed for development and demonstration purposes.
  */

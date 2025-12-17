@@ -74,12 +74,7 @@ const waitForBrowserWalletReceipt = async (
         chain,
         txHash,
       };
-      const [result] = await connector.executeOperations([operation]);
-
-      if (!result) {
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-        continue;
-      }
+      const result = await connector.executeOperation(operation);
 
       if (result.status === 'failed') {
         const errorMsg = 'error' in result ? String(result.error) : 'Failed to get receipt';

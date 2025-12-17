@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
+import { truncateAddress, truncateCaipAddress } from '../utils';
 import { useUniversalWallet } from '../hooks';
 import { ThemeToggle, ConnectWalletModal } from '../components';
 import { WalletType } from '../types/aztec';
-import { truncateAddress, truncateCaipAddress } from '../utils';
 
 // Sub-components
 const ConnectedAccount: React.FC<{
@@ -78,7 +78,6 @@ export const Header: React.FC = () => {
           </div>
         </div>
       </nav>
-
       <ConnectWalletModal
         isOpen={showWalletModal}
         onClose={() => setShowWalletModal(false)}

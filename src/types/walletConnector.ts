@@ -2,6 +2,7 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
+import type { CaipAccount } from '@azguardwallet/types';
 import { WalletType, ExternalSignerType } from './aztec';
 import type { ExternalSigner } from '../signers/types';
 import type {
@@ -44,7 +45,7 @@ export interface WalletConnector {
 
   getStatus(): ConnectorStatus;
   getAccount(): AccountWithSecretKey | null;
-  getCaipAccount?(): string | null;
+  getCaipAccount?(): CaipAccount | null;
 
   connect(): Promise<void>;
   disconnect(): Promise<void>;
@@ -88,10 +89,10 @@ export interface ExternalSignerWalletConnector extends WalletConnector {
 export interface BrowserWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.BROWSER_WALLET;
 
-  getCaipAccount: () => string | null;
-  executeOperations: (
-    operations: BrowserWalletOperation[]
-  ) => Promise<BrowserWalletOperationResult[]>;
+  getCaipAccount: () => CaipAccount | null;
+  executeOperation: (
+    operation: BrowserWalletOperation
+  ) => Promise<BrowserWalletOperationResult>;
 }
 
 export const isEmbeddedConnector = (

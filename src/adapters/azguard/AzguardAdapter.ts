@@ -6,7 +6,6 @@
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type {
   CaipAccount,
   CaipChain,
@@ -24,6 +23,7 @@ import type {
 } from '../../types/browserWallet';
 import { AzguardWalletService } from './AzguardWalletService';
 import { getChainId, type AztecChainId } from '../../config/networks/constants';
+import { parseAddressFromCaip } from '../../utils/azguard';
 
 const AZGUARD_METHODS = [
   'register_contract',
@@ -139,25 +139,8 @@ export class AzguardAdapter implements IBrowserWalletAdapter {
   }
 
   async toAccountWallet(accountId: string): Promise<AccountWithSecretKey> {
-    const address = this.parseAddressFromCaip(accountId);
+    const address = parseAddressFromCaip(accountId);
     return { getAddress: () => address } as unknown as AccountWithSecretKey;
-  }
-
-  private parseAddressFromCaip(caipAccount: string): AztecAddress {
-    // CAIP format: aztec:chainId:address
-    const parts = caipAccount.split(':');
-    if (parts.length !== 3 || parts[0] !== 'aztec') {
-      throw new Error(`Invalid CAIP account format: ${caipAccount}`);
-    }
-    const addressStr = parts[2];
-    // Handle both Aztec (66 chars) and Ethereum (42 chars) address formats
-    if (addressStr.length === 66) {
-      return AztecAddress.fromString(addressStr);
-    } else if (addressStr.length === 42) {
-      const paddedAddress = '0x' + addressStr.slice(2).padStart(64, '0');
-      return AztecAddress.fromString(paddedAddress);
-    }
-    throw new Error(`Invalid address length: ${addressStr.length}`);
   }
 
   onAccountsChanged(cb: (accounts: string[]) => void): void {

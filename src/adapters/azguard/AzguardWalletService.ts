@@ -313,8 +313,15 @@ export class AzguardWalletService {
     this.addEventListener('disconnected', callback);
   }
 
-  private getSupportedChains(): string[] {
+  getSupportedChains(): string[] {
     return [...SUPPORTED_CHAINS];
+  }
+
+  /**
+   * Get the underlying Azguard client
+   */
+  getClient(): AzguardClient | null {
+    return this.client;
   }
 
   /**

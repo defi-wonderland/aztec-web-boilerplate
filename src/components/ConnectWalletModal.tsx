@@ -102,7 +102,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
 
   const handleEmbeddedWalletAction = async (action: 'create' | 'existing') => {
     if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
-
     setIsConnecting(true);
     try {
       switch (action) {
@@ -236,7 +235,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
             ×
           </button>
         </div>
-
         <div className="modal-body">
           <p className="modal-description">
             Create or connect to an Aztec account using a wallet.

@@ -1,15 +1,10 @@
 import { Fr } from '@aztec/aztec.js/fields';
 import type { AccountCredentials } from '../types/aztec';
-import { getEnv } from './env';
 
-/**
- * Check if account credentials are configured in environment variables.
- * This is a synchronous check that can be used for UI state.
- */
-export const hasConfiguredCredentials = (): boolean => {
-  const env = getEnv();
-  return !!env.embeddedAccountSecretKey;
-};
+const getEnv = () =>
+  (import.meta as unknown as {
+    env: Record<string, string | undefined>;
+  }).env;
 
 /**
  * Normalize hex string by removing 0x prefix if present
@@ -37,6 +32,14 @@ const createFromSecretKey = (
 };
 
 /**
+ * Check if account credentials are configured in environment variables.
+ */
+export const hasConfiguredCredentials = (): boolean => {
+  const env = getEnv();
+  return Boolean(env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY);
+};
+
+/**
  * Get account credentials from environment variables.
  *
  * Required: VITE_EMBEDDED_ACCOUNT_SECRET_KEY (the Fr hex value)
@@ -47,8 +50,8 @@ const createFromSecretKey = (
 export const getConfiguredAccountCredentials =
   async (): Promise<AccountCredentials | null> => {
     const env = getEnv();
-    const secretKey = env.embeddedAccountSecretKey;
-    const salt = env.commonSalt ?? '1337';
+    const secretKey = env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY;
+    const salt = env.VITE_COMMON_SALT ?? '1337';
 
     if (!secretKey) {
       return null;

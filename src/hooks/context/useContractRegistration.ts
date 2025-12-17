@@ -4,14 +4,10 @@ import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
 import { useUniversalWallet } from './useUniversalWallet';
-import { contractsConfig, getArtifactOverrides } from '../../config/contracts';
+import { contractsConfig } from '../../config/contracts';
 import { queuePxeCall } from '../../utils';
-import {
-  isBrowserWalletConnector,
-  isEmbeddedConnector,
-  isExternalSignerConnector,
-  hasAppManagedPXE,
-} from '../../types/walletConnector';
+import { hasAppManagedPXE } from '../../types/walletConnector';
+import { WalletType } from '../../types/aztec';
 import {
   getContractsForConfig,
   type ContractConfigMap,
@@ -19,6 +15,7 @@ import {
   type ContractStatus,
   type UseContractReturn,
 } from '../../contract-registry';
+import { getNetworkArtifacts } from '../../config/networkArtifacts';
 
 interface ExternalWalletContractProxy {
   readonly __browserWalletPlaceholder: true;
@@ -57,12 +54,11 @@ export function useContractRegistration<
   TContract = unknown,
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
-  const { connector, account, currentConfig } = useUniversalWallet();
+  const { connector, account, currentConfig, walletType } =
+    useUniversalWallet();
 
-  // Wallet type detection - handles all connector types
-  // Browser wallets (Azguard) use external PXE, so no app-managed contract registration
-  const isExternal = isBrowserWalletConnector(connector);
-  // Both Embedded and External Signer connectors have app-managed PXE with a wallet
+  const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
+
   const wallet = hasAppManagedPXE(connector) ? connector.getWallet() : null;
 
   const [contract, setContract] = useState<TContract | null>(null);
@@ -71,7 +67,7 @@ export function useContractRegistration<
   const getContractDefinition = useCallback(() => {
     const contracts = getContractsForConfig(
       contractsConfig,
-      getArtifactOverrides(currentConfig.name)
+      getNetworkArtifacts(currentConfig.name)
     );
     return (
       (contracts as ContractConfigMap)[name as keyof typeof contractsConfig] ??
@@ -118,7 +114,7 @@ export function useContractRegistration<
   }, [wallet]);
 
   useEffect(() => {
-    if (!registry || isExternal) {
+    if (!registry || isBrowserWallet) {
       return;
     }
 
@@ -158,10 +154,10 @@ export function useContractRegistration<
 
     const unsubscribe = registry.subscribe(updateState);
     return unsubscribe;
-  }, [registry, name, wallet, isExternal]);
+  }, [registry, name, wallet, isBrowserWallet]);
 
   useEffect(() => {
-    if (!registry || registryStatus !== 'ready' || isExternal) {
+    if (!registry || registryStatus !== 'ready' || isBrowserWallet) {
       return;
     }
 
@@ -172,10 +168,10 @@ export function useContractRegistration<
         setError(err instanceof Error ? err : new Error(String(err)));
       });
     }
-  }, [registry, registryStatus, name, isExternal]);
+  }, [registry, registryStatus, name, isBrowserWallet]);
 
   useEffect(() => {
-    if (!isExternal) {
+    if (!isBrowserWallet) {
       return;
     }
 
@@ -198,12 +194,12 @@ export function useContractRegistration<
       setStatus('error');
       setContract(null);
     }
-  }, [account, createExternalWalletContractProxy, isExternal]);
+  }, [account, createExternalWalletContractProxy, isBrowserWallet]);
 
   const register = useCallback(async () => {
     setError(null);
 
-    if (isExternal) {
+    if (isBrowserWallet) {
       try {
         setStatus('registering');
         const proxy = createExternalWalletContractProxy();
@@ -231,7 +227,7 @@ export function useContractRegistration<
       setError(registrationError);
       throw registrationError;
     }
-  }, [createExternalWalletContractProxy, isExternal, name, registry]);
+  }, [createExternalWalletContractProxy, isBrowserWallet, name, registry]);
 
   const isReady = status === 'ready' && contract !== null;
 

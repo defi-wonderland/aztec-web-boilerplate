@@ -1,5 +1,6 @@
 import type { CaipAccount } from '@azguardwallet/types';
 import type { ConnectionStatus } from './walletConnector';
+import type { DappMetadata } from '../config/dapp';
 
 /**
  * Azguard wallet connection state
@@ -11,4 +12,21 @@ export interface AzguardWalletState {
   selectedAccount: CaipAccount | null;
   supportedChains: string[];
   error: string | null;
+}
+
+/**
+ * Permission request for Azguard connection
+ */
+export interface AzguardPermission {
+  chains: string[];
+  methods: string[];
+}
+
+/**
+ * Configuration for connecting to Azguard wallet
+ */
+export interface AzguardConnectionConfig {
+  dappMetadata: DappMetadata;
+  requiredPermissions: AzguardPermission[];
+  optionalPermissions?: AzguardPermission[];
 }

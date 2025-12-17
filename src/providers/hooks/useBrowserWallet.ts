@@ -20,8 +20,9 @@ import { DEFAULT_BROWSER_WALLET_STATE } from '../../types/browserWallet';
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { useError } from '../ErrorProvider';
 import { buildRegisterContractOperations } from '../../utils/browserWallet';
+import { getChainFromCaipAccount } from '../../utils/azguard';
 import type { NetworkConfig } from '../../config/networks';
-import type { AztecChainId } from '../../config/networks/constants';
+import { getChainId, type AztecChainId } from '../../config/networks/constants';
 
 export interface BrowserWalletActions {
   connect: () => Promise<void>;
@@ -119,7 +120,8 @@ export const useBrowserWallet = (
       return;
     }
 
-    const registrationKey = `${currentConfig.name}:${walletState.selectedAccount}`;
+    const selectedAccount = walletState.selectedAccount;
+    const registrationKey = `${currentConfig.name}:${selectedAccount}`;
     if (contractRegistrationRef.current === registrationKey) {
       return;
     }
@@ -128,8 +130,9 @@ export const useBrowserWallet = (
 
     const registerContracts = async () => {
       try {
-        const chainFromAccount =
-          `${walletState.selectedAccount!.split(':').slice(0, 2).join(':')}` as AztecChainId;
+        const chainFromAccount = selectedAccount.includes(':')
+          ? (getChainFromCaipAccount(selectedAccount) as AztecChainId)
+          : getChainId(currentConfig.name);
 
         const operations = await buildRegisterContractOperations(
           currentConfig,

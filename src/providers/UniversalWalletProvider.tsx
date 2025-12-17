@@ -19,7 +19,10 @@ import {
   useNetworkInternal,
   useEVMWalletInternal,
 } from './hooks';
-import type { WalletConnector, WalletConnectorId } from '../types/walletConnector';
+import type {
+  WalletConnector,
+  WalletConnectorId,
+} from '../types/walletConnector';
 import {
   EmbeddedConnector,
   ExternalSignerConnector,
@@ -85,11 +88,9 @@ interface UniversalWalletProviderProps {
   children: ReactNode;
 }
 
-export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = ({
-  config: walletKitConfig,
-  children,
-}) => {
-  // Network state
+export const UniversalWalletProvider: React.FC<
+  UniversalWalletProviderProps
+> = ({ config: walletKitConfig, children }) => {
   const network = useNetworkInternal({
     networks: walletKitConfig.networks,
   });
@@ -98,7 +99,9 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
 
   // Store signers by rdns for EIP-6963 multi-wallet support
   const signersRef = useRef<Map<string, ExternalSigner>>(new Map());
-  const getSignerForConnector = (connector: ExternalSignerConnector): ExternalSigner => {
+  const getSignerForConnector = (
+    connector: ExternalSignerConnector
+  ): ExternalSigner => {
     if (connector.signerType !== ExternalSignerType.EVM_WALLET) {
       throw new Error(`Unknown signer type: ${connector.signerType}`);
     }
@@ -155,7 +158,10 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
 
   // Update connector states
   for (const connector of connectors) {
-    if ('updateState' in connector && typeof connector.updateState === 'function') {
+    if (
+      'updateState' in connector &&
+      typeof connector.updateState === 'function'
+    ) {
       if (connector.type === WalletType.EMBEDDED) {
         (connector as EmbeddedConnector).updateState(embedded);
       }
@@ -164,7 +170,10 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
         const signer = getSignerForConnector(extConnector);
         extConnector.updateState(externalSigner, signer);
       }
-      if (connector.type === WalletType.BROWSER_WALLET && browserWalletAdapter) {
+      if (
+        connector.type === WalletType.BROWSER_WALLET &&
+        browserWalletAdapter
+      ) {
         (connector as BrowserWalletConnector).updateState(browserWallet);
       }
     }
@@ -172,18 +181,21 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
 
   // Find active connector
   const activeConnector = useMemo(() => {
-    return connectors.find((c) => {
-      try {
-        return c.getStatus().status === 'connected';
-      } catch {
-        return false;
-      }
-    }) ?? null;
+    return (
+      connectors.find((c) => {
+        try {
+          return c.getStatus().status === 'connected';
+        } catch {
+          return false;
+        }
+      }) ?? null
+    );
   }, [
     connectors,
     embedded.state.embeddedAccount,
     externalSigner.state.aztecAccount,
     browserWallet.state.status,
+    browserWallet.accountWallet,
   ]);
 
   const activeAccount = activeConnector?.getAccount() ?? null;
@@ -227,12 +239,16 @@ export const UniversalWalletProvider: React.FC<UniversalWalletProviderProps> = (
     browserWallet.isLoading ||
     externalSigner.state.status === 'connecting' ||
     externalSigner.state.status === 'deploying' ||
-    (activeWalletType === WalletType.EXTERNAL_SIGNER && evmWallet.state.isConnecting);
+    (activeWalletType === WalletType.EXTERNAL_SIGNER &&
+      evmWallet.state.isConnecting);
 
   // Compute error state
-  const walletError = embedded.error || browserWallet.error || externalSigner.error;
+  const walletError =
+    embedded.error || browserWallet.error || externalSigner.error;
   const signerError =
-    activeWalletType === WalletType.EXTERNAL_SIGNER ? evmWallet.state.error : null;
+    activeWalletType === WalletType.EXTERNAL_SIGNER
+      ? evmWallet.state.error
+      : null;
   const error = walletError || signerError;
 
   const contextValue: UniversalWalletContextType = {

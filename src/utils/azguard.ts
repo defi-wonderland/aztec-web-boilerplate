@@ -1,25 +1,69 @@
+import type { RegisterContractOperation, CaipAccount } from '@azguardwallet/types';
 import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import type { NetworkConfig } from '../config/networks';
 import { getChainId, type AztecChainId } from '../config/networks/constants';
 import { contractsConfig } from '../config/contracts';
-import { getNetworkArtifacts } from '../config/networkArtifacts';
 import { getContractsForConfig, type ContractNames } from '../contract-registry';
-import type { RegisterContractOp } from '../types/browserWallet';
+import { getNetworkArtifacts } from '../config/networkArtifacts';
 
 /**
- * Build all contract registration operations for browser wallets.
+ * Extracts the chain identifier from a CAIP account string.
+ * CAIP format: namespace:chainId:address (e.g., "aztec:testnet:0x1234...")
+ *
+ * @param caipAccount - The full CAIP account string
+ * @returns The chain identifier (e.g., "aztec:testnet")
+ */
+export const getChainFromCaipAccount = (caipAccount: CaipAccount | string): string => {
+  const [namespace, chainId] = caipAccount.split(':');
+  return `${namespace}:${chainId}`;
+};
+
+/**
+ * Parses an AztecAddress from a CAIP account string.
+ * CAIP format: aztec:chainId:address (e.g., "aztec:testnet:0x1234...")
+ *
+ * Handles both:
+ * - Full CAIP format: "aztec:chainId:0x..."
+ * - Plain address: "0x..."
+ * - Aztec addresses (66 chars) and Ethereum addresses (42 chars, padded)
+ *
+ * @param caipAccount - The CAIP account string or plain address
+ * @returns The parsed AztecAddress
+ */
+export const parseAddressFromCaip = (caipAccount: string): AztecAddress => {
+  const parts = caipAccount.split(':');
+  const hasPrefix = parts.length === 3 && parts[0] === 'aztec';
+  const addressStr = hasPrefix ? parts[2] : caipAccount;
+
+  // Handle Aztec address format (66 chars: 0x + 64 hex)
+  if (addressStr.length === 66) {
+    return AztecAddress.fromString(addressStr);
+  }
+
+  // Handle Ethereum address format (42 chars: 0x + 40 hex) - pad to Aztec format
+  if (addressStr.length === 42) {
+    const paddedAddress = '0x' + addressStr.slice(2).padStart(64, '0');
+    return AztecAddress.fromString(paddedAddress);
+  }
+
+  throw new Error(`Unsupported account format: ${caipAccount}`);
+};
+
+/**
+ * Build all contract registration operations for Azguard.
  * Registers ALL app contracts (lazyRegister is ignored for browser wallets
  * since they manage their own PXE and don't support lazy loading).
  */
 export const buildRegisterContractOperations = async (
   config: NetworkConfig,
   chainOverride?: AztecChainId
-): Promise<RegisterContractOp[]> => {
+): Promise<RegisterContractOperation[]> => {
   const chain = chainOverride ?? getChainId(config.name);
-  const operations: RegisterContractOp[] = [];
+  const operations: RegisterContractOperation[] = [];
   const contracts = getContractsForConfig(
     contractsConfig,
     getNetworkArtifacts(config.name)

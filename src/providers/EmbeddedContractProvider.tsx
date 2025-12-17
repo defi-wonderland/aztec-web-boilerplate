@@ -17,10 +17,11 @@ import {
   type ContractNames,
   type ContractRegistryContextValue,
 } from '../contract-registry';
-import { contractsConfig, getArtifactOverrides } from '../config/contracts';
+import { contractsConfig } from '../config/contracts';
 import { hasAppManagedPXE } from '../types/walletConnector';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
 import { TimingToast } from '../components';
+import { getNetworkArtifacts } from '../config/networkArtifacts';
 
 type ContractContextValue<T extends ContractConfigMap = ContractConfigMap> =
   ContractRegistryContextValue<T>;
@@ -71,7 +72,7 @@ export function EmbeddedContractProvider<
     () =>
       getContractsForConfig(
         contractsConfig,
-        getArtifactOverrides(currentConfig.name)
+        getNetworkArtifacts(currentConfig.name)
       ) as unknown as T,
     [currentConfig]
   );

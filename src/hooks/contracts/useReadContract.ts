@@ -2,17 +2,19 @@ import { useState, useCallback } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import type { SimulateViewsOperation } from '@azguardwallet/types';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import {
+  isEmbeddedConnector,
   isBrowserWalletConnector,
-  hasAppManagedPXE,
 } from '../../types/walletConnector';
 import type {
   MethodsOf,
   ArgsOf,
   ReadContractResult,
 } from '../../types/contractTypes';
-import type { SimulateViewsOp } from '../../types/browserWallet';
+import { getContractMethod } from './utils';
+import { SimulateViewsOp } from '../../types';
 
 /**
  * Type helper to extract contract type from a contract class.
@@ -101,8 +103,7 @@ export const useReadContract = () => {
             ],
           };
 
-          const results = await connector.executeOperations([operation]);
-          const result = results[0];
+          const result = await connector.executeOperation(operation);
 
           if (result.status !== 'ok') {
             const errorMsg = 'error' in result && result.error ? result.error : 'Simulation failed';
@@ -116,8 +117,8 @@ export const useReadContract = () => {
           };
         }
 
-        // ========== APP-MANAGED PXE FLOW (Embedded & External Signer) ==========
-        if (hasAppManagedPXE(connector)) {
+        // ========== EMBEDDED WALLET FLOW ==========
+        if (isEmbeddedConnector(connector)) {
           const wallet = connector.getWallet();
           if (!wallet) {
             const errorMsg = 'Wallet instance not available';
@@ -128,17 +129,17 @@ export const useReadContract = () => {
           const contractAddress = AztecAddress.fromString(address);
           const contract = await Contract.at(contractAddress, artifact, wallet);
 
-          const method = (contract as unknown as { methods: Record<string, (...args: unknown[]) => unknown> })
-            .methods[String(functionName)];
-
+          const method = getContractMethod(contract, String(functionName));
           if (!method) {
             const errorMsg = `Method ${String(functionName)} not found on contract`;
             setError(errorMsg);
             return { success: false, error: errorMsg };
           }
 
-          const tx = method(...(args as unknown[]));
-          const result = await (tx as { simulate: () => Promise<unknown> }).simulate();
+          // Cast safe: args validated by ArgsOf<TContract, TMethod> at call site
+          const result = await method(...(args as unknown[])).simulate({
+            from: account.getAddress(),
+          });
 
           return {
             success: true,
