@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { useUniversalWallet, useAddressUtils } from '../hooks';
+import { truncateAddress, truncateCaipAddress } from '../utils';
+import { useUniversalWallet } from '../hooks';
 import { ThemeToggle, ConnectWalletModal } from '../components';
 import { WalletType } from '../types/aztec';
 
@@ -26,7 +27,6 @@ const ConnectButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 
 export const Header: React.FC = () => {
   const { account, walletType, disconnect, connector } = useUniversalWallet();
-  const { truncateAddress, truncateCaipAddress } = useAddressUtils();
   const [showWalletModal, setShowWalletModal] = useState(false);
 
   const handleDisconnect = useCallback(async () => {
@@ -42,14 +42,18 @@ export const Header: React.FC = () => {
     const caipAccount = connector?.getCaipAccount?.();
     const walletName =
       connector?.label ??
-      (walletType === WalletType.EMBEDDED ? 'Embedded' : walletType === WalletType.BROWSER ? 'Browser' : 'Wallet');
+      (walletType === WalletType.EMBEDDED
+        ? 'Embedded'
+        : walletType === WalletType.BROWSER_WALLET
+          ? 'Browser'
+          : 'Wallet');
     const displayAddress = caipAccount
       ? truncateCaipAddress(caipAccount)
       : account
         ? truncateAddress(account.getAddress().toString())
         : null;
 
-    if (status?.isConnected && displayAddress) {
+    if (status?.status === 'connected' && displayAddress) {
       return (
         <ConnectedAccount
           walletName={walletName}
@@ -69,14 +73,11 @@ export const Header: React.FC = () => {
         <div className="nav-container">
           <div className="nav-title">Aztec Web Boilerplate</div>
           <div className="nav-controls">
-            <div className="account-controls">
-              {renderAccountSection()}
-            </div>
+            <div className="account-controls">{renderAccountSection()}</div>
             <ThemeToggle />
           </div>
         </div>
       </nav>
-      
       <ConnectWalletModal
         isOpen={showWalletModal}
         onClose={() => setShowWalletModal(false)}

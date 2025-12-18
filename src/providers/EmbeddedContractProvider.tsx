@@ -17,11 +17,11 @@ import {
   type ContractNames,
   type ContractRegistryContextValue,
 } from '../contract-registry';
-import { getNetworkArtifacts } from '../config/networkArtifacts';
 import { contractsConfig } from '../config/contracts';
-import { isEmbeddedConnector } from '../types/walletConnector';
+import { hasAppManagedPXE } from '../types/walletConnector';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
 import { TimingToast } from '../components';
+import { getNetworkArtifacts } from '../config/networkArtifacts';
 
 type ContractContextValue<T extends ContractConfigMap = ContractConfigMap> =
   ContractRegistryContextValue<T>;
@@ -39,15 +39,6 @@ const getInitialContracts = <T extends ContractConfigMap>(
   return (Object.entries(contracts) as [ContractNames<T>, T[keyof T]][])
     .filter(([, config]) => !config.lazyRegister)
     .map(([name]) => name);
-};
-
-/**
- * Get all contract names from config
- */
-const getAllContractNames = <T extends ContractConfigMap>(
-  contracts: T
-): ContractNames<T>[] => {
-  return Object.keys(contracts) as ContractNames<T>[];
 };
 
 interface EmbeddedContractProviderProps<
@@ -73,8 +64,9 @@ export function EmbeddedContractProvider<
 }: EmbeddedContractProviderProps<T>): React.ReactElement {
   const { connector, isInitialized, currentConfig } = useUniversalWallet();
 
-  const embeddedConnector = isEmbeddedConnector(connector) ? connector : null;
-  const pxe = embeddedConnector?.getPXE() ?? null;
+  // Works with both Embedded and External Signer connectors (both have app-managed PXE)
+  const appManagedConnector = hasAppManagedPXE(connector) ? connector : null;
+  const pxe = appManagedConnector?.getPXE() ?? null;
 
   const contracts = useMemo(
     () =>
@@ -87,11 +79,6 @@ export function EmbeddedContractProvider<
 
   const initialContracts = useMemo(
     () => getInitialContracts(contracts),
-    [contracts]
-  );
-
-  const allContractNames = useMemo(
-    () => getAllContractNames(contracts),
     [contracts]
   );
 
@@ -113,8 +100,8 @@ export function EmbeddedContractProvider<
         pxeInstance: PXE,
         contractsList: ContractNames<T>[],
         networkConfig: NetworkConfig
-      ): Promise<{ allCached: boolean; cachedCount: number }> => {
-        if (contractsList.length === 0) return { allCached: true, cachedCount: 0 };
+      ): Promise<boolean> => {
+        if (contractsList.length === 0) return true;
         const results = await Promise.all(
           contractsList.map(async (name) => {
             const contractConfig = contracts[name];
@@ -127,8 +114,7 @@ export function EmbeddedContractProvider<
             return Boolean(existing);
           })
         );
-        const cachedCount = results.filter(Boolean).length;
-        return { allCached: results.every(Boolean), cachedCount };
+        return results.every(Boolean);
       },
     [contracts]
   );
@@ -145,29 +131,20 @@ export function EmbeddedContractProvider<
         const registry = createRegistry(pxe, contracts, currentConfig);
         registryRef.current = registry;
 
-        const { cachedCount: cachedBefore } = await checkContractsCached(
+        const allCached = await checkContractsCached(
           pxe,
-          allContractNames,
+          initialContracts,
           currentConfig
         );
-
         const start = performance.now();
         await registry.registerAll(initialContracts);
         const elapsedMs = performance.now() - start;
 
-        const { cachedCount: cachedAfter } = await checkContractsCached(
-          pxe,
-          allContractNames,
-          currentConfig
-        );
-
-        const fromCache = cachedBefore === cachedAfter && cachedBefore > 0;
-
         if (showTimingToast) {
           setTimingInfo({
             elapsedMs,
-            contractCount: cachedAfter,
-            fromCache,
+            contractCount: initialContracts.length,
+            fromCache: allCached,
           });
         }
 
@@ -185,7 +162,7 @@ export function EmbeddedContractProvider<
     };
 
     initializeRegistry();
-  }, [contracts, currentConfig, initialContracts, allContractNames, isInitialized, pxe, showTimingToast, checkContractsCached]);
+  }, [contracts, currentConfig, initialContracts, isInitialized, pxe, showTimingToast, checkContractsCached]);
 
   const contextValue = useMemo<ContractContextValue<T>>(
     () => ({
@@ -196,7 +173,7 @@ export function EmbeddedContractProvider<
     [status, error]
   );
 
-  if (!isInitialized || !embeddedConnector || !pxe) {
+  if (!isInitialized || !appManagedConnector || !pxe) {
     return <>{children}</>;
   }
 

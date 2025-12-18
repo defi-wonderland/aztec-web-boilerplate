@@ -32,6 +32,14 @@ const createFromSecretKey = (
 };
 
 /**
+ * Check if account credentials are configured in environment variables.
+ */
+export const hasConfiguredCredentials = (): boolean => {
+  const env = getEnv();
+  return Boolean(env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY);
+};
+
+/**
  * Get account credentials from environment variables.
  *
  * Required: VITE_EMBEDDED_ACCOUNT_SECRET_KEY (the Fr hex value)

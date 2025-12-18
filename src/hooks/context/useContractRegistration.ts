@@ -6,7 +6,7 @@ import { useContractRegistryContext } from '../../providers/EmbeddedContractProv
 import { useUniversalWallet } from './useUniversalWallet';
 import { contractsConfig } from '../../config/contracts';
 import { queuePxeCall } from '../../utils';
-import { isEmbeddedConnector } from '../../types/walletConnector';
+import { hasAppManagedPXE } from '../../types/walletConnector';
 import { WalletType } from '../../types/aztec';
 import {
   getContractsForConfig,
@@ -54,10 +54,12 @@ export function useContractRegistration<
   TContract = unknown,
 >(name: ContractNames<T>): UseContractReturn<TContract> {
   const { registry, status: registryStatus } = useContractRegistryContext<T>();
-  const { connector, account, currentConfig, walletType } = useUniversalWallet();
+  const { connector, account, currentConfig, walletType } =
+    useUniversalWallet();
 
-  const isExternal = walletType === WalletType.BROWSER;
-  const wallet = isEmbeddedConnector(connector) ? connector.getWallet() : null;
+  const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
+
+  const wallet = hasAppManagedPXE(connector) ? connector.getWallet() : null;
 
   const [contract, setContract] = useState<TContract | null>(null);
   const [status, setStatus] = useState<ContractStatus>('idle');
@@ -112,7 +114,7 @@ export function useContractRegistration<
   }, [wallet]);
 
   useEffect(() => {
-    if (!registry || isExternal) {
+    if (!registry || isBrowserWallet) {
       return;
     }
 
@@ -152,10 +154,10 @@ export function useContractRegistration<
 
     const unsubscribe = registry.subscribe(updateState);
     return unsubscribe;
-  }, [registry, name, wallet, isExternal]);
+  }, [registry, name, wallet, isBrowserWallet]);
 
   useEffect(() => {
-    if (!registry || registryStatus !== 'ready' || isExternal) {
+    if (!registry || registryStatus !== 'ready' || isBrowserWallet) {
       return;
     }
 
@@ -166,10 +168,10 @@ export function useContractRegistration<
         setError(err instanceof Error ? err : new Error(String(err)));
       });
     }
-  }, [registry, registryStatus, name, isExternal]);
+  }, [registry, registryStatus, name, isBrowserWallet]);
 
   useEffect(() => {
-    if (!isExternal) {
+    if (!isBrowserWallet) {
       return;
     }
 
@@ -192,12 +194,12 @@ export function useContractRegistration<
       setStatus('error');
       setContract(null);
     }
-  }, [account, createExternalWalletContractProxy, isExternal]);
+  }, [account, createExternalWalletContractProxy, isBrowserWallet]);
 
   const register = useCallback(async () => {
     setError(null);
 
-    if (isExternal) {
+    if (isBrowserWallet) {
       try {
         setStatus('registering');
         const proxy = createExternalWalletContractProxy();
@@ -225,7 +227,7 @@ export function useContractRegistration<
       setError(registrationError);
       throw registrationError;
     }
-  }, [createExternalWalletContractProxy, isExternal, name, registry]);
+  }, [createExternalWalletContractProxy, isBrowserWallet, name, registry]);
 
   const isReady = status === 'ready' && contract !== null;
 

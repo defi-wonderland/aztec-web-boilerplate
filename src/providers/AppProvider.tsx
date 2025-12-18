@@ -17,9 +17,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       <ThemeProvider>
         <ErrorProvider>
           <UniversalWalletProvider config={walletKitConfig}>
-            <EmbeddedContractProvider>
-              {children}
-            </EmbeddedContractProvider>
+            <EmbeddedContractProvider>{children}</EmbeddedContractProvider>
           </UniversalWalletProvider>
         </ErrorProvider>
       </ThemeProvider>

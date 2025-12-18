@@ -2,11 +2,10 @@ import { useState, useCallback } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { CaipChain } from '@azguardwallet/types';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import {
-  isEmbeddedConnector,
   isBrowserWalletConnector,
+  hasAppManagedPXE,
   type BrowserWalletConnector,
 } from '../../types/walletConnector';
 import type {
@@ -14,8 +13,7 @@ import type {
   ArgsOf,
   WriteContractResult,
 } from '../../types/contractTypes';
-import { getContractMethod } from './utils';
-import { getChainFromCaipAccount } from '../../utils/azguard';
+import type { GetTxReceiptOp } from '../../types/browserWallet';
 
 /** Default polling settings for browser wallet receipt */
 const RECEIPT_POLL_INTERVAL_MS = 2000;
@@ -43,7 +41,7 @@ type ContractClassFor<TContract extends ContractBase> = {
 
 interface WriteContractParams<
   TContract extends ContractBase,
-  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
+  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>
 > {
   /** Contract class - used for type inference and artifact */
   contract: ContractClassFor<TContract>;
@@ -54,6 +52,11 @@ interface WriteContractParams<
   /** Method arguments */
   args: ArgsOf<TContract, TMethod>;
 }
+
+const getChainFromCaipAccount = (caipAccount: string): string => {
+  const parts = caipAccount.split(':');
+  return `${parts[0]}:${parts[1]}`;
+};
 
 const waitForBrowserWalletReceipt = async (
   connector: BrowserWalletConnector,
@@ -66,15 +69,15 @@ const waitForBrowserWalletReceipt = async (
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const result = await connector.executeOperation({
+      const operation: GetTxReceiptOp = {
         kind: 'aztec_getTxReceipt',
-        chain: chain as CaipChain,
+        chain,
         txHash,
-      });
+      };
+      const result = await connector.executeOperation(operation);
 
       if (result.status === 'failed') {
-        const errorMsg =
-          'error' in result ? String(result.error) : 'Failed to get receipt';
+        const errorMsg = 'error' in result ? String(result.error) : 'Failed to get receipt';
         return { success: false, error: errorMsg };
       }
 
@@ -86,13 +89,10 @@ const waitForBrowserWalletReceipt = async (
           return { success: true };
         }
 
-        if (
-          txStatus === 'dropped' ||
-          txStatus === 'failed' ||
-          txStatus === 'reverted'
-        ) {
+        if (txStatus === 'dropped' || txStatus === 'failed' || txStatus === 'reverted') {
           return { success: false, error: `Transaction ${txStatus}` };
         }
+
       }
     } catch {
       // Network error - continue polling
@@ -109,11 +109,11 @@ const waitForBrowserWalletReceipt = async (
 /**
  * Hook for executing write operations on Aztec contracts.
  * Handles both embedded and browser wallet flows automatically.
- *
+ * 
  * @example
  * ```tsx
  * const { writeContract, isPending } = useWriteContract();
- *
+ * 
  * // TypeScript infers the method type from functionName
  * await writeContract({
  *   contract: DripperContract,
@@ -132,7 +132,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const writeContract = useCallback(
     async <
       TContract extends ContractBase,
-      TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
+      TMethod extends MethodsOf<TContract> = MethodsOf<TContract>
     >(
       params: WriteContractParams<TContract, TMethod>
     ): Promise<WriteContractResult> => {
@@ -148,13 +148,6 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
       try {
         if (isBrowserWalletConnector(connector)) {
-          const caipAccount = connector.getCaipAccount();
-          if (!caipAccount) {
-            const errorMsg = 'No account selected';
-            setError(errorMsg);
-            return { success: false, error: errorMsg };
-          }
-
           const response = await connector.sendTransaction({
             actions: [
               {
@@ -173,10 +166,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          if (!response.txHash) {
-            const errorMsg = 'Transaction submitted but no txHash returned';
-            setError(errorMsg);
-            return { success: false, error: errorMsg };
+          const caipAccount = connector.getCaipAccount();
+          if (!caipAccount || !response.txHash) {
+            return {
+              success: true,
+              txHash: response.txHash,
+              data: response.rawResult,
+            };
           }
 
           const chain = getChainFromCaipAccount(caipAccount);
@@ -187,13 +183,9 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             receiptPolling
           );
 
-          if (!receiptResult.success) {
+          if (receiptResult.success === false) {
             setError(receiptResult.error);
-            return {
-              success: false,
-              error: receiptResult.error,
-              txHash: response.txHash,
-            };
+            return { success: false, error: receiptResult.error, txHash: response.txHash };
           }
 
           return {
@@ -203,7 +195,8 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           };
         }
 
-        if (isEmbeddedConnector(connector)) {
+        // Handle both Embedded and External Signer connectors (both have app-managed PXE)
+        if (hasAppManagedPXE(connector)) {
           const wallet = connector.getWallet();
           if (!wallet) {
             const errorMsg = 'Wallet instance not available';
@@ -213,41 +206,33 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
           const paymentMethod = await connector.getSponsoredFeePaymentMethod();
           const contractAddress = AztecAddress.fromString(address);
-
+          
           // Create contract instance
           const contract = await Contract.at(contractAddress, artifact, wallet);
-
-          const method = getContractMethod(contract, String(functionName));
+          
+          // Get the method and call it
+          const method = (contract as unknown as { methods: Record<string, (...args: unknown[]) => unknown> })
+            .methods[String(functionName)];
+          
           if (!method) {
             const errorMsg = `Method ${String(functionName)} not found on contract`;
             setError(errorMsg);
             return { success: false, error: errorMsg };
           }
 
-          // Cast safe: args validated by ArgsOf<TContract, TMethod> at call site
-          const sentTx = method(...(args as unknown[])).send({
-            from: account.getAddress(),
-            fee: { paymentMethod },
-          });
+          const tx = method(...(args as unknown[]));
+          const sentTx = (tx as { send: (opts: unknown) => { wait: (opts: unknown) => Promise<unknown> } })
+            .send({
+              from: account.getAddress(),
+              fee: { paymentMethod },
+            });
+          
+          const result = await sentTx.wait({ timeout });
 
-          // Get txHash before waiting (available immediately after send)
-          const txHash = (await sentTx.getTxHash()).toString();
-
-          try {
-            const result = await sentTx.wait({ timeout });
-            return {
-              success: true,
-              txHash,
-              data: result,
-            };
-          } catch (waitErr) {
-            const errorMsg =
-              waitErr instanceof Error
-                ? waitErr.message
-                : 'Transaction confirmation failed';
-            setError(errorMsg);
-            return { success: false, error: errorMsg, txHash };
-          }
+          return {
+            success: true,
+            data: result,
+          };
         }
 
         const errorMsg = 'Unknown wallet type';
@@ -261,7 +246,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
         setIsPending(false);
       }
     },
-    [connector, account, timeout, receiptPolling]
+    [connector, account, timeout]
   );
 
   const reset = useCallback(() => {

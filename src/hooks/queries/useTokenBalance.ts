@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback } from 'react';
-import type { SimulateViewsOperation } from '@azguardwallet/types';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useContractRegistry } from '../context/useContractRegistry';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { queryKeys } from './queryKeys';
 import { contractsConfig } from '../../config/contracts';
 import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
+import type { SimulateViewsOp } from '../../types/browserWallet';
 import { WalletType } from '../../types/aztec';
 import { isBrowserWalletConnector } from '../../types/walletConnector';
 import type { ContractConfigMap } from '../../contract-registry';
@@ -41,42 +41,61 @@ interface UseTokenBalanceReturn {
  * Hook to fetch token balance for the connected account.
  * Uses the Token contract directly via useContractRegistration hook.
  * Uses React Query for caching and automatic refetching.
- * 
+ *
  * For Azguard wallets, uses simulate_views operation instead of direct contract calls.
- * 
+ *
  * @param options - Configuration options
  * @param options.enabled - Whether to enable the query (defaults to true when wallet is connected)
  */
-export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenBalanceReturn => {
-  const {
-    contract: token,
-    isReady: isTokenReady,
-  } = useContractRegistration<ContractConfigMap, TokenContract>('token');
+export const useTokenBalance = (
+  options: UseTokenBalanceOptions = {}
+): UseTokenBalanceReturn => {
+  const { contract: token, isReady: isTokenReady } = useContractRegistration<
+    ContractConfigMap,
+    TokenContract
+  >('token');
 
-  const { account, connector, isLoading: isWalletLoading, currentConfig, walletType } = useUniversalWallet();
+  const {
+    account,
+    connector,
+    isLoading: isWalletLoading,
+    currentConfig,
+    walletType,
+  } = useUniversalWallet();
   const { status: registryStatus } = useContractRegistry();
   const queryClient = useQueryClient();
 
   // Wallet type detection
-  const isExternal = walletType === WalletType.BROWSER;
+  const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
+  const isExternalSigner = walletType === WalletType.EXTERNAL_SIGNER;
   const tokenAddress = token?.address.toString() ?? '';
   const ownerAddress = account?.getAddress().toString() ?? '';
 
-  // External wallets don't need local registry to be ready
-  const isRegistryReady = isExternal || registryStatus === 'ready';
+  if (isExternalSigner) {
+    console.log('[useTokenBalance] EXTERNAL_SIGNER detected', {
+      walletType,
+      hasToken: !!token,
+      isTokenReady,
+      hasAccount: !!account,
+      tokenAddress,
+      ownerAddress,
+      registryStatus,
+    });
+  }
+
+  const isRegistryReady = isBrowserWallet || registryStatus === 'ready';
   const isWalletReady = !isWalletLoading;
 
   const isQueryEnabled = Boolean(
     isRegistryReady &&
-    isWalletReady &&
-    token &&
-    isTokenReady &&
-    account &&
-    tokenAddress &&
-    ownerAddress &&
-    (options.enabled ?? true) &&
-    // External wallets need a CAIP account selected
-    (!isExternal || Boolean(connector?.getCaipAccount?.()))
+      isWalletReady &&
+      token &&
+      isTokenReady &&
+      account &&
+      tokenAddress &&
+      ownerAddress &&
+      (options.enabled ?? true) &&
+      (!isBrowserWallet || Boolean(connector?.getCaipAccount?.()))
   );
 
   const query = useQuery({
@@ -86,9 +105,18 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
         throw new Error('Token contract or owner address not available');
       }
 
-      // Use operations flow for browser wallets with proxy contracts
-      const useOperationsFlow = isExternal && isBrowserWalletPlaceholder(token);
-      
+      // Log when external signer fetches balance
+      if (isExternalSigner) {
+        console.log('[useTokenBalance] EXTERNAL_SIGNER fetching balance...', {
+          tokenAddress,
+          ownerAddress,
+          tokenType: token?.constructor?.name,
+        });
+      }
+
+      const useOperationsFlow =
+        isBrowserWallet && isBrowserWalletPlaceholder(token);
+
       // Type guard needed here to access browser wallet specific methods
       if (useOperationsFlow && isBrowserWalletConnector(connector)) {
         const selectedAccount = connector.getCaipAccount();
@@ -96,10 +124,11 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
           throw new Error('External wallet account not selected');
         }
 
-        const tokenContractAddress = contractsConfig.token.address(currentConfig);
+        const tokenContractAddress =
+          contractsConfig.token.address(currentConfig);
         const accountAddress = account!.getAddress().toString();
 
-        const operation: SimulateViewsOperation = {
+        const operation: SimulateViewsOp = {
           kind: 'simulate_views',
           account: selectedAccount,
           calls: [
@@ -121,7 +150,8 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
         const result = await connector.executeOperation(operation);
 
         if (result.status !== 'ok') {
-          const errorMessage = 'error' in result ? result.error : 'Failed to fetch balance';
+          const errorMessage =
+            'error' in result ? result.error : 'Failed to fetch balance';
           throw new Error(errorMessage || 'Balance query failed');
         }
 
@@ -136,9 +166,8 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
         };
       }
 
-      // Direct contract call path (embedded wallets)
       const fromAddress = account!.getAddress();
-      
+
       const privateBalance = await queuePxeCall(() =>
         (token as TokenContract).methods
           .balance_of_private(fromAddress)
@@ -193,9 +222,10 @@ export const useTokenBalance = (options: UseTokenBalanceOptions = {}): UseTokenB
  * Hook to manage token balance utilities.
  */
 export const useTokenWithAddress = () => {
-  const {
-    contract: token,
-  } = useContractRegistration<ContractConfigMap, TokenContract>('token');
+  const { contract: token } = useContractRegistration<
+    ContractConfigMap,
+    TokenContract
+  >('token');
 
   const queryClient = useQueryClient();
 

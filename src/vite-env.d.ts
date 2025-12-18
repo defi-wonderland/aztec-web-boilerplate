@@ -2,17 +2,15 @@
 
 declare global {
   interface ImportMetaEnv {
+    // Network configuration
     readonly VITE_AZTEC_NODE_URL?: string;
-    readonly VITE_CONTRACT_ADDRESS?: string;
-    readonly VITE_DRIPPER_CONTRACT_ADDRESS?: string;
-    readonly VITE_TOKEN_CONTRACT_ADDRESS?: string;
-    readonly VITE_DEPLOYER_ADDRESS?: string;
-    readonly VITE_DEPLOYMENT_SALT?: string;
-    readonly VITE_DRIPPER_DEPLOYMENT_SALT?: string;
-    readonly VITE_TOKEN_DEPLOYMENT_SALT?: string;
     readonly VITE_PROVER_ENABLED?: string;
+
+    // Embedded account credentials
+    readonly VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE?: string;
+    readonly VITE_EMBEDDED_ACCOUNT_SECRET_KEY?: string;
+    readonly VITE_COMMON_SALT?: string;
   }
 }
 
 export {};
-

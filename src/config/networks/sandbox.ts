@@ -1,14 +1,8 @@
 import { NetworkConfig } from './types';
 import { getSandboxDeployment, isDeploymentValid } from '../deployments';
+import { getEnv } from '../../utils/env';
 
-// Type for Vite environment variables (optional overrides)
-interface ViteEnv {
-  VITE_AZTEC_NODE_URL?: string;
-  VITE_PROVER_ENABLED?: string;
-}
-
-// Access Vite env vars for optional overrides
-const env = (import.meta as unknown as { env: ViteEnv }).env;
+const env = getEnv();
 
 /**
  * Load sandbox deployment from JSON config file.
@@ -28,14 +22,12 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   description: isDeploymentValid(deployment) 
     ? 'Local development environment with deployed contracts'
     : 'Local sandbox - run "yarn deploy-contracts" to deploy',
-  nodeUrl: env.VITE_AZTEC_NODE_URL || deployment.nodeUrl,
+  nodeUrl: env.aztecNodeUrl || deployment.nodeUrl,
   dripperContractAddress: deployment.dripperContract.address,
   tokenContractAddress: deployment.tokenContract.address,
   deployerAddress: deployment.deployer,
   dripperDeploymentSalt: deployment.dripperContract.salt,
   tokenDeploymentSalt: deployment.tokenContract.salt,
-  proverEnabled: env.VITE_PROVER_ENABLED !== undefined 
-    ? env.VITE_PROVER_ENABLED !== 'false'
-    : deployment.proverEnabled,
+  proverEnabled: env.proverEnabled,
   isTestnet: false,
 };
