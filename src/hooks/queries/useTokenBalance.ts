@@ -17,7 +17,7 @@ export interface TokenBalance {
   public: bigint;
 }
 
-interface FormattedBalances {
+export interface FormattedBalances {
   private: string;
   public: string;
   total: string;
