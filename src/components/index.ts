@@ -4,4 +4,7 @@ export { ConnectWalletModal } from './ConnectWalletModal';
 export { ThemeToggle } from './ThemeToggle';
 export { SecurityWarning } from './SecurityWarning';
 export { TimingToast } from './TimingToast';
+export { Header } from './Header';
+export { StatusMessage } from './StatusMessage';
+export { TokenBalance } from './TokenBalance';
 export * from './settings';

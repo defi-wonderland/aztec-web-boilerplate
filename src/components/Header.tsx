@@ -1,15 +1,21 @@
 import React, { useState, useCallback } from 'react';
 import { truncateAddress, truncateCaipAddress } from '../utils';
 import { useUniversalWallet } from '../hooks';
-import { ThemeToggle, ConnectWalletModal } from '../components';
+import { ThemeToggle } from './ThemeToggle';
+import { ConnectWalletModal } from './ConnectWalletModal';
 import { WalletType } from '../types/aztec';
 
-// Sub-components
-const ConnectedAccount: React.FC<{
+interface ConnectedAccountProps {
   walletName: string;
   address: string;
   onDisconnect: () => void;
-}> = ({ walletName, address, onDisconnect }) => (
+}
+
+const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
+  walletName,
+  address,
+  onDisconnect,
+}) => (
   <div className="connected-account-section">
     <span className="wallet-type">{walletName}</span>
     <span className="account-address">{address}</span>
@@ -19,7 +25,11 @@ const ConnectedAccount: React.FC<{
   </div>
 );
 
-const ConnectButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+interface ConnectButtonProps {
+  onClick: () => void;
+}
+
+const ConnectButton: React.FC<ConnectButtonProps> = ({ onClick }) => (
   <button onClick={onClick} className="wallet-connect-button" type="button">
     Connect Wallet
   </button>
@@ -63,7 +73,6 @@ export const Header: React.FC = () => {
       );
     }
 
-    // No wallet connected
     return <ConnectButton onClick={() => setShowWalletModal(true)} />;
   };
 
