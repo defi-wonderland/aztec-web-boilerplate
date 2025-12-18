@@ -61,8 +61,10 @@ export const useSharedPXE = (options: UseSharedPXEOptions): UseSharedPXEReturn =
 
   const initPromiseRef = useRef<Promise<SharedPXEInstance> | null>(null);
 
-  // Check if already initialized for this network
+  // Check if already initialized for this network and reset error state on network change
   useEffect(() => {
+    setError(null);
+    
     const existingInstance = SharedPXEService.getExistingInstance(
       config.nodeUrl,
       config.name
@@ -123,10 +125,10 @@ export const useSharedPXE = (options: UseSharedPXEOptions): UseSharedPXEReturn =
 
   // Auto-initialize if requested
   useEffect(() => {
-    if (autoInitialize && !isInitialized && !isInitializing) {
+    if (autoInitialize && !isInitialized && !isInitializing && !error) {
       initialize().catch(console.error);
     }
-  }, [autoInitialize, isInitialized, isInitializing, initialize]);
+  }, [autoInitialize, isInitialized, isInitializing, error, initialize]);
 
   const getSponsoredFeePaymentMethod =
     useCallback(async (): Promise<SponsoredFeePaymentMethod> => {

@@ -214,7 +214,7 @@ export const UniversalWalletProvider: React.FC<
   const isInitialized =
     embedded.state.isInitialized ||
     externalSigner.state.isInitialized ||
-    browserWallet.state.isInstalled;
+    browserWallet.state.status === 'connected';
 
   const connectWith = async (
     connectorId: WalletConnectorId
