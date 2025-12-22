@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
+import { ContractInteractionCard } from './ContractInteractionCard';
 import { Tabs, SecurityWarning } from '../components';
 import { TabConfig, TabType } from '../types';
 import { useUniversalWallet } from '../hooks';
@@ -20,6 +21,12 @@ export const MainContent: React.FC = () => {
       label: 'Mint Tokens',
       icon: '💰',
       component: <DripperCard />
+    },
+    {
+      id: 'contract',
+      label: 'Contract UI',
+      icon: '🧰',
+      component: <ContractInteractionCard />
     },
     {
       id: 'settings',

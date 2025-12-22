@@ -7,18 +7,28 @@ import { WalletType } from '../types/aztec';
 
 interface ConnectedAccountProps {
   walletName: string;
-  address: string;
+  displayAddress: string;
+  fullAddress: string;
   onDisconnect: () => void;
 }
 
 const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
   walletName,
-  address,
+  displayAddress,
+  fullAddress,
   onDisconnect,
 }) => (
   <div className="connected-account-section">
     <span className="wallet-type">{walletName}</span>
-    <span className="account-address">{address}</span>
+    <button
+      type="button"
+      className="account-address"
+      onClick={() => navigator.clipboard.writeText(fullAddress)}
+      aria-label="Copy connected address"
+      title="Copy address"
+    >
+      {displayAddress}
+    </button>
     <button onClick={onDisconnect} type="button" className="disconnect-button">
       Disconnect
     </button>
@@ -57,17 +67,23 @@ export const Header: React.FC = () => {
         : walletType === WalletType.BROWSER_WALLET
           ? 'Browser'
           : 'Wallet');
+    const fullAddress = caipAccount
+      ? caipAccount.split(':')[2] ?? ''
+      : account
+        ? account.getAddress().toString()
+        : '';
     const displayAddress = caipAccount
       ? truncateCaipAddress(caipAccount)
-      : account
-        ? truncateAddress(account.getAddress().toString())
+      : fullAddress
+        ? truncateAddress(fullAddress)
         : null;
 
     if (status?.status === 'connected' && displayAddress) {
       return (
         <ConnectedAccount
           walletName={walletName}
-          address={displayAddress}
+          displayAddress={displayAddress}
+          fullAddress={fullAddress}
           onDisconnect={handleDisconnect}
         />
       );

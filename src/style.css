@@ -990,7 +990,7 @@ body {
   }
   
   .nav-title::before {
-    font-size: 1.75rem;
+  font-size: 1.75rem;
   }
 }
 
@@ -1035,7 +1035,7 @@ body {
   
   .account-address {
     font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   }
 }
 
@@ -3117,6 +3117,263 @@ select:focus {
 
 [data-theme='dark'] .evm-error-message {
   background: rgba(239, 68, 68, 0.15);
+}
+
+/* Contract Interaction UI */
+.contract-content {
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: 0 0.5rem 1.5rem var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.contract-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+
+.loader-card,
+.function-list-card,
+.log-panel {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 0.25rem 1rem var(--shadow-color);
+}
+
+.artifact-textarea {
+  min-height: 10rem;
+  resize: vertical;
+}
+
+.input-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+}
+
+.form-sub-label {
+  margin-left: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.function-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.function-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.function-group + .function-group {
+  margin-top: 0.75rem;
+}
+
+.function-group-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.function-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.function-item:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0.25rem 0.75rem var(--shadow-color);
+  transform: translateY(-0.0625rem);
+}
+
+.function-item.active {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 10%, var(--bg-primary));
+}
+
+.function-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.function-meta {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.saved-contracts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.saved-contract-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 0.25rem 0.75rem var(--shadow-color);
+}
+
+.saved-contract-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.saved-contract-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.saved-contract-address {
+  font-family: 'Space Grotesk', 'Inter', monospace;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  word-break: break-all;
+}
+
+.saved-contract-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.saved-contract-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.saved-contract-actions .btn {
+  min-width: 7rem;
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.log-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.log-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.log-count {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999rem;
+  border: 1px solid var(--border-color);
+  font-size: 0.875rem;
+}
+
+.log-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.log-entry {
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-primary);
+}
+
+.log-entry.success {
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-color));
+}
+
+.log-entry.error {
+  border-color: color-mix(in srgb, var(--accent-secondary) 60%, var(--border-color));
+}
+
+.log-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.log-detail {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  word-break: break-word;
+}
+
+.empty-state {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.input-hint {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.input-hint.error {
+  color: var(--accent-secondary);
+}
+
+@media (max-width: 48rem) {
+  .contract-content {
+    padding: 1rem;
+  }
+
+  .contract-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Modal Embedded Connect Section */

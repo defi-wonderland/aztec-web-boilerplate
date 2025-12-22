@@ -1,0 +1,292 @@
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import {
+  loadContractArtifact,
+  type ContractArtifact,
+  type NoirCompiledContract,
+} from '@aztec/aztec.js/abi';
+
+type RawParamType = {
+  kind: string;
+  sign?: 'unsigned' | 'signed';
+  width?: number;
+  length?: number;
+  path?: string;
+  type?: RawParamType;
+  fields?: Array<{ name: string; type: RawParamType }>;
+};
+
+type RawParameter = {
+  name: string;
+  type: RawParamType;
+  visibility?: string;
+};
+
+type RawFunction = {
+  name: string;
+  abi?: { parameters?: RawParameter[] };
+  custom_attributes?: string[];
+  is_unconstrained?: boolean;
+};
+
+export type ParsedType =
+  | { kind: 'field' }
+  | { kind: 'integer'; sign: 'unsigned' | 'signed'; width: number }
+  | { kind: 'boolean' }
+  | { kind: 'string' }
+  | { kind: 'address'; path?: string }
+  | { kind: 'array'; length?: number; type: ParsedType }
+  | { kind: 'struct'; path?: string; fields: ParsedField[] };
+
+export interface ParsedField {
+  path: string;
+  label: string;
+  type: ParsedType;
+  visibility?: string;
+}
+
+export interface ParsedFunction {
+  name: string;
+  inputs: ParsedField[];
+  attributes: string[];
+  isUnconstrained: boolean;
+}
+
+export interface ParsedArtifact {
+  compiled: NoirCompiledContract;
+  artifact: ContractArtifact;
+  functions: ParsedFunction[];
+  discoveredAddress?: string;
+}
+
+const isAztecAddressStruct = (type: RawParamType): boolean => {
+  const path = type.path?.toLowerCase() ?? '';
+  return path.includes('aztecaddress') || path.includes('aztec::protocol_types::address');
+};
+
+const normalizeType = (type: RawParamType): ParsedType => {
+  if (isAztecAddressStruct(type)) {
+    return { kind: 'address', path: type.path };
+  }
+
+  switch (type.kind) {
+    case 'field':
+      return { kind: 'field' };
+    case 'boolean':
+      return { kind: 'boolean' };
+    case 'string':
+      return { kind: 'string' };
+    case 'integer':
+      return {
+        kind: 'integer',
+        sign: type.sign ?? 'unsigned',
+        width: type.width ?? 0,
+      };
+    case 'array':
+      return {
+        kind: 'array',
+        length: type.length,
+        type: type.type ? normalizeType(type.type) : { kind: 'field' },
+      };
+    case 'struct':
+      return {
+        kind: 'struct',
+        path: type.path,
+        fields: (type.fields ?? []).map((field) => ({
+          path: field.name,
+          label: field.name,
+          type: normalizeType(field.type),
+        })),
+      };
+    default:
+      return { kind: 'string' };
+  }
+};
+
+const flattenFields = (
+  fields: ParsedField[],
+  parentPath?: string
+): ParsedField[] => {
+  const flat: ParsedField[] = [];
+
+  for (const field of fields) {
+    const currentPath = parentPath ? `${parentPath}.${field.path}` : field.path;
+    const entry: ParsedField = {
+      ...field,
+      path: currentPath,
+    };
+
+    flat.push(entry);
+
+    if (field.type.kind === 'struct') {
+      const nested = flattenFields(
+        field.type.fields.map((nestedField) => ({
+          ...nestedField,
+          path: nestedField.path,
+        })),
+        currentPath
+      );
+      flat.push(...nested);
+    }
+  }
+
+  return flat;
+};
+
+const parseFunction = (fn: RawFunction): ParsedFunction => {
+  const rawParams = fn.abi?.parameters ?? [];
+  const inputs = rawParams.map<ParsedField>((param) => ({
+    path: param.name,
+    label: param.name,
+    type: normalizeType(param.type),
+    visibility: param.visibility,
+  }));
+
+  return {
+    name: fn.name,
+    inputs: flattenFields(inputs),
+    attributes: fn.custom_attributes ?? [],
+    isUnconstrained: Boolean(fn.is_unconstrained),
+  };
+};
+
+export const parseArtifactSource = (source: string): ParsedArtifact => {
+  const parsed = JSON.parse(source) as NoirCompiledContract & { address?: string };
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Invalid artifact: expected JSON object');
+  }
+
+  if (!Array.isArray((parsed as { functions?: RawFunction[] }).functions)) {
+    throw new Error('Invalid artifact: missing functions');
+  }
+
+  const compiled = parsed;
+  const artifact = loadContractArtifact(compiled);
+  const functions = (compiled as { functions: RawFunction[] }).functions.map(parseFunction);
+
+  return {
+    compiled,
+    artifact,
+    functions,
+    discoveredAddress: parsed.address,
+  };
+};
+
+const parseBoolean = (value: string): boolean => {
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+};
+
+const parseArrayValue = (value: string): string[] => {
+  if (!value.trim()) {
+    return [];
+  }
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+};
+
+const buildValue = (
+  value: string,
+  type: ParsedType,
+  path: string,
+  source: Record<string, string>
+): { ok: true; value: unknown } | { ok: false; error: string } => {
+  switch (type.kind) {
+    case 'field':
+    case 'integer': {
+      if (value === '') {
+        return { ok: false, error: `Missing value for ${path}` };
+      }
+      try {
+        return { ok: true, value: BigInt(value) };
+      } catch {
+        return { ok: false, error: `Invalid integer for ${path}` };
+      }
+    }
+    case 'boolean':
+      return { ok: true, value: parseBoolean(value) };
+    case 'string':
+      return { ok: true, value };
+    case 'address': {
+      if (!value) {
+        return { ok: false, error: `Missing address for ${path}` };
+      }
+      try {
+        return { ok: true, value: AztecAddress.fromString(value).toString() };
+      } catch {
+        return { ok: false, error: `Invalid Aztec address for ${path}` };
+      }
+    }
+    case 'array': {
+      const items = parseArrayValue(value);
+      const parsedItems: unknown[] = [];
+      for (const item of items) {
+        const result = buildValue(item, type.type, path, source);
+        if (!result.ok) {
+          return result;
+        }
+        parsedItems.push(result.value);
+      }
+      return { ok: true, value: parsedItems };
+    }
+    case 'struct': {
+      const structValue: Record<string, unknown> = {};
+      for (const field of type.fields) {
+        const fieldPath = `${path}.${field.path}`;
+        const raw = source[fieldPath] ?? '';
+        const result = buildValue(raw, field.type, fieldPath, source);
+        if (!result.ok) {
+          return result;
+        }
+        structValue[field.path] = result.value;
+      }
+      return { ok: true, value: structValue };
+    }
+    default:
+      return { ok: true, value };
+  }
+};
+
+export const buildArgsFromInputs = (
+  inputs: ParsedField[],
+  formValues: Record<string, string>
+): { args: unknown[]; errors: string[] } => {
+  const errors: string[] = [];
+  const args: unknown[] = [];
+
+  const rootInputs = inputs.filter((input) => !input.path.includes('.'));
+
+  for (const input of rootInputs) {
+    const rawValue = formValues[input.path] ?? '';
+    const result = buildValue(rawValue, input.type, input.path, formValues);
+
+    if (!result.ok) {
+      errors.push(result.error);
+      continue;
+    }
+
+    args.push(result.value);
+  }
+
+  return { args, errors };
+};
+
+export const formatFunctionSignature = (fn: ParsedFunction): string => {
+  const params = fn.inputs
+    .filter((input) => !input.path.includes('.'))
+    .map((input) => input.label)
+    .join(', ');
+  return `${fn.name}(${params})`;
+};
+
+export const isValidAztecAddress = (value: string): boolean => {
+  if (!value) return false;
+  try {
+    AztecAddress.fromString(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
