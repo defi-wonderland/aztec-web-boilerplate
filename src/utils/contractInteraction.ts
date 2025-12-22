@@ -133,7 +133,15 @@ const flattenFields = (
 };
 
 const parseFunction = (fn: RawFunction): ParsedFunction => {
-  const rawParams = fn.abi?.parameters ?? [];
+  const isSystemContextParam = (param: RawParameter): boolean => {
+    const path = (param.type.path ?? '').toLowerCase();
+    return (
+      param.name === 'inputs' &&
+      (path.includes('private_context_inputs') || path.includes('public_context_inputs'))
+    );
+  };
+
+  const rawParams = (fn.abi?.parameters ?? []).filter((param) => !isSystemContextParam(param));
   const inputs = rawParams.map<ParsedField>((param) => ({
     path: param.name,
     label: param.name,
