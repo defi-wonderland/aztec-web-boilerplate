@@ -10,10 +10,15 @@ import {
 import { PublicKeys } from '@aztec/aztec.js/keys';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import { type AccountWithSecretKey } from '@aztec/aztec.js/account';
+import {
+  type AccountWithSecretKey,
+  type Account,
+  SignerlessAccount,
+} from '@aztec/aztec.js/account';
 import { AccountManager, type Wallet } from '@aztec/aztec.js/wallet';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
 import type { PXE } from '@aztec/pxe/server';
 import { getPXEConfig } from '@aztec/pxe/config';
 import { createPXE } from '@aztec/pxe/server';
@@ -21,17 +26,44 @@ import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa';
 import { createStore } from '@aztec/kv-store/lmdb';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import {
   DripperContractArtifact,
-  DripperContract,
 } from '../src/artifacts/Dripper';
 import { TokenContractArtifact } from '../src/artifacts/Token';
-import { MinimalWallet } from './utils/MinimalWallet';
 import {
   NETWORK_URLS,
   type NetworkType,
 } from '../src/config/networks/constants';
+
+class MinimalWallet extends BaseWallet {
+  private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
+
+  constructor(pxe: PXE, aztecNode: AztecNode) {
+    super(pxe as unknown as any, aztecNode);
+  }
+
+  public addAccount(account: AccountWithSecretKey) {
+    this.addressToAccount.set(account.getAddress().toString(), account);
+  }
+
+  protected async getAccountFromAddress(address: AztecAddress): Promise<Account> {
+    let account: Account | undefined;
+    if (address.equals(AztecAddress.ZERO)) {
+      const chainInfo = await this.getChainInfo();
+      account = new SignerlessAccount(chainInfo);
+    } else {
+      account = this.addressToAccount.get(address.toString());
+    }
+
+    if (!account) throw new Error(`Account not found in wallet for address: ${address.toString()}`);
+    return account;
+  }
+
+  async getAccounts(): Promise<{ alias: string; item: AztecAddress }[]> {
+    return Array.from(this.addressToAccount.values()).map((acc) => ({ alias: '', item: acc.getAddress() }));
+  }
+}
 
 // Parse command line arguments
 const parseArgs = (): { network: NetworkType } => {
@@ -207,23 +239,21 @@ async function deployDripperContract(
 ) {
   console.log('📦 Deploying Dripper contract...');
 
+  const salt = Fr.fromString(process.env.VITE_COMMON_SALT || '1337');
+
   const deployMethod = new DeployMethod(
     PublicKeys.default(),
     deployer,
     DripperContractArtifact,
-    (address) =>
-      Contract.at(
-        address,
-        DripperContractArtifact,
-        deployer
-      ) as Promise<DripperContract>,
+    (instance, wallet) => Contract.at(instance.address, DripperContractArtifact, wallet),
     [],
-    'constructor'
+    'constructor',
   );
 
   const receipt = await deployMethod
     .send({
       ...options,
+      contractAddressSalt: salt,
       fee: {
         paymentMethod: await getSponsoredFeePaymentMethod(),
       },
@@ -238,17 +268,11 @@ async function deployDripperContract(
   const contract = receipt.contract;
   console.log(`   ✅ Dripper deployed at: ${contract.address.toString()}`);
 
-  const { instance, artifact } = receipt.contract;
-
-  await pxe.registerContract({
-    instance,
-    artifact,
-  });
-
+  // Contract is already registered during deployment via DeployMethod
   return {
-    instance: instance,
-    address: instance.address.toString(),
-    salt: instance.salt.toString(),
+    instance: null,
+    address: contract.address.toString(),
+    salt: salt.toString(),
   };
 }
 
@@ -260,26 +284,28 @@ async function deployTokenContract(
 ) {
   console.log('📦 Deploying Token contract...');
 
-  // Use Wonderland token constructor_with_minter
-  // Signature: constructor_with_minter(name, symbol, decimals, minter, upgrade_authority)
+  const salt = Fr.fromString(process.env.VITE_COMMON_SALT || '1337');
+
+  // Use constructor_with_minter: name, symbol, decimals, minter, upgrade_authority
   const deployMethod = new DeployMethod(
     PublicKeys.default(),
     deployer,
     TokenContractArtifact,
-    (address) => Contract.at(address, TokenContractArtifact, deployer),
+    (instance, wallet) => Contract.at(instance.address, TokenContractArtifact, wallet),
     [
       'Yield Token', // name
       'YT', // symbol
       18, // decimals
-      dripperAddress, // minter (Dripper address - can mint tokens)
+      dripperAddress, // minter (Dripper address)
       AztecAddress.ZERO, // upgrade_authority
     ],
-    'constructor_with_minter'
+    'constructor_with_minter',
   );
 
   const receipt = await deployMethod
     .send({
       ...options,
+      contractAddressSalt: salt,
       fee: {
         paymentMethod: await getSponsoredFeePaymentMethod(),
       },
@@ -294,17 +320,11 @@ async function deployTokenContract(
   const contract = receipt.contract;
   console.log(`   ✅ Token deployed at: ${contract.address.toString()}`);
 
-  const { instance, artifact } = receipt.contract;
-
-  await pxe.registerContract({
-    instance,
-    artifact,
-  });
-
+  // Contract is already registered during deployment via DeployMethod
   return {
-    instance: instance,
-    address: instance.address.toString(),
-    salt: instance.salt.toString(),
+    instance: null,
+    address: contract.address.toString(),
+    salt: salt.toString(),
   };
 }
 
@@ -379,9 +399,6 @@ async function createAccountAndDeployContract() {
 
   const deployOptions: DeployOptions = {
     from: account.getAddress(),
-    // Make this the default salt for deployments
-    contractAddressSalt: new Fr(1337n),
-    // contractAddressSalt: Fr.fromString(process.env.VITE_COMMON_SALT || '1337'),
   };
 
   // Deploy the Dripper contract first

@@ -10,39 +10,40 @@ pub contract EcdsaKEthSignerAccount {
     use dep::aztec::{
         authwit::{account::AccountActions, entrypoint::app::AppPayload},
         context::PrivateContext,
-        macros::{functions::{external, initializer, noinitcheck, view}, storage::storage},
+        macros::{
+            functions::{external, initializer, noinitcheck, nophasecheck, view},
+            storage::storage,
+        },
         messages::message_delivery::MessageDelivery,
         oracle::{auth_witness::get_auth_witness, notes::{get_sender_for_tags, set_sender_for_tags}},
-        state_vars::PrivateImmutable,
+        state_vars::SinglePrivateImmutable,
     };
 
     use crate::ecdsa_public_key_note::EcdsaPublicKeyNote;
 
     #[storage]
     struct Storage<Context> {
-        signing_public_key: PrivateImmutable<EcdsaPublicKeyNote, Context>,
+        signing_public_key: SinglePrivateImmutable<EcdsaPublicKeyNote, Context>,
     }
 
     // Creates a new account out of an ECDSA public key to use for signature verification
     #[external("private")]
     #[initializer]
     fn constructor(signing_pub_key_x: [u8; 32], signing_pub_key_y: [u8; 32]) {
-        let this = context.this_address();
-        let pub_key_note = EcdsaPublicKeyNote::new(signing_pub_key_x, signing_pub_key_y, this);
+        let pub_key_note = EcdsaPublicKeyNote { x: signing_pub_key_x, y: signing_pub_key_y };
 
         // Safety: The sender for tags is only used to compute unconstrained shared secrets for emitting logs.
         // Since this value is only used for unconstrained tagging and not for any constrained logic,
         // it is safe to load from an unconstrained context.
-        let original_sender = unsafe { get_sender_for_tags().unwrap_or(this) };
+        let original_sender = unsafe { get_sender_for_tags().unwrap_or(self.address) };
 
         // We set the sender for tags to this contract because we don't want to force the user corresponding to this
         // account to add the account deployer as a sender to their PXE. By setting it to this contract, user's PXE
         // will manage to find the note even if the account deployer is not registered as a sender.
 
         // Safety: Comment from above applies here as well.
-        unsafe { set_sender_for_tags(this) };
-        storage.signing_public_key.initialize(pub_key_note).emit(
-            this,
+        unsafe { set_sender_for_tags(self.address) };
+        self.storage.signing_public_key.initialize(pub_key_note).deliver(
             MessageDelivery.CONSTRAINED_ONCHAIN,
         );
         // Safety: Comment from above applies here as well.
@@ -52,13 +53,14 @@ pub contract EcdsaKEthSignerAccount {
     // Main entrypoint for executing transactions
     #[external("private")]
     #[noinitcheck]
+    #[nophasecheck]
     fn entrypoint(app_payload: AppPayload, fee_payment_method: u8, cancellable: bool) {
         // Safety: The sender for tags is only used to compute unconstrained shared secrets for emitting logs.
         // Since this value is only used for unconstrained tagging and not for any constrained logic,
         // it is safe to set from a constrained context.
-        unsafe { set_sender_for_tags(context.this_address()) };
+        unsafe { set_sender_for_tags(self.address) };
 
-        let actions = AccountActions::init(&mut context, is_valid_impl);
+        let actions = AccountActions::init(self.context, is_valid_impl);
         actions.entrypoint(app_payload, fee_payment_method, cancellable);
     }
 
@@ -66,7 +68,7 @@ pub contract EcdsaKEthSignerAccount {
     #[noinitcheck]
     #[view]
     fn verify_private_authwit(inner_hash: Field) -> Field {
-        let actions = AccountActions::init(&mut context, is_valid_impl);
+        let actions = AccountActions::init(self.context, is_valid_impl);
         actions.verify_private_authwit(inner_hash)
     }
 
@@ -125,7 +127,7 @@ pub contract EcdsaKEthSignerAccount {
         // This matches what MetaMask computes when using personal_sign
         let eth_signed_message_hash: [u8; 32] = keccak256::keccak256(prefixed_message, 60);
 
-        // Verify ECDSA secp256k1 signature
+        // Verify ECDSA secp256k1 signature (not secp256r1 like the SDK's EcdsaRAccount)
         std::ecdsa_secp256k1::verify_signature(
             public_key.x,
             public_key.y,

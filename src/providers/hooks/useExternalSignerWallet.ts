@@ -12,7 +12,7 @@ import type { PXE } from '@aztec/pxe/server';
 import { Fr } from '@aztec/aztec.js/fields';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { AccountManager } from '@aztec/aztec.js/wallet';
-import { poseidon2Hash } from '@aztec/foundation/crypto';
+import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import type { ExternalSigner } from '../../signers/types';
 import { ExternalSignerType } from '../../types/aztec';
 import type { ConnectionStatus } from '../../types/walletConnector';

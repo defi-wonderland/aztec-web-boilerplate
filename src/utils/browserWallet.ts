@@ -8,6 +8,7 @@ import { contractsConfig } from '../config/contracts';
 import { getNetworkArtifacts } from '../config/networkArtifacts';
 import { getContractsForConfig, type ContractNames } from '../contract-registry';
 import type { RegisterContractOp } from '../types/browserWallet';
+import { normalizeArtifactForAzguard } from './azguard';
 
 /**
  * Build all contract registration operations for browser wallets.
@@ -51,7 +52,7 @@ export const buildRegisterContractOperations = async (
       chain,
       address: definition.address(config),
       instance,
-      artifact: definition.artifact,
+      artifact: normalizeArtifactForAzguard(definition.artifact),
     });
   }
 
@@ -67,7 +68,7 @@ export const buildRegisterContractOperations = async (
     chain,
     address: sponsoredFPCInstance.address.toString(),
     instance: sponsoredFPCInstance,
-    artifact: SponsoredFPCContractArtifact,
+    artifact: normalizeArtifactForAzguard(SponsoredFPCContractArtifact),
   });
 
   return operations;

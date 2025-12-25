@@ -4,7 +4,7 @@
 /* eslint-disable */
 import { AztecAddress, CompleteAddress } from '@aztec/aztec.js/addresses';
 import { type AbiType, type AztecAddressLike, type ContractArtifact, EventSelector, decodeFromAbi, type EthAddressLike, type FieldLike, type FunctionSelectorLike, loadContractArtifact, loadContractArtifactForPublic, type NoirCompiledContract, type U128Like, type WrappedFieldLike } from '@aztec/aztec.js/abi';
-import { Contract, ContractBase, ContractFunctionInteraction, type ContractInstanceWithAddress, type ContractMethod, type ContractStorageLayout, DeployMethod } from '@aztec/aztec.js/contracts';
+import { Contract, ContractBase, ContractFunctionInteraction, type ContractMethod, type ContractStorageLayout, DeployMethod } from '@aztec/aztec.js/contracts';
 import { EthAddress } from '@aztec/aztec.js/addresses';
 import { Fr, Point } from '@aztec/aztec.js/fields';
 import { type PublicKey, PublicKeys } from '@aztec/aztec.js/keys';
@@ -20,10 +20,10 @@ export const EcdsaKEthSignerAccountContractArtifact = loadContractArtifact(Ecdsa
 export class EcdsaKEthSignerAccountContract extends ContractBase {
   
   private constructor(
-    instance: ContractInstanceWithAddress,
+    address: AztecAddress,
     wallet: Wallet,
   ) {
-    super(instance, EcdsaKEthSignerAccountContractArtifact, wallet);
+    super(address, EcdsaKEthSignerAccountContractArtifact, wallet);
   }
   
 
@@ -32,13 +32,13 @@ export class EcdsaKEthSignerAccountContract extends ContractBase {
    * Creates a contract instance.
    * @param address - The deployed contract's address.
    * @param wallet - The wallet to use when interacting with the contract.
-   * @returns A promise that resolves to a new Contract instance.
+   * @returns A new Contract instance.
    */
-  public static async at(
+  public static at(
     address: AztecAddress,
     wallet: Wallet,
-  ) {
-    return Contract.at(address, EcdsaKEthSignerAccountContract.artifact, wallet) as Promise<EcdsaKEthSignerAccountContract>;
+  ): EcdsaKEthSignerAccountContract {
+    return Contract.at(address, EcdsaKEthSignerAccountContract.artifact, wallet) as EcdsaKEthSignerAccountContract;
   }
 
   
@@ -46,14 +46,14 @@ export class EcdsaKEthSignerAccountContract extends ContractBase {
    * Creates a tx to deploy a new instance of this contract.
    */
   public static deploy(wallet: Wallet, signing_pub_key_x: (bigint | number)[], signing_pub_key_y: (bigint | number)[]) {
-    return new DeployMethod<EcdsaKEthSignerAccountContract>(PublicKeys.default(), wallet, EcdsaKEthSignerAccountContractArtifact, EcdsaKEthSignerAccountContract.at, Array.from(arguments).slice(1));
+    return new DeployMethod<EcdsaKEthSignerAccountContract>(PublicKeys.default(), wallet, EcdsaKEthSignerAccountContractArtifact, (instance, wallet) => EcdsaKEthSignerAccountContract.at(instance.address, wallet), Array.from(arguments).slice(1));
   }
 
   /**
    * Creates a tx to deploy a new instance of this contract using the specified public keys hash to derive the address.
    */
   public static deployWithPublicKeys(publicKeys: PublicKeys, wallet: Wallet, signing_pub_key_x: (bigint | number)[], signing_pub_key_y: (bigint | number)[]) {
-    return new DeployMethod<EcdsaKEthSignerAccountContract>(publicKeys, wallet, EcdsaKEthSignerAccountContractArtifact, EcdsaKEthSignerAccountContract.at, Array.from(arguments).slice(2));
+    return new DeployMethod<EcdsaKEthSignerAccountContract>(publicKeys, wallet, EcdsaKEthSignerAccountContractArtifact, (instance, wallet) => EcdsaKEthSignerAccountContract.at(instance.address, wallet), Array.from(arguments).slice(2));
   }
 
   /**
@@ -67,7 +67,7 @@ export class EcdsaKEthSignerAccountContract extends ContractBase {
       opts.publicKeys ?? PublicKeys.default(),
       opts.wallet,
       EcdsaKEthSignerAccountContractArtifact,
-      EcdsaKEthSignerAccountContract.at,
+      (instance, wallet) => EcdsaKEthSignerAccountContract.at(instance.address, wallet),
       Array.from(arguments).slice(1),
       opts.method ?? 'constructor',
     );

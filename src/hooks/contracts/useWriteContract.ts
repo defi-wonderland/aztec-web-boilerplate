@@ -36,7 +36,7 @@ interface UseWriteContractOptions {
 type ContractClassFor<TContract extends ContractBase> = {
   artifact: ContractArtifact;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  at: (...args: any[]) => Promise<TContract>;
+  at: (...args: any[]) => TContract;
 };
 
 interface WriteContractParams<

@@ -1,5 +1,6 @@
 import type { RegisterContractOperation, CaipAccount } from '@azguardwallet/types';
 import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
@@ -9,6 +10,33 @@ import { getChainId, type AztecChainId } from '../config/networks/constants';
 import { contractsConfig } from '../config/contracts';
 import { getContractsForConfig, type ContractNames } from '../contract-registry';
 import { getNetworkArtifacts } from '../config/networkArtifacts';
+
+/**
+ * Add `isInternal: false` to an object if missing (required by Azguard schema).
+ */
+const addIsInternal = <T extends object>(obj: T): T & { isInternal: boolean } => {
+  return {
+    ...obj,
+    isInternal: (obj as T & { isInternal?: boolean }).isInternal ?? false,
+  };
+};
+
+/**
+ * Normalize a contract artifact to be compatible with Azguard wallet.
+ * The new aztec-nr artifacts don't include `isInternal` on functions,
+ * but Azguard wallet (v0.6.0) expects it.
+ */
+export const normalizeArtifactForAzguard = (artifact: ContractArtifact): unknown => {
+  // Cast to unknown since we're adding fields not in the official type
+  const normalized = {
+    ...artifact,
+    functions: artifact.functions.map(addIsInternal),
+    ...(artifact.nonDispatchPublicFunctions && {
+      nonDispatchPublicFunctions: artifact.nonDispatchPublicFunctions.map(addIsInternal),
+    }),
+  };
+  return normalized;
+};
 
 /**
  * Extracts the chain identifier from a CAIP account string.
@@ -95,7 +123,7 @@ export const buildRegisterContractOperations = async (
       chain,
       address: definition.address(config),
       instance,
-      artifact: definition.artifact,
+      artifact: normalizeArtifactForAzguard(definition.artifact),
     });
   }
 
@@ -111,7 +139,7 @@ export const buildRegisterContractOperations = async (
     chain,
     address: sponsoredFPCInstance.address.toString(),
     instance: sponsoredFPCInstance,
-    artifact: SponsoredFPCContractArtifact,
+    artifact: normalizeArtifactForAzguard(SponsoredFPCContractArtifact),
   });
 
   return operations;
