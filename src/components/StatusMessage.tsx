@@ -33,8 +33,8 @@ export const StatusMessage: React.FC = () => {
   return (
     <div className="status-messages-container">
       {shouldShow && (
-        <div 
-          id="status-message" 
+        <div
+          id="status-message"
           className={`status-message ${hasWalletError ? 'error' : 'info'}`}
         >
           {statusText}
@@ -42,22 +42,26 @@ export const StatusMessage: React.FC = () => {
       )}
 
       {globalMessages.map((message) => (
-        <div 
+        <div
           key={message.id}
           className={`status-message ${message.type} global-message ${message.source ? `source-${message.source}` : ''}`}
         >
           <div className="message-header">
             <div className="message-source-container">
               {message.source && (
-                <span className={`message-source ${message.type === 'info' ? 'info-source' : message.type === 'success' ? 'success-source' : ''}`}>
+                <span
+                  className={`message-source ${message.type === 'info' ? 'info-source' : message.type === 'success' ? 'success-source' : ''}`}
+                >
                   {message.source}
                 </span>
               )}
             </div>
-            <button 
+            <button
               className={`message-close ${message.type === 'info' ? 'info-close' : message.type === 'success' ? 'success-close' : ''}`}
               onClick={() => clearMessage(message.id)}
               title="Dismiss message"
+              type="button"
+              aria-label="Dismiss message"
             >
               ×
             </button>
