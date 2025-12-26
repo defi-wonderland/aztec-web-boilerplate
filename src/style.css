@@ -1786,15 +1786,30 @@ body {
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  align-items: stretch;
 }
 
 .form-group label {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: #374151;
   font-size: 0.875rem;
+  cursor: help;
+}
+
+.form-label-main {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .form-input,
@@ -1837,6 +1852,8 @@ body {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
+  background: transparent;
+  appearance: none;
   border: none;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -1847,7 +1864,7 @@ body {
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.75;
   cursor: not-allowed;
 }
 
@@ -1860,22 +1877,34 @@ body {
   font-size: 1rem;
 }
 
+.btn-primary:disabled {
+  background: linear-gradient(135deg, color-mix(in srgb, #8b5cf6 65%, #0a0a0a 35%), color-mix(in srgb, #a855f7 65%, #0a0a0a 35%));
+  color: #ffffff;
+}
+
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
 }
 
 .btn-secondary {
-  background: transparent;
+  background: color-mix(in srgb, var(--bg-primary) 88%, #8b5cf6 12%);
   color: #8b5cf6;
-  border: 1px solid var(--border-color);
+  border: 1px solid color-mix(in srgb, #8b5cf6 35%, var(--border-color));
   width: 100%;
   justify-content: center;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #f8fafc;
+  background: color-mix(in srgb, var(--bg-primary) 80%, #8b5cf6 20%);
   border-color: #8b5cf6;
+}
+
+.btn-secondary:disabled {
+  background: color-mix(in srgb, var(--bg-primary) 94%, #8b5cf6 6%);
+  color: color-mix(in srgb, #8b5cf6 55%, var(--text-muted) 45%);
+  border-color: color-mix(in srgb, #8b5cf6 25%, var(--border-color));
+  opacity: 1;
 }
 
 .btn-icon {
@@ -3166,9 +3195,14 @@ select:focus {
 }
 
 .form-sub-label {
-  margin-left: 0.5rem;
+  margin-left: 0;
+  margin-top: 0.125rem;
   color: var(--text-muted);
   font-size: 0.75rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .function-list {

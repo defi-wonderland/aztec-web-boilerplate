@@ -19,6 +19,7 @@ const MAX_CACHE_CHARS = 400_000;
 const MAX_SAVED_CONTRACTS = 10;
 const ARTIFACT_DB = 'aztec-contract-artifacts';
 const ARTIFACT_STORE = 'artifacts';
+const HIDDEN_FUNCTION_NAMES = ['constructor', 'public_dispatch'];
 
 type CachedContract = {
   address: string;
@@ -50,10 +51,14 @@ const openArtifactDb = async (): Promise<IDBDatabase | null> => {
   });
 };
 
-const storeArtifact = async (artifact: string): Promise<string | null> => {
+const storeArtifact = async (
+  artifact: string,
+  namespace?: string
+): Promise<string | null> => {
   const db = await openArtifactDb();
   if (!db) return null;
-  const key = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const sanitizedNamespace = (namespace ?? 'global').replace(/[^a-z0-9_-]/gi, '');
+  const key = `${sanitizedNamespace}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   return new Promise((resolve) => {
     const tx = db.transaction(ARTIFACT_STORE, 'readwrite');
     tx.objectStore(ARTIFACT_STORE).put(artifact, key);
@@ -97,6 +102,14 @@ const clearArtifactsDb = async () => {
   });
 };
 
+const requestPersistentStorage = async () => {
+  if (!navigator.storage?.persist) return;
+  const alreadyPersisted = await navigator.storage.persisted();
+  if (!alreadyPersisted) {
+    await navigator.storage.persist();
+  }
+};
+
 const loadCachedContracts = (networkName?: string): CachedContract[] => {
   const storage = getLocalStorage();
   if (!storage) return [];
@@ -109,15 +122,16 @@ const loadCachedContracts = (networkName?: string): CachedContract[] => {
       .map((item) => {
         const value = item as Partial<CachedContract>;
         if (typeof value?.address !== 'string') return null;
-        return {
-          address: value.address,
-          artifact: typeof value.artifact === 'string' ? value.artifact : undefined,
-          artifactKey: typeof value.artifactKey === 'string' ? value.artifactKey : undefined,
-          label: typeof value.label === 'string' ? value.label : undefined,
-          savedAt: typeof value.savedAt === 'number' ? value.savedAt : undefined,
-        };
+
+        const result: CachedContract = { address: value.address };
+        if (typeof value.artifact === 'string') result.artifact = value.artifact;
+        if (typeof value.artifactKey === 'string') result.artifactKey = value.artifactKey;
+        if (typeof value.label === 'string') result.label = value.label;
+        if (typeof value.savedAt === 'number') result.savedAt = value.savedAt;
+
+        return result;
       })
-      .filter((item): item is CachedContract => Boolean(item));
+      .filter((item): item is CachedContract => item !== null);
   } catch {
     return [];
   }
@@ -231,8 +245,15 @@ const FunctionForm: React.FC<{
           .filter((input) => input.type.kind !== 'struct')
           .map((input) => (
             <div className="form-group" key={input.path}>
-              <label htmlFor={input.path}>
-                {input.label}
+              <label
+                htmlFor={input.path}
+                title={
+                  input.path.includes('.')
+                    ? `${input.label} (${input.path})`
+                    : input.label
+                }
+              >
+                <span className="form-label-main">{input.label}</span>
                 {input.path.includes('.') && (
                   <span className="form-sub-label">({input.path})</span>
                 )}
@@ -455,7 +476,7 @@ export const ContractInteractionCard: React.FC = () => {
     return parsed.functions
       .filter(
         (fn) =>
-          fn.name.toLowerCase() !== 'constructor' &&
+          !HIDDEN_FUNCTION_NAMES.includes(fn.name.toLowerCase()) &&
           !fn.attributes.includes('initializer')
       )
       .filter((fn) =>
@@ -465,15 +486,29 @@ export const ContractInteractionCard: React.FC = () => {
 
   const groupedFunctions = useMemo<FunctionGroup[]>(() => {
     if (functions.length === 0) return [];
-    const writeFunctions = functions.filter((fn) => !fn.isUnconstrained);
-    const readFunctions = functions.filter((fn) => fn.isUnconstrained);
+    const isExecutableFn = (fn: ParsedFunction): boolean => {
+      const attrs = fn.attributes ?? [];
+      const hasAttr = (value: string) => attrs.includes(value);
+      const isView = hasAttr('abi_view') || hasAttr('view');
+      const isInitializer = hasAttr('abi_initializer') || hasAttr('initializer');
+      const isPublic = hasAttr('abi_public') || hasAttr('public');
+      const isPrivate = hasAttr('abi_private') || hasAttr('private');
+      return (isPublic || isPrivate) && !isView && !isInitializer;
+    };
+
+    const callableFunctions = functions.filter(
+      (fn) => isExecutableFn(fn) || !fn.isUnconstrained
+    );
+    const readFunctions = functions.filter(
+      (fn) => fn.isUnconstrained && !isExecutableFn(fn)
+    );
 
     const groups: FunctionGroup[] = [];
-    if (writeFunctions.length > 0) {
+    if (callableFunctions.length > 0) {
       groups.push({
         id: 'callable',
         label: 'Callable functions',
-        items: writeFunctions,
+        items: callableFunctions,
       });
     }
     if (readFunctions.length > 0) {
@@ -526,6 +561,8 @@ export const ContractInteractionCard: React.FC = () => {
 
   const handleLoadArtifact = async () => {
     try {
+      requestPersistentStorage();
+
       const parsedArtifact = parseArtifactSource(artifactInput);
       setParsed(parsedArtifact);
       setParseError(null);
@@ -546,7 +583,7 @@ export const ContractInteractionCard: React.FC = () => {
       let artifactKey: string | undefined;
       let artifactValue: string | undefined = artifactInput;
       if (!shouldCacheInline) {
-        artifactKey = await storeArtifact(artifactInput);
+        artifactKey = (await storeArtifact(artifactInput, currentConfig?.name)) ?? undefined;
         artifactValue = undefined;
       }
       const upserted = upsertContract(savedContracts, {
@@ -614,7 +651,7 @@ export const ContractInteractionCard: React.FC = () => {
 
     let artifactToUse = contract.artifact;
     if (!artifactToUse && contract.artifactKey) {
-      artifactToUse = await loadArtifact(contract.artifactKey);
+      artifactToUse = (await loadArtifact(contract.artifactKey)) ?? undefined;
       if (!artifactToUse) {
         setParsed(null);
         setSelectedFnName(null);
@@ -738,9 +775,12 @@ export const ContractInteractionCard: React.FC = () => {
   };
 
   const isBusy = isExecuting || isSimulating;
-  const isReadFunction = Boolean(selectedFn?.isUnconstrained);
-  const attrHasPrivate = Boolean(selectedFn?.attributes?.includes('private'));
-  const attrHasPublic = Boolean(selectedFn?.attributes?.includes('public'));
+  const attributes = selectedFn?.attributes ?? [];
+  const hasAttr = (value: string): boolean => attributes.includes(value);
+  const attrHasView = hasAttr('abi_view');
+  const attrHasUtility = hasAttr('abi_utility');
+  const attrHasPrivate = hasAttr('abi_private') || hasAttr('private');
+  const attrHasPublic = hasAttr('abi_public') || hasAttr('public');
   const anyPrivateInput = Boolean(
     selectedFn?.inputs?.some((input) => input.visibility === 'private')
   );
@@ -754,8 +794,11 @@ export const ContractInteractionCard: React.FC = () => {
     ownerValue &&
     connectedAddress &&
     ownerValue.toLowerCase() !== connectedAddress.toLowerCase();
-  const simulateDisabled = !selectedFn || isBusy || !isReadFunction;
-  const executeDisabled = !selectedFn || isBusy || isReadFunction;
+  const isExecutable =
+    (attrHasPublic || attrHasPrivate) && !attrHasView && !hasAttr('abi_initializer');
+  const canSimulate = attrHasView || attrHasUtility || !isExecutable;
+  const simulateDisabled = !selectedFn || isBusy || !canSimulate;
+  const executeDisabled = !selectedFn || isBusy || !isExecutable;
 
   if (!isConnected || !isInitialized) {
     return null;
@@ -832,7 +875,7 @@ export const ContractInteractionCard: React.FC = () => {
         <button
           type="button"
           className="btn btn-primary"
-          // disabled={executeDisabled}
+          disabled={executeDisabled}
           onClick={() => handleCall('execute')}
         >
           {isExecuting ? 'Executing...' : 'Execute'}

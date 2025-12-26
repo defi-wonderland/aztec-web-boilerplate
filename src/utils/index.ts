@@ -110,8 +110,7 @@ export const isValidConfig = (config: {
   // Check for placeholder addresses (not deployed yet)
   if (
     config.tokenContractAddress === PLACEHOLDER_ADDRESS ||
-    config.dripperContractAddress === PLACEHOLDER_ADDRESS ||
-    config.deployerAddress === PLACEHOLDER_ADDRESS
+    config.dripperContractAddress === PLACEHOLDER_ADDRESS
   ) {
     return false;
   }
