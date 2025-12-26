@@ -4,7 +4,7 @@ import {
   type Account,
   SignerlessAccount,
 } from '@aztec/aztec.js/account';
-import { BaseWallet } from '@aztec/aztec.js/wallet';
+import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
 import type { AztecNode } from '@aztec/aztec.js/node';
 import type { PXE } from '@aztec/pxe/server';
 

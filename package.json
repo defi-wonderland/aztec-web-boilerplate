@@ -7,12 +7,8 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "clean": "rm -rf dist contracts/target contracts/codegenCache.json",
-    "compile-contracts": "cd contracts && ${AZTEC_NARGO:-aztec-nargo} compile",
-    "postprocess-contracts": "cd contracts && for f in target/*.json; do aztec-postprocess-contract \"$f\"; done",
-    "codegen-contracts": "cd contracts && ${AZTEC_BUILDER:-aztec} codegen ./target -o ./target",
-    "copy-artifacts": "cp contracts/target/*.json contracts/target/*.ts src/artifacts",
-    "build-contracts": "yarn clean && yarn compile-contracts && yarn postprocess-contracts && yarn codegen-contracts && yarn copy-artifacts",
+    "clean": "rm -rf dist src/target src/artifacts/*.json src/artifacts/*.js src/artifacts/*.d.ts contracts/*/target",
+    "build-contracts": "npx tsx scripts/build-contracts.ts --force",
     "deploy-contracts": "tsx scripts/deploy.ts --network sandbox",
     "dev": "vite",
     "build-app": "node --max-old-space-size=14336 node_modules/vite/bin/vite.js build",
@@ -33,15 +29,17 @@
   "dependencies": {
     "@azguardwallet/client": "0.6.0",
     "@azguardwallet/types": "0.6.0",
-    "@aztec/accounts": "3.0.0-devnet.5",
-    "@aztec/aztec.js": "3.0.0-devnet.5",
-    "@aztec/constants": "3.0.0-devnet.5",
-    "@aztec/foundation": "3.0.0-devnet.5",
-    "@aztec/kv-store": "3.0.0-devnet.5",
-    "@aztec/noir-contracts.js": "3.0.0-devnet.5",
-    "@aztec/pxe": "3.0.0-devnet.5",
-    "@aztec/stdlib": "3.0.0-devnet.5",
-    "@defi-wonderland/aztec-standards": "3.0.0-devnet.2",
+    "@aztec/accounts": "3.0.0-devnet.20251212",
+    "@aztec/aztec": "3.0.0-devnet.20251212",
+    "@aztec/aztec.js": "3.0.0-devnet.20251212",
+    "@aztec/constants": "3.0.0-devnet.20251212",
+    "@aztec/foundation": "3.0.0-devnet.20251212",
+    "@aztec/kv-store": "3.0.0-devnet.20251212",
+    "@aztec/noir-contracts.js": "3.0.0-devnet.20251212",
+    "@aztec/pxe": "3.0.0-devnet.20251212",
+    "@aztec/stdlib": "3.0.0-devnet.20251212",
+    "@aztec/wallet-sdk": "3.0.0-devnet.20251212",
+    "@defi-wonderland/aztec-standards": "0.0.0-11cd7319",
     "@tanstack/react-query": "5.85.5",
     "react": "19.1.1",
     "react-dom": "19.1.1",
@@ -49,7 +47,7 @@
     "viem": "2.41.2"
   },
   "devDependencies": {
-    "@playwright/test": "1.52.0",
+    "@playwright/test": "1.57.0",
     "@types/node": "22.15.17",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.1.7",
@@ -78,7 +76,10 @@
     "trailingComma": "es5"
   },
   "config": {
-    "aztecVersion": "3.0.0-devnet.5"
+    "aztecVersion": "3.0.0-devnet.20251212"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "resolutions": {
+    "systeminformation": "5.27.14"
+  }
 }

@@ -67,7 +67,7 @@ export const buildRegisterContractOperations = async (
     chain,
     address: sponsoredFPCInstance.address.toString(),
     instance: sponsoredFPCInstance,
-    artifact: SponsoredFPCContractArtifact,
+      artifact: SponsoredFPCContractArtifact,
   });
 
   return operations;

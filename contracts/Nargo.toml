@@ -1,5 +1,0 @@
-[workspace]
-members = [
-"dripper",
-"ecdsa_k_eth_signer_account",
-]

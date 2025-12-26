@@ -68,7 +68,7 @@ export const Header: React.FC = () => {
           ? 'Browser'
           : 'Wallet');
     const fullAddress = caipAccount
-      ? caipAccount.split(':')[2] ?? ''
+      ? (caipAccount.split(':')[2] ?? '')
       : account
         ? account.getAddress().toString()
         : '';

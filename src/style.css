@@ -990,7 +990,7 @@ body {
   }
   
   .nav-title::before {
-  font-size: 1.75rem;
+    font-size: 1.75rem;
   }
 }
 
@@ -1035,7 +1035,7 @@ body {
   
   .account-address {
     font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0.5rem;
   }
 }
 
