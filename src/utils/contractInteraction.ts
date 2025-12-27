@@ -1,4 +1,5 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { EthAddress } from '@aztec/aztec.js/addresses';
 import {
   loadContractArtifact,
   type ContractArtifact,
@@ -34,6 +35,9 @@ export type ParsedType =
   | { kind: 'boolean' }
   | { kind: 'string' }
   | { kind: 'address'; path?: string }
+  | { kind: 'eth_address'; path?: string }
+  | { kind: 'selector'; path?: string }
+  | { kind: 'compressed_string'; path?: string }
   | { kind: 'array'; length?: number; type: ParsedType }
   | { kind: 'struct'; path?: string; fields: ParsedField[] };
 
@@ -58,14 +62,33 @@ export interface ParsedArtifact {
   discoveredAddress?: string;
 }
 
-const isAztecAddressStruct = (type: RawParamType): boolean => {
-  const path = type.path?.toLowerCase() ?? '';
-  return path.includes('aztecaddress') || path.includes('aztec::protocol_types::address');
+/**
+ * Known Aztec struct paths that can be simplified to primitive-like inputs.
+ * Maps struct paths to their simplified ParsedType kind.
+ * 
+ * These structs typically wrap a single primitive value (like `inner: field`)
+ * and can be represented as simple inputs rather than nested struct fields.
+ */
+const KNOWN_STRUCT_PATHS: Record<string, ParsedType['kind']> = {
+  // Aztec Address - wraps { inner: field }
+  'aztec::protocol_types::address::aztec_address::AztecAddress': 'address',
+  
+  // ETH Address - wraps { inner: field }
+  'aztec::protocol_types::address::eth_address::EthAddress': 'eth_address',
+  
+  // Function Selector - wraps { inner: u32 }
+  'aztec::protocol_types::abis::function_selector::FunctionSelector': 'selector',
+  
+  // Compressed String - wraps { value: field } - used for name/symbol in tokens
+  'compressed_string::field_compressed_string::FieldCompressedString': 'compressed_string',
 };
 
 const normalizeType = (type: RawParamType): ParsedType => {
-  if (isAztecAddressStruct(type)) {
-    return { kind: 'address', path: type.path };
+  if (type.kind === 'struct' && type.path) {
+    const knownKind = KNOWN_STRUCT_PATHS[type.path];
+    if (knownKind) {
+      return { kind: knownKind, path: type.path } as ParsedType;
+    }
   }
 
   switch (type.kind) {
@@ -227,6 +250,38 @@ const buildValue = (
         return { ok: false, error: `Invalid Aztec address for ${path}` };
       }
     }
+    case 'eth_address': {
+      if (!value) {
+        return { ok: false, error: `Missing ETH address for ${path}` };
+      }
+      try {
+        return { ok: true, value: EthAddress.fromString(value).toString() };
+      } catch {
+        return { ok: false, error: `Invalid ETH address for ${path}` };
+      }
+    }
+    case 'selector': {
+      if (!value) {
+        return { ok: false, error: `Missing function selector for ${path}` };
+      }
+      // Function selector is a 4-byte hex value (u32)
+      const normalized = value.startsWith('0x') ? value : `0x${value}`;
+      try {
+        const num = parseInt(normalized, 16);
+        if (isNaN(num) || num < 0 || num > 0xFFFFFFFF) {
+          return { ok: false, error: `Invalid function selector for ${path}: must be 4 bytes` };
+        }
+        return { ok: true, value: num };
+      } catch {
+        return { ok: false, error: `Invalid function selector for ${path}` };
+      }
+    }
+    case 'compressed_string': {
+      // FieldCompressedString is used for token name/symbol
+      // It stores a string as a single field element
+      // The SDK handles the encoding, so we just pass the string
+      return { ok: true, value };
+    }
     case 'array': {
       const items = parseArrayValue(value);
       const parsedItems: unknown[] = [];
@@ -257,6 +312,8 @@ const buildValue = (
   }
 };
 
+type BuildResult = { ok: true; value: unknown } | { ok: false; error: string };
+
 export const buildArgsFromInputs = (
   inputs: ParsedField[],
   formValues: Record<string, string>
@@ -268,9 +325,9 @@ export const buildArgsFromInputs = (
 
   for (const input of rootInputs) {
     const rawValue = formValues[input.path] ?? '';
-    const result = buildValue(rawValue, input.type, input.path, formValues);
+    const result: BuildResult = buildValue(rawValue, input.type, input.path, formValues);
 
-    if (!result.ok) {
+    if (result.ok === false) {
       errors.push(result.error);
       continue;
     }
@@ -294,6 +351,27 @@ export const isValidAztecAddress = (value: string): boolean => {
   try {
     AztecAddress.fromString(value);
     return true;
+  } catch {
+    return false;
+  }
+};
+
+export const isValidEthAddress = (value: string): boolean => {
+  if (!value) return false;
+  try {
+    EthAddress.fromString(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const isValidFunctionSelector = (value: string): boolean => {
+  if (!value) return false;
+  const normalized = value.startsWith('0x') ? value : `0x${value}`;
+  try {
+    const num = parseInt(normalized, 16);
+    return !isNaN(num) && num >= 0 && num <= 0xFFFFFFFF;
   } catch {
     return false;
   }
