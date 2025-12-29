@@ -41,7 +41,25 @@ const labelForType = (type: ParsedType): string | null => {
   }
 };
 
+const shouldTrimInput = (type: ParsedType): boolean => {
+  switch (type.kind) {
+    case 'address':
+    case 'eth_address':
+    case 'selector':
+    case 'integer':
+    case 'field':
+    case 'boolean':
+      return true;
+    default:
+      return false;
+  }
+};
+
 const FunctionForm = ({ fn, values, onChange, disabled }: FunctionFormProps) => {
+  const handleChange = (path: string, value: string, type: ParsedType) => {
+    onChange(path, shouldTrimInput(type) ? value.trim() : value);
+  };
+
   return (
     <div className="form-section">
       <div className="form-grid">
@@ -73,7 +91,7 @@ const FunctionForm = ({ fn, values, onChange, disabled }: FunctionFormProps) => 
                   id={input.path}
                   className="form-input"
                   value={values[input.path] ?? ''}
-                  onChange={(e) => onChange(input.path, e.target.value)}
+                  onChange={(e) => handleChange(input.path, e.target.value, input.type)}
                   placeholder={placeholderForType(input.type)}
                   disabled={disabled}
                   aria-label={input.path}
