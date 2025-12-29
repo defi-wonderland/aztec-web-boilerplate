@@ -8,6 +8,9 @@ import { NETWORK_URLS } from './networks';
  * To add a new EVM wallet:
  * 1. Add entry to src/config/evmWallets.ts
  * 2. Add evmWallet('walletId') below
+ *
+ * Connector order matters: they render in UI in this sequence and the
+ * registry uses this ordering unless a custom priority is provided.
  */
 export const walletKitConfig: WalletKitConfig = {
   connectors: [embedded(), evmWallet('metamask'), evmWallet('rabby')],
