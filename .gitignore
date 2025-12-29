@@ -24,7 +24,7 @@ dist-ssr
 
 tsconfig.tsbuildinfo
 
-scripts/.store
+scripts/.store*
 ./deployed-contract.json
 ./wallet-info.json
 

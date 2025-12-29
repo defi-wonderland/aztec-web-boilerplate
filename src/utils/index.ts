@@ -107,11 +107,11 @@ export const isValidConfig = (config: {
     return false;
   }
 
-  // Check for placeholder addresses (not deployed yet)
+  // Check for placeholder contract addresses (not deployed yet)
+  // Note: deployerAddress can be zero for public networks where deployer is unknown
   if (
     config.tokenContractAddress === PLACEHOLDER_ADDRESS ||
-    config.dripperContractAddress === PLACEHOLDER_ADDRESS ||
-    config.deployerAddress === PLACEHOLDER_ADDRESS
+    config.dripperContractAddress === PLACEHOLDER_ADDRESS
   ) {
     return false;
   }

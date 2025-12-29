@@ -1,6 +1,6 @@
 {
   "network": "devnet",
-  "nodeUrl": "https://devnet.aztec-labs.com/",
+  "nodeUrl": "https://next.devnet.aztec-labs.com/",
   "dripperContract": {
     "address": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "salt": "0x0000000000000000000000000000000000000000000000000000000000000000"

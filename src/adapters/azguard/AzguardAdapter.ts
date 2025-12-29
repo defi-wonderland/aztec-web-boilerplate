@@ -6,6 +6,7 @@
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import type {
   CaipAccount,
   CaipChain,
@@ -24,6 +25,31 @@ import type {
 import { AzguardWalletService } from './AzguardWalletService';
 import { getChainId, type AztecChainId } from '../../config/networks/constants';
 import { parseAddressFromCaip } from '../../utils/azguard';
+
+// =============================================================================
+// Azguard-specific artifact normalization
+// =============================================================================
+
+/**
+ * Add `isInternal: false` to function artifacts if missing.
+ * Azguard wallet v0.6.0 requires this field in the schema.
+ */
+const addIsInternal = <T extends object>(obj: T): T & { isInternal: boolean } => ({
+  ...obj,
+  isInternal: (obj as T & { isInternal?: boolean }).isInternal ?? false,
+});
+
+/**
+ * Normalize a contract artifact for Azguard wallet compatibility.
+ * Azguard v0.6.0 expects `isInternal` on all function artifacts.
+ */
+const normalizeArtifactForAzguard = (artifact: ContractArtifact): unknown => ({
+  ...artifact,
+  functions: artifact.functions.map(addIsInternal),
+  ...(artifact.nonDispatchPublicFunctions && {
+    nonDispatchPublicFunctions: artifact.nonDispatchPublicFunctions.map(addIsInternal),
+  }),
+});
 
 const AZGUARD_METHODS = [
   'register_contract',
@@ -131,7 +157,8 @@ export class AzguardAdapter implements IBrowserWalletAdapter {
           chain: op.chain as CaipChain,
           address: op.address,
           instance: op.instance,
-          artifact: op.artifact,
+          // Apply Azguard-specific normalization (adds isInternal to functions)
+          artifact: normalizeArtifactForAzguard(op.artifact as ContractArtifact),
         };
         return azguardOp;
       }

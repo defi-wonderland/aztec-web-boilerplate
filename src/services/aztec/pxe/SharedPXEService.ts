@@ -40,6 +40,12 @@ class SharedPXEServiceClass {
   private initPromises: Map<string, Promise<SharedPXEInstance>> = new Map();
   private cachedPaymentMethods: Map<string, SponsoredFeePaymentMethod> =
     new Map();
+  private storePromises: Map<
+    string,
+    Promise<Awaited<ReturnType<typeof createStore>>>
+  > = new Map();
+  private static readonly PERSISTED_STORE_KB = 5e5; // 500MB
+  private static readonly FALLBACK_STORE_KB = 1e5; // 100MB
 
   /**
    * Get or create a PXE instance for a specific network.
@@ -49,12 +55,17 @@ class SharedPXEServiceClass {
     nodeUrl: string,
     networkName: string
   ): Promise<SharedPXEInstance> {
-    const key = this.getInstanceKey(nodeUrl, networkName);
+    const normalizedNodeUrl = this.normalizeNodeUrl(nodeUrl);
+    const key = this.getInstanceKey(networkName);
 
     // Return existing instance if available
     const existing = this.instances.get(key);
     if (existing) {
-      return existing.instance;
+      // Reuse if URL matches, else replace stale one for this network
+      if (existing.nodeUrl === normalizedNodeUrl) {
+        return existing.instance;
+      }
+      this.clearInstance(existing.nodeUrl, existing.networkName);
     }
 
     // Return in-progress initialization if exists
@@ -64,7 +75,7 @@ class SharedPXEServiceClass {
     }
 
     // Start new initialization
-    const promise = this.initializeInstance(nodeUrl, networkName, key);
+    const promise = this.initializeInstance(normalizedNodeUrl, networkName, key);
     this.initPromises.set(key, promise);
 
     try {
@@ -79,7 +90,7 @@ class SharedPXEServiceClass {
    * Check if a PXE instance is initialized for a network
    */
   isInitialized(nodeUrl: string, networkName: string): boolean {
-    const key = this.getInstanceKey(nodeUrl, networkName);
+    const key = this.getInstanceKey(networkName);
     return this.instances.has(key);
   }
 
@@ -87,7 +98,7 @@ class SharedPXEServiceClass {
    * Check if initialization is in progress for a network
    */
   isInitializing(nodeUrl: string, networkName: string): boolean {
-    const key = this.getInstanceKey(nodeUrl, networkName);
+    const key = this.getInstanceKey(networkName);
     return this.initPromises.has(key);
   }
 
@@ -98,7 +109,7 @@ class SharedPXEServiceClass {
     nodeUrl: string,
     networkName: string
   ): SharedPXEInstance | null {
-    const key = this.getInstanceKey(nodeUrl, networkName);
+    const key = this.getInstanceKey(networkName);
     return this.instances.get(key)?.instance ?? null;
   }
 
@@ -106,7 +117,7 @@ class SharedPXEServiceClass {
    * Clear a specific PXE instance (useful for network switching)
    */
   clearInstance(nodeUrl: string, networkName: string): void {
-    const key = this.getInstanceKey(nodeUrl, networkName);
+    const key = this.getInstanceKey(networkName);
     this.instances.delete(key);
     this.cachedPaymentMethods.delete(key);
     logger.info(`Cleared PXE instance for ${networkName}`);
@@ -121,8 +132,15 @@ class SharedPXEServiceClass {
     logger.info('Cleared all PXE instances');
   }
 
-  private getInstanceKey(nodeUrl: string, networkName: string): string {
-    return `${networkName}:${nodeUrl}`;
+  private getInstanceKey(networkName: string): string {
+    return `${networkName}`;
+  }
+
+  private normalizeNodeUrl(nodeUrl: string): string {
+    if (!nodeUrl) {
+      return nodeUrl;
+    }
+    return nodeUrl.endsWith('/') ? nodeUrl.slice(0, -1) : nodeUrl;
   }
 
   private async initializeInstance(
@@ -138,15 +156,8 @@ class SharedPXEServiceClass {
     const l1Contracts = await aztecNode.getL1ContractAddresses();
     const storeName = `aztec-pxe-${networkName}`;
 
-    // Create PXE store with IndexedDB for persistence
-    const pxeStore = await createStore(
-      storeName,
-      {
-        dataDirectory: 'pxe',
-        dataStoreMapSizeKb: 2e10, // 20GB max size
-      },
-      pxeLogger
-    );
+    // Reuse a single store per network
+    const pxeStore = await this.getOrCreateStore(networkName, storeName);
 
     const config = getPXEConfig();
     config.l1Contracts = l1Contracts;
@@ -191,6 +202,51 @@ class SharedPXEServiceClass {
     });
 
     return instance;
+  }
+
+  private async getOrCreateStore(
+    networkName: string,
+    storeName: string
+  ): Promise<Awaited<ReturnType<typeof createStore>>> {
+    const existingPromise = this.storePromises.get(networkName);
+    if (existingPromise) {
+      return existingPromise;
+    }
+
+    const createPromise = this.createPXEStoreWithFallback(storeName);
+    this.storePromises.set(networkName, createPromise);
+    return createPromise;
+  }
+
+  private async createPXEStoreWithFallback(
+    storeName: string
+  ): Promise<Awaited<ReturnType<typeof createStore>>> {
+    try {
+      return await createStore(
+        storeName,
+        {
+          dataDirectory: 'pxe',
+          dataStoreMapSizeKb: SharedPXEServiceClass.PERSISTED_STORE_KB,
+        },
+        pxeLogger
+      );
+    } catch (error) {
+      logger.warn(
+        `Failed to create persistent PXE store (limit ${
+          SharedPXEServiceClass.PERSISTED_STORE_KB
+        } KB). Retrying with smaller ephemeral store.`,
+        { error }
+      );
+
+      return await createStore(
+        `${storeName}-tmp`,
+        {
+          dataDirectory: 'pxe-tmp',
+          dataStoreMapSizeKb: SharedPXEServiceClass.FALLBACK_STORE_KB,
+        },
+        pxeLogger
+      );
+    }
   }
 
   private async getSponsoredPFCContract(pxe: PXE) {
