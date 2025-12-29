@@ -31,6 +31,10 @@ import {
   storeArtifact,
   upsertContract,
 } from '../utils/contractCache';
+import {
+  PRECONFIGURED_CONTRACTS,
+  type PreconfiguredContract,
+} from '../config/preconfiguredContracts';
 
 const requestPersistentStorage = async () => {
   if (!navigator.storage?.persist) return;
@@ -56,6 +60,7 @@ export const ContractInteractionCard: React.FC = () => {
   const [parseError, setParseError] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const hasAutoLoadedRef = useRef(false);
+  const [selectedPreconfiguredId, setSelectedPreconfiguredId] = useState<string | null>(null);
 
   const {
     simulate,
@@ -77,6 +82,17 @@ export const ContractInteractionCard: React.FC = () => {
 
   const selectedFn =
     filteredFunctions.find((fn) => fn.name === selectedFnName) ?? filteredFunctions[0] ?? null;
+
+  const handleApplyPreconfigured = (contractId: string) => {
+    const contract = PRECONFIGURED_CONTRACTS.find((c) => c.id === contractId);
+    if (!contract) return;
+    setSelectedPreconfiguredId(contractId);
+    setAddress(contract.address);
+    setArtifactInput(contract.artifactJson);
+    setFormValues({});
+    setFilter('');
+    setParseError(null);
+  };
 
   const pushLog = (entry: Omit<LogEntry, 'id'>) => {
     setLogs((prev) => [
@@ -404,6 +420,10 @@ export const ContractInteractionCard: React.FC = () => {
           error={parseError}
           isValidAddress={!address || isValidAztecAddress(address)}
           activeAddress={address}
+          preconfigured={PRECONFIGURED_CONTRACTS.filter(
+            (c) => !c.network || c.network === currentConfig?.name
+          )}
+          onApplyPreconfigured={handleApplyPreconfigured}
         />
         <FunctionList
           groups={grouped}

@@ -1802,8 +1802,9 @@ body {
   font-weight: 500;
   color: #374151;
   font-size: 0.875rem;
-  cursor: help;
+  cursor: default;
 }
+
 
 .form-label-main {
   display: block;

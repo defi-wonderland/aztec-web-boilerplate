@@ -37,6 +37,13 @@ export interface ArtifactLoaderProps {
   error?: string | null;
   isValidAddress: boolean;
   activeAddress: string;
+  preconfigured?: {
+    id: string;
+    label: string;
+    address: string;
+    artifactJson: string;
+  }[];
+  onApplyPreconfigured?: (contractId: string) => void;
 }
 
 export interface FunctionListProps {

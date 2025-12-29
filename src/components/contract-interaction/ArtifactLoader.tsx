@@ -15,10 +15,37 @@ const ArtifactLoader = ({
   error,
   isValidAddress,
   activeAddress,
+  preconfigured,
+  onApplyPreconfigured,
 }: ArtifactLoaderProps) => {
   const normalizedActiveAddress = activeAddress.trim().toLowerCase();
   return (
     <div className="loader-card">
+      {preconfigured?.length ? (
+        <div className="form-group">
+          <label htmlFor="preconfigured-contract">Preconfigured contracts (optional)</label>
+          <select
+            id="preconfigured-contract"
+            className="form-input"
+            defaultValue=""
+            onChange={(e) => {
+              const selectedId = e.target.value;
+              if (!selectedId) return;
+              onApplyPreconfigured?.(selectedId);
+            }}
+          >
+            <option value="" disabled>
+              Select a contract
+            </option>
+            {preconfigured.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <div className="input-hint">You can also paste your own address and artifact below.</div>
+        </div>
+      ) : null}
       <div className="form-group">
         <label htmlFor="contract-address">Contract Address</label>
         <input
