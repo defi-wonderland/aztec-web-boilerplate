@@ -119,7 +119,7 @@ If you want to use [Azguard Wallet](https://azguard.xyz/), you'll need to config
    - **Name**: Any name you prefer (e.g., "Sponsored FPC")
    - **FPC Address**: 
      ```
-     0x280e5686a148059543f4d0968f9a18cd4992520fcd887444b8689bf2726a1f97
+     0x1586f476995be97f07ebd415340a14be48dc28c6c661cc6bdddb80ae790caa4e
      ```
 6. Save the configuration
 
@@ -142,11 +142,17 @@ If you want to develop locally instead of using Devnet, you'll need to run the A
 bash -i <(curl -s https://install.aztec.network)
 ```
 
+```bash
+# Currently we use 3.0.0-devnet.20251212 version, make sure you have the right one
+aztec-up 3.0.0-devnet.20251212
+```
+
+
 ### Start Sandbox
 
 ```bash
 # Start the Aztec sandbox (in a separate terminal)
-aztec start --sandbox
+aztec start --local-network
 ```
 
 ### Build & Deploy Contracts

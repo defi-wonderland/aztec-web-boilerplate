@@ -386,51 +386,53 @@ async function createAccountAndDeployContract() {
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
-  const { pxe, aztecNode } = await setupPXE();
+  try {
+    const { pxe, aztecNode } = await setupPXE();
 
-  // Register the SponsoredFPC contract (for sponsored fee payments)
-  await pxe.registerContract({
-    instance: await getSponsoredFPCContract(),
-    artifact: SponsoredFPCContractArtifact,
-  });
+    // Register the SponsoredFPC contract (for sponsored fee payments)
+    await pxe.registerContract({
+      instance: await getSponsoredFPCContract(),
+      artifact: SponsoredFPCContractArtifact,
+    });
 
-  // Create a new account
-  const { wallet, account } = await createAccount(pxe, aztecNode);
+    // Create a new account
+    const { wallet, account } = await createAccount(pxe, aztecNode);
 
-  const deployOptions: DeployOptions = {
-    from: account.getAddress(),
-  };
+    const deployOptions: DeployOptions = {
+      from: account.getAddress(),
+    };
 
-  // Deploy the Dripper contract first
-  const dripperDeploymentInfo = await deployDripperContract(
-    pxe,
-    wallet,
-    deployOptions
-  );
+    // Deploy the Dripper contract first
+    const dripperDeploymentInfo = await deployDripperContract(
+      pxe,
+      wallet,
+      deployOptions
+    );
 
-  // Deploy the Token contract with Dripper as minter
-  const tokenDeploymentInfo = await deployTokenContract(
-    pxe,
-    wallet,
-    deployOptions,
-    AztecAddress.fromString(dripperDeploymentInfo.address)
-  );
+    // Deploy the Token contract with Dripper as minter
+    const tokenDeploymentInfo = await deployTokenContract(
+      pxe,
+      wallet,
+      deployOptions,
+      AztecAddress.fromString(dripperDeploymentInfo.address)
+    );
 
-  // Save the deployment info to JSON config file
-  await writeDeploymentConfig(NETWORK, {
-    dripperContract: {
-      address: dripperDeploymentInfo.address,
-      salt: dripperDeploymentInfo.salt,
-    },
-    tokenContract: {
-      address: tokenDeploymentInfo.address,
-      salt: tokenDeploymentInfo.salt,
-    },
-    deployer: account.getAddress().toString(),
-  });
-
-  // Clean up the PXE store
-  fs.rmSync(PXE_STORE_DIR, { recursive: true, force: true });
+    // Save the deployment info to JSON config file
+    await writeDeploymentConfig(NETWORK, {
+      dripperContract: {
+        address: dripperDeploymentInfo.address,
+        salt: dripperDeploymentInfo.salt,
+      },
+      tokenContract: {
+        address: tokenDeploymentInfo.address,
+        salt: tokenDeploymentInfo.salt,
+      },
+      deployer: account.getAddress().toString(),
+    });
+  } finally {
+    // Always clean up the PXE store, even on failure
+    fs.rmSync(PXE_STORE_DIR, { recursive: true, force: true });
+  }
 }
 
 createAccountAndDeployContract().catch((error) => {
