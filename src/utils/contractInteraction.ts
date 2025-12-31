@@ -376,3 +376,127 @@ export const isValidFunctionSelector = (value: string): boolean => {
     return false;
   }
 };
+
+export type FunctionCapabilities = {
+  isPrivate: boolean;
+  isPublic: boolean;
+  isView: boolean;
+  isUtility: boolean;
+  isInitializer: boolean;
+  isExecutable: boolean;
+  canSimulate: boolean;
+};
+
+/**
+ * Analyzes function attributes to determine its capabilities and visibility.
+ */
+export const analyzeFunctionCapabilities = (
+  attributes: string[],
+  inputs?: ParsedField[]
+): FunctionCapabilities => {
+  const hasAttr = (value: string): boolean => attributes.includes(value);
+  
+  const isView = hasAttr('abi_view');
+  const isUtility = hasAttr('abi_utility');
+  const isInitializer = hasAttr('abi_initializer');
+  const attrHasPrivate = hasAttr('abi_private') || hasAttr('private');
+  const attrHasPublic = hasAttr('abi_public') || hasAttr('public');
+  
+  const anyPrivateInput = Boolean(
+    inputs?.some((input) => input.visibility === 'private')
+  );
+  const isPrivate = attrHasPrivate || (!attrHasPublic && anyPrivateInput);
+  const isPublic = attrHasPublic;
+  
+  const isExecutable = (isPublic || attrHasPrivate) && !isView && !isInitializer;
+  const canSimulate = isView || isUtility || !isExecutable;
+
+  return {
+    isPrivate,
+    isPublic,
+    isView,
+    isUtility,
+    isInitializer,
+    isExecutable,
+    canSimulate,
+  };
+};
+
+export type CallValidationResult = {
+  valid: true;
+  args: unknown[];
+} | {
+  valid: false;
+  error: string;
+};
+
+/**
+ * Validates call prerequisites and builds arguments for contract execution.
+ */
+export const validateAndBuildCallArgs = (
+  address: string,
+  selectedFn: ParsedFunction | null,
+  formValues: Record<string, string>
+): CallValidationResult => {
+  if (!selectedFn) {
+    return { valid: false, error: 'No function selected' };
+  }
+
+  if (!isValidAztecAddress(address)) {
+    return { valid: false, error: 'Provide a valid Aztec address.' };
+  }
+
+  const { args, errors } = buildArgsFromInputs(selectedFn.inputs, formValues);
+  if (errors.length > 0) {
+    return { valid: false, error: errors.join('; ') };
+  }
+
+  return { valid: true, args };
+};
+
+export type LoadArtifactResult = {
+  success: true;
+  parsed: ParsedArtifact;
+  address: string;
+  contractLabel: string | undefined;
+  shouldCacheInline: boolean;
+  firstFunctionName: string | null;
+} | {
+  success: false;
+  error: string;
+};
+
+/**
+ * Parses artifact source and prepares data for caching and state updates.
+ * Pure function that extracts business logic from component.
+ */
+export const loadAndPrepareArtifact = (
+  artifactInput: string,
+  currentAddress: string,
+  maxCacheChars: number
+): LoadArtifactResult => {
+  try {
+    const parsed = parseArtifactSource(artifactInput);
+    const discoveredAddress = (parsed.compiled as { address?: string }).address;
+    const contractLabel = (parsed.compiled as { name?: string }).name;
+    
+    const address = discoveredAddress && isValidAztecAddress(discoveredAddress)
+      ? discoveredAddress
+      : currentAddress;
+    
+    const shouldCacheInline = artifactInput.length <= maxCacheChars;
+    const firstFunctionName = parsed.functions[0]?.name ?? null;
+
+    return {
+      success: true,
+      parsed,
+      address,
+      contractLabel,
+      shouldCacheInline,
+      firstFunctionName,
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Failed to parse artifact';
+    return { success: false, error };
+  }
+};

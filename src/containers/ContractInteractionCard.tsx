@@ -9,24 +9,26 @@ import LogPanel from '../components/contract-interaction/LogPanel';
 import type { CachedContract, LogEntry } from '../components/contract-interaction/types';
 import { useFunctionGroups } from '../hooks/useFunctionGroups';
 import {
-  buildArgsFromInputs,
+  analyzeFunctionCapabilities,
   formatFunctionSignature,
   isValidAztecAddress,
+  loadAndPrepareArtifact,
   parseArtifactSource,
+  validateAndBuildCallArgs,
   type ParsedArtifact,
   type ParsedFunction,
 } from '../utils/contractInteraction';
 import {
+  cacheAndPersistArtifact,
   clearArtifactsDb,
   clearCachedContract,
   constants,
   deleteArtifact,
-  loadArtifact,
+  getCacheStatusMessage,
   loadCachedContracts,
   persistCachedContracts,
   removeContract,
-  storeArtifact,
-  upsertContract,
+  resolveCachedArtifact,
 } from '../utils/contractCache';
 import { PRECONFIGURED_CONTRACTS } from '../config/preconfiguredContracts';
 
@@ -169,57 +171,33 @@ export const ContractInteractionCard: React.FC = () => {
   }, [filteredFunctions, executor.selectedFnName]);
 
   const handleLoadArtifact = async () => {
-    try {
-      requestPersistentStorage();
+    requestPersistentStorage();
 
-      const parsedArtifact = parseArtifactSource(artifact.artifactInput);
-      setParsed(parsedArtifact);
-      updateArtifact({ parseError: null });
-      let nextAddress = artifact.address;
-      const discoveredAddress = (parsedArtifact.compiled as { address?: string }).address;
-      const contractLabel = (parsedArtifact.compiled as { name?: string }).name;
-      if (discoveredAddress && isValidAztecAddress(discoveredAddress)) {
-        nextAddress = discoveredAddress;
-        updateArtifact({ address: discoveredAddress });
-      }
-      updateExecutor({ selectedFnName: parsedArtifact.functions[0]?.name ?? null });
-      pushLog({
-        level: 'success',
-        title: 'Artifact loaded',
-        detail: `Loaded ${parsedArtifact.functions.length} functions`,
-      });
-      const shouldCacheInline = artifact.artifactInput.length <= constants.MAX_CACHE_CHARS;
-      let artifactKey: string | undefined;
-      let artifactValue: string | undefined = artifact.artifactInput;
-      if (!shouldCacheInline) {
-        artifactKey = (await storeArtifact(artifact.artifactInput, currentConfig?.name)) ?? undefined;
-        artifactValue = undefined;
-      }
-      const upserted = upsertContract(savedContracts, {
-        address: nextAddress,
-        label: contractLabel,
-        artifact: shouldCacheInline ? artifactValue : undefined,
-        artifactKey,
-      });
-      const { savedArtifacts } = persistCachedContracts(upserted, currentConfig?.name);
-      setSavedContracts(upserted);
-      if (!savedArtifacts) {
-        pushLog({
-          level: 'info',
-          title: 'Cached address only',
-          detail:
-            shouldCacheInline
-              ? 'Storage quota reached; saved contract address only.'
-              : artifactKey
-                ? 'Artifact cached in extended storage.'
-                : 'Artifact too large to cache; saved contract address only.',
-        });
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to parse artifact';
-      updateArtifact({ parseError: message });
-      pushLog({ level: 'error', title: 'Artifact parse failed', detail: message });
+    const result = loadAndPrepareArtifact(artifact.artifactInput, artifact.address, constants.MAX_CACHE_CHARS);
+    if (!result.success) {
+      updateArtifact({ parseError: result.error });
+      pushLog({ level: 'error', title: 'Artifact parse failed', detail: result.error });
+      return;
     }
+
+    const { parsed: parsedArtifact, address, contractLabel, shouldCacheInline, firstFunctionName } = result;
+    setParsed(parsedArtifact);
+    updateArtifact({ parseError: null, address });
+    updateExecutor({ selectedFnName: firstFunctionName });
+    pushLog({ level: 'success', title: 'Artifact loaded', detail: `Loaded ${parsedArtifact.functions.length} functions` });
+
+    const cacheResult = await cacheAndPersistArtifact({
+      address,
+      artifactInput: artifact.artifactInput,
+      label: contractLabel,
+      shouldCacheInline,
+      savedContracts,
+      networkName: currentConfig?.name,
+    });
+    setSavedContracts(cacheResult.updatedContracts);
+
+    const cacheMsg = getCacheStatusMessage(cacheResult, shouldCacheInline);
+    if (cacheMsg) pushLog({ level: 'info', title: 'Cached address only', detail: cacheMsg });
   };
 
   const handleClearCache = () => {
@@ -240,32 +218,18 @@ export const ContractInteractionCard: React.FC = () => {
     });
     resetExecutor();
 
-    let artifactToUse = contract.artifact;
-    if (!artifactToUse && contract.artifactKey) {
-      artifactToUse = (await loadArtifact(contract.artifactKey)) ?? undefined;
-      if (!artifactToUse) {
-        setParsed(null);
-        pushLog({
-          level: 'info',
-          title: 'Address applied',
-          detail: 'Cached artifact unavailable (too large / cleared); paste it to load functions.',
-        });
-        return;
-      }
-    }
-
-    if (!artifactToUse) {
+    const resolved = await resolveCachedArtifact(contract);
+    if (!resolved.found) {
       setParsed(null);
-      pushLog({
-        level: 'info',
-        title: 'Address applied',
-        detail: 'Artifact not cached (too large); paste it to load functions.',
-      });
+      const detail = resolved.reason === 'extended_storage_unavailable'
+        ? 'Cached artifact unavailable (too large / cleared); paste it to load functions.'
+        : 'Artifact not cached (too large); paste it to load functions.';
+      pushLog({ level: 'info', title: 'Address applied', detail });
       return;
     }
 
     try {
-      const parsedArtifact = parseArtifactSource(artifactToUse);
+      const parsedArtifact = parseArtifactSource(resolved.artifact);
       setParsed(parsedArtifact);
       updateExecutor({ selectedFnName: parsedArtifact.functions[0]?.name ?? null });
       pushLog({
@@ -304,37 +268,29 @@ export const ContractInteractionCard: React.FC = () => {
   };
 
   const handleCall = async (mode: 'simulate' | 'execute') => {
-    if (!parsed || !selectedFn) {
+    if (!parsed) {
       pushLog({ level: 'error', title: 'Missing artifact', detail: 'Load an artifact first' });
       return;
     }
 
-    if (!isValidAztecAddress(artifact.address)) {
-      pushLog({ level: 'error', title: 'Invalid address', detail: 'Provide a valid Aztec address.' });
+    const validation = validateAndBuildCallArgs(artifact.address, selectedFn, executor.formValues);
+    if (!validation.valid) {
+      pushLog({ level: 'error', title: 'Validation failed', detail: validation.error });
       return;
     }
 
-    const { args, errors } = buildArgsFromInputs(selectedFn.inputs, executor.formValues);
-    if (errors.length > 0) {
-      pushLog({
-        level: 'error',
-        title: 'Validation failed',
-        detail: errors.join('; '),
-      });
-      return;
-    }
-
+    const fnName = selectedFn!.name;
     pushLog({
       level: 'info',
-      title: `${mode === 'simulate' ? 'Simulating' : 'Executing'} ${selectedFn.name}`,
-      detail: `Args: ${safeStringify(args)}`,
+      title: `${mode === 'simulate' ? 'Simulating' : 'Executing'} ${fnName}`,
+      detail: `Args: ${safeStringify(validation.args)}`,
     });
 
     const caller = mode === 'simulate' ? simulate : execute;
     const result = await caller({
       address: artifact.address,
-      functionName: selectedFn.name,
-      args,
+      functionName: fnName,
+      args: validation.args,
     });
 
     if (!result.success) {
@@ -354,7 +310,6 @@ export const ContractInteractionCard: React.FC = () => {
   };
 
   const isBusy = isExecuting || isSimulating;
-  const attributes = selectedFn?.attributes ?? [];
   const contractName =
     (parsed?.compiled as { name?: string } | undefined)?.name ??
     savedContracts.find(
@@ -362,29 +317,23 @@ export const ContractInteractionCard: React.FC = () => {
     )?.label ??
     null;
   const hasContract = (parsed?.functions?.length ?? 0) > 0;
-  const hasAttr = (value: string): boolean => attributes.includes(value);
-  const attrHasView = hasAttr('abi_view');
-  const attrHasUtility = hasAttr('abi_utility');
-  const attrHasPrivate = hasAttr('abi_private') || hasAttr('private');
-  const attrHasPublic = hasAttr('abi_public') || hasAttr('public');
-  const anyPrivateInput = Boolean(
-    selectedFn?.inputs?.some((input) => input.visibility === 'private')
+
+  const capabilities = analyzeFunctionCapabilities(
+    selectedFn?.attributes ?? [],
+    selectedFn?.inputs
   );
-  const isPrivateFunction = attrHasPrivate || (!attrHasPublic && anyPrivateInput);
   const ownerInput = selectedFn?.inputs.find((input) => input.path === 'owner');
   const connectedAddress = account?.getAddress().toString() ?? '';
   const ownerValue = ownerInput ? executor.formValues[ownerInput.path] ?? '' : '';
   const ownerMismatchWarning =
-    isPrivateFunction &&
+    capabilities.isPrivate &&
     ownerInput &&
     ownerValue &&
     connectedAddress &&
     ownerValue.toLowerCase() !== connectedAddress.toLowerCase();
-  const isExecutable =
-    (attrHasPublic || attrHasPrivate) && !attrHasView && !hasAttr('abi_initializer');
-  const canSimulate = attrHasView || attrHasUtility || !isExecutable;
-  const simulateDisabled = !selectedFn || isBusy || !canSimulate;
-  const executeDisabled = !selectedFn || isBusy || !isExecutable;
+
+  const simulateDisabled = !selectedFn || isBusy || !capabilities.canSimulate;
+  const executeDisabled = !selectedFn || isBusy || !capabilities.isExecutable;
 
   if (!isConnected || !isInitialized) {
     return null;
@@ -447,7 +396,7 @@ export const ContractInteractionCard: React.FC = () => {
         />
       )}
 
-      {selectedFn && isPrivateFunction && (
+      {selectedFn && capabilities.isPrivate && (
         <div className="input-hint" role="status">
           This is a private function. Results can only be proven by the note owner; querying other
           addresses will likely return 0 or fail.

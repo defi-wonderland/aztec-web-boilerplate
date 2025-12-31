@@ -177,3 +177,97 @@ export const constants = {
   MAX_SAVED_CONTRACTS,
 };
 
+export type CacheArtifactParams = {
+  address: string;
+  artifactInput: string;
+  label?: string;
+  shouldCacheInline: boolean;
+  savedContracts: CachedContract[];
+  networkName?: string;
+};
+
+export type CacheArtifactResult = {
+  updatedContracts: CachedContract[];
+  savedArtifacts: boolean;
+  storedInExtended: boolean;
+};
+
+/**
+ * Returns a user-friendly message describing the cache result.
+ */
+export const getCacheStatusMessage = (
+  result: CacheArtifactResult,
+  shouldCacheInline: boolean
+): string | null => {
+  if (result.savedArtifacts) return null;
+  
+  if (shouldCacheInline) return 'Storage quota reached; saved contract address only.';
+  if (result.storedInExtended) return 'Artifact cached in extended storage.';
+  return 'Artifact too large to cache; saved contract address only.';
+};
+
+/**
+ * Caches a contract artifact either inline or in extended IndexedDB storage,
+ * then persists the updated contract list.
+ */
+export const cacheAndPersistArtifact = async ({
+  address,
+  artifactInput,
+  label,
+  shouldCacheInline,
+  savedContracts,
+  networkName,
+}: CacheArtifactParams): Promise<CacheArtifactResult> => {
+  let artifactKey: string | undefined;
+  let artifactValue: string | undefined = artifactInput;
+
+  if (!shouldCacheInline) {
+    artifactKey = (await storeArtifact(artifactInput, networkName)) ?? undefined;
+    artifactValue = undefined;
+  }
+
+  const upserted = upsertContract(savedContracts, {
+    address,
+    label,
+    artifact: shouldCacheInline ? artifactValue : undefined,
+    artifactKey,
+  });
+
+  const { savedArtifacts } = persistCachedContracts(upserted, networkName);
+
+  return {
+    updatedContracts: upserted,
+    savedArtifacts,
+    storedInExtended: Boolean(artifactKey),
+  };
+};
+
+export type ResolvedArtifactResult = {
+  found: true;
+  artifact: string;
+} | {
+  found: false;
+  reason: 'no_artifact' | 'extended_storage_unavailable';
+};
+
+/**
+ * Resolves artifact from a cached contract, checking inline storage first,
+ * then extended IndexedDB storage if needed.
+ */
+export const resolveCachedArtifact = async (
+  contract: CachedContract
+): Promise<ResolvedArtifactResult> => {
+  if (contract.artifact) {
+    return { found: true, artifact: contract.artifact };
+  }
+
+  if (contract.artifactKey) {
+    const artifact = await loadArtifact(contract.artifactKey);
+    if (artifact) {
+      return { found: true, artifact };
+    }
+    return { found: false, reason: 'extended_storage_unavailable' };
+  }
+
+  return { found: false, reason: 'no_artifact' };
+};
