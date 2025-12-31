@@ -1,15 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useUniversalWallet } from '../hooks';
 import { useDynamicContractCaller } from '../hooks/contracts/useDynamicContractCaller';
+import { useForm } from '../hooks/useForm';
 import ArtifactLoader from '../components/contract-interaction/ArtifactLoader';
 import FunctionForm from '../components/contract-interaction/FunctionForm';
 import FunctionList from '../components/contract-interaction/FunctionList';
 import LogPanel from '../components/contract-interaction/LogPanel';
-import {
-  type CachedContract,
-  type FunctionGroup,
-  type LogEntry,
-} from '../components/contract-interaction/types';
+import type { CachedContract, LogEntry } from '../components/contract-interaction/types';
 import { useFunctionGroups } from '../hooks/useFunctionGroups';
 import {
   buildArgsFromInputs,
@@ -31,10 +28,37 @@ import {
   storeArtifact,
   upsertContract,
 } from '../utils/contractCache';
-import {
-  PRECONFIGURED_CONTRACTS,
-  type PreconfiguredContract,
-} from '../config/preconfiguredContracts';
+import { PRECONFIGURED_CONTRACTS } from '../config/preconfiguredContracts';
+
+/** State for contract/artifact loading inputs */
+type ArtifactLoaderState = {
+  address: string;
+  artifactInput: string;
+  parseError: string | null;
+  selectedPreconfiguredId: string | null;
+  isLoadingPreconfigured: boolean;
+};
+
+/** State for function selection and execution */
+type FunctionExecutorState = {
+  selectedFnName: string | null;
+  formValues: Record<string, string>;
+  filter: string;
+};
+
+const INITIAL_ARTIFACT_LOADER: ArtifactLoaderState = {
+  address: '',
+  artifactInput: '',
+  parseError: null,
+  selectedPreconfiguredId: null,
+  isLoadingPreconfigured: false,
+};
+
+const INITIAL_FUNCTION_EXECUTOR: FunctionExecutorState = {
+  selectedFnName: null,
+  formValues: {},
+  filter: '',
+};
 
 const requestPersistentStorage = async () => {
   if (!navigator.storage?.persist) return;
@@ -49,19 +73,29 @@ const safeStringify = (value: unknown): string =>
 
 export const ContractInteractionCard: React.FC = () => {
   const { isConnected, isInitialized, account, currentConfig } = useUniversalWallet();
-  const [artifactInput, setArtifactInput] = useState('');
-  const [address, setAddress] = useState('');
-  const [hasCache, setHasCache] = useState(false);
+  
+  // Grouped state using useForm for object state management
+  const { state: artifact, update: updateArtifact, reset: resetArtifact, setState: setArtifact } = useForm(INITIAL_ARTIFACT_LOADER);
+  const { state: executor, update: updateExecutor, reset: resetExecutor } = useForm(INITIAL_FUNCTION_EXECUTOR);
+  
+  // Other state
   const [savedContracts, setSavedContracts] = useState<CachedContract[]>([]);
   const [parsed, setParsed] = useState<ParsedArtifact | null>(null);
-  const [selectedFnName, setSelectedFnName] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [filter, setFilter] = useState('');
-  const [parseError, setParseError] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const hasAutoLoadedRef = useRef(false);
-  const [selectedPreconfiguredId, setSelectedPreconfiguredId] = useState<string | null>(null);
-  const [isLoadingPreconfigured, setIsLoadingPreconfigured] = useState(false);
+
+  // Derived state
+  const hasCache = savedContracts.length > 0;
+
+  // Helper to push log entry
+  const pushLog = useCallback((entry: Omit<LogEntry, 'id'>) => {
+    setLogs((prev) => [{ ...entry, id: `${Date.now()}-${prev.length}` }, ...prev.slice(0, 49)]);
+  }, []);
+
+  // Helper to handle form value changes
+  const handleValueChange = useCallback((path: string, value: string) => {
+    updateExecutor({ formValues: { ...executor.formValues, [path]: value } });
+  }, [executor.formValues, updateExecutor]);
 
   const {
     simulate,
@@ -79,74 +113,52 @@ export const ContractInteractionCard: React.FC = () => {
     }));
   }, [parsed]);
 
-  const { filteredFunctions, grouped } = useFunctionGroups(parsedFunctions, filter);
+  const { filteredFunctions, grouped } = useFunctionGroups(parsedFunctions, executor.filter);
 
   const selectedFn =
-    filteredFunctions.find((fn) => fn.name === selectedFnName) ?? filteredFunctions[0] ?? null;
+    filteredFunctions.find((fn) => fn.name === executor.selectedFnName) ?? filteredFunctions[0] ?? null;
 
   const handleApplyPreconfigured = (contractId: string | null) => {
     if (!contractId) {
-      // Custom mode selected - clear the preconfigured selection
-      setSelectedPreconfiguredId(null);
-      setIsLoadingPreconfigured(false);
-      setAddress('');
-      setArtifactInput('');
+      resetArtifact();
       setParsed(null);
-      setSelectedFnName(null);
-      setFormValues({});
-      setFilter('');
-      setParseError(null);
+      resetExecutor();
       return;
     }
     
     const contract = PRECONFIGURED_CONTRACTS.find((c) => c.id === contractId);
     if (!contract) return;
     
-    // Set loading state and update selection immediately
-    setSelectedPreconfiguredId(contractId);
-    setIsLoadingPreconfigured(true);
-    setAddress(contract.address);
-    setFormValues({});
-    setFilter('');
-    setParseError(null);
+    updateArtifact({
+      selectedPreconfiguredId: contractId,
+      isLoadingPreconfigured: true,
+      address: contract.address,
+      parseError: null,
+    });
+    resetExecutor();
     
-    // Defer the heavy artifact JSON assignment to allow UI to update
     requestAnimationFrame(() => {
       setTimeout(() => {
-        setArtifactInput(contract.artifactJson);
-        setIsLoadingPreconfigured(false);
+        updateArtifact({ artifactInput: contract.artifactJson, isLoadingPreconfigured: false });
       }, 50);
     });
-  };
-
-  const pushLog = (entry: Omit<LogEntry, 'id'>) => {
-    setLogs((prev) => [
-      {
-        ...entry,
-        id: `${Date.now()}-${prev.length}`,
-      },
-      ...prev.slice(0, 49),
-    ]);
   };
 
   useEffect(() => {
     hasAutoLoadedRef.current = false;
     const cachedList = loadCachedContracts(currentConfig?.name);
     setSavedContracts(cachedList);
-    setHasCache(cachedList.length > 0);
-    if (cachedList.length > 0) {
-      const latest = cachedList[0];
-      setAddress(latest.address);
-      setArtifactInput(latest.artifact ?? '');
-    } else {
-      setAddress('');
-      setArtifactInput('');
-    }
+    
+    const latest = cachedList[0];
+    setArtifact({
+      address: latest?.address ?? '',
+      artifactInput: latest?.artifact ?? '',
+      parseError: null,
+      selectedPreconfiguredId: null,
+      isLoadingPreconfigured: false,
+    });
     setParsed(null);
-    setSelectedFnName(null);
-    setFormValues({});
-    setFilter('');
-    setParseError(null);
+    resetExecutor();
   }, [currentConfig?.name]);
 
   useEffect(() => {
@@ -158,36 +170,36 @@ export const ContractInteractionCard: React.FC = () => {
   }, [parsed, savedContracts]);
 
   useEffect(() => {
-    if (filteredFunctions.length > 0 && !selectedFnName) {
-      setSelectedFnName(filteredFunctions[0].name);
+    if (filteredFunctions.length > 0 && !executor.selectedFnName) {
+      updateExecutor({ selectedFnName: filteredFunctions[0].name });
     }
-  }, [filteredFunctions, selectedFnName]);
+  }, [filteredFunctions, executor.selectedFnName]);
 
   const handleLoadArtifact = async () => {
     try {
       requestPersistentStorage();
 
-      const parsedArtifact = parseArtifactSource(artifactInput);
+      const parsedArtifact = parseArtifactSource(artifact.artifactInput);
       setParsed(parsedArtifact);
-      setParseError(null);
-      let nextAddress = address;
+      updateArtifact({ parseError: null });
+      let nextAddress = artifact.address;
       const discoveredAddress = (parsedArtifact.compiled as { address?: string }).address;
       const contractLabel = (parsedArtifact.compiled as { name?: string }).name;
       if (discoveredAddress && isValidAztecAddress(discoveredAddress)) {
         nextAddress = discoveredAddress;
-        setAddress(discoveredAddress);
+        updateArtifact({ address: discoveredAddress });
       }
-      setSelectedFnName(parsedArtifact.functions[0]?.name ?? null);
+      updateExecutor({ selectedFnName: parsedArtifact.functions[0]?.name ?? null });
       pushLog({
         level: 'success',
         title: 'Artifact loaded',
         detail: `Loaded ${parsedArtifact.functions.length} functions`,
       });
-      const shouldCacheInline = artifactInput.length <= constants.MAX_CACHE_CHARS;
+      const shouldCacheInline = artifact.artifactInput.length <= constants.MAX_CACHE_CHARS;
       let artifactKey: string | undefined;
-      let artifactValue: string | undefined = artifactInput;
+      let artifactValue: string | undefined = artifact.artifactInput;
       if (!shouldCacheInline) {
-        artifactKey = (await storeArtifact(artifactInput, currentConfig?.name)) ?? undefined;
+        artifactKey = (await storeArtifact(artifact.artifactInput, currentConfig?.name)) ?? undefined;
         artifactValue = undefined;
       }
       const upserted = upsertContract(savedContracts, {
@@ -198,7 +210,6 @@ export const ContractInteractionCard: React.FC = () => {
       });
       const { savedArtifacts } = persistCachedContracts(upserted, currentConfig?.name);
       setSavedContracts(upserted);
-      setHasCache(upserted.length > 0);
       if (!savedArtifacts) {
         pushLog({
           level: 'info',
@@ -211,60 +222,40 @@ export const ContractInteractionCard: React.FC = () => {
                 : 'Artifact too large to cache; saved contract address only.',
         });
       }
-      setHasCache(true);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to parse artifact';
-      setParseError(message);
-      pushLog({
-        level: 'error',
-        title: 'Artifact parse failed',
-        detail: message,
-      });
+      const message = err instanceof Error ? err.message : 'Failed to parse artifact';
+      updateArtifact({ parseError: message });
+      pushLog({ level: 'error', title: 'Artifact parse failed', detail: message });
     }
   };
 
   const handleClearCache = () => {
     clearCachedContract(currentConfig?.name);
     clearArtifactsDb();
-    setHasCache(false);
     setSavedContracts([]);
-    setArtifactInput('');
-    setAddress('');
+    resetArtifact();
     setParsed(null);
-    setSelectedFnName(null);
-    setSelectedPreconfiguredId(null);
-    setFormValues({});
-    setFilter('');
-    setParseError(null);
-    pushLog({
-      level: 'info',
-      title: 'Cleared',
-    });
-  };
-
-  const handleValueChange = (path: string, value: string) => {
-    setFormValues((prev) => ({ ...prev, [path]: value }));
+    resetExecutor();
+    pushLog({ level: 'info', title: 'Cleared' });
   };
 
   const handleApplySaved = async (contract: CachedContract) => {
-    setAddress(contract.address);
-    setArtifactInput(contract.artifact ?? '');
-    setFormValues({});
-    setFilter('');
-    setParseError(null);
+    updateArtifact({
+      address: contract.address,
+      artifactInput: contract.artifact ?? '',
+      parseError: null,
+    });
+    resetExecutor();
 
     let artifactToUse = contract.artifact;
     if (!artifactToUse && contract.artifactKey) {
       artifactToUse = (await loadArtifact(contract.artifactKey)) ?? undefined;
       if (!artifactToUse) {
         setParsed(null);
-        setSelectedFnName(null);
         pushLog({
           level: 'info',
           title: 'Address applied',
-          detail:
-            'Cached artifact unavailable (too large / cleared); paste it to load functions.',
+          detail: 'Cached artifact unavailable (too large / cleared); paste it to load functions.',
         });
         return;
       }
@@ -272,7 +263,6 @@ export const ContractInteractionCard: React.FC = () => {
 
     if (!artifactToUse) {
       setParsed(null);
-      setSelectedFnName(null);
       pushLog({
         level: 'info',
         title: 'Address applied',
@@ -284,7 +274,7 @@ export const ContractInteractionCard: React.FC = () => {
     try {
       const parsedArtifact = parseArtifactSource(artifactToUse);
       setParsed(parsedArtifact);
-      setSelectedFnName(parsedArtifact.functions[0]?.name ?? null);
+      updateExecutor({ selectedFnName: parsedArtifact.functions[0]?.name ?? null });
       pushLog({
         level: 'success',
         title: 'Saved contract loaded',
@@ -293,13 +283,8 @@ export const ContractInteractionCard: React.FC = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to parse cached artifact';
       setParsed(null);
-      setSelectedFnName(null);
-      setParseError(message);
-      pushLog({
-        level: 'error',
-        title: 'Cached artifact parse failed',
-        detail: message,
-      });
+      updateArtifact({ parseError: message });
+      pushLog({ level: 'error', title: 'Cached artifact parse failed', detail: message });
     }
   };
 
@@ -312,49 +297,31 @@ export const ContractInteractionCard: React.FC = () => {
     }
     const next = removeContract(savedContracts, targetAddress);
     setSavedContracts(next);
-    setHasCache(next.length > 0);
     persistCachedContracts(next, currentConfig?.name);
     
     // If deleting the currently active contract, reset the form state
-    const isActiveContract = address.toLowerCase() === targetAddress.toLowerCase();
+    const isActiveContract = artifact.address.toLowerCase() === targetAddress.toLowerCase();
     if (isActiveContract) {
-      setAddress('');
-      setArtifactInput('');
+      resetArtifact();
       setParsed(null);
-      setSelectedFnName(null);
-      setSelectedPreconfiguredId(null);
-      setFormValues({});
-      setFilter('');
-      setParseError(null);
+      resetExecutor();
     }
     
-    pushLog({
-      level: 'info',
-      title: 'Saved contract removed',
-      detail: targetAddress,
-    });
+    pushLog({ level: 'info', title: 'Saved contract removed', detail: targetAddress });
   };
 
   const handleCall = async (mode: 'simulate' | 'execute') => {
     if (!parsed || !selectedFn) {
-      pushLog({
-        level: 'error',
-        title: 'Missing artifact',
-        detail: 'Load an artifact first',
-      });
+      pushLog({ level: 'error', title: 'Missing artifact', detail: 'Load an artifact first' });
       return;
     }
 
-    if (!isValidAztecAddress(address)) {
-      pushLog({
-        level: 'error',
-        title: 'Invalid address',
-        detail: 'Provide a valid Aztec address.',
-      });
+    if (!isValidAztecAddress(artifact.address)) {
+      pushLog({ level: 'error', title: 'Invalid address', detail: 'Provide a valid Aztec address.' });
       return;
     }
 
-    const { args, errors } = buildArgsFromInputs(selectedFn.inputs, formValues);
+    const { args, errors } = buildArgsFromInputs(selectedFn.inputs, executor.formValues);
     if (errors.length > 0) {
       pushLog({
         level: 'error',
@@ -372,7 +339,7 @@ export const ContractInteractionCard: React.FC = () => {
 
     const caller = mode === 'simulate' ? simulate : execute;
     const result = await caller({
-      address,
+      address: artifact.address,
       functionName: selectedFn.name,
       args,
     });
@@ -398,7 +365,7 @@ export const ContractInteractionCard: React.FC = () => {
   const contractName =
     (parsed?.compiled as { name?: string } | undefined)?.name ??
     savedContracts.find(
-      (contract) => contract.address.trim().toLowerCase() === address.trim().toLowerCase()
+      (contract) => contract.address.trim().toLowerCase() === artifact.address.trim().toLowerCase()
     )?.label ??
     null;
   const hasContract = (parsed?.functions?.length ?? 0) > 0;
@@ -413,7 +380,7 @@ export const ContractInteractionCard: React.FC = () => {
   const isPrivateFunction = attrHasPrivate || (!attrHasPublic && anyPrivateInput);
   const ownerInput = selectedFn?.inputs.find((input) => input.path === 'owner');
   const connectedAddress = account?.getAddress().toString() ?? '';
-  const ownerValue = ownerInput ? formValues[ownerInput.path] ?? '' : '';
+  const ownerValue = ownerInput ? executor.formValues[ownerInput.path] ?? '' : '';
   const ownerMismatchWarning =
     isPrivateFunction &&
     ownerInput &&
@@ -447,32 +414,32 @@ export const ContractInteractionCard: React.FC = () => {
 
       <div className="contract-grid">
         <ArtifactLoader
-          address={address}
-          artifactInput={artifactInput}
-          onAddressChange={setAddress}
-          onArtifactChange={setArtifactInput}
+          address={artifact.address}
+          artifactInput={artifact.artifactInput}
+          onAddressChange={(v) => updateArtifact({ address: v })}
+          onArtifactChange={(v) => updateArtifact({ artifactInput: v })}
           onLoad={handleLoadArtifact}
           onClear={handleClearCache}
           hasCache={hasCache}
           savedContracts={savedContracts}
           onApplySaved={handleApplySaved}
           onDeleteSaved={handleDeleteSaved}
-          error={parseError}
-          isValidAddress={!address || isValidAztecAddress(address)}
-          activeAddress={address}
+          error={artifact.parseError}
+          isValidAddress={!artifact.address || isValidAztecAddress(artifact.address)}
+          activeAddress={artifact.address}
           preconfigured={PRECONFIGURED_CONTRACTS.filter(
             (c) => !c.network || c.network === currentConfig?.name
           )}
-          selectedPreconfiguredId={selectedPreconfiguredId}
+          selectedPreconfiguredId={artifact.selectedPreconfiguredId}
           onApplyPreconfigured={handleApplyPreconfigured}
-          isLoadingPreconfigured={isLoadingPreconfigured}
+          isLoadingPreconfigured={artifact.isLoadingPreconfigured}
         />
         <FunctionList
           groups={grouped}
           selected={selectedFn?.name ?? null}
-          onSelect={setSelectedFnName}
-          filter={filter}
-          onFilterChange={setFilter}
+          onSelect={(name) => updateExecutor({ selectedFnName: name })}
+          filter={executor.filter}
+          onFilterChange={(v) => updateExecutor({ filter: v })}
           contractName={contractName ?? undefined}
           hasContract={hasContract}
         />
@@ -481,7 +448,7 @@ export const ContractInteractionCard: React.FC = () => {
       {selectedFn && (
         <FunctionForm
           fn={selectedFn}
-          values={formValues}
+          values={executor.formValues}
           onChange={handleValueChange}
           disabled={isBusy}
         />
