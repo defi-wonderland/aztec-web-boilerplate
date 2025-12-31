@@ -61,6 +61,7 @@ export const ContractInteractionCard: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const hasAutoLoadedRef = useRef(false);
   const [selectedPreconfiguredId, setSelectedPreconfiguredId] = useState<string | null>(null);
+  const [isLoadingPreconfigured, setIsLoadingPreconfigured] = useState(false);
 
   const {
     simulate,
@@ -83,15 +84,39 @@ export const ContractInteractionCard: React.FC = () => {
   const selectedFn =
     filteredFunctions.find((fn) => fn.name === selectedFnName) ?? filteredFunctions[0] ?? null;
 
-  const handleApplyPreconfigured = (contractId: string) => {
+  const handleApplyPreconfigured = (contractId: string | null) => {
+    if (!contractId) {
+      // Custom mode selected - clear the preconfigured selection
+      setSelectedPreconfiguredId(null);
+      setIsLoadingPreconfigured(false);
+      setAddress('');
+      setArtifactInput('');
+      setParsed(null);
+      setSelectedFnName(null);
+      setFormValues({});
+      setFilter('');
+      setParseError(null);
+      return;
+    }
+    
     const contract = PRECONFIGURED_CONTRACTS.find((c) => c.id === contractId);
     if (!contract) return;
+    
+    // Set loading state and update selection immediately
     setSelectedPreconfiguredId(contractId);
+    setIsLoadingPreconfigured(true);
     setAddress(contract.address);
-    setArtifactInput(contract.artifactJson);
     setFormValues({});
     setFilter('');
     setParseError(null);
+    
+    // Defer the heavy artifact JSON assignment to allow UI to update
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setArtifactInput(contract.artifactJson);
+        setIsLoadingPreconfigured(false);
+      }, 50);
+    });
   };
 
   const pushLog = (entry: Omit<LogEntry, 'id'>) => {
@@ -208,12 +233,13 @@ export const ContractInteractionCard: React.FC = () => {
     setAddress('');
     setParsed(null);
     setSelectedFnName(null);
+    setSelectedPreconfiguredId(null);
     setFormValues({});
     setFilter('');
     setParseError(null);
     pushLog({
       level: 'info',
-      title: 'Cached contract cleared',
+      title: 'Cleared',
     });
   };
 
@@ -288,6 +314,20 @@ export const ContractInteractionCard: React.FC = () => {
     setSavedContracts(next);
     setHasCache(next.length > 0);
     persistCachedContracts(next, currentConfig?.name);
+    
+    // If deleting the currently active contract, reset the form state
+    const isActiveContract = address.toLowerCase() === targetAddress.toLowerCase();
+    if (isActiveContract) {
+      setAddress('');
+      setArtifactInput('');
+      setParsed(null);
+      setSelectedFnName(null);
+      setSelectedPreconfiguredId(null);
+      setFormValues({});
+      setFilter('');
+      setParseError(null);
+    }
+    
     pushLog({
       level: 'info',
       title: 'Saved contract removed',
@@ -423,7 +463,9 @@ export const ContractInteractionCard: React.FC = () => {
           preconfigured={PRECONFIGURED_CONTRACTS.filter(
             (c) => !c.network || c.network === currentConfig?.name
           )}
+          selectedPreconfiguredId={selectedPreconfiguredId}
           onApplyPreconfigured={handleApplyPreconfigured}
+          isLoadingPreconfigured={isLoadingPreconfigured}
         />
         <FunctionList
           groups={grouped}

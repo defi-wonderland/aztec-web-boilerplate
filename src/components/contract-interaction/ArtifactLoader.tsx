@@ -1,6 +1,8 @@
 import React from 'react';
 import type { ArtifactLoaderProps } from './types';
 
+const CUSTOM_OPTION_ID = 'custom';
+
 const ArtifactLoader = ({
   address,
   artifactInput,
@@ -16,26 +18,43 @@ const ArtifactLoader = ({
   isValidAddress,
   activeAddress,
   preconfigured,
+  selectedPreconfiguredId,
   onApplyPreconfigured,
+  isLoadingPreconfigured = false,
 }: ArtifactLoaderProps) => {
   const normalizedActiveAddress = activeAddress.trim().toLowerCase();
+  const isCustomMode = !selectedPreconfiguredId || selectedPreconfiguredId === CUSTOM_OPTION_ID;
+  const isPreconfiguredMode = !isCustomMode;
+  
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    if (selectedId === CUSTOM_OPTION_ID) {
+      onApplyPreconfigured?.(null);
+    } else {
+      onApplyPreconfigured?.(selectedId);
+    }
+  };
+
+  const canLoad = isCustomMode 
+    ? Boolean(address || artifactInput)
+    : isPreconfiguredMode && !isLoadingPreconfigured;
+  
+  const canClear = (hasCache || address || artifactInput || isPreconfiguredMode) && !isLoadingPreconfigured;
+
   return (
     <div className="loader-card">
       {preconfigured?.length ? (
         <div className="form-group">
-          <label htmlFor="preconfigured-contract">Preconfigured contracts (optional)</label>
+          <label htmlFor="preconfigured-contract">Contract Source</label>
           <select
             id="preconfigured-contract"
             className="form-input"
-            defaultValue=""
-            onChange={(e) => {
-              const selectedId = e.target.value;
-              if (!selectedId) return;
-              onApplyPreconfigured?.(selectedId);
-            }}
+            value={selectedPreconfiguredId ?? CUSTOM_OPTION_ID}
+            onChange={handleSelectChange}
+            aria-label="Select contract source"
           >
-            <option value="" disabled>
-              Select a contract
+            <option value={CUSTOM_OPTION_ID}>
+              Custom (enter manually)
             </option>
             {preconfigured.map((c) => (
               <option key={c.id} value={c.id}>
@@ -43,7 +62,15 @@ const ArtifactLoader = ({
               </option>
             ))}
           </select>
-          <div className="input-hint">You can also paste your own address and artifact below.</div>
+          {isCustomMode && (
+            <div className="input-hint">Enter your own contract address and artifact below.</div>
+          )}
+          {isPreconfiguredMode && !isLoadingPreconfigured && (
+            <div className="input-hint success">Artifact is pre-filled. Address can be changed if needed.</div>
+          )}
+          {isLoadingPreconfigured && (
+            <div className="input-hint loading">Loading contract data...</div>
+          )}
         </div>
       ) : null}
       <div className="form-group">
@@ -59,35 +86,58 @@ const ArtifactLoader = ({
         {!isValidAddress && address && (
           <span className="input-hint error">Invalid Aztec address</span>
         )}
+        {isPreconfiguredMode && (
+          <span className="input-hint">Pre-filled address, but you can change it to use a different deployment.</span>
+        )}
       </div>
       <div className="form-group">
         <label htmlFor="artifact-json">Artifact (JSON)</label>
-        <textarea
-          id="artifact-json"
-          className="form-input artifact-textarea"
-          value={artifactInput}
-          onChange={(e) => onArtifactChange(e.target.value)}
-          placeholder="Paste compiled artifact JSON"
-          aria-label="Artifact JSON"
-        />
+        <div className="artifact-textarea-wrapper">
+          <textarea
+            id="artifact-json"
+            className={`form-input artifact-textarea${isPreconfiguredMode ? ' input-disabled' : ''}${isLoadingPreconfigured ? ' loading' : ''}`}
+            value={isLoadingPreconfigured ? '' : artifactInput}
+            onChange={(e) => onArtifactChange(e.target.value)}
+            placeholder={isLoadingPreconfigured ? 'Loading artifact...' : 'Paste compiled artifact JSON'}
+            aria-label="Artifact JSON"
+            disabled={isPreconfiguredMode || isLoadingPreconfigured}
+            readOnly={isPreconfiguredMode}
+          />
+          {isLoadingPreconfigured && (
+            <div className="artifact-loading-overlay">
+              <div className="loading-spinner" />
+              <span>Loading artifact...</span>
+            </div>
+          )}
+        </div>
       </div>
       {error && <div className="input-hint error">{error}</div>}
       <div className="action-row">
-        <button type="button" className="btn btn-primary" onClick={onLoad}>
-          Load artifact
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={onClear}
-          disabled={!hasCache && !address && !artifactInput}
+        <button 
+          type="button" 
+          className="btn btn-primary" 
+          onClick={onLoad}
+          disabled={!canLoad}
+          aria-label={isPreconfiguredMode ? 'Load preconfigured contract' : 'Load custom artifact'}
         >
-          Clear saved
+          {isPreconfiguredMode ? 'Load contract' : 'Load artifact'}
         </button>
       </div>
       {savedContracts.length > 0 && (
         <div className="form-group">
-          <label>Saved contracts</label>
+          <div className="saved-contracts-header">
+            <label>Saved contracts</label>
+            <button
+              type="button"
+              className="btn btn-small btn-danger-outline"
+              onClick={onClear}
+              disabled={!canClear}
+              aria-label="Clear all saved contracts"
+              title="Remove all saved contracts from cache"
+            >
+              Clear all saved
+            </button>
+          </div>
           <div className="saved-contracts">
             {savedContracts.map((contract) => {
               const isActive =

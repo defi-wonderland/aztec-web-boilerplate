@@ -23,6 +23,13 @@ export type CachedContract = {
   savedAt?: number;
 };
 
+export type PreconfiguredContractOption = {
+  id: string;
+  label: string;
+  address: string;
+  artifactJson: string;
+};
+
 export interface ArtifactLoaderProps {
   address: string;
   artifactInput: string;
@@ -37,13 +44,10 @@ export interface ArtifactLoaderProps {
   error?: string | null;
   isValidAddress: boolean;
   activeAddress: string;
-  preconfigured?: {
-    id: string;
-    label: string;
-    address: string;
-    artifactJson: string;
-  }[];
-  onApplyPreconfigured?: (contractId: string) => void;
+  preconfigured?: PreconfiguredContractOption[];
+  selectedPreconfiguredId: string | null;
+  onApplyPreconfigured?: (contractId: string | null) => void;
+  isLoadingPreconfigured?: boolean;
 }
 
 export interface FunctionListProps {
