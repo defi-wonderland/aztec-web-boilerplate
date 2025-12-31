@@ -30,7 +30,6 @@ import {
 } from '../utils/contractCache';
 import { PRECONFIGURED_CONTRACTS } from '../config/preconfiguredContracts';
 
-/** State for contract/artifact loading inputs */
 type ArtifactLoaderState = {
   address: string;
   artifactInput: string;
@@ -39,7 +38,6 @@ type ArtifactLoaderState = {
   isLoadingPreconfigured: boolean;
 };
 
-/** State for function selection and execution */
 type FunctionExecutorState = {
   selectedFnName: string | null;
   formValues: Record<string, string>;
@@ -74,25 +72,20 @@ const safeStringify = (value: unknown): string =>
 export const ContractInteractionCard: React.FC = () => {
   const { isConnected, isInitialized, account, currentConfig } = useUniversalWallet();
   
-  // Grouped state using useForm for object state management
   const { state: artifact, update: updateArtifact, reset: resetArtifact, setState: setArtifact } = useForm(INITIAL_ARTIFACT_LOADER);
   const { state: executor, update: updateExecutor, reset: resetExecutor } = useForm(INITIAL_FUNCTION_EXECUTOR);
   
-  // Other state
   const [savedContracts, setSavedContracts] = useState<CachedContract[]>([]);
   const [parsed, setParsed] = useState<ParsedArtifact | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const hasAutoLoadedRef = useRef(false);
 
-  // Derived state
   const hasCache = savedContracts.length > 0;
 
-  // Helper to push log entry
   const pushLog = useCallback((entry: Omit<LogEntry, 'id'>) => {
     setLogs((prev) => [{ ...entry, id: `${Date.now()}-${prev.length}` }, ...prev.slice(0, 49)]);
   }, []);
 
-  // Helper to handle form value changes
   const handleValueChange = useCallback((path: string, value: string) => {
     updateExecutor({ formValues: { ...executor.formValues, [path]: value } });
   }, [executor.formValues, updateExecutor]);
