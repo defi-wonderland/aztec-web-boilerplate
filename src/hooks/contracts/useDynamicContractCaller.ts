@@ -3,12 +3,9 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { useUniversalWallet } from '../context/useUniversalWallet';
-import {
-  hasAppManagedPXE,
-  isBrowserWalletConnector,
-  type BrowserWalletConnector,
-} from '../../types/walletConnector';
+import { hasAppManagedPXE, isBrowserWalletConnector } from '../../types/walletConnector';
 import { getContractMethod } from './utils';
+import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 import type { SimulateViewsOp } from '../../types';
 
 interface CallParams {
@@ -23,51 +20,6 @@ interface CallResult {
   txHash?: string;
   error?: string;
 }
-
-const RECEIPT_POLL_INTERVAL_MS = 2000;
-const RECEIPT_MAX_ATTEMPTS = 30;
-
-const waitForBrowserWalletReceipt = async (
-  connector: BrowserWalletConnector,
-  txHash: string,
-  chain: string
-): Promise<{ success: true } | { success: false; error: string }> => {
-  for (let attempt = 1; attempt <= RECEIPT_MAX_ATTEMPTS; attempt++) {
-    try {
-      const result = await connector.executeOperation({
-        kind: 'aztec_getTxReceipt',
-        chain,
-        txHash,
-      });
-
-      if (result.status === 'failed') {
-        const errorMsg = 'error' in result && result.error ? String(result.error) : 'Failed to fetch receipt';
-        return { success: false, error: errorMsg };
-      }
-
-      if (result.status === 'ok' && result.result) {
-        const receipt = result.result as { status?: string };
-        const txStatus = receipt.status?.toLowerCase();
-
-        if (txStatus === 'mined' || txStatus === 'success') {
-          return { success: true };
-        }
-
-        if (txStatus === 'dropped' || txStatus === 'failed' || txStatus === 'reverted') {
-          return { success: false, error: `Transaction ${txStatus}` };
-        }
-      }
-    } catch {
-      // swallow transient errors and continue polling
-    }
-
-    if (attempt < RECEIPT_MAX_ATTEMPTS) {
-      await new Promise((resolve) => setTimeout(resolve, RECEIPT_POLL_INTERVAL_MS));
-    }
-  }
-
-  return { success: false, error: 'Transaction confirmation timeout' };
-};
 
 export const useDynamicContractCaller = (artifact?: ContractArtifact | null) => {
   const { connector, account } = useUniversalWallet();

@@ -3,21 +3,9 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { useUniversalWallet } from '../context/useUniversalWallet';
-import {
-  isBrowserWalletConnector,
-  hasAppManagedPXE,
-  type BrowserWalletConnector,
-} from '../../types/walletConnector';
-import type {
-  MethodsOf,
-  ArgsOf,
-  WriteContractResult,
-} from '../../types/contractTypes';
-import type { GetTxReceiptOp } from '../../types/browserWallet';
-
-/** Default polling settings for browser wallet receipt */
-const RECEIPT_POLL_INTERVAL_MS = 2000;
-const RECEIPT_MAX_ATTEMPTS = 30; // 60 seconds total
+import { isBrowserWalletConnector, hasAppManagedPXE } from '../../types/walletConnector';
+import type { MethodsOf, ArgsOf, WriteContractResult } from '../../types/contractTypes';
+import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 
 interface UseWriteContractOptions {
   /** Timeout for transaction confirmation (ms) - used by embedded wallet */
@@ -56,54 +44,6 @@ interface WriteContractParams<
 const getChainFromCaipAccount = (caipAccount: string): string => {
   const parts = caipAccount.split(':');
   return `${parts[0]}:${parts[1]}`;
-};
-
-const waitForBrowserWalletReceipt = async (
-  connector: BrowserWalletConnector,
-  txHash: string,
-  chain: string,
-  options: { intervalMs?: number; maxAttempts?: number } = {}
-): Promise<{ success: true } | { success: false; error: string }> => {
-  const intervalMs = options.intervalMs ?? RECEIPT_POLL_INTERVAL_MS;
-  const maxAttempts = options.maxAttempts ?? RECEIPT_MAX_ATTEMPTS;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      const operation: GetTxReceiptOp = {
-        kind: 'aztec_getTxReceipt',
-        chain,
-        txHash,
-      };
-      const result = await connector.executeOperation(operation);
-
-      if (result.status === 'failed') {
-        const errorMsg = 'error' in result ? String(result.error) : 'Failed to get receipt';
-        return { success: false, error: errorMsg };
-      }
-
-      if (result.status === 'ok' && result.result) {
-        const receipt = result.result as { status?: string };
-        const txStatus = receipt.status?.toLowerCase();
-
-        if (txStatus === 'mined' || txStatus === 'success') {
-          return { success: true };
-        }
-
-        if (txStatus === 'dropped' || txStatus === 'failed' || txStatus === 'reverted') {
-          return { success: false, error: `Transaction ${txStatus}` };
-        }
-
-      }
-    } catch {
-      // Network error - continue polling
-    }
-
-    if (attempt < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
-    }
-  }
-
-  return { success: false, error: 'Transaction confirmation timeout' };
 };
 
 /**

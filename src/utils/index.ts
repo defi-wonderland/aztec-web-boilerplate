@@ -7,6 +7,7 @@ import { isBrowserWalletConnector } from "../types/walletConnector";
 import { CHAIN_ID_TO_NETWORK, NETWORK_NAMES } from '../config/networks/constants';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
+export { waitForBrowserWalletReceipt, type WaitForReceiptOptions, type WaitForReceiptResult } from './txReceipt';
 
 /** CAIP account format: "namespace:chainId:address" (e.g., "aztec:1:0x123...") */
 type CaipAccountString = string;

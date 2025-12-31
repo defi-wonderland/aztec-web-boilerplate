@@ -1,8 +1,6 @@
 import React from 'react';
 import type { ArtifactLoaderProps } from './types';
 
-const CUSTOM_OPTION_ID = 'custom';
-
 const ArtifactLoader = ({
   address,
   artifactInput,
@@ -23,20 +21,16 @@ const ArtifactLoader = ({
   isLoadingPreconfigured = false,
 }: ArtifactLoaderProps) => {
   const normalizedActiveAddress = activeAddress.trim().toLowerCase();
-  const isCustomMode = !selectedPreconfiguredId || selectedPreconfiguredId === CUSTOM_OPTION_ID;
-  const isPreconfiguredMode = !isCustomMode;
+  const isCustomMode = !selectedPreconfiguredId;
+  const isPreconfiguredMode = Boolean(selectedPreconfiguredId);
   
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedId = e.target.value;
-    if (selectedId === CUSTOM_OPTION_ID) {
-      onApplyPreconfigured?.(null);
-    } else {
-      onApplyPreconfigured?.(selectedId);
-    }
+    const selectedId = e.target.value || null;
+    onApplyPreconfigured?.(selectedId);
   };
 
   const canLoad = isCustomMode 
-    ? Boolean(address || artifactInput)
+    ? Boolean(address && artifactInput)
     : isPreconfiguredMode && !isLoadingPreconfigured;
   
   const canClear = (hasCache || address || artifactInput || isPreconfiguredMode) && !isLoadingPreconfigured;
@@ -49,11 +43,11 @@ const ArtifactLoader = ({
           <select
             id="preconfigured-contract"
             className="form-input"
-            value={selectedPreconfiguredId ?? CUSTOM_OPTION_ID}
+            value={selectedPreconfiguredId ?? ''}
             onChange={handleSelectChange}
             aria-label="Select contract source"
           >
-            <option value={CUSTOM_OPTION_ID}>
+            <option value="">
               Custom (enter manually)
             </option>
             {preconfigured.map((c) => (
