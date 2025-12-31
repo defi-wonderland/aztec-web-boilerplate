@@ -24,10 +24,10 @@ import type { ContractConfigMap, ContractConfigDefinition } from './types';
  * ```
  */
 export const createContractConfig = <
-  T extends Record<string, ContractConfigDefinition<NetworkConfig>>,
+  const T extends Record<string, ContractConfigDefinition<NetworkConfig>>,
 >(
   configs: T
-): T & ContractConfigMap<NetworkConfig> => {
+): T => {
   for (const [name, config] of Object.entries(configs)) {
     if (!config.artifact) {
       throw new Error(`Contract "${name}" is missing required "artifact" property`);
