@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { truncateAddress, truncateCaipAddress } from '../utils';
+import { truncateAddress, truncateCaipAddress, parseCaipAddress } from '../utils';
+import { copyToClipboard } from '../utils/clipboard';
+import { useError } from '../providers/ErrorProvider';
 import { useUniversalWallet } from '../hooks';
 import { ThemeToggle } from './ThemeToggle';
 import { ConnectWalletModal } from './ConnectWalletModal';
@@ -15,15 +17,39 @@ const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
   walletName,
   address,
   onDisconnect,
-}) => (
-  <div className="connected-account-section">
-    <span className="wallet-type">{walletName}</span>
-    <span className="account-address">{address}</span>
-    <button onClick={onDisconnect} type="button" className="disconnect-button">
-      Disconnect
-    </button>
-  </div>
-);
+}) => {
+  const { addMessage } = useError();
+
+  const caipParts = parseCaipAddress(address);
+  const displayAddress = caipParts
+    ? truncateCaipAddress(address)
+    : truncateAddress(address);
+  const copyAddress = caipParts?.address ?? address;
+
+  const handleCopy = async () => {
+    await copyToClipboard(copyAddress, {
+      onSuccess: () => addMessage({ message: `${walletName} address copied: ${copyAddress}`, type: 'success' }),
+    });
+  };
+
+  return (
+    <div className="connected-account-section">
+      <span className="wallet-type">{walletName}</span>
+      <button
+        type="button"
+        className="account-address"
+        onClick={handleCopy}
+        aria-label="Copy connected address"
+        title="Copy address"
+      >
+        {displayAddress}
+      </button>
+      <button onClick={onDisconnect} type="button" className="disconnect-button">
+        Disconnect
+      </button>
+    </div>
+  );
+};
 
 interface ConnectButtonProps {
   onClick: () => void;
@@ -57,17 +83,13 @@ export const Header: React.FC = () => {
         : walletType === WalletType.BROWSER_WALLET
           ? 'Browser'
           : 'Wallet');
-    const displayAddress = caipAccount
-      ? truncateCaipAddress(caipAccount)
-      : account
-        ? truncateAddress(account.getAddress().toString())
-        : null;
+    const address = caipAccount ?? account?.getAddress().toString() ?? '';
 
-    if (status?.status === 'connected' && displayAddress) {
+    if (status?.status === 'connected' && address) {
       return (
         <ConnectedAccount
           walletName={walletName}
-          address={displayAddress}
+          address={address}
           onDisconnect={handleDisconnect}
         />
       );

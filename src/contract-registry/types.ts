@@ -28,7 +28,7 @@ export interface ContractDeployParams {
  * Contract class interface - any class with a static `at` method
  */
 export interface ContractClass<TContract = unknown> {
-  at: (address: AztecAddress, wallet: Wallet) => Promise<TContract>;
+  at: (address: AztecAddress, wallet: Wallet) => TContract;
 }
 
 /**

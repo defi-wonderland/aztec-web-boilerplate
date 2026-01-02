@@ -7,9 +7,38 @@ import { isBrowserWalletConnector } from "../types/walletConnector";
 import { CHAIN_ID_TO_NETWORK, NETWORK_NAMES } from '../config/networks/constants';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
+export { waitForBrowserWalletReceipt, type WaitForReceiptOptions, type WaitForReceiptResult } from './txReceipt';
 
 /** CAIP account format: "namespace:chainId:address" (e.g., "aztec:1:0x123...") */
 type CaipAccountString = string;
+
+/** Parsed CAIP account parts */
+export interface CaipParts {
+  namespace: string;
+  chainId: string;
+  address: string;
+}
+
+/**
+ * Parses a CAIP account string into its components.
+ * @param value - The string to parse
+ * @returns Parsed parts or null if not a valid CAIP format
+ */
+export const parseCaipAddress = (value: string): CaipParts | null => {
+  const parts = value.split(':');
+  if (parts.length !== 3) return null;
+  const [namespace, chainId, address] = parts;
+  if (!namespace || !chainId || !address) return null;
+  return { namespace, chainId, address };
+};
+
+/**
+ * Type guard to check if a string is a valid CAIP account format.
+ * @param value - The string to check
+ */
+export const isCaipAddress = (value: string): boolean => {
+  return parseCaipAddress(value) !== null;
+};
 
 // ============================================================================
 // ADDRESS UTILITIES
