@@ -343,7 +343,6 @@ export const ContractInteractionCard: React.FC = () => {
       parseError: null,
     });
     resetExecutor();
-
     requestAnimationFrame(() => {
       setTimeout(() => {
         updateArtifact({ artifactInput: contract.artifactJson, isLoadingPreconfigured: false });
@@ -355,7 +354,6 @@ export const ContractInteractionCard: React.FC = () => {
     hasAutoLoadedRef.current = false;
     const cachedList = loadCachedContracts(currentConfig?.name);
     setSavedContracts(cachedList);
-
     const latest = cachedList[0];
     setArtifact({
       address: latest?.address ?? '',
@@ -471,7 +469,6 @@ export const ContractInteractionCard: React.FC = () => {
     const next = removeContract(savedContracts, targetAddress);
     setSavedContracts(next);
     persistCachedContracts(next, currentConfig?.name);
-
     // If deleting the currently active contract, reset the form state
     const isActiveContract = artifact.address.toLowerCase() === targetAddress.toLowerCase();
     if (isActiveContract) {
@@ -479,7 +476,6 @@ export const ContractInteractionCard: React.FC = () => {
       setParsed(null);
       resetExecutor();
     }
-
     pushLog({ level: 'info', title: 'Saved contract removed', detail: targetAddress });
   };
 
