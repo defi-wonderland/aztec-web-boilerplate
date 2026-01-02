@@ -1,59 +1,11 @@
 import React from 'react';
 import type { ParsedType } from '../../utils/contractInteraction';
 import type { FunctionFormProps } from './types';
-
-const placeholderForType = (type: ParsedType): string => {
-  switch (type.kind) {
-    case 'address':
-      return '0x... (Aztec address)';
-    case 'eth_address':
-      return '0x... (ETH address)';
-    case 'selector':
-      return '0x12345678 (4-byte selector)';
-    case 'compressed_string':
-      return 'Text (max 31 chars)';
-    case 'integer':
-    case 'field':
-      return 'Numeric value';
-    case 'boolean':
-      return 'true / false';
-    case 'array':
-      return 'Comma-separated values';
-    case 'struct':
-      return 'Object field';
-    default:
-      return 'Value';
-  }
-};
-
-const labelForType = (type: ParsedType): string | null => {
-  switch (type.kind) {
-    case 'address':
-      return 'Aztec Address';
-    case 'eth_address':
-      return 'ETH Address';
-    case 'selector':
-      return 'Function Selector';
-    case 'compressed_string':
-      return 'Compressed String';
-    default:
-      return null;
-  }
-};
-
-const shouldTrimInput = (type: ParsedType): boolean => {
-  switch (type.kind) {
-    case 'address':
-    case 'eth_address':
-    case 'selector':
-    case 'integer':
-    case 'field':
-    case 'boolean':
-      return true;
-    default:
-      return false;
-  }
-};
+import {
+  getPlaceholderForType,
+  getLabelForType,
+  shouldTrimInput,
+} from './helpers';
 
 const FunctionForm = ({ fn, values, onChange, disabled }: FunctionFormProps) => {
   const handleChange = (path: string, value: string, type: ParsedType) => {
@@ -66,7 +18,7 @@ const FunctionForm = ({ fn, values, onChange, disabled }: FunctionFormProps) => 
         {fn.inputs
           .filter((input) => input.type.kind !== 'struct')
           .map((input) => {
-            const typeLabel = labelForType(input.type);
+            const typeLabel = getLabelForType(input.type);
             return (
               <div className="form-group" key={input.path}>
                 <label
@@ -92,7 +44,7 @@ const FunctionForm = ({ fn, values, onChange, disabled }: FunctionFormProps) => 
                   className="form-input"
                   value={values[input.path] ?? ''}
                   onChange={(e) => handleChange(input.path, e.target.value, input.type)}
-                  placeholder={placeholderForType(input.type)}
+                  placeholder={getPlaceholderForType(input.type)}
                   disabled={disabled}
                   aria-label={input.path}
                 />
@@ -105,4 +57,3 @@ const FunctionForm = ({ fn, values, onChange, disabled }: FunctionFormProps) => 
 };
 
 export default FunctionForm;
-

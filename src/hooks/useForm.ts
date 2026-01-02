@@ -20,4 +20,3 @@ export const useForm = <T extends Record<string, unknown>>(initialState: T) => {
 
   return { state, update, reset, setState };
 };
-

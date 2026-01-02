@@ -63,23 +63,13 @@ export interface ParsedArtifact {
 }
 
 /**
- * Known Aztec struct paths that can be simplified to primitive-like inputs.
- * Maps struct paths to their simplified ParsedType kind.
- * 
- * These structs typically wrap a single primitive value (like `inner: field`)
- * and can be represented as simple inputs rather than nested struct fields.
+ * Known Aztec struct paths normalized to primitive types.
+ * See docs/contract-ui.md for detailed documentation.
  */
 const KNOWN_STRUCT_PATHS: Record<string, ParsedType['kind']> = {
-  // Aztec Address - wraps { inner: field }
   'aztec::protocol_types::address::aztec_address::AztecAddress': 'address',
-  
-  // ETH Address - wraps { inner: field }
   'aztec::protocol_types::address::eth_address::EthAddress': 'eth_address',
-  
-  // Function Selector - wraps { inner: u32 }
   'aztec::protocol_types::abis::function_selector::FunctionSelector': 'selector',
-  
-  // Compressed String - wraps { value: field } - used for name/symbol in tokens
   'compressed_string::field_compressed_string::FieldCompressedString': 'compressed_string',
 };
 

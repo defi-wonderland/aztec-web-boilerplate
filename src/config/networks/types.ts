@@ -1,5 +1,7 @@
+import type { AztecNetwork } from './constants';
+
 export interface NetworkConfig {
-  name: string;
+  name: AztecNetwork;
   displayName: string;
   description: string;
   nodeUrl: string;

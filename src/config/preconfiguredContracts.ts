@@ -1,12 +1,13 @@
 import tokenDevnet from '../artifacts/devnet/token_contract-Token.json';
 import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json';
+import type { AztecNetwork } from './networks/constants';
 
 export type PreconfiguredContract = {
   id: string;
   label: string;
   address: string;
   artifactJson: string;
-  network?: string;
+  network?: AztecNetwork;
 };
 
 export const PRECONFIGURED_CONTRACTS: PreconfiguredContract[] = [
