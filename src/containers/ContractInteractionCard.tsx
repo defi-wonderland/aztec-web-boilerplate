@@ -24,6 +24,7 @@ import {
   type ParsedArtifact,
   type ParsedFunction,
 } from '../utils/contractInteraction';
+import type { CachedContract as CacheContract } from '../utils/contractCache';
 import {
   cacheAndPersistArtifact,
   clearArtifactsDb,
@@ -116,6 +117,9 @@ export const ContractInteractionCard: React.FC = () => {
   const [parsed, setParsed] = useState<ParsedArtifact | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const hasAutoLoadedRef = useRef(false);
+
+  const savedContractsRef = useRef<CacheContract[]>(savedContracts);
+  savedContractsRef.current = savedContracts;
 
   // Deployment hook
   const {
@@ -316,7 +320,7 @@ export const ContractInteractionCard: React.FC = () => {
       artifactInput: artifactJson,
       label: labelToUse,
       shouldCacheInline,
-      savedContracts,
+      savedContracts: savedContractsRef.current,
       networkName: currentConfig?.name,
     });
     setSavedContracts(cacheResult.updatedContracts);
@@ -406,7 +410,7 @@ export const ContractInteractionCard: React.FC = () => {
       artifactInput: artifact.artifactInput,
       label: contractLabel,
       shouldCacheInline,
-      savedContracts,
+      savedContracts: savedContractsRef.current,
       networkName: currentConfig?.name,
     });
     setSavedContracts(cacheResult.updatedContracts);
@@ -462,11 +466,12 @@ export const ContractInteractionCard: React.FC = () => {
   };
 
   const handleDeleteSaved = async (targetAddress: string) => {
-    const target = savedContracts.find((c) => c.address.toLowerCase() === targetAddress.toLowerCase());
+    const currentContracts = savedContractsRef.current;
+    const target = currentContracts.find((c) => c.address.toLowerCase() === targetAddress.toLowerCase());
     if (target?.artifactKey) {
       await deleteArtifact(target.artifactKey);
     }
-    const next = removeContract(savedContracts, targetAddress);
+    const next = removeContract(currentContracts, targetAddress);
     setSavedContracts(next);
     persistCachedContracts(next, currentConfig?.name);
     // If deleting the currently active contract, reset the form state

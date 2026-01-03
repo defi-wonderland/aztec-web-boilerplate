@@ -3272,6 +3272,11 @@ select:focus {
   gap: 1rem;
 }
 
+.deploy-section > .form-group {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .constructor-params {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
