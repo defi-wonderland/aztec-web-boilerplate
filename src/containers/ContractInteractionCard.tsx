@@ -54,6 +54,7 @@ import {
   type ContractConstructor,
 } from '../utils/deployableContracts';
 import { safeStringify, toTitleCase } from '../utils/string';
+import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 
 type ArtifactLoaderState = {
   address: string;
@@ -557,6 +558,46 @@ export const ContractInteractionCard: React.FC = () => {
       });
   };
 
+  const formatResultData = (value: unknown): unknown => {
+    if (value === null || value === undefined) return value;
+
+    if (Array.isArray(value)) {
+      return value.map(formatResultData);
+    }
+
+    if (typeof value === 'bigint') {
+      return value.toString();
+    }
+
+    if (typeof value === 'object') {
+      const entries = Object.entries(value as Record<string, unknown>);
+
+      // Attempt to decode FieldCompressedString { value: <field> }
+      if (
+        entries.length === 1 &&
+        entries[0][0] === 'value' &&
+        (typeof entries[0][1] === 'string' || typeof entries[0][1] === 'bigint')
+      ) {
+        const fieldValue = entries[0][1];
+        try {
+          return readFieldCompressedString({
+            value: BigInt(fieldValue as string),
+          });
+        } catch {
+          return fieldValue;
+        }
+      }
+
+      const normalized: Record<string, unknown> = {};
+      for (const [k, v] of entries) {
+        normalized[k] = formatResultData(v);
+      }
+      return normalized;
+    }
+
+    return value;
+  };
+
   const handleApplyPreconfigured = (contractId: string | null) => {
     if (!contractId) {
       resetArtifact();
@@ -798,7 +839,7 @@ export const ContractInteractionCard: React.FC = () => {
     pushLog({
       level: 'success',
       title: `${mode === 'simulate' ? 'Simulation' : 'Execution'} complete`,
-      detail: safeStringify(result.data ?? result.txHash),
+      detail: safeStringify(formatResultData(result.data ?? result.txHash)),
     });
   };
 
