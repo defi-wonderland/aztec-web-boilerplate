@@ -5,7 +5,8 @@ import { useError } from '../providers/ErrorProvider';
 import { TokenBalance } from '../components/TokenBalance';
 
 export const DripperCard: React.FC = () => {
-  const { account, isInitialized, connectors, connector, currentConfig } = useUniversalWallet();
+  const { account, isInitialized, connectors, connector, currentConfig } =
+    useUniversalWallet();
   const { addError } = useError();
 
   const {
@@ -58,7 +59,8 @@ export const DripperCard: React.FC = () => {
 
   const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
   const connectorStatus = connector?.getStatus().status;
-  const isWalletBusy = connectorStatus === 'connecting' || connectorStatus === 'deploying';
+  const isWalletBusy =
+    connectorStatus === 'connecting' || connectorStatus === 'deploying';
 
   const handleDrip = () => {
     if (!amount || !isReady) return;
@@ -92,7 +94,8 @@ export const DripperCard: React.FC = () => {
   };
 
   const isAnyWalletConnected =
-    Boolean(account) || connectors.some((conn) => conn.getStatus().status === 'connected');
+    Boolean(account) ||
+    connectors.some((conn) => conn.getStatus().status === 'connected');
   const showDripForm = isAnyWalletConnected && isInitialized;
 
   if (!showDripForm) {
@@ -200,7 +203,13 @@ export const DripperCard: React.FC = () => {
               <button
                 type="button"
                 onClick={handleDrip}
-                disabled={!amount || isProcessing || isWalletBusy || !isReady || !contractsReady}
+                disabled={
+                  !amount ||
+                  isProcessing ||
+                  isWalletBusy ||
+                  !isReady ||
+                  !contractsReady
+                }
                 className="btn btn-primary"
                 aria-label={`Drip tokens to ${dripType} balance`}
               >

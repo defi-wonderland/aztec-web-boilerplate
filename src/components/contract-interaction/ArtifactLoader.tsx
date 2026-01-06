@@ -18,7 +18,7 @@ const ArtifactLoader = ({
   deploy,
 }: ArtifactLoaderProps) => {
   const isDeployMode = mode === 'deploy';
-  const hasDeployableContracts = Boolean(deploy?.contracts.length);
+  const hasDeployableContracts = Boolean(deploy);
   const hasPreconfigured = Boolean(preconfigured?.options.length);
 
   const isCustomMode = !preconfigured?.selectedId;
@@ -30,8 +30,12 @@ const ArtifactLoader = ({
     : isPreconfiguredMode && !isLoadingPreconfigured;
 
   const canClear =
-    Boolean(saved.hasCache || existing.address || existing.artifactInput || isPreconfiguredMode) &&
-    !isLoadingPreconfigured;
+    Boolean(
+      saved.hasCache ||
+        existing.address ||
+        existing.artifactInput ||
+        isPreconfiguredMode
+    ) && !isLoadingPreconfigured;
 
   const handleModeToggle = (newMode: ArtifactLoaderMode) => {
     onModeChange?.(newMode);
@@ -41,7 +45,11 @@ const ArtifactLoader = ({
     <div className="loader-card">
       {hasDeployableContracts && (
         <div className="mode-toggle-container">
-          <div className="mode-toggle" role="tablist" aria-label="Contract mode">
+          <div
+            className="mode-toggle"
+            role="tablist"
+            aria-label="Contract mode"
+          >
             <button
               type="button"
               role="tab"
@@ -71,6 +79,8 @@ const ArtifactLoader = ({
           deployableContracts={deploy.contracts}
           selectedDeployableId={deploy.selectedContractId}
           onSelectDeployable={deploy.onSelectContract}
+          isCustomSelected={deploy.isCustomSelected}
+          customDeployable={deploy.customDeployable}
           selectedConstructorName={deploy.selectedConstructorName}
           onSelectConstructor={deploy.onSelectConstructor}
           formValues={deploy.formValues}
@@ -79,6 +89,9 @@ const ArtifactLoader = ({
           isDeploying={deploy.isDeploying}
           deploymentError={deploy.error}
           canDeploy={deploy.canDeploy}
+          customArtifactInput={deploy.customArtifactInput}
+          onCustomArtifactChange={deploy.onCustomArtifactChange}
+          customArtifactError={deploy.customArtifactError}
         />
       )}
 

@@ -11,6 +11,8 @@ const DeployContractForm = ({
   deployableContracts,
   selectedDeployableId,
   onSelectDeployable,
+  isCustomSelected,
+  customDeployable,
   selectedConstructorName,
   onSelectConstructor,
   formValues,
@@ -19,32 +21,61 @@ const DeployContractForm = ({
   isDeploying,
   deploymentError,
   canDeploy,
+  customArtifactInput,
+  onCustomArtifactChange,
+  customArtifactError,
 }: DeployContractFormProps) => {
   const selectedDeployable = useMemo(() => {
+    if (isCustomSelected) {
+      return customDeployable;
+    }
     if (!selectedDeployableId) return null;
     return (
       deployableContracts.find((c) => c.id === selectedDeployableId) ?? null
     );
-  }, [deployableContracts, selectedDeployableId]);
+  }, [
+    customDeployable,
+    deployableContracts,
+    isCustomSelected,
+    selectedDeployableId,
+  ]);
 
   const selectedConstructor = useMemo(() => {
     if (!selectedDeployable || !selectedConstructorName) return null;
     return findConstructor(selectedDeployable, selectedConstructorName) ?? null;
   }, [selectedDeployable, selectedConstructorName]);
 
-  const isDeployFormValid = useMemo(() => {
-    if (!selectedConstructor) return false;
-    const requiredInputs = selectedConstructor.inputs.filter(
+  const constructorInputs = useMemo(() => {
+    if (!selectedConstructor) return [];
+    return selectedConstructor.inputs.filter(
       (input) => input.type.kind !== 'struct'
     );
-    return requiredInputs.every((input) => {
+  }, [selectedConstructor]);
+
+  const hasNoConstructorInputs =
+    selectedConstructor && constructorInputs.length === 0;
+  const selectedDeployableValue = selectedDeployableId ?? '';
+
+  const isDeployFormValid = useMemo(() => {
+    if (isCustomSelected && customArtifactError) return false;
+    if (isCustomSelected && !selectedDeployable) return false;
+    if (!selectedConstructor) return false;
+    return constructorInputs.every((input) => {
       const value = formValues[input.path] ?? '';
       return value.trim() !== '';
     });
-  }, [selectedConstructor, formValues]);
+  }, [
+    constructorInputs,
+    customArtifactError,
+    formValues,
+    isCustomSelected,
+    selectedConstructor,
+    selectedDeployable,
+  ]);
 
   const handleDeployableChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const contractId = e.target.value || null;
+    const { value } = e.target;
+    const contractId = value || null;
     onSelectDeployable(contractId);
   };
 
@@ -68,12 +99,12 @@ const DeployContractForm = ({
         <select
           id="deployable-contract"
           className="form-input"
-          value={selectedDeployableId ?? ''}
+          value={selectedDeployableValue}
           onChange={handleDeployableChange}
           disabled={isDeploying}
           aria-label="Select contract to deploy"
         >
-          <option value="">Select a contract...</option>
+          <option value="">Custom artifact (paste JSON)</option>
           {deployableContracts.map((contract) => (
             <option key={contract.id} value={contract.id}>
               {contract.label}
@@ -81,6 +112,36 @@ const DeployContractForm = ({
           ))}
         </select>
       </div>
+
+      {isCustomSelected && (
+        <div className="form-group">
+          <label htmlFor="custom-artifact">
+            Custom contract artifact (JSON)
+          </label>
+          <textarea
+            id="custom-artifact"
+            className="form-input"
+            value={customArtifactInput}
+            onChange={(e) => onCustomArtifactChange(e.target.value)}
+            placeholder="Paste the compiled contract artifact JSON here"
+            disabled={isDeploying}
+            aria-label="Custom contract artifact JSON"
+            rows={6}
+          />
+          {customArtifactError ? (
+            <div className="input-hint error" role="alert">
+              {customArtifactError}
+            </div>
+          ) : (
+            customArtifactInput &&
+            !selectedDeployable && (
+              <div className="input-hint warning" role="status">
+                Provide a valid artifact to load constructors.
+              </div>
+            )
+          )}
+        </div>
+      )}
 
       {selectedDeployable && (
         <div className="form-group">
@@ -106,10 +167,14 @@ const DeployContractForm = ({
       {selectedConstructor && (
         <div className="constructor-params">
           <div className="form-section-title">Constructor Parameters</div>
-          <div className="form-grid">
-            {selectedConstructor.inputs
-              .filter((input) => input.type.kind !== 'struct')
-              .map((input) => {
+          {hasNoConstructorInputs && (
+            <div className="input-hint" role="status">
+              This constructor requires no parameters.
+            </div>
+          )}
+          {constructorInputs.length > 0 && (
+            <div className="form-grid">
+              {constructorInputs.map((input) => {
                 const typeLabel = getLabelForType(input.type);
                 return (
                   <div className="form-group" key={input.path}>
@@ -135,7 +200,8 @@ const DeployContractForm = ({
                   </div>
                 );
               })}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

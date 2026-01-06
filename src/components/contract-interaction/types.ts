@@ -87,6 +87,8 @@ export interface DeployContractFormProps {
   deployableContracts: DeployableContract[];
   selectedDeployableId: string | null;
   onSelectDeployable: (contractId: string | null) => void;
+  isCustomSelected: boolean;
+  customDeployable: DeployableContract | null;
   selectedConstructorName: string | null;
   onSelectConstructor: (constructorName: string) => void;
   formValues: DeploymentFormValues;
@@ -95,6 +97,9 @@ export interface DeployContractFormProps {
   isDeploying: boolean;
   deploymentError?: string | null;
   canDeploy: boolean;
+  customArtifactInput: string;
+  onCustomArtifactChange: (value: string) => void;
+  customArtifactError?: string | null;
 }
 
 /**
@@ -139,6 +144,8 @@ export interface DeployConfig {
   contracts: DeployableContract[];
   selectedContractId: string | null;
   onSelectContract: (contractId: string | null) => void;
+  isCustomSelected: boolean;
+  customDeployable: DeployableContract | null;
   selectedConstructorName: string | null;
   onSelectConstructor: (constructorName: string) => void;
   formValues: DeploymentFormValues;
@@ -147,6 +154,9 @@ export interface DeployConfig {
   isDeploying: boolean;
   error?: string | null;
   canDeploy: boolean;
+  customArtifactInput: string;
+  onCustomArtifactChange: (value: string) => void;
+  customArtifactError?: string | null;
 }
 
 /**

@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useUniversalWallet } from '../hooks';
 import { useDynamicContractCaller } from '../hooks/contracts/useDynamicContractCaller';
 import { useContractDeployer } from '../hooks/contracts/useContractDeployer';
@@ -44,8 +50,10 @@ import {
   findDeployableContract,
   findConstructor,
   buildDeploymentLabel,
+  type DeployableContract,
+  type ContractConstructor,
 } from '../utils/deployableContracts';
-import { safeStringify } from '../utils/string';
+import { safeStringify, toTitleCase } from '../utils/string';
 
 type ArtifactLoaderState = {
   address: string;
@@ -61,11 +69,80 @@ type FunctionExecutorState = {
   filter: string;
 };
 
+/** State for contract deployment flow including mode, selected contract, and form inputs */
 type DeploymentState = {
   mode: ArtifactLoaderMode;
   selectedDeployableId: string | null;
   selectedConstructorName: string | null;
   formValues: DeploymentFormValues;
+  customArtifactInput: string;
+};
+
+type CustomDeployableResult = {
+  contract: DeployableContract | null;
+  error: string | null;
+};
+
+const buildConstructorLabel = (name: string): string => {
+  const labelPart = name
+    .replace(/^constructor_?/, '')
+    .replace(/_/g, ' ')
+    .trim();
+  return labelPart ? toTitleCase(labelPart) : 'Default';
+};
+
+const buildCustomDeployableContract = (
+  artifactInput: string
+): CustomDeployableResult => {
+  if (!artifactInput.trim()) {
+    return { contract: null, error: null };
+  }
+
+  try {
+    const result = loadAndPrepareArtifact(
+      artifactInput,
+      '',
+      constants.MAX_CACHE_CHARS
+    );
+    if (!result.success) {
+      return { contract: null, error: result.error ?? 'Invalid artifact' };
+    }
+
+    const parsedArtifact = result.parsed;
+    const artifactJson = artifactInput;
+
+    const constructors: ContractConstructor[] = parsedArtifact.functions
+      .filter((fn) => fn.attributes.includes('abi_initializer'))
+      .map((fn) => ({
+        ...fn,
+        label: buildConstructorLabel(fn.name),
+      }));
+
+    if (constructors.length === 0) {
+      return {
+        contract: null,
+        error: 'No constructors found in the provided artifact',
+      };
+    }
+
+    const contractName =
+      (parsedArtifact.compiled as { name?: string } | undefined)?.name ??
+      'Custom Contract';
+
+    return {
+      contract: {
+        id: 'custom',
+        label: `${contractName} (custom)`,
+        artifactJson,
+        constructors,
+      },
+      error: null,
+    };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'Invalid artifact JSON';
+    return { contract: null, error: `Invalid artifact: ${message}` };
+  }
 };
 
 const INITIAL_ARTIFACT_LOADER: ArtifactLoaderState = {
@@ -87,6 +164,7 @@ const INITIAL_DEPLOYMENT: DeploymentState = {
   selectedDeployableId: null,
   selectedConstructorName: null,
   formValues: {},
+  customArtifactInput: '',
 };
 
 const requestPersistentStorage = async () => {
@@ -98,7 +176,8 @@ const requestPersistentStorage = async () => {
 };
 
 export const ContractInteractionCard: React.FC = () => {
-  const { isConnected, isInitialized, account, currentConfig } = useUniversalWallet();
+  const { isConnected, isInitialized, account, currentConfig } =
+    useUniversalWallet();
 
   const {
     state: artifact,
@@ -106,7 +185,11 @@ export const ContractInteractionCard: React.FC = () => {
     reset: resetArtifact,
     setState: setArtifact,
   } = useForm(INITIAL_ARTIFACT_LOADER);
-  const { state: executor, update: updateExecutor, reset: resetExecutor } = useForm(INITIAL_FUNCTION_EXECUTOR);
+  const {
+    state: executor,
+    update: updateExecutor,
+    reset: resetExecutor,
+  } = useForm(INITIAL_FUNCTION_EXECUTOR);
   const {
     state: deployment,
     update: updateDeployment,
@@ -135,23 +218,53 @@ export const ContractInteractionCard: React.FC = () => {
 
   // Get deployable contracts for current network
   const deployableContracts = useMemo(
-    () => getDeployableContractsForNetwork(DEPLOYABLE_CONTRACTS, currentConfig?.name),
+    () =>
+      getDeployableContractsForNetwork(
+        DEPLOYABLE_CONTRACTS,
+        currentConfig?.name
+      ),
     [currentConfig?.name]
   );
 
+  const { contract: customDeployableContract, error: customArtifactError } =
+    useMemo(
+      () => buildCustomDeployableContract(deployment.customArtifactInput),
+      [deployment.customArtifactInput]
+    );
+
   // Get selected deployable contract and constructor
+  // null/empty selectedDeployableId means custom mode
+  const isCustomSelected = !deployment.selectedDeployableId;
   const selectedDeployable = useMemo(() => {
-    if (!deployment.selectedDeployableId) return null;
-    return findDeployableContract(deployableContracts, deployment.selectedDeployableId) ?? null;
-  }, [deployableContracts, deployment.selectedDeployableId]);
+    if (isCustomSelected) {
+      return customDeployableContract;
+    }
+    return (
+      findDeployableContract(
+        deployableContracts,
+        deployment.selectedDeployableId!
+      ) ?? null
+    );
+  }, [
+    customDeployableContract,
+    deployableContracts,
+    deployment.selectedDeployableId,
+    isCustomSelected,
+  ]);
 
   const selectedConstructor = useMemo(() => {
     if (!selectedDeployable || !deployment.selectedConstructorName) return null;
-    return findConstructor(selectedDeployable, deployment.selectedConstructorName) ?? null;
-  }, [selectedDeployable, deployment.selectedConstructorName]);
+    return (
+      findConstructor(selectedDeployable, deployment.selectedConstructorName) ??
+      null
+    );
+  }, [deployment.selectedConstructorName, selectedDeployable]);
 
   const pushLog = useCallback((entry: Omit<LogEntry, 'id'>) => {
-    setLogs((prev) => [{ ...entry, id: `${Date.now()}-${prev.length}` }, ...prev.slice(0, 49)]);
+    setLogs((prev) => [
+      { ...entry, id: `${Date.now()}-${prev.length}` },
+      ...prev.slice(0, 49),
+    ]);
   }, []);
 
   const handleValueChange = useCallback(
@@ -177,24 +290,57 @@ export const ContractInteractionCard: React.FC = () => {
     }));
   }, [parsed]);
 
-  const { filteredFunctions, grouped } = useFunctionGroups(parsedFunctions, executor.filter);
+  const { filteredFunctions, grouped } = useFunctionGroups(
+    parsedFunctions,
+    executor.filter
+  );
 
   const selectedFn =
-    filteredFunctions.find((fn) => fn.name === executor.selectedFnName) ?? filteredFunctions[0] ?? null;
+    filteredFunctions.find((fn) => fn.name === executor.selectedFnName) ??
+    filteredFunctions[0] ??
+    null;
 
   // Mode change handler
   const handleModeChange = useCallback(
     (mode: ArtifactLoaderMode) => {
-      updateDeployment({ mode });
+      if (mode === 'deploy') {
+        const hasExistingArtifact = artifact.artifactInput.trim().length > 0;
+        const shouldPrefillCustom =
+          !deployment.selectedDeployableId && hasExistingArtifact;
+
+        if (shouldPrefillCustom) {
+          updateDeployment({
+            mode,
+            selectedDeployableId: null,
+            selectedConstructorName: null,
+            formValues: {},
+            customArtifactInput: artifact.artifactInput,
+          });
+        } else {
+          updateDeployment({ mode });
+        }
+      } else {
+        updateDeployment({ mode });
+      }
       clearDeployError();
     },
-    [updateDeployment, clearDeployError]
+    [
+      artifact.artifactInput,
+      clearDeployError,
+      deployment.selectedDeployableId,
+      updateDeployment,
+    ]
   );
 
   // Deployable contract selection handler
   const handleSelectDeployable = useCallback(
     (contractId: string | null) => {
-      const contract = contractId ? findDeployableContract(deployableContracts, contractId) : null;
+      const isCustom = !contractId;
+      const contract = isCustom
+        ? customDeployableContract
+        : contractId
+          ? findDeployableContract(deployableContracts, contractId)
+          : null;
       const firstConstructor = contract?.constructors[0]?.name ?? null;
 
       updateDeployment({
@@ -204,7 +350,12 @@ export const ContractInteractionCard: React.FC = () => {
       });
       clearDeployError();
     },
-    [deployableContracts, updateDeployment, clearDeployError]
+    [
+      clearDeployError,
+      customDeployableContract,
+      deployableContracts,
+      updateDeployment,
+    ]
   );
 
   // Constructor selection handler
@@ -219,6 +370,34 @@ export const ContractInteractionCard: React.FC = () => {
     [updateDeployment, clearDeployError]
   );
 
+  const handleCustomArtifactChange = useCallback(
+    (value: string) => {
+      updateDeployment({ customArtifactInput: value });
+      clearDeployError();
+    },
+    [clearDeployError, updateDeployment]
+  );
+
+  // Auto-select first constructor when custom artifact changes (not when user manually selects)
+  const prevCustomContractRef = useRef<typeof customDeployableContract>(null);
+  useEffect(() => {
+    // Only run in custom mode (null/empty selectedDeployableId)
+    if (deployment.selectedDeployableId) return;
+    // Only update constructor if the custom contract itself changed (new artifact pasted)
+    if (prevCustomContractRef.current === customDeployableContract) return;
+    prevCustomContractRef.current = customDeployableContract;
+    const firstConstructor =
+      customDeployableContract?.constructors[0]?.name ?? null;
+    updateDeployment({
+      selectedConstructorName: firstConstructor,
+      formValues: {},
+    });
+  }, [
+    customDeployableContract,
+    deployment.selectedDeployableId,
+    updateDeployment,
+  ]);
+
   // Deployment form value change handler
   const handleDeploymentFormChange = useCallback(
     (paramName: string, value: string) => {
@@ -231,8 +410,21 @@ export const ContractInteractionCard: React.FC = () => {
 
   // Deploy handler
   const handleDeploy = useCallback(async () => {
+    if (isCustomSelected && customArtifactError) {
+      pushLog({
+        level: 'error',
+        title: 'Deployment failed',
+        detail: customArtifactError,
+      });
+      return;
+    }
+
     if (!selectedDeployable || !selectedConstructor) {
-      pushLog({ level: 'error', title: 'Deployment failed', detail: 'No contract or constructor selected' });
+      pushLog({
+        level: 'error',
+        title: 'Deployment failed',
+        detail: 'No contract or constructor selected',
+      });
       return;
     }
 
@@ -258,7 +450,10 @@ export const ContractInteractionCard: React.FC = () => {
     }
 
     // Build a meaningful label using the deployment form values (e.g., token name)
-    const deployedLabel = buildDeploymentLabel(selectedDeployable, deployment.formValues);
+    const deployedLabel = buildDeploymentLabel(
+      selectedDeployable,
+      deployment.formValues
+    );
 
     pushLog({
       level: 'success',
@@ -283,9 +478,23 @@ export const ContractInteractionCard: React.FC = () => {
 
     // Auto-load the newly deployed contract with the custom label
     requestAnimationFrame(() => {
-      void handleLoadArtifactWithData(result.address ?? '', selectedDeployable.artifactJson, labelForSave);
+      void handleLoadArtifactWithData(
+        result.address ?? '',
+        selectedDeployable.artifactJson,
+        labelForSave
+      );
     });
-  }, [selectedDeployable, selectedConstructor, deployment.formValues, deploy, pushLog, updateArtifact, resetDeployment]);
+  }, [
+    customArtifactError,
+    deployment.formValues,
+    deployment.selectedDeployableId,
+    deploy,
+    pushLog,
+    resetDeployment,
+    selectedConstructor,
+    selectedDeployable,
+    updateArtifact,
+  ]);
 
   // Helper to load artifact with specific data (used after deployment)
   const handleLoadArtifactWithData = async (
@@ -295,14 +504,28 @@ export const ContractInteractionCard: React.FC = () => {
   ) => {
     requestPersistentStorage();
 
-    const result = loadAndPrepareArtifact(artifactJson, address, constants.MAX_CACHE_CHARS);
+    const result = loadAndPrepareArtifact(
+      artifactJson,
+      address,
+      constants.MAX_CACHE_CHARS
+    );
     if (!result.success) {
       updateArtifact({ parseError: result.error });
-      pushLog({ level: 'error', title: 'Artifact parse failed', detail: result.error });
+      pushLog({
+        level: 'error',
+        title: 'Artifact parse failed',
+        detail: result.error,
+      });
       return;
     }
 
-    const { parsed: parsedArtifact, address: resolvedAddress, contractLabel, shouldCacheInline, firstFunctionName } = result;
+    const {
+      parsed: parsedArtifact,
+      address: resolvedAddress,
+      contractLabel,
+      shouldCacheInline,
+      firstFunctionName,
+    } = result;
     setParsed(parsedArtifact);
     updateArtifact({ parseError: null, address: resolvedAddress });
     updateExecutor({ selectedFnName: firstFunctionName });
@@ -326,7 +549,12 @@ export const ContractInteractionCard: React.FC = () => {
     setSavedContracts(cacheResult.updatedContracts);
 
     const cacheMsg = getCacheStatusMessage(cacheResult, shouldCacheInline);
-    if (cacheMsg) pushLog({ level: 'info', title: 'Cached address only', detail: cacheMsg });
+    if (cacheMsg)
+      pushLog({
+        level: 'info',
+        title: 'Cached address only',
+        detail: cacheMsg,
+      });
   };
 
   const handleApplyPreconfigured = (contractId: string | null) => {
@@ -349,7 +577,10 @@ export const ContractInteractionCard: React.FC = () => {
     resetExecutor();
     requestAnimationFrame(() => {
       setTimeout(() => {
-        updateArtifact({ artifactInput: contract.artifactJson, isLoadingPreconfigured: false });
+        updateArtifact({
+          artifactInput: contract.artifactJson,
+          isLoadingPreconfigured: false,
+        });
       }, 50);
     });
   };
@@ -388,14 +619,28 @@ export const ContractInteractionCard: React.FC = () => {
   const handleLoadArtifact = async () => {
     requestPersistentStorage();
 
-    const result = loadAndPrepareArtifact(artifact.artifactInput, artifact.address, constants.MAX_CACHE_CHARS);
+    const result = loadAndPrepareArtifact(
+      artifact.artifactInput,
+      artifact.address,
+      constants.MAX_CACHE_CHARS
+    );
     if (!result.success) {
       updateArtifact({ parseError: result.error });
-      pushLog({ level: 'error', title: 'Artifact parse failed', detail: result.error });
+      pushLog({
+        level: 'error',
+        title: 'Artifact parse failed',
+        detail: result.error,
+      });
       return;
     }
 
-    const { parsed: parsedArtifact, address, contractLabel, shouldCacheInline, firstFunctionName } = result;
+    const {
+      parsed: parsedArtifact,
+      address,
+      contractLabel,
+      shouldCacheInline,
+      firstFunctionName,
+    } = result;
     setParsed(parsedArtifact);
     updateArtifact({ parseError: null, address });
     updateExecutor({ selectedFnName: firstFunctionName });
@@ -416,7 +661,12 @@ export const ContractInteractionCard: React.FC = () => {
     setSavedContracts(cacheResult.updatedContracts);
 
     const cacheMsg = getCacheStatusMessage(cacheResult, shouldCacheInline);
-    if (cacheMsg) pushLog({ level: 'info', title: 'Cached address only', detail: cacheMsg });
+    if (cacheMsg)
+      pushLog({
+        level: 'info',
+        title: 'Cached address only',
+        detail: cacheMsg,
+      });
   };
 
   const handleClearCache = () => {
@@ -451,23 +701,32 @@ export const ContractInteractionCard: React.FC = () => {
     try {
       const parsedArtifact = parseArtifactSource(resolved.artifact);
       setParsed(parsedArtifact);
-      updateExecutor({ selectedFnName: parsedArtifact.functions[0]?.name ?? null });
+      updateExecutor({
+        selectedFnName: parsedArtifact.functions[0]?.name ?? null,
+      });
       pushLog({
         level: 'success',
         title: 'Saved contract loaded',
         detail: `Loaded ${parsedArtifact.functions.length} functions from cache`,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to parse cached artifact';
+      const message =
+        err instanceof Error ? err.message : 'Failed to parse cached artifact';
       setParsed(null);
       updateArtifact({ parseError: message });
-      pushLog({ level: 'error', title: 'Cached artifact parse failed', detail: message });
+      pushLog({
+        level: 'error',
+        title: 'Cached artifact parse failed',
+        detail: message,
+      });
     }
   };
 
   const handleDeleteSaved = async (targetAddress: string) => {
     const currentContracts = savedContractsRef.current;
-    const target = currentContracts.find((c) => c.address.toLowerCase() === targetAddress.toLowerCase());
+    const target = currentContracts.find(
+      (c) => c.address.toLowerCase() === targetAddress.toLowerCase()
+    );
     if (target?.artifactKey) {
       await deleteArtifact(target.artifactKey);
     }
@@ -475,24 +734,41 @@ export const ContractInteractionCard: React.FC = () => {
     setSavedContracts(next);
     persistCachedContracts(next, currentConfig?.name);
     // If deleting the currently active contract, reset the form state
-    const isActiveContract = artifact.address.toLowerCase() === targetAddress.toLowerCase();
+    const isActiveContract =
+      artifact.address.toLowerCase() === targetAddress.toLowerCase();
     if (isActiveContract) {
       resetArtifact();
       setParsed(null);
       resetExecutor();
     }
-    pushLog({ level: 'info', title: 'Saved contract removed', detail: targetAddress });
+    pushLog({
+      level: 'info',
+      title: 'Saved contract removed',
+      detail: targetAddress,
+    });
   };
 
   const handleCall = async (mode: 'simulate' | 'execute') => {
     if (!parsed) {
-      pushLog({ level: 'error', title: 'Missing artifact', detail: 'Load an artifact first' });
+      pushLog({
+        level: 'error',
+        title: 'Missing artifact',
+        detail: 'Load an artifact first',
+      });
       return;
     }
 
-    const validation = validateAndBuildCallArgs(artifact.address, selectedFn, executor.formValues);
+    const validation = validateAndBuildCallArgs(
+      artifact.address,
+      selectedFn,
+      executor.formValues
+    );
     if (!validation.valid) {
-      pushLog({ level: 'error', title: 'Validation failed', detail: validation.error });
+      pushLog({
+        level: 'error',
+        title: 'Validation failed',
+        detail: validation.error,
+      });
       return;
     }
 
@@ -530,15 +806,22 @@ export const ContractInteractionCard: React.FC = () => {
   const contractName =
     (parsed?.compiled as { name?: string } | undefined)?.name ??
     savedContracts.find(
-      (contract) => contract.address.trim().toLowerCase() === artifact.address.trim().toLowerCase()
+      (contract) =>
+        contract.address.trim().toLowerCase() ===
+        artifact.address.trim().toLowerCase()
     )?.label ??
     null;
   const hasContract = (parsed?.functions?.length ?? 0) > 0;
 
-  const capabilities = analyzeFunctionCapabilities(selectedFn?.attributes ?? [], selectedFn?.inputs);
+  const capabilities = analyzeFunctionCapabilities(
+    selectedFn?.attributes ?? [],
+    selectedFn?.inputs
+  );
   const ownerInput = selectedFn?.inputs.find((input) => input.path === 'owner');
   const connectedAddress = account?.getAddress().toString() ?? '';
-  const ownerValue = ownerInput ? executor.formValues[ownerInput.path] ?? '' : '';
+  const ownerValue = ownerInput
+    ? (executor.formValues[ownerInput.path] ?? '')
+    : '';
   const ownerMismatchWarning =
     capabilities.isPrivate &&
     ownerInput &&
@@ -584,7 +867,8 @@ export const ContractInteractionCard: React.FC = () => {
             onArtifactChange: (v) => updateArtifact({ artifactInput: v }),
             onLoad: handleLoadArtifact,
             error: artifact.parseError,
-            isValidAddress: !artifact.address || isValidAztecAddress(artifact.address),
+            isValidAddress:
+              !artifact.address || isValidAztecAddress(artifact.address),
           }}
           saved={{
             contracts: savedContracts,
@@ -606,6 +890,8 @@ export const ContractInteractionCard: React.FC = () => {
             contracts: deployableContracts,
             selectedContractId: deployment.selectedDeployableId,
             onSelectContract: handleSelectDeployable,
+            isCustomSelected,
+            customDeployable: customDeployableContract,
             selectedConstructorName: deployment.selectedConstructorName,
             onSelectConstructor: handleSelectConstructor,
             formValues: deployment.formValues,
@@ -614,6 +900,9 @@ export const ContractInteractionCard: React.FC = () => {
             isDeploying,
             error: deploymentErrorMessage,
             canDeploy: canDeploy(),
+            customArtifactInput: deployment.customArtifactInput,
+            onCustomArtifactChange: handleCustomArtifactChange,
+            customArtifactError,
           }}
         />
         {!isDeployMode && (
@@ -630,20 +919,25 @@ export const ContractInteractionCard: React.FC = () => {
       </div>
 
       {!isDeployMode && selectedFn && (
-        <FunctionForm fn={selectedFn} values={executor.formValues} onChange={handleValueChange} disabled={isBusy} />
+        <FunctionForm
+          fn={selectedFn}
+          values={executor.formValues}
+          onChange={handleValueChange}
+          disabled={isBusy}
+        />
       )}
 
       {!isDeployMode && selectedFn && capabilities.isPrivate && (
         <div className="input-hint" role="status">
-          This is a private function. Results can only be proven by the note owner; querying other addresses
-          will likely return 0 or fail.
+          This is a private function. Results can only be proven by the note
+          owner; querying other addresses will likely return 0 or fail.
         </div>
       )}
 
       {!isDeployMode && ownerMismatchWarning && (
         <div className="input-hint error" role="alert">
-          Owner differs from the connected wallet; private balances for other addresses will usually appear
-          as 0.
+          Owner differs from the connected wallet; private balances for other
+          addresses will usually appear as 0.
         </div>
       )}
 

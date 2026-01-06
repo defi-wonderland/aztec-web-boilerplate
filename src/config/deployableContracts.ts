@@ -4,6 +4,7 @@
  */
 import tokenDevnet from '../artifacts/devnet/token_contract-Token.json';
 import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json';
+import dripperSandbox from '../artifacts/sandbox/dripper-Dripper.json';
 
 import {
   loadDeployableContracts,
@@ -36,6 +37,12 @@ const DEPLOYABLE_CONTRACTS_CONFIG: DeployableContractConfig[] = [
     artifact: tokenSandbox,
     network: 'sandbox',
     labelField: 'name',
+  },
+  {
+    id: 'dripper-sandbox',
+    label: 'Dripper',
+    artifact: dripperSandbox,
+    network: 'sandbox',
   },
 ];
 
