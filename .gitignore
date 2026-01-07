@@ -37,8 +37,17 @@ playwright-report/
 blob-report/
 playwright/.cache/
 
+# Synpress cache
+.cache-synpress/
+
 # MetaMask extension (download manually for testing)
-extensions/metamask/
+extensions/
 !extensions/README.md
+
+# Build artifacts
+target/
+
+# npm lock (project uses yarn)
+package-lock.json
 
 .env
