@@ -5,6 +5,8 @@
  * where users can see individual function arguments before signing.
  */
 
+import type { AuthWitnessProvider } from '@aztec/aztec.js/account';
+import { AuthWitness } from '@aztec/stdlib/auth-witness';
 import type { WalletClient, Hex } from 'viem';
 import { Fr } from '@aztec/aztec.js/fields';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
@@ -65,8 +67,11 @@ export interface AuthWit5Result {
  *
  * Unlike MetaMaskAuthWitnessProvider which shows opaque hashes,
  * this provider displays human-readable function arguments in MetaMask.
+ *
+ * This class implements AuthWitnessProvider for compatibility with the
+ * Aztec SDK, while also providing clear signing methods for entrypoint calls.
  */
-export class Eip712AuthWitnessProvider {
+export class Eip712AuthWitnessProvider implements AuthWitnessProvider {
   private readonly walletClient: WalletClient;
   private readonly account: Hex;
   public readonly chainId: bigint;
@@ -75,6 +80,43 @@ export class Eip712AuthWitnessProvider {
     this.walletClient = walletClient;
     this.account = account;
     this.chainId = chainId;
+  }
+
+  /**
+   * Create an auth witness for a message hash (standard AuthWitnessProvider interface).
+   *
+   * This method provides backwards compatibility with the standard Aztec SDK flow.
+   * For clear signing with human-readable arguments, use createAuthWitForEntrypoint instead.
+   *
+   * @param messageHash - The outer_hash from Aztec (Poseidon hash of the action)
+   * @returns AuthWitness containing the signature fields
+   */
+  async createAuthWit(messageHash: Fr): Promise<AuthWitness> {
+    // Convert Fr to 32-byte buffer for signing
+    const messageBytes = messageHash.toBuffer();
+
+    // For standard authwits, we sign the hash using personal_sign
+    // (fallback behavior when structured data isn't available)
+    const signature = await this.walletClient.signMessage!({
+      account: this.account,
+      message: { raw: messageBytes },
+    });
+
+    // Parse the signature (65 bytes: r[32] + s[32] + v[1])
+    const sigHex = signature.slice(2);
+    const r = Buffer.from(sigHex.slice(0, 64), 'hex');
+    const s = Buffer.from(sigHex.slice(64, 128), 'hex');
+
+    // Convert signature bytes to Field array (64 fields, one per byte)
+    const witnessFields: Fr[] = [];
+    for (let i = 0; i < 32; i++) {
+      witnessFields.push(new Fr(r[i]));
+    }
+    for (let i = 0; i < 32; i++) {
+      witnessFields.push(new Fr(s[i]));
+    }
+
+    return new AuthWitness(messageHash, witnessFields);
   }
 
   /**
@@ -208,17 +250,24 @@ export class Eip712AuthWitnessProvider {
   }
 
   /**
-   * Sign typed data using wallet client
+   * Sign typed data using wallet client.
+   *
+   * Accepts both single-call and 5-call typed data formats.
    */
-  private async signTypedData(typedData: ReturnType<typeof buildTypedDataForMetaMask>): Promise<Hex> {
+  private async signTypedData(
+    typedData: ReturnType<typeof buildTypedDataForMetaMask> | ReturnType<typeof buildTypedDataForMetaMask5>
+  ): Promise<Hex> {
     if (!this.walletClient.signTypedData) {
       throw new Error('Wallet client does not support signTypedData. EIP-712 clear signing requires signTypedData support.');
     }
 
     return await this.walletClient.signTypedData({
       account: this.account,
-      ...typedData,
-    } as any);
+      domain: typedData.domain,
+      types: typedData.types as any,
+      primaryType: typedData.primaryType,
+      message: typedData.message as any,
+    });
   }
 
   /**

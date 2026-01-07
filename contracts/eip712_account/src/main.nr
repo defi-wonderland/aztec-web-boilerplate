@@ -22,12 +22,13 @@ use dep::aztec::macros::aztec;
 #[aztec]
 pub contract Eip712Account {
     use dep::aztec::{
-        authwit::entrypoint::app::AppPayload,
+        authwit::{account::AccountActions, entrypoint::app::AppPayload},
+        context::PrivateContext,
         macros::{
             functions::{external, initializer, noinitcheck, nophasecheck, view},
             storage::storage,
         },
-        oracle::notes::{get_sender_for_tags, set_sender_for_tags},
+        oracle::{auth_witness::get_auth_witness, notes::{get_sender_for_tags, set_sender_for_tags}},
         protocol_types::{
             constants::GENERATOR_INDEX__TX_NULLIFIER,
             hash::poseidon2_hash_with_separator,
@@ -124,10 +125,12 @@ pub contract Eip712Account {
 
     /// Main entrypoint for executing transactions with EIP-712 signature verification.
     ///
-    /// Unlike the standard AccountActions entrypoint, this function:
-    /// 1. Gets the function call details (signatures + arguments) via auth witness
-    /// 2. Computes the EIP-712 hash and verifies the signature
-    /// 3. Executes the calls from the app_payload
+    /// This entrypoint supports two modes:
+    /// 1. EIP-712 clear signing (when capsule is present) - human-readable signing via MetaMask
+    /// 2. Standard auth witness (fallback for deployment) - ECDSA signature over outer_hash
+    ///
+    /// The fallback mode enables deployment to work without requiring EIP-712 capsules,
+    /// while still using the same ECDSA keys for signature verification.
     #[external("private")]
     #[noinitcheck]
     #[nophasecheck]
@@ -135,145 +138,160 @@ pub contract Eip712Account {
         // Safety: The sender for tags is only used for unconstrained tagging
         unsafe { set_sender_for_tags(self.address) };
 
-        // Load public key from storage
-        let public_key = self.storage.signing_public_key.get_note();
-
-        // Load EIP-712 witness data from capsule
-        // Safety: Capsule data will be validated against AppPayload below
-        let witness: Eip712Witness = unsafe {
-            load_eip712_witness(self.address).expect(f"EIP-712 witness capsule not found")
+        // Try to load EIP-712 witness data from capsule
+        // Safety: Capsule data will be validated against AppPayload below if present
+        let maybe_witness: Option<Eip712Witness> = unsafe {
+            load_eip712_witness(self.address)
         };
 
-        // Extract components from the witness struct
-        // Combine signature_r and signature_s into a single 64-byte array for ECDSA verification
-        let mut ecdsa_signature: [u8; 64] = [0; 64];
-        for i in 0..32 {
-            ecdsa_signature[i] = witness.signature_r[i];
-            ecdsa_signature[32 + i] = witness.signature_s[i];
-        }
+        // Branch based on whether EIP-712 capsule is present
+        if maybe_witness.is_none() {
+            // =====================================================================
+            // Fallback mode: Standard auth witness verification (for deployment)
+            // =====================================================================
+            // Use standard AccountActions with ECDSA verification
+            let actions = AccountActions::init(self.context, is_valid_impl);
+            actions.entrypoint(app_payload, fee_payment_method, cancellable);
+        } else {
+            // =====================================================================
+            // EIP-712 clear signing mode (human-readable signing)
+            // =====================================================================
+            let witness = maybe_witness.unwrap();
 
-        let function_signature = witness.function_signature;
-        let signature_length = witness.signature_length;
-        let function_args_0 = witness.function_args;
-        let args_length = witness.args_length;
-        let target_address = witness.target_address;
-        let chain_id = witness.chain_id;
-        let salt = witness.salt;
+            // Load public key from storage
+            let public_key = self.storage.signing_public_key.get_note();
 
-        // Convert to arrays for compatibility with existing verification code
-        let function_signatures = [function_signature];
-        let signature_lengths = [signature_length as u8];
-        let function_args = [function_args_0];
-        let args_lengths = [args_length as u8];
-        let target_addresses = [target_address];
+            // Extract components from the witness struct
+            // Combine signature_r and signature_s into a single 64-byte array for ECDSA verification
+            let mut ecdsa_signature: [u8; 64] = [0; 64];
+            for i in 0..32 {
+                ecdsa_signature[i] = witness.signature_r[i];
+                ecdsa_signature[32 + i] = witness.signature_s[i];
+            }
 
-        // =====================================================================
-        // CRITICAL: Verify auth witness data matches AppPayload
-        // This binds the signed EIP-712 message to the actual transaction
-        // =====================================================================
+            let function_signature = witness.function_signature;
+            let signature_length = witness.signature_length;
+            let function_args_0 = witness.function_args;
+            let args_length = witness.args_length;
+            let target_address = witness.target_address;
+            let chain_id = witness.chain_id;
+            let salt = witness.salt;
 
-        // Serialize AppPayload to extract function call data
-        let serialized_payload: [Field; APP_PAYLOAD_SERIALIZED_LEN] = app_payload.serialize();
+            // Convert to arrays for compatibility with existing verification code
+            let function_signatures = [function_signature];
+            let signature_lengths = [signature_length as u8];
+            let function_args = [function_args_0];
+            let args_lengths = [args_length as u8];
+            let target_addresses = [target_address];
 
-        // Verify the single function call (index 0)
-        let stored_target = extract_target_address(serialized_payload, 0);
+            // =====================================================================
+            // CRITICAL: Verify auth witness data matches AppPayload
+            // This binds the signed EIP-712 message to the actual transaction
+            // =====================================================================
 
-        // Must have at least one non-empty call
-        assert(stored_target != 0, "AppPayload must have at least one function call");
+            // Serialize AppPayload to extract function call data
+            let serialized_payload: [Field; APP_PAYLOAD_SERIALIZED_LEN] = app_payload.serialize();
 
-        // 1. Verify target address matches
-        assert(
-            target_addresses[0] == stored_target,
-            "AuthWit target_address mismatch with AppPayload"
-        );
+            // Verify the single function call (index 0)
+            let stored_target = extract_target_address(serialized_payload, 0);
 
-        // 2. Verify args_hash matches (Poseidon2 hash of witness args)
-        let computed_args_hash = compute_aztec_args_hash(
-            function_args[0],
-            args_lengths[0] as u32
-        );
-        let stored_args_hash = extract_args_hash(serialized_payload, 0);
-        assert(
-            computed_args_hash == stored_args_hash,
-            "AuthWit args_hash mismatch with AppPayload"
-        );
+            // Must have at least one non-empty call
+            assert(stored_target != 0, "AppPayload must have at least one function call");
 
-        // 3. Verify function_selector matches (Poseidon2 hash of signature, truncated)
-        let computed_selector = compute_function_selector(
-            function_signatures[0],
-            signature_lengths[0] as u32
-        );
-        let stored_selector = extract_function_selector(serialized_payload, 0);
-        assert(
-            computed_selector == stored_selector,
-            "AuthWit function_selector mismatch with AppPayload"
-        );
-
-        // =====================================================================
-        // Compute EIP-712 hashes (now that auth witness data is verified)
-        // =====================================================================
-
-        // Compute EIP-712 hashStruct(FunctionCall) for the single call
-        let target_bytes = field_to_bytes32(target_addresses[0]);
-        let function_call_hash = hash_function_call(
-            target_bytes,
-            function_signatures[0],
-            signature_lengths[0] as u32,
-            function_args[0],
-            args_lengths[0] as u32
-        );
-
-        // Compute AppDomain hash
-        let chain_id_bytes = field_to_bytes32(chain_id);
-        let app_domain_hash = hash_app_domain(
-            APP_DOMAIN_NAME_HASH,
-            APP_DOMAIN_VERSION_HASH,
-            chain_id_bytes,
-            salt
-        );
-
-        // Compute EntrypointAuthorization hash
-        let tx_nonce_bytes = field_to_bytes32(app_payload.tx_nonce);
-        let message_hash = hash_entrypoint_authorization(
-            app_domain_hash,
-            function_call_hash,
-            tx_nonce_bytes
-        );
-
-        // Compute final EIP-712 payload
-        let eip712_payload = compute_eip712_payload(DOMAIN_SEPARATOR, message_hash);
-
-        // Verify ECDSA signature
-        assert(
-            std::ecdsa_secp256k1::verify_signature(
-                public_key.x,
-                public_key.y,
-                ecdsa_signature,
-                eip712_payload
-            ),
-            "Invalid EIP-712 signature"
-        );
-
-        // Handle fee payment
-        if fee_payment_method == 1 {
-            // PREEXISTING_FEE_JUICE
-            self.context.set_as_fee_payer();
-            self.context.end_setup();
-        } else if fee_payment_method == 2 {
-            // FEE_JUICE_WITH_CLAIM
-            self.context.set_as_fee_payer();
-        }
-
-        // Execute the calls
-        app_payload.execute_calls(self.context);
-
-        // Handle cancellability
-        if cancellable {
-            let tx_nullifier = poseidon2_hash_with_separator(
-                [app_payload.tx_nonce],
-                GENERATOR_INDEX__TX_NULLIFIER,
+            // 1. Verify target address matches
+            assert(
+                target_addresses[0] == stored_target,
+                "AuthWit target_address mismatch with AppPayload"
             );
-            self.context.push_nullifier(tx_nullifier);
+
+            // 2. Verify args_hash matches (Poseidon2 hash of witness args)
+            let computed_args_hash = compute_aztec_args_hash(
+                function_args[0],
+                args_lengths[0] as u32
+            );
+            let stored_args_hash = extract_args_hash(serialized_payload, 0);
+            assert(
+                computed_args_hash == stored_args_hash,
+                "AuthWit args_hash mismatch with AppPayload"
+            );
+
+            // 3. Verify function_selector matches (Poseidon2 hash of signature, truncated)
+            let computed_selector = compute_function_selector(
+                function_signatures[0],
+                signature_lengths[0] as u32
+            );
+            let stored_selector = extract_function_selector(serialized_payload, 0);
+            assert(
+                computed_selector == stored_selector,
+                "AuthWit function_selector mismatch with AppPayload"
+            );
+
+            // =====================================================================
+            // Compute EIP-712 hashes (now that auth witness data is verified)
+            // =====================================================================
+
+            // Compute EIP-712 hashStruct(FunctionCall) for the single call
+            let target_bytes = field_to_bytes32(target_addresses[0]);
+            let function_call_hash = hash_function_call(
+                target_bytes,
+                function_signatures[0],
+                signature_lengths[0] as u32,
+                function_args[0],
+                args_lengths[0] as u32
+            );
+
+            // Compute AppDomain hash
+            let chain_id_bytes = field_to_bytes32(chain_id);
+            let app_domain_hash = hash_app_domain(
+                APP_DOMAIN_NAME_HASH,
+                APP_DOMAIN_VERSION_HASH,
+                chain_id_bytes,
+                salt
+            );
+
+            // Compute EntrypointAuthorization hash
+            let tx_nonce_bytes = field_to_bytes32(app_payload.tx_nonce);
+            let message_hash = hash_entrypoint_authorization(
+                app_domain_hash,
+                function_call_hash,
+                tx_nonce_bytes
+            );
+
+            // Compute final EIP-712 payload
+            let eip712_payload = compute_eip712_payload(DOMAIN_SEPARATOR, message_hash);
+
+            // Verify ECDSA signature
+            assert(
+                std::ecdsa_secp256k1::verify_signature(
+                    public_key.x,
+                    public_key.y,
+                    ecdsa_signature,
+                    eip712_payload
+                ),
+                "Invalid EIP-712 signature"
+            );
+
+            // Handle fee payment
+            if fee_payment_method == 1 {
+                // PREEXISTING_FEE_JUICE
+                self.context.set_as_fee_payer();
+                self.context.end_setup();
+            } else if fee_payment_method == 2 {
+                // FEE_JUICE_WITH_CLAIM
+                self.context.set_as_fee_payer();
+            }
+
+            // Execute the calls
+            app_payload.execute_calls(self.context);
+
+            // Handle cancellability
+            if cancellable {
+                let tx_nullifier = poseidon2_hash_with_separator(
+                    [app_payload.tx_nonce],
+                    GENERATOR_INDEX__TX_NULLIFIER,
+                );
+                self.context.push_nullifier(tx_nullifier);
+            }
         }
     }
 
@@ -562,6 +580,74 @@ pub contract Eip712Account {
 
         // Return IS_VALID_SELECTOR (0x47dacd73) on success per AccountInterface spec
         0x47dacd73
+    }
+
+    // =========================================================================
+    // Standard Auth Witness Verification (Fallback for deployment)
+    // =========================================================================
+
+    /// Standard ECDSA signature verification for fallback mode.
+    ///
+    /// This function verifies Ethereum-style personal_sign signatures over the outer_hash.
+    /// It's used when no EIP-712 capsule is present (e.g., during deployment).
+    ///
+    /// The verification process:
+    /// 1. Takes the outer_hash (Aztec Poseidon hash)
+    /// 2. Prepends the Ethereum message prefix: "\x19Ethereum Signed Message:\n32"
+    /// 3. Computes keccak256 of the prefixed message
+    /// 4. Verifies the secp256k1 signature against this hash
+    #[contract_library_method]
+    fn is_valid_impl(context: &mut PrivateContext, outer_hash: Field) -> bool {
+        // Load public key from storage
+        let storage = Storage::init(context);
+        let public_key = storage.signing_public_key.get_note();
+
+        // Load auth witness (signature: 64 bytes = r[32] + s[32])
+        // Safety: The witness is only used as a "magical value" that makes the signature verification below pass.
+        let witness: [Field; 64] = unsafe { get_auth_witness(outer_hash) };
+        let mut signature: [u8; 64] = [0; 64];
+        for i in 0..64 {
+            signature[i] = witness[i] as u8;
+        }
+
+        // Convert outer_hash to 32 bytes (big-endian)
+        let outer_hash_bytes: [u8; 32] = outer_hash.to_be_bytes();
+
+        // Construct the Ethereum signed message prefix
+        // "\x19Ethereum Signed Message:\n32" = 28 bytes
+        // This is what MetaMask prepends before hashing with keccak256
+        let eth_prefix: [u8; 28] = [
+            0x19, // \x19
+            0x45, 0x74, 0x68, 0x65, 0x72, 0x65, 0x75, 0x6d, // "Ethereum"
+            0x20, // space
+            0x53, 0x69, 0x67, 0x6e, 0x65, 0x64, // "Signed"
+            0x20, // space
+            0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, // "Message"
+            0x3a, // ":"
+            0x0a, // "\n"
+            0x33, 0x32, // "32"
+        ];
+
+        // Concatenate prefix + outer_hash_bytes (total 60 bytes)
+        let mut prefixed_message: [u8; 60] = [0; 60];
+        for i in 0..28 {
+            prefixed_message[i] = eth_prefix[i];
+        }
+        for i in 0..32 {
+            prefixed_message[28 + i] = outer_hash_bytes[i];
+        }
+
+        // Compute keccak256 of the prefixed message
+        // This matches what MetaMask computes when using personal_sign
+        let eth_signed_message_hash: [u8; 32] = keccak256::keccak256(prefixed_message, 60);
+
+        // Verify ECDSA secp256k1 signature
+        std::ecdsa_secp256k1::verify_signature(
+            public_key.x,
+            public_key.y,
+            signature,
+            eth_signed_message_hash,
+        )
     }
 }
 

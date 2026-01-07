@@ -22,14 +22,26 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
+      testIgnore: ['**/tests/metamask/**'], // MetaMask only works in Chrome
     },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: ['**/tests/metamask/**'], // Regular tests without extension
     },
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
+      testIgnore: ['**/tests/metamask/**'], // MetaMask only works in Chrome
+    },
+    {
+      name: 'chromium-metamask',
+      use: {
+        ...devices['Desktop Chrome'],
+        // MetaMask tests use their own browser context with extension
+        // See tests/metamask/fixtures.ts for extension loading
+      },
+      testMatch: ['**/tests/metamask/**/*.spec.ts'],
     },
   ],
 

@@ -24,6 +24,8 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "yarn prep-test && yarn playwright test",
+    "test:metamask": "playwright test tests/metamask/ --project=chromium-metamask",
+    "test:metamask:headed": "playwright test tests/metamask/ --project=chromium-metamask --headed",
     "lint": "prettier --check ./src"
   },
   "dependencies": {
@@ -47,7 +49,8 @@
     "viem": "2.41.2"
   },
   "devDependencies": {
-    "@playwright/test": "1.57.0",
+    "@playwright/test": "1.44.0",
+    "@synthetixio/synpress": "4.1.1",
     "@types/node": "22.15.17",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.1.7",

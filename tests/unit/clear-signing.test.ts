@@ -40,6 +40,7 @@ describe('ClearSigning_web_integration', () => {
 
   beforeAll(() => {
     testAccount = privateKeyToAccount(TEST_PRIVATE_KEY);
+    // @ts-expect-error - viem's deep type instantiation issue (TS2589)
     walletClient = createWalletClient({
       account: testAccount,
       chain: localhost,
@@ -931,7 +932,7 @@ describe('ClearSigning_web_integration', () => {
           expect(contract.publicKeyY).toEqual(publicKeyY);
         });
 
-        it('should reference correct artifact (eip712_account)', () => {
+        it('should reference correct artifact (eip712_account)', async () => {
           // Source: clear-signing-web.tree:93
           const provider = new Eip712AuthWitnessProvider(
             walletClient,
@@ -940,7 +941,7 @@ describe('ClearSigning_web_integration', () => {
           );
 
           const contract = new Eip712AccountContract(publicKeyX, publicKeyY, provider);
-          const artifact = contract.getContractArtifact();
+          const artifact = await contract.getContractArtifact();
 
           expect(artifact.name).toBe('Eip712Account');
         });
@@ -1005,7 +1006,7 @@ describe('ClearSigning_web_integration', () => {
           expect(contract.getAuthWitnessProvider()).toBe(provider);
         });
 
-        it('should support entrypoint and entrypoint5', () => {
+        it('should support entrypoint and entrypoint5', async () => {
           // Source: clear-signing-web.tree:99
           const provider = new Eip712AuthWitnessProvider(
             walletClient,
@@ -1019,7 +1020,7 @@ describe('ClearSigning_web_integration', () => {
             provider
           );
 
-          const artifact = contract.getContractArtifact();
+          const artifact = await contract.getContractArtifact();
           const functionNames = artifact.functions.map((f: { name: string }) => f.name);
 
           expect(functionNames).toContain('entrypoint');

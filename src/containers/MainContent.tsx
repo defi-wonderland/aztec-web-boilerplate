@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { ContractInteractionCard } from './ContractInteractionCard';
-import { Tabs, SecurityWarning } from '../components';
+import { Tabs, SecurityWarning, ClearSigningDemo } from '../components';
 import { TabConfig, TabType } from '../types';
 import { useUniversalWallet } from '../hooks';
 import { isEmbeddedConnector } from '../types/walletConnector';
@@ -27,6 +27,12 @@ export const MainContent: React.FC = () => {
       label: 'Contract UI',
       icon: '🧰',
       component: <ContractInteractionCard />
+    },
+    {
+      id: 'clear-signing',
+      label: 'Clear Signing',
+      icon: '✍️',
+      component: <ClearSigningDemo />
     },
     {
       id: 'settings',

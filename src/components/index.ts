@@ -7,4 +7,5 @@ export { TimingToast } from './TimingToast';
 export { Header } from './Header';
 export { StatusMessage } from './StatusMessage';
 export { TokenBalance } from './TokenBalance';
+export { ClearSigningDemo } from './ClearSigningDemo';
 export * from './settings';
