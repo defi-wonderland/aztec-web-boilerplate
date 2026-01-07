@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
-import { formatFunctionSignature, type ParsedFunction } from '../utils/contractInteraction';
+import {
+  formatFunctionSignature,
+  type ParsedFunction,
+} from '../utils/contractInteraction';
 
 const HIDDEN_FUNCTION_NAMES = ['constructor', 'public_dispatch'];
+
+const hasHiddenAttribute = (attrs: string[] = []): boolean =>
+  attrs.includes('initializer') ||
+  attrs.includes('abi_initializer') ||
+  attrs.includes('abi_only_self');
 
 const isExecutableFn = (fn: ParsedFunction): boolean => {
   const attrs = fn.attributes ?? [];
@@ -27,7 +35,7 @@ export const useFunctionGroups = (
       .filter(
         (fn) =>
           !HIDDEN_FUNCTION_NAMES.includes(fn.name.toLowerCase()) &&
-          !fn.attributes.includes('initializer')
+          !hasHiddenAttribute(fn.attributes ?? [])
       )
       .filter((fn) =>
         formatFunctionSignature(fn).toLowerCase().includes(normalizedFilter)
@@ -65,4 +73,3 @@ export const useFunctionGroups = (
 
   return { filteredFunctions, grouped };
 };
-
