@@ -107,7 +107,7 @@ Lazy contracts are registered on-demand when first accessed, reducing the initia
 
 ## Using Azguard Wallet
 
-If you want to use [Azguard Wallet](https://azguard.xyz/), you'll need to configure sponsored fee payments:
+If you want to use [Azguard Wallet](https://azguardwallet.io/), you'll need to configure sponsored fee payments:
 
 ### Setting Up Sponsored Fees in Azguard
 
