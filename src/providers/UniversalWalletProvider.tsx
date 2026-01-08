@@ -8,9 +8,15 @@
  * - Browser Wallet: External PXE (Azguard, Obsidian, etc.)
  */
 
-import React, { createContext, ReactNode, useRef, useMemo } from 'react';
-import type { Hex } from 'viem';
+import React, { createContext, ReactNode, useMemo, useRef } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import {
+  EmbeddedConnector,
+  ExternalSignerConnector,
+  BrowserWalletConnector,
+} from '../connectors';
+import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
+import { createEVMSigner } from '../signers';
 import { WalletType, ExternalSignerType } from '../types/aztec';
 import {
   useEmbeddedWallet,
@@ -19,22 +25,16 @@ import {
   useNetworkInternal,
   useEVMWalletInternal,
 } from './hooks';
+import type { NetworkConfig } from '../config/networks';
+import type { WalletKitConfig } from '../sdk/walletKitConfig';
+import type { EVMWalletService } from '../services/evm/EVMWalletService';
+import type { ExternalSigner } from '../signers/types';
+import type { IBrowserWalletAdapter } from '../types/browserWallet';
 import type {
   WalletConnector,
   WalletConnectorId,
 } from '../types/walletConnector';
-import {
-  EmbeddedConnector,
-  ExternalSignerConnector,
-  BrowserWalletConnector,
-} from '../connectors';
-import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
-import type { WalletKitConfig } from '../sdk/walletKitConfig';
-import type { NetworkConfig } from '../config/networks';
-import { createEVMSigner } from '../signers';
-import type { ExternalSigner } from '../signers/types';
-import type { EVMWalletService } from '../services/evm/EVMWalletService';
-import type { IBrowserWalletAdapter } from '../types/browserWallet';
+import type { Hex } from 'viem';
 
 export interface NetworkContextType {
   currentConfig: NetworkConfig;
@@ -115,48 +115,42 @@ export const UniversalWalletProvider: React.FC<
     return signer;
   };
 
-  // Create wallet kit once
-  const walletKitRef = useRef<AztecWalletKit | null>(null);
-  if (!walletKitRef.current) {
-    walletKitRef.current = createAztecWalletKit({
-      aztecNode: network.state.currentConfig.nodeUrl,
-      connectors: walletKitConfig.connectors,
-    });
-  }
-  const walletKit = walletKitRef.current;
+  const walletKit = useMemo(
+    () =>
+      createAztecWalletKit({
+        aztecNode: network.state.currentConfig.nodeUrl,
+        connectors: walletKitConfig.connectors,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [] // Intentionally empty - wallet kit should only be created once
+  );
   const connectors = walletKit.getConnectors();
 
-  // Find browser wallet connector and get its adapter (if any)
-  const browserWalletAdapterRef = useRef<IBrowserWalletAdapter | null>(null);
-  if (!browserWalletAdapterRef.current) {
+  const browserWalletAdapter = useMemo(() => {
     const browserConnector = connectors.find(
       (c): c is BrowserWalletConnector => c.type === WalletType.BROWSER_WALLET
     );
-    if (browserConnector) {
-      browserWalletAdapterRef.current = browserConnector.getAdapter();
-    }
-  }
+    return browserConnector?.getAdapter() ?? null;
+  }, [connectors]);
 
-  // Embedded wallet hook
   const embedded = useEmbeddedWallet({
     config: network.state.currentConfig,
     resetToDefault: network.actions.resetToDefault,
   });
 
-  // External signer wallet hook
   const externalSigner = useExternalSignerWallet({
     config: network.state.currentConfig,
   });
 
-  // Browser wallet hook (only if we have a browser wallet connector)
-  const browserWalletAdapter = browserWalletAdapterRef.current;
   const browserWallet = useBrowserWallet(
     browserWalletAdapter
       ? { config: network.state.currentConfig, adapter: browserWalletAdapter }
-      : { config: network.state.currentConfig, adapter: null as any }
+      : {
+          config: network.state.currentConfig,
+          adapter: null as unknown as IBrowserWalletAdapter,
+        }
   );
 
-  // Update connector states
   for (const connector of connectors) {
     if (
       'updateState' in connector &&
@@ -179,7 +173,6 @@ export const UniversalWalletProvider: React.FC<
     }
   }
 
-  // Find active connector
   const activeConnector = useMemo(() => {
     return (
       connectors.find((c) => {

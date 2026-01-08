@@ -56,4 +56,3 @@ const PreconfiguredSelector = ({
 };
 
 export default PreconfiguredSelector;
-

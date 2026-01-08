@@ -14,6 +14,8 @@ export const getContractMethod = (
   contract: unknown,
   methodName: string
 ): ContractMethod | undefined => {
-  const contractWithMethods = contract as { methods?: Record<string, ContractMethod> };
+  const contractWithMethods = contract as {
+    methods?: Record<string, ContractMethod>;
+  };
   return contractWithMethods.methods?.[methodName];
 };

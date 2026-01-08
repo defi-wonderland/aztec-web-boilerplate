@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
 import type {
   ContractConfigMap,
@@ -6,7 +7,6 @@ import type {
   ContractStatus,
   UseContractRegistryReturn,
 } from '../../contract-registry';
-import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 
 /**
  * Hook for accessing the contract registry and its operations.

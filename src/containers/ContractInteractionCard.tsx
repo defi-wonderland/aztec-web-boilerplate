@@ -5,32 +5,18 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useUniversalWallet } from '../hooks';
-import { useDynamicContractCaller } from '../hooks/contracts/useDynamicContractCaller';
-import { useContractDeployer } from '../hooks/contracts/useContractDeployer';
-import { useForm } from '../hooks/useForm';
+import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 import ArtifactLoader from '../components/contract-interaction/ArtifactLoader';
 import FunctionForm from '../components/contract-interaction/FunctionForm';
 import FunctionList from '../components/contract-interaction/FunctionList';
 import LogPanel from '../components/contract-interaction/LogPanel';
-import type {
-  CachedContract,
-  LogEntry,
-  ArtifactLoaderMode,
-  DeploymentFormValues,
-} from '../components/contract-interaction/types';
+import { DEPLOYABLE_CONTRACTS } from '../config/deployableContracts';
+import { PRECONFIGURED_CONTRACTS } from '../config/preconfiguredContracts';
+import { useUniversalWallet } from '../hooks';
+import { useContractDeployer } from '../hooks/contracts/useContractDeployer';
+import { useDynamicContractCaller } from '../hooks/contracts/useDynamicContractCaller';
+import { useForm } from '../hooks/useForm';
 import { useFunctionGroups } from '../hooks/useFunctionGroups';
-import {
-  analyzeFunctionCapabilities,
-  formatFunctionSignature,
-  isValidAztecAddress,
-  loadAndPrepareArtifact,
-  parseArtifactSource,
-  validateAndBuildCallArgs,
-  type ParsedArtifact,
-  type ParsedFunction,
-} from '../utils/contractInteraction';
-import type { CachedContract as CacheContract } from '../utils/contractCache';
 import {
   cacheAndPersistArtifact,
   clearArtifactsDb,
@@ -43,8 +29,16 @@ import {
   removeContract,
   resolveCachedArtifact,
 } from '../utils/contractCache';
-import { PRECONFIGURED_CONTRACTS } from '../config/preconfiguredContracts';
-import { DEPLOYABLE_CONTRACTS } from '../config/deployableContracts';
+import {
+  analyzeFunctionCapabilities,
+  formatFunctionSignature,
+  isValidAztecAddress,
+  loadAndPrepareArtifact,
+  parseArtifactSource,
+  validateAndBuildCallArgs,
+  type ParsedArtifact,
+  type ParsedFunction,
+} from '../utils/contractInteraction';
 import {
   getDeployableContractsForNetwork,
   findDeployableContract,
@@ -54,7 +48,13 @@ import {
   type ContractConstructor,
 } from '../utils/deployableContracts';
 import { safeStringify, toTitleCase } from '../utils/string';
-import { readFieldCompressedString } from '@aztec/aztec.js/utils';
+import type {
+  CachedContract,
+  LogEntry,
+  ArtifactLoaderMode,
+  DeploymentFormValues,
+} from '../components/contract-interaction/types';
+import type { CachedContract as CacheContract } from '../utils/contractCache';
 
 type ArtifactLoaderState = {
   address: string;
@@ -203,6 +203,8 @@ export const ContractInteractionCard: React.FC = () => {
   const hasAutoLoadedRef = useRef(false);
 
   const savedContractsRef = useRef<CacheContract[]>(savedContracts);
+  // Latest ref pattern: keeps ref in sync so callbacks access current value without dep array churn
+  // eslint-disable-next-line react-hooks/refs
   savedContractsRef.current = savedContracts;
 
   // Deployment hook
@@ -409,6 +411,64 @@ export const ContractInteractionCard: React.FC = () => {
     [deployment.formValues, updateDeployment]
   );
 
+  const handleLoadArtifactWithData = useCallback(
+    async (address: string, artifactJson: string, customLabel?: string) => {
+      requestPersistentStorage();
+
+      const result = loadAndPrepareArtifact(
+        artifactJson,
+        address,
+        constants.MAX_CACHE_CHARS
+      );
+      if (!result.success) {
+        updateArtifact({ parseError: result.error });
+        pushLog({
+          level: 'error',
+          title: 'Artifact parse failed',
+          detail: result.error,
+        });
+        return;
+      }
+
+      const {
+        parsed: parsedArtifact,
+        address: resolvedAddress,
+        contractLabel,
+        shouldCacheInline,
+        firstFunctionName,
+      } = result;
+      setParsed(parsedArtifact);
+      updateArtifact({ parseError: null, address: resolvedAddress });
+      updateExecutor({ selectedFnName: firstFunctionName });
+      pushLog({
+        level: 'success',
+        title: 'Artifact loaded',
+        detail: `Loaded ${parsedArtifact.functions.length} functions`,
+      });
+
+      const labelToUse = customLabel ?? contractLabel;
+
+      const cacheResult = await cacheAndPersistArtifact({
+        address: resolvedAddress,
+        artifactInput: artifactJson,
+        label: labelToUse,
+        shouldCacheInline,
+        savedContracts: savedContractsRef.current,
+        networkName: currentConfig?.name,
+      });
+      setSavedContracts(cacheResult.updatedContracts);
+
+      const cacheMsg = getCacheStatusMessage(cacheResult, shouldCacheInline);
+      if (cacheMsg)
+        pushLog({
+          level: 'info',
+          title: 'Cached address only',
+          detail: cacheMsg,
+        });
+    },
+    [currentConfig?.name, pushLog, updateArtifact, updateExecutor]
+  );
+
   // Deploy handler
   const handleDeploy = useCallback(async () => {
     if (isCustomSelected && customArtifactError) {
@@ -488,75 +548,15 @@ export const ContractInteractionCard: React.FC = () => {
   }, [
     customArtifactError,
     deployment.formValues,
-    deployment.selectedDeployableId,
     deploy,
+    handleLoadArtifactWithData,
+    isCustomSelected,
     pushLog,
     resetDeployment,
     selectedConstructor,
     selectedDeployable,
     updateArtifact,
   ]);
-
-  // Helper to load artifact with specific data (used after deployment)
-  const handleLoadArtifactWithData = async (
-    address: string,
-    artifactJson: string,
-    customLabel?: string
-  ) => {
-    requestPersistentStorage();
-
-    const result = loadAndPrepareArtifact(
-      artifactJson,
-      address,
-      constants.MAX_CACHE_CHARS
-    );
-    if (!result.success) {
-      updateArtifact({ parseError: result.error });
-      pushLog({
-        level: 'error',
-        title: 'Artifact parse failed',
-        detail: result.error,
-      });
-      return;
-    }
-
-    const {
-      parsed: parsedArtifact,
-      address: resolvedAddress,
-      contractLabel,
-      shouldCacheInline,
-      firstFunctionName,
-    } = result;
-    setParsed(parsedArtifact);
-    updateArtifact({ parseError: null, address: resolvedAddress });
-    updateExecutor({ selectedFnName: firstFunctionName });
-    pushLog({
-      level: 'success',
-      title: 'Artifact loaded',
-      detail: `Loaded ${parsedArtifact.functions.length} functions`,
-    });
-
-    // Use custom label if provided (e.g., from deployment), otherwise fall back to artifact name
-    const labelToUse = customLabel ?? contractLabel;
-
-    const cacheResult = await cacheAndPersistArtifact({
-      address: resolvedAddress,
-      artifactInput: artifactJson,
-      label: labelToUse,
-      shouldCacheInline,
-      savedContracts: savedContractsRef.current,
-      networkName: currentConfig?.name,
-    });
-    setSavedContracts(cacheResult.updatedContracts);
-
-    const cacheMsg = getCacheStatusMessage(cacheResult, shouldCacheInline);
-    if (cacheMsg)
-      pushLog({
-        level: 'info',
-        title: 'Cached address only',
-        detail: cacheMsg,
-      });
-  };
 
   const formatResultData = (value: unknown): unknown => {
     if (value === null || value === undefined) return value;
@@ -597,6 +597,54 @@ export const ContractInteractionCard: React.FC = () => {
 
     return value;
   };
+
+  const handleApplySaved = useCallback(
+    async (contract: CachedContract) => {
+      updateArtifact({
+        address: contract.address,
+        artifactInput: contract.artifact ?? '',
+        parseError: null,
+      });
+      resetExecutor();
+
+      const resolved = await resolveCachedArtifact(contract);
+      if (!resolved.found) {
+        setParsed(null);
+        const detail =
+          resolved.reason === 'extended_storage_unavailable'
+            ? 'Cached artifact unavailable (too large / cleared); paste it to load functions.'
+            : 'Artifact not cached (too large); paste it to load functions.';
+        pushLog({ level: 'info', title: 'Address applied', detail });
+        return;
+      }
+
+      try {
+        const parsedArtifact = parseArtifactSource(resolved.artifact);
+        setParsed(parsedArtifact);
+        updateExecutor({
+          selectedFnName: parsedArtifact.functions[0]?.name ?? null,
+        });
+        pushLog({
+          level: 'success',
+          title: 'Saved contract loaded',
+          detail: `Loaded ${parsedArtifact.functions.length} functions from cache`,
+        });
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Failed to parse cached artifact';
+        setParsed(null);
+        updateArtifact({ parseError: message });
+        pushLog({
+          level: 'error',
+          title: 'Cached artifact parse failed',
+          detail: message,
+        });
+      }
+    },
+    [pushLog, resetExecutor, updateArtifact, updateExecutor]
+  );
 
   const handleApplyPreconfigured = (contractId: string | null) => {
     if (!contractId) {
@@ -649,7 +697,7 @@ export const ContractInteractionCard: React.FC = () => {
     if (savedContracts.length === 0) return;
     hasAutoLoadedRef.current = true;
     void handleApplySaved(savedContracts[0]);
-  }, [parsed, savedContracts]);
+  }, [parsed, savedContracts, handleApplySaved]);
 
   useEffect(() => {
     if (filteredFunctions.length > 0 && !executor.selectedFnName) {
@@ -718,49 +766,6 @@ export const ContractInteractionCard: React.FC = () => {
     setParsed(null);
     resetExecutor();
     pushLog({ level: 'info', title: 'Cleared' });
-  };
-
-  const handleApplySaved = async (contract: CachedContract) => {
-    updateArtifact({
-      address: contract.address,
-      artifactInput: contract.artifact ?? '',
-      parseError: null,
-    });
-    resetExecutor();
-
-    const resolved = await resolveCachedArtifact(contract);
-    if (!resolved.found) {
-      setParsed(null);
-      const detail =
-        resolved.reason === 'extended_storage_unavailable'
-          ? 'Cached artifact unavailable (too large / cleared); paste it to load functions.'
-          : 'Artifact not cached (too large); paste it to load functions.';
-      pushLog({ level: 'info', title: 'Address applied', detail });
-      return;
-    }
-
-    try {
-      const parsedArtifact = parseArtifactSource(resolved.artifact);
-      setParsed(parsedArtifact);
-      updateExecutor({
-        selectedFnName: parsedArtifact.functions[0]?.name ?? null,
-      });
-      pushLog({
-        level: 'success',
-        title: 'Saved contract loaded',
-        detail: `Loaded ${parsedArtifact.functions.length} functions from cache`,
-      });
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to parse cached artifact';
-      setParsed(null);
-      updateArtifact({ parseError: message });
-      pushLog({
-        level: 'error',
-        title: 'Cached artifact parse failed',
-        detail: message,
-      });
-    }
   };
 
   const handleDeleteSaved = async (targetAddress: string) => {

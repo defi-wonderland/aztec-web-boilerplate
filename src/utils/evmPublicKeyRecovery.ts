@@ -1,8 +1,4 @@
-import {
-  hashMessage,
-  recoverPublicKey,
-  type Hex,
-} from 'viem';
+import { hashMessage, recoverPublicKey, type Hex } from 'viem';
 
 /**
  * Recover the uncompressed public key from a signed message.

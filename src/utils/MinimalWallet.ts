@@ -1,12 +1,12 @@
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import {
   type AccountWithSecretKey,
   type Account,
   SignerlessAccount,
 } from '@aztec/aztec.js/account';
-import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { AztecNode } from '@aztec/aztec.js/node';
 import type { PXE } from '@aztec/pxe/server';
+import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
 
 /**
  * MinimalWallet extends BaseWallet to bootstrap account creation.
@@ -52,5 +52,3 @@ export class MinimalWallet extends BaseWallet {
     }));
   }
 }
-
-

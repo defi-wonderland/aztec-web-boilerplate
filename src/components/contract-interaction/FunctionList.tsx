@@ -1,6 +1,12 @@
 import React from 'react';
 import type { FunctionListProps } from './types';
 
+const EmptyIcon = () => (
+  <span role="img" aria-label="warning" className="empty-icon empty-icon-sm">
+    ⚠️
+  </span>
+);
+
 const FunctionList = ({
   groups,
   selected,
@@ -10,12 +16,9 @@ const FunctionList = ({
   contractName,
   hasContract,
 }: FunctionListProps) => {
-  const title = contractName ? `Search functions · ${contractName}` : 'Search functions';
-  const EmptyIcon = () => (
-    <span role="img" aria-label="warning" className="empty-icon empty-icon-sm">
-      ⚠️
-    </span>
-  );
+  const title = contractName
+    ? `Search functions · ${contractName}`
+    : 'Search functions';
   return (
     <div className="function-list-card">
       <div className="form-group">
@@ -74,4 +77,3 @@ const FunctionList = ({
 };
 
 export default FunctionList;
-

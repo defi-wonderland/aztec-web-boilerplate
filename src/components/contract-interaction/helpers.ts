@@ -59,4 +59,3 @@ export const shouldTrimInput = (type: ParsedType): boolean => {
       return false;
   }
 };
-

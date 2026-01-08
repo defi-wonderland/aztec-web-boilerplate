@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import type { Hex } from 'viem';
 import {
   EVMWalletService,
   getEVMWalletService,
   getEIP6963Service,
 } from '../../services/evm';
 import type { EIP6963ProviderDetail } from '../../types/evm';
+import type { Hex } from 'viem';
 
 export interface EVMWalletState {
   address: Hex | null;
@@ -41,7 +41,9 @@ export const useEVMWalletInternal = (): UseEVMWalletInternalReturn => {
   );
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [discoveredWallets, setDiscoveredWallets] = useState<EIP6963ProviderDetail[]>([]);
+  const [discoveredWallets, setDiscoveredWallets] = useState<
+    EIP6963ProviderDetail[]
+  >([]);
 
   const isConnected = address !== null;
   const isAvailable = service.isAvailable() || discoveredWallets.length > 0;
@@ -78,13 +80,20 @@ export const useEVMWalletInternal = (): UseEVMWalletInternalReturn => {
           // Wallet was requested but not found via EIP-6963
           // Fall back to window.ethereum if available
           if (!service.isAvailable()) {
-            setError(`Wallet not found. Please install it or check if it's enabled.`);
+            setError(
+              `Wallet not found. Please install it or check if it's enabled.`
+            );
             return undefined;
           }
-          console.warn(`Wallet ${rdns} not found via EIP-6963, falling back to window.ethereum`);
+          console.warn(
+            `Wallet ${rdns} not found via EIP-6963, falling back to window.ethereum`
+          );
         }
 
-        const connectedAddress = await service.connect(provider ?? undefined, rdns);
+        const connectedAddress = await service.connect(
+          provider ?? undefined,
+          rdns
+        );
         return connectedAddress;
       } catch (err) {
         const message =
@@ -121,7 +130,15 @@ export const useEVMWalletInternal = (): UseEVMWalletInternalReturn => {
       error,
       discoveredWallets,
     }),
-    [address, isConnected, isConnecting, isAvailable, chainId, error, discoveredWallets]
+    [
+      address,
+      isConnected,
+      isConnecting,
+      isAvailable,
+      chainId,
+      error,
+      discoveredWallets,
+    ]
   );
 
   const actions = useMemo<EVMWalletActions>(

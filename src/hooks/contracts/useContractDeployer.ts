@@ -1,11 +1,14 @@
 import { useCallback, useState } from 'react';
-import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
-import { PublicKeys } from '@aztec/aztec.js/keys';
-import { Fr } from '@aztec/aztec.js/fields';
 import { loadContractArtifact } from '@aztec/aztec.js/abi';
-import { useUniversalWallet } from '../context/useUniversalWallet';
-import { hasAppManagedPXE, isBrowserWalletConnector } from '../../types/walletConnector';
+import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
+import { Fr } from '@aztec/aztec.js/fields';
+import { PublicKeys } from '@aztec/aztec.js/keys';
+import {
+  hasAppManagedPXE,
+  isBrowserWalletConnector,
+} from '../../types/walletConnector';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
+import { useUniversalWallet } from '../context/useUniversalWallet';
 import type {
   DeployableContract,
   ContractConstructor,
@@ -64,7 +67,8 @@ export const useContractDeployer = () => {
       if (!hasAppManagedPXE(connector)) {
         return {
           success: false,
-          error: 'Deployment requires an app-managed PXE wallet (Embedded or External Signer)',
+          error:
+            'Deployment requires an app-managed PXE wallet (Embedded or External Signer)',
         };
       }
 
@@ -117,7 +121,8 @@ export const useContractDeployer = () => {
           txHash: receipt.txHash?.toString(),
         };
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Deployment failed';
+        const errorMsg =
+          err instanceof Error ? err.message : 'Deployment failed';
         setError(errorMsg);
         return { success: false, error: errorMsg };
       } finally {

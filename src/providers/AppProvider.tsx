@@ -1,11 +1,11 @@
 import React, { ReactNode } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from '../lib/queryClient';
-import { ErrorProvider } from './ErrorProvider';
-import { UniversalWalletProvider } from './UniversalWalletProvider';
-import { ThemeProvider } from './ThemeProvider';
-import { EmbeddedContractProvider } from './EmbeddedContractProvider';
 import { walletKitConfig } from '../config/walletKit';
+import { queryClient } from '../lib/queryClient';
+import { EmbeddedContractProvider } from './EmbeddedContractProvider';
+import { ErrorProvider } from './ErrorProvider';
+import { ThemeProvider } from './ThemeProvider';
+import { UniversalWalletProvider } from './UniversalWalletProvider';
 
 interface AppProviderProps {
   children: ReactNode;

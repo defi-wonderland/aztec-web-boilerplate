@@ -1,7 +1,7 @@
 import React from 'react';
 import { AVAILABLE_NETWORKS } from '../../config/networks';
-import type { NetworkConfig } from '../../config/networks/types';
 import type { AztecNetwork } from '../../config/networks/constants';
+import type { NetworkConfig } from '../../config/networks/types';
 
 interface ConfigDisplayProps {
   networkName: AztecNetwork;
@@ -20,15 +20,19 @@ const CONFIG_FIELDS: ConfigField[] = [
   { key: 'deployerAddress', label: 'Deployer Address' },
   { key: 'dripperDeploymentSalt', label: 'Dripper Salt' },
   { key: 'tokenDeploymentSalt', label: 'Token Salt' },
-  { 
-    key: 'proverEnabled', 
+  {
+    key: 'proverEnabled',
     label: 'Prover Enabled',
-    formatter: (value: boolean) => value ? 'Yes' : 'No'
-  }
+    formatter: (value: boolean) => (value ? 'Yes' : 'No'),
+  },
 ];
 
-export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({ networkName }) => {
-  const config = AVAILABLE_NETWORKS.find(network => network.name === networkName);
+export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({
+  networkName,
+}) => {
+  const config = AVAILABLE_NETWORKS.find(
+    (network) => network.name === networkName
+  );
 
   if (!config) {
     return null;
@@ -40,10 +44,10 @@ export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({ networkName }) => 
       <div className="config-grid">
         {CONFIG_FIELDS.map(({ key, label, formatter }) => {
           const value = config[key];
-          const displayValue = formatter 
-            ? formatter(value as boolean) 
-            : (value || 'Not configured');
-          
+          const displayValue = formatter
+            ? formatter(value as boolean)
+            : value || 'Not configured';
+
           return (
             <div key={key} className="config-row">
               <span className="config-label">{label}</span>

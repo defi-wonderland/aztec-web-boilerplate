@@ -1,4 +1,7 @@
-import type { WalletConnector, WalletConnectorId } from '../types/walletConnector';
+import type {
+  WalletConnector,
+  WalletConnectorId,
+} from '../types/walletConnector';
 
 export type ConnectorFactory = () => WalletConnector;
 
@@ -68,4 +71,3 @@ export const createConnectorRegistry = (
   factories: ConnectorFactory[],
   options?: ConnectorRegistryOptions
 ): ConnectorRegistry => new ConnectorRegistry(factories, options);
-

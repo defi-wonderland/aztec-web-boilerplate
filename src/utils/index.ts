@@ -1,14 +1,21 @@
-import { AztecAddress } from "@aztec/aztec.js/addresses";
-import { Fr } from "@aztec/aztec.js/fields";
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
 import { hasHexPrefix } from '@aztec/foundation/string';
-import { PLACEHOLDER_ADDRESS } from "../config/deployments";
-import type { WalletConnector } from "../types/walletConnector";
-import { isBrowserWalletConnector } from "../types/walletConnector";
-import { CHAIN_ID_TO_NETWORK, NETWORK_NAMES } from '../config/networks/constants';
+import { PLACEHOLDER_ADDRESS } from '../config/deployments';
+import {
+  CHAIN_ID_TO_NETWORK,
+  NETWORK_NAMES,
+} from '../config/networks/constants';
+import { isBrowserWalletConnector } from '../types/walletConnector';
+import type { WalletConnector } from '../types/walletConnector';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
 export { toTitleCase } from './string';
-export { waitForBrowserWalletReceipt, type WaitForReceiptOptions, type WaitForReceiptResult } from './txReceipt';
+export {
+  waitForBrowserWalletReceipt,
+  type WaitForReceiptOptions,
+  type WaitForReceiptResult,
+} from './txReceipt';
 
 /** CAIP account format: "namespace:chainId:address" (e.g., "aztec:1:0x123...") */
 type CaipAccountString = string;
@@ -51,7 +58,8 @@ const TRUNCATE_END = 4;
 export const truncateAddress = (address: string | undefined): string => {
   if (!address) return '';
   const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
-  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END) return formattedAddress;
+  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END)
+    return formattedAddress;
   return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
 };
 
@@ -60,11 +68,14 @@ export const formatAddress = (address: string | undefined): string => {
   return hasHexPrefix(address) ? address : `0x${address}`;
 };
 
-export const truncateCaipAddress = (caipAccount: CaipAccountString | undefined): string => {
+export const truncateCaipAddress = (
+  caipAccount: CaipAccountString | undefined
+): string => {
   if (!caipAccount) return '';
   const address = caipAccount.split(':')[2];
   const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
-  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END) return formattedAddress;
+  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END)
+    return formattedAddress;
   return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
 };
 
@@ -87,14 +98,15 @@ export const isBrowserWalletPlaceholder = (contract: unknown): boolean => {
     typeof contract === 'object' &&
     contract !== null &&
     '__browserWalletPlaceholder' in contract &&
-    (contract as { __browserWalletPlaceholder: boolean }).__browserWalletPlaceholder === true
+    (contract as { __browserWalletPlaceholder: boolean })
+      .__browserWalletPlaceholder === true
   );
 };
 
 /**
  * Determines if the operations-based flow should be used for transactions.
  * This is typically for browser wallets where contracts are proxy markers.
- * 
+ *
  * @param connector - The wallet connector
  * @param contracts - The contracts to check (all must be proxy contracts)
  * @returns true if operations flow should be used
@@ -104,11 +116,11 @@ export const shouldUseOperationsFlow = (
   ...contracts: unknown[]
 ): boolean => {
   if (!connector) return false;
-  
+
   // Must be a browser wallet that supports operations execution
   if (!isBrowserWalletConnector(connector)) return false;
   if (typeof connector.sendTransaction !== 'function') return false;
-  
+
   // All provided contracts must be browser wallet placeholders
   return contracts.every(isBrowserWalletPlaceholder);
 };

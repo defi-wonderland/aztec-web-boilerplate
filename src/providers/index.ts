@@ -5,4 +5,7 @@ export {
   type SignerContextType,
 } from './UniversalWalletProvider';
 export { ThemeProvider } from './ThemeProvider';
-export { EmbeddedContractProvider, useContractRegistryContext } from './EmbeddedContractProvider';
+export {
+  EmbeddedContractProvider,
+  useContractRegistryContext,
+} from './EmbeddedContractProvider';

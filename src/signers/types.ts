@@ -95,4 +95,3 @@ export interface ExternalSigner {
  * Factory function type for creating external signers
  */
 export type ExternalSignerFactory = () => ExternalSigner;
-

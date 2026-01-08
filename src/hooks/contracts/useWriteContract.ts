@@ -1,11 +1,18 @@
 import { useState, useCallback } from 'react';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
-import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import { useUniversalWallet } from '../context/useUniversalWallet';
-import { isBrowserWalletConnector, hasAppManagedPXE } from '../../types/walletConnector';
-import type { MethodsOf, ArgsOf, WriteContractResult } from '../../types/contractTypes';
+import {
+  isBrowserWalletConnector,
+  hasAppManagedPXE,
+} from '../../types/walletConnector';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
+import { useUniversalWallet } from '../context/useUniversalWallet';
+import type {
+  MethodsOf,
+  ArgsOf,
+  WriteContractResult,
+} from '../../types/contractTypes';
 
 interface UseWriteContractOptions {
   /** Timeout for transaction confirmation (ms) - used by embedded wallet */
@@ -29,7 +36,7 @@ type ContractClassFor<TContract extends ContractBase> = {
 
 interface WriteContractParams<
   TContract extends ContractBase,
-  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>
+  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
 > {
   /** Contract class - used for type inference and artifact */
   contract: ContractClassFor<TContract>;
@@ -49,11 +56,11 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
 /**
  * Hook for executing write operations on Aztec contracts.
  * Handles both embedded and browser wallet flows automatically.
- * 
+ *
  * @example
  * ```tsx
  * const { writeContract, isPending } = useWriteContract();
- * 
+ *
  * // TypeScript infers the method type from functionName
  * await writeContract({
  *   contract: DripperContract,
@@ -72,7 +79,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const writeContract = useCallback(
     async <
       TContract extends ContractBase,
-      TMethod extends MethodsOf<TContract> = MethodsOf<TContract>
+      TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
     >(
       params: WriteContractParams<TContract, TMethod>
     ): Promise<WriteContractResult> => {
@@ -125,7 +132,11 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
           if (receiptResult.success === false) {
             setError(receiptResult.error);
-            return { success: false, error: receiptResult.error, txHash: response.txHash };
+            return {
+              success: false,
+              error: receiptResult.error,
+              txHash: response.txHash,
+            };
           }
 
           return {
@@ -146,14 +157,17 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
           const paymentMethod = await connector.getSponsoredFeePaymentMethod();
           const contractAddress = AztecAddress.fromString(address);
-          
+
           // Create contract instance
           const contract = await Contract.at(contractAddress, artifact, wallet);
-          
+
           // Get the method and call it
-          const method = (contract as unknown as { methods: Record<string, (...args: unknown[]) => unknown> })
-            .methods[String(functionName)];
-          
+          const method = (
+            contract as unknown as {
+              methods: Record<string, (...args: unknown[]) => unknown>;
+            }
+          ).methods[String(functionName)];
+
           if (!method) {
             const errorMsg = `Method ${String(functionName)} not found on contract`;
             setError(errorMsg);
@@ -161,12 +175,17 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           }
 
           const tx = method(...(args as unknown[]));
-          const sentTx = (tx as { send: (opts: unknown) => { wait: (opts: unknown) => Promise<unknown> } })
-            .send({
-              from: account.getAddress(),
-              fee: { paymentMethod },
-            });
-          
+          const sentTx = (
+            tx as {
+              send: (opts: unknown) => {
+                wait: (opts: unknown) => Promise<unknown>;
+              };
+            }
+          ).send({
+            from: account.getAddress(),
+            fee: { paymentMethod },
+          });
+
           const result = await sentTx.wait({ timeout });
 
           return {

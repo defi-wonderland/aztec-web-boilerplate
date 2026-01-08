@@ -188,4 +188,3 @@ export interface FunctionFormProps {
   onChange: (path: string, value: string) => void;
   disabled: boolean;
 }
-

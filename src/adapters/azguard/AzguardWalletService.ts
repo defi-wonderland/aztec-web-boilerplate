@@ -1,11 +1,13 @@
 import { AzguardClient } from '@azguardwallet/client';
+import { SUPPORTED_CHAINS } from '../../config/networks/constants';
+import type { AzguardWalletState } from '../../types/azguard';
 import type {
   CaipAccount,
+  DappMetadata,
+  DappPermissions,
   Operation,
   OperationResult,
 } from '@azguardwallet/types';
-import type { AzguardWalletState } from '../../types/azguard';
-import { SUPPORTED_CHAINS } from '../../config/networks/constants';
 
 export class AzguardWalletService {
   private client: AzguardClient | null = null;
@@ -17,7 +19,8 @@ export class AzguardWalletService {
     supportedChains: [],
     error: null,
   };
-  private eventListeners: Map<string, Set<Function>> = new Map();
+  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> =
+    new Map();
   private accountsChangedHandler?: (accounts: CaipAccount[]) => void;
   private disconnectedHandler?: () => void;
 
@@ -58,9 +61,9 @@ export class AzguardWalletService {
    * Connect to Azguard wallet
    */
   async connect(
-    dappMetadata: any,
-    requiredPermissions: any[],
-    optionalPermissions?: any[]
+    dappMetadata: DappMetadata,
+    requiredPermissions: DappPermissions[],
+    optionalPermissions?: DappPermissions[]
   ): Promise<CaipAccount[]> {
     if (!this.client) {
       throw new Error('Azguard wallet service not initialized');
@@ -129,9 +132,9 @@ export class AzguardWalletService {
    * Validate connection parameters before attempting connection
    */
   private validateConnectionParams(
-    dappMetadata: any,
-    requiredPermissions: any[],
-    optionalPermissions?: any[]
+    dappMetadata: DappMetadata,
+    requiredPermissions: DappPermissions[],
+    optionalPermissions?: DappPermissions[]
   ): void {
     // Validate dappMetadata
     if (!dappMetadata || typeof dappMetadata !== 'object') {
@@ -146,11 +149,14 @@ export class AzguardWalletService {
       throw new Error('dappMetadata.url must be a string if provided');
     }
 
-    if (dappMetadata.icon && typeof dappMetadata.icon !== 'string') {
-      throw new Error('dappMetadata.icon must be a string if provided');
+    if (dappMetadata.logo && typeof dappMetadata.logo !== 'string') {
+      throw new Error('dappMetadata.logo must be a string if provided');
     }
 
-    const validatePermissions = (permissions: any[], label: string) => {
+    const validatePermissions = (
+      permissions: DappPermissions[],
+      label: string
+    ) => {
       if (!Array.isArray(permissions)) {
         throw new Error(`${label} must be an array`);
       }
@@ -180,7 +186,7 @@ export class AzguardWalletService {
           throw new Error(`${label}[${index}].methods cannot be empty`);
         }
 
-        permission.chains.forEach((chain: any, chainIndex: number) => {
+        permission.chains.forEach((chain: string, chainIndex: number) => {
           if (typeof chain !== 'string') {
             throw new Error(
               `${label}[${index}].chains[${chainIndex}] must be a string`
@@ -193,7 +199,7 @@ export class AzguardWalletService {
           }
         });
 
-        permission.methods.forEach((method: any, methodIndex: number) => {
+        permission.methods.forEach((method: string, methodIndex: number) => {
           if (typeof method !== 'string') {
             throw new Error(
               `${label}[${index}].methods[${methodIndex}] must be a string`
@@ -303,14 +309,20 @@ export class AzguardWalletService {
    * Add event listener
    */
   onAccountsChanged(callback: (accounts: CaipAccount[]) => void): void {
-    this.addEventListener('accountsChanged', callback);
+    this.addEventListener(
+      'accountsChanged',
+      callback as (...args: unknown[]) => void
+    );
   }
 
   /**
    * Add disconnection event listener
    */
   onDisconnected(callback: () => void): void {
-    this.addEventListener('disconnected', callback);
+    this.addEventListener(
+      'disconnected',
+      callback as (...args: unknown[]) => void
+    );
   }
 
   getSupportedChains(): string[] {
@@ -351,7 +363,10 @@ export class AzguardWalletService {
   /**
    * Add event listener
    */
-  private addEventListener(event: string, callback: Function): void {
+  private addEventListener(
+    event: string,
+    callback: (...args: unknown[]) => void
+  ): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set());
     }
@@ -361,7 +376,7 @@ export class AzguardWalletService {
   /**
    * Emit event to listeners
    */
-  private emitEvent(event: string, ...args: any[]): void {
+  private emitEvent(event: string, ...args: unknown[]): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach((callback) => {

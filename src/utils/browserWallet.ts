@@ -1,12 +1,15 @@
 import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
-import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import type { NetworkConfig } from '../config/networks';
-import { getChainId, type AztecChainId } from '../config/networks/constants';
+import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { contractsConfig } from '../config/contracts';
 import { getNetworkArtifacts } from '../config/networkArtifacts';
-import { getContractsForConfig, type ContractNames } from '../contract-registry';
+import { getChainId, type AztecChainId } from '../config/networks/constants';
+import {
+  getContractsForConfig,
+  type ContractNames,
+} from '../contract-registry';
+import type { NetworkConfig } from '../config/networks';
 import type { RegisterContractOp } from '../types/browserWallet';
 
 /**
@@ -67,7 +70,7 @@ export const buildRegisterContractOperations = async (
     chain,
     address: sponsoredFPCInstance.address.toString(),
     instance: sponsoredFPCInstance,
-      artifact: SponsoredFPCContractArtifact,
+    artifact: SponsoredFPCContractArtifact,
   });
 
   return operations;

@@ -18,7 +18,7 @@ const getLocalStorage = (): Storage | null =>
   typeof window === 'undefined' ? null : window.localStorage;
 
 const getIndexedDB = (): IDBFactory | null =>
-  typeof window === 'undefined' ? null : window.indexedDB ?? null;
+  typeof window === 'undefined' ? null : (window.indexedDB ?? null);
 
 const openArtifactDb = async (): Promise<IDBDatabase | null> => {
   const indexedDB = getIndexedDB();
@@ -42,7 +42,10 @@ export const storeArtifact = async (
 ): Promise<string | null> => {
   const db = await openArtifactDb();
   if (!db) return null;
-  const sanitizedNamespace = (namespace ?? 'global').replace(/[^a-z0-9_-]/gi, '');
+  const sanitizedNamespace = (namespace ?? 'global').replace(
+    /[^a-z0-9_-]/gi,
+    ''
+  );
   const key = `${sanitizedNamespace}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   return new Promise((resolve) => {
     const tx = db.transaction(ARTIFACT_STORE, 'readwrite');
@@ -101,8 +104,10 @@ export const loadCachedContracts = (networkName?: string): CachedContract[] => {
         if (typeof value?.address !== 'string') return null;
 
         const result: CachedContract = { address: value.address };
-        if (typeof value.artifact === 'string') result.artifact = value.artifact;
-        if (typeof value.artifactKey === 'string') result.artifactKey = value.artifactKey;
+        if (typeof value.artifact === 'string')
+          result.artifact = value.artifact;
+        if (typeof value.artifactKey === 'string')
+          result.artifactKey = value.artifactKey;
         if (typeof value.label === 'string') result.label = value.label;
         if (typeof value.savedAt === 'number') result.savedAt = value.savedAt;
 
@@ -167,7 +172,10 @@ export const upsertContract = (
   return [entry, ...filtered].slice(0, MAX_SAVED_CONTRACTS);
 };
 
-export const removeContract = (current: CachedContract[], address: string): CachedContract[] => {
+export const removeContract = (
+  current: CachedContract[],
+  address: string
+): CachedContract[] => {
   const normalized = address.toLowerCase();
   return current.filter((item) => item.address.toLowerCase() !== normalized);
 };
@@ -200,8 +208,9 @@ export const getCacheStatusMessage = (
   shouldCacheInline: boolean
 ): string | null => {
   if (result.savedArtifacts) return null;
-  
-  if (shouldCacheInline) return 'Storage quota reached; saved contract address only.';
+
+  if (shouldCacheInline)
+    return 'Storage quota reached; saved contract address only.';
   if (result.storedInExtended) return 'Artifact cached in extended storage.';
   return 'Artifact too large to cache; saved contract address only.';
 };
@@ -222,7 +231,8 @@ export const cacheAndPersistArtifact = async ({
   let artifactValue: string | undefined = artifactInput;
 
   if (!shouldCacheInline) {
-    artifactKey = (await storeArtifact(artifactInput, networkName)) ?? undefined;
+    artifactKey =
+      (await storeArtifact(artifactInput, networkName)) ?? undefined;
     artifactValue = undefined;
   }
 
@@ -242,13 +252,15 @@ export const cacheAndPersistArtifact = async ({
   };
 };
 
-export type ResolvedArtifactResult = {
-  found: true;
-  artifact: string;
-} | {
-  found: false;
-  reason: 'no_artifact' | 'extended_storage_unavailable';
-};
+export type ResolvedArtifactResult =
+  | {
+      found: true;
+      artifact: string;
+    }
+  | {
+      found: false;
+      reason: 'no_artifact' | 'extended_storage_unavailable';
+    };
 
 /**
  * Resolves artifact from a cached contract, checking inline storage first,

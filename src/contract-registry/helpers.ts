@@ -1,22 +1,28 @@
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { NetworkConfig } from '../config/networks';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { ContractConfigMap, ContractConfigDefinition } from './types';
+import type { NetworkConfig } from '../config/networks';
 
 export const createContractConfig = <
   const T extends ContractConfigMap<NetworkConfig>,
 >(
   configs: T
-): T & ContractConfigMap<NetworkConfig> => {
+): T => {
   for (const [name, config] of Object.entries(configs)) {
     if (!config.artifact) {
-      throw new Error(`Contract "${name}" is missing required "artifact" property`);
+      throw new Error(
+        `Contract "${name}" is missing required "artifact" property`
+      );
     }
     if (typeof config.address !== 'function') {
-      throw new Error(`Contract "${name}" is missing required "address" function`);
+      throw new Error(
+        `Contract "${name}" is missing required "address" function`
+      );
     }
     if (typeof config.deployParams !== 'function') {
-      throw new Error(`Contract "${name}" is missing required "deployParams" function`);
+      throw new Error(
+        `Contract "${name}" is missing required "deployParams" function`
+      );
     }
   }
   return configs;

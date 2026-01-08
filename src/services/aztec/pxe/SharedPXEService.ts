@@ -1,17 +1,17 @@
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import { Fr } from '@aztec/aztec.js/fields';
 import { createLogger } from '@aztec/aztec.js/log';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
-import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import type { PXE } from '@aztec/pxe/server';
-import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import { Fr } from '@aztec/aztec.js/fields';
-import { getPXEConfig } from '@aztec/pxe/config';
-import { createPXE } from '@aztec/pxe/client/lazy';
 import { createStore } from '@aztec/kv-store/indexeddb';
+import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
+import { createPXE } from '@aztec/pxe/client/lazy';
+import { getPXEConfig } from '@aztec/pxe/config';
+import type { PXE } from '@aztec/pxe/server';
 import { MinimalWallet } from '../../../utils/MinimalWallet';
-import { AztecStorageService } from '../storage';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { getEnv } from '../../../utils/env';
+import { AztecStorageService } from '../storage';
 
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
@@ -75,7 +75,11 @@ class SharedPXEServiceClass {
     }
 
     // Start new initialization
-    const promise = this.initializeInstance(normalizedNodeUrl, networkName, key);
+    const promise = this.initializeInstance(
+      normalizedNodeUrl,
+      networkName,
+      key
+    );
     this.initPromises.set(key, promise);
 
     try {
@@ -249,7 +253,7 @@ class SharedPXEServiceClass {
     }
   }
 
-  private async getSponsoredPFCContract(pxe: PXE) {
+  private async getSponsoredPFCContract(_pxe: PXE) {
     const { getContractInstanceFromInstantiationParams } = await import(
       '@aztec/aztec.js/contracts'
     );
@@ -297,7 +301,7 @@ class SharedPXEServiceClass {
         try {
           const senderAddress = AztecAddress.fromString(senderAddressString);
           await pxe.registerSender(senderAddress);
-        } catch (error) {
+        } catch {
           // Sender might already be registered
           logger.warn(`Failed to register sender ${senderAddressString}`);
         }

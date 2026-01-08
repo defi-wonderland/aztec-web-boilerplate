@@ -1,7 +1,7 @@
 /**
  * Centralized query key factory for React Query.
  * Using a factory pattern ensures type-safe, consistent query keys across the app.
- * 
+ *
  * @see https://tkdodo.eu/blog/effective-react-query-keys
  */
 export const queryKeys = {
@@ -17,4 +17,3 @@ export const queryKeys = {
  * Type helpers for query keys
  */
 export type TokenBalanceKey = ReturnType<typeof queryKeys.token.balance>;
-

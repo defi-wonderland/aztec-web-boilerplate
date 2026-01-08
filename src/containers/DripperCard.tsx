@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
+import { TokenBalance } from '../components/TokenBalance';
 import { useUniversalWallet, useRequiredContracts } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
 import { useError } from '../providers/ErrorProvider';
-import { TokenBalance } from '../components/TokenBalance';
 
 export const DripperCard: React.FC = () => {
   const { account, isInitialized, connectors, connector, currentConfig } =

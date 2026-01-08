@@ -1,9 +1,9 @@
 import React from 'react';
-import type { ArtifactLoaderProps, ArtifactLoaderMode } from './types';
-import PreconfiguredSelector from './PreconfiguredSelector';
-import ExistingContractForm from './ExistingContractForm';
-import SavedContractsList from './SavedContractsList';
 import DeployContractForm from './DeployContractForm';
+import ExistingContractForm from './ExistingContractForm';
+import PreconfiguredSelector from './PreconfiguredSelector';
+import SavedContractsList from './SavedContractsList';
+import type { ArtifactLoaderProps, ArtifactLoaderMode } from './types';
 
 /**
  * Orchestrator component for loading existing contracts or deploying new ones.

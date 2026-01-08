@@ -25,19 +25,16 @@ export const TimingToast: React.FC<TimingToastProps> = ({
   onClose,
 }) => {
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
 
-  console.log('[TimingToast] RENDERING JSX', { elapsedMs, contractCount, fromCache });
-
-  // Auto-dismiss after 8 seconds
   useEffect(() => {
-    console.log('[TimingToast] Effect mounted, starting 8s timer');
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
-      console.log('[TimingToast] Timer fired, calling onClose');
       onCloseRef.current();
     }, 8000);
     return () => {
-      console.log('[TimingToast] Effect cleanup');
       window.clearTimeout(timer);
     };
   }, []);

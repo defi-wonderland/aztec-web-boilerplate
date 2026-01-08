@@ -4,10 +4,14 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { SANDBOX_CONFIG, DEVNET_CONFIG, type NetworkConfig } from '../../config/networks';
+import {
+  SANDBOX_CONFIG,
+  DEVNET_CONFIG,
+  type NetworkConfig,
+} from '../../config/networks';
+import { isValidConfig } from '../../utils';
 import type { AztecNetwork } from '../../config/networks/constants';
 import type { NetworkPreset } from '../../sdk/walletKitConfig';
-import { isValidConfig } from '../../utils';
 
 const NETWORK_STORAGE_KEY = 'aztec-wallet-network';
 
@@ -48,7 +52,10 @@ export const useNetworkInternal = (
 
   // Build configs from presets (apply nodeUrl overrides)
   const configuredNetworks = useMemo(() => {
-    const result: Record<AztecNetwork, NetworkConfig> = {} as Record<AztecNetwork, NetworkConfig>;
+    const result: Record<AztecNetwork, NetworkConfig> = {} as Record<
+      AztecNetwork,
+      NetworkConfig
+    >;
     for (const preset of networks) {
       const base = BASE_CONFIGS[preset.aztecNetwork];
       if (base) {
@@ -62,7 +69,15 @@ export const useNetworkInternal = (
   const defaultNetwork = networks[0]?.aztecNetwork ?? 'sandbox';
   const defaultConfig = configuredNetworks[defaultNetwork] ?? SANDBOX_CONFIG;
 
-  const [currentConfig, setCurrentConfig] = useState<NetworkConfig>(defaultConfig);
+  const [currentConfig, setCurrentConfig] = useState<NetworkConfig>(() => {
+    const savedNetwork = localStorage.getItem(
+      NETWORK_STORAGE_KEY
+    ) as AztecNetwork | null;
+    if (savedNetwork && configuredNetworks[savedNetwork]) {
+      return configuredNetworks[savedNetwork];
+    }
+    return defaultConfig;
+  });
 
   const getNetworkOptions = useCallback(() => {
     return networks.map((preset) => {
@@ -76,28 +91,23 @@ export const useNetworkInternal = (
     });
   }, [networks, configuredNetworks]);
 
-  const switchToNetwork = useCallback((networkName: string): boolean => {
-    const config = configuredNetworks[networkName as AztecNetwork];
-    if (config) {
-      setCurrentConfig(config);
-      localStorage.setItem(NETWORK_STORAGE_KEY, networkName);
-      return true;
-    }
-    return false;
-  }, [configuredNetworks]);
+  const switchToNetwork = useCallback(
+    (networkName: string): boolean => {
+      const config = configuredNetworks[networkName as AztecNetwork];
+      if (config) {
+        setCurrentConfig(config);
+        localStorage.setItem(NETWORK_STORAGE_KEY, networkName);
+        return true;
+      }
+      return false;
+    },
+    [configuredNetworks]
+  );
 
   const resetToDefault = useCallback(() => {
     localStorage.setItem(NETWORK_STORAGE_KEY, defaultNetwork);
     setCurrentConfig(defaultConfig);
   }, [defaultNetwork, defaultConfig]);
-
-  // Load saved network on mount
-  useEffect(() => {
-    const savedNetwork = localStorage.getItem(NETWORK_STORAGE_KEY) as AztecNetwork | null;
-    if (savedNetwork && configuredNetworks[savedNetwork]) {
-      setCurrentConfig(configuredNetworks[savedNetwork]);
-    }
-  }, [configuredNetworks]);
 
   // Cross-tab sync
   useEffect(() => {

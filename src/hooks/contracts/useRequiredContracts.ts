@@ -72,13 +72,10 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
 
   // Compute derived state
   return useMemo(() => {
-    const statuses = contractNames.reduce(
-      (acc, name) => {
-        acc[name as T[number]] = registry?.getStatus(name) ?? 'idle';
-        return acc;
-      },
-      {} as ContractStatusMap<T>
-    );
+    const statuses = contractNames.reduce((acc, name) => {
+      acc[name as T[number]] = registry?.getStatus(name) ?? 'idle';
+      return acc;
+    }, {} as ContractStatusMap<T>);
 
     const pendingContracts = contractNames.filter((name) => {
       const status = statuses[name as T[number]];
@@ -90,7 +87,9 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
     ) as T[number][];
 
     return {
-      isReady: contractNames.every((name) => statuses[name as T[number]] === 'ready'),
+      isReady: contractNames.every(
+        (name) => statuses[name as T[number]] === 'ready'
+      ),
       isLoading: pendingContracts.length > 0,
       hasError: failedContracts.length > 0,
       failedContracts,

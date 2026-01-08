@@ -1,6 +1,15 @@
-import type { ConnectorFactory, ConnectorRegistryOptions } from '../connectors/registry';
-import { createConnectorRegistry, ConnectorRegistry } from '../connectors/registry';
-import type { WalletConnector, WalletConnectorId } from '../types/walletConnector';
+import {
+  createConnectorRegistry,
+  ConnectorRegistry,
+} from '../connectors/registry';
+import type {
+  ConnectorFactory,
+  ConnectorRegistryOptions,
+} from '../connectors/registry';
+import type {
+  WalletConnector,
+  WalletConnectorId,
+} from '../types/walletConnector';
 
 export interface WalletKitConfig extends ConnectorRegistryOptions {
   aztecNode: string;
@@ -50,4 +59,3 @@ export class AztecWalletKit {
 
 export const createAztecWalletKit = (config: WalletKitConfig): AztecWalletKit =>
   new AztecWalletKit(config);
-

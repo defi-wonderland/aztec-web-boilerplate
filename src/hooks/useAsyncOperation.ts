@@ -30,7 +30,7 @@ export const useAsyncOperation = () => {
       } else {
         errorMessage = `Failed to ${operationName}`;
       }
-      
+
       setError(errorMessage);
       throw err;
     } finally {
@@ -40,4 +40,3 @@ export const useAsyncOperation = () => {
 
   return { isLoading, error, executeAsync };
 };
-

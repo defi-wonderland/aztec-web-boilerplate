@@ -16,7 +16,10 @@ export interface EIP1193Provider {
     params?: unknown[] | Record<string, unknown>;
   }) => Promise<unknown>;
   on: (event: string, handler: (...args: unknown[]) => void) => void;
-  removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener: (
+    event: string,
+    handler: (...args: unknown[]) => void
+  ) => void;
 }
 
 /**

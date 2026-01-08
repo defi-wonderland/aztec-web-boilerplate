@@ -1,11 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { truncateAddress, truncateCaipAddress, parseCaipAddress } from '../utils';
-import { copyToClipboard } from '../utils/clipboard';
-import { useError } from '../providers/ErrorProvider';
 import { useUniversalWallet } from '../hooks';
-import { ThemeToggle } from './ThemeToggle';
-import { ConnectWalletModal } from './ConnectWalletModal';
+import { useError } from '../providers/ErrorProvider';
 import { WalletType } from '../types/aztec';
+import {
+  truncateAddress,
+  truncateCaipAddress,
+  parseCaipAddress,
+} from '../utils';
+import { copyToClipboard } from '../utils/clipboard';
+import { ConnectWalletModal } from './ConnectWalletModal';
+import { ThemeToggle } from './ThemeToggle';
 
 interface ConnectedAccountProps {
   walletName: string;
@@ -28,7 +32,11 @@ const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
 
   const handleCopy = async () => {
     await copyToClipboard(copyAddress, {
-      onSuccess: () => addMessage({ message: `${walletName} address copied: ${copyAddress}`, type: 'success' }),
+      onSuccess: () =>
+        addMessage({
+          message: `${walletName} address copied: ${copyAddress}`,
+          type: 'success',
+        }),
     });
   };
 
@@ -44,7 +52,11 @@ const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
       >
         {displayAddress}
       </button>
-      <button onClick={onDisconnect} type="button" className="disconnect-button">
+      <button
+        onClick={onDisconnect}
+        type="button"
+        className="disconnect-button"
+      >
         Disconnect
       </button>
     </div>

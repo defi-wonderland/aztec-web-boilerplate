@@ -1,11 +1,14 @@
 import { useCallback, useState } from 'react';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
-import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import { useUniversalWallet } from '../context/useUniversalWallet';
-import { hasAppManagedPXE, isBrowserWalletConnector } from '../../types/walletConnector';
-import { getContractMethod } from './utils';
+import {
+  hasAppManagedPXE,
+  isBrowserWalletConnector,
+} from '../../types/walletConnector';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
+import { useUniversalWallet } from '../context/useUniversalWallet';
+import { getContractMethod } from './utils';
 import type { SimulateViewsOp } from '../../types';
 
 interface CallParams {
@@ -21,7 +24,9 @@ interface CallResult {
   error?: string;
 }
 
-export const useDynamicContractCaller = (artifact?: ContractArtifact | null) => {
+export const useDynamicContractCaller = (
+  artifact?: ContractArtifact | null
+) => {
   const { connector, account } = useUniversalWallet();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -42,7 +47,10 @@ export const useDynamicContractCaller = (artifact?: ContractArtifact | null) => 
         if (isBrowserWalletConnector(connector)) {
           const selectedAccount = connector.getCaipAccount?.();
           if (!selectedAccount) {
-            return { success: false, error: 'Browser wallet account not selected' };
+            return {
+              success: false,
+              error: 'Browser wallet account not selected',
+            };
           }
 
           const operation: SimulateViewsOp = {
@@ -61,7 +69,10 @@ export const useDynamicContractCaller = (artifact?: ContractArtifact | null) => 
           const result = await connector.executeOperation(operation);
 
           if (result.status !== 'ok') {
-            const errorMsg = 'error' in result && result.error ? String(result.error) : 'Simulation failed';
+            const errorMsg =
+              'error' in result && result.error
+                ? String(result.error)
+                : 'Simulation failed';
             setError(errorMsg);
             return { success: false, error: errorMsg };
           }
@@ -84,7 +95,10 @@ export const useDynamicContractCaller = (artifact?: ContractArtifact | null) => 
           const method = getContractMethod(contract, functionName);
 
           if (!method) {
-            return { success: false, error: `Method ${functionName} not found` };
+            return {
+              success: false,
+              error: `Method ${functionName} not found`,
+            };
           }
 
           const result = await method(...args).simulate({
@@ -124,7 +138,9 @@ export const useDynamicContractCaller = (artifact?: ContractArtifact | null) => 
               {
                 contract: address,
                 method: functionName,
-                args: args.map((arg) => (typeof arg === 'bigint' ? arg.toString() : arg)),
+                args: args.map((arg) =>
+                  typeof arg === 'bigint' ? arg.toString() : arg
+                ),
               },
             ],
           });
@@ -145,7 +161,11 @@ export const useDynamicContractCaller = (artifact?: ContractArtifact | null) => 
           }
 
           const chain = `${caipAccount.split(':')[0]}:${caipAccount.split(':')[1]}`;
-          const receipt = await waitForBrowserWalletReceipt(connector, response.txHash, chain);
+          const receipt = await waitForBrowserWalletReceipt(
+            connector,
+            response.txHash,
+            chain
+          );
 
           if (!receipt.success) {
             const errorMsg = receipt.error ?? 'Transaction confirmation failed';
@@ -175,7 +195,10 @@ export const useDynamicContractCaller = (artifact?: ContractArtifact | null) => 
           const method = getContractMethod(contract, functionName);
 
           if (!method) {
-            return { success: false, error: `Method ${functionName} not found` };
+            return {
+              success: false,
+              error: `Method ${functionName} not found`,
+            };
           }
 
           const paymentMethod = await connector.getSponsoredFeePaymentMethod();

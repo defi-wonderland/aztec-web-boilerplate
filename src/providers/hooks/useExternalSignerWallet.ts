@@ -7,19 +7,19 @@
 
 import { useState, useCallback, useRef } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import type { PXE } from '@aztec/pxe/server';
-import { Fr } from '@aztec/aztec.js/fields';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
+import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import { Fr } from '@aztec/aztec.js/fields';
 import { AccountManager } from '@aztec/aztec.js/wallet';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
-import type { ExternalSigner } from '../../signers/types';
-import { ExternalSignerType } from '../../types/aztec';
-import type { ConnectionStatus } from '../../types/walletConnector';
+import type { PXE } from '@aztec/pxe/server';
 import { EcdsaKEthSignerAccountContract } from '../../accounts/EcdsaKEthSignerAccountContract';
-import { useSharedPXE, type UseSharedPXEReturn } from './useSharedPXE';
+import { ExternalSignerType } from '../../types/aztec';
 import { useError } from '../ErrorProvider';
+import { useSharedPXE, type UseSharedPXEReturn } from './useSharedPXE';
 import type { NetworkConfig } from '../../config/networks';
+import type { ExternalSigner } from '../../signers/types';
+import type { ConnectionStatus } from '../../types/walletConnector';
 import type { MinimalWallet } from '../../utils/MinimalWallet';
 
 export interface ExternalSignerWalletState {
@@ -67,7 +67,9 @@ export const useExternalSignerWallet = (
   const sharedPXE = useSharedPXE({ config, autoInitialize: false });
 
   // Local state
-  const [aztecAccount, setAztecAccount] = useState<AccountWithSecretKey | null>(null);
+  const [aztecAccount, setAztecAccount] = useState<AccountWithSecretKey | null>(
+    null
+  );
   const [signerType, setSignerType] = useState<ExternalSignerType | null>(null);
   const [connectedRdns, setConnectedRdns] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
@@ -95,7 +97,7 @@ export const useExternalSignerWallet = (
 
         // Step 4: Create auth witness provider
         const authWitnessProvider = signer.createAuthWitnessProvider(
-          {} as any // CompleteAddress not needed for MetaMask provider
+          {} as Parameters<typeof signer.createAuthWitnessProvider>[0]
         );
 
         // Step 5: Create account contract
@@ -170,7 +172,9 @@ export const useExternalSignerWallet = (
             type: 'warning',
             source: 'wallet',
             details:
-              deployErr instanceof Error ? deployErr.message : String(deployErr),
+              deployErr instanceof Error
+                ? deployErr.message
+                : String(deployErr),
           });
         }
 
@@ -183,14 +187,15 @@ export const useExternalSignerWallet = (
 
         return account;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Connection failed';
+        const message =
+          err instanceof Error ? err.message : 'Connection failed';
         setError(message);
         setStatus('disconnected');
         console.error('External Signer connection failed:', err);
-        
+
         // Disconnect the signer so next attempt can use a different wallet
         signer.disconnect();
-        
+
         addMessage({
           message: 'Failed to create Aztec account',
           type: 'error',
@@ -230,7 +235,8 @@ export const useExternalSignerWallet = (
     services: {
       pxe: sharedPXE.services.pxe,
       wallet: sharedPXE.services.wallet,
-      getSponsoredFeePaymentMethod: sharedPXE.services.getSponsoredFeePaymentMethod,
+      getSponsoredFeePaymentMethod:
+        sharedPXE.services.getSponsoredFeePaymentMethod,
     },
     sharedPXE,
     error,

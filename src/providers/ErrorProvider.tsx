@@ -19,7 +19,7 @@ interface ErrorContextType {
   clearAllMessages: () => void;
   hasMessages: boolean;
   latestMessage: MessageInfo | null;
-  
+
   // Backwards compatibility
   errors: MessageInfo[];
   addError: (error: Omit<MessageInfo, 'id' | 'timestamp'>) => void;
@@ -44,12 +44,12 @@ export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       timestamp: new Date(),
     };
-    
-    setMessages(prev => [newMessage, ...prev.slice(0, 4)]); // Keep only last 5 messages
+
+    setMessages((prev) => [newMessage, ...prev.slice(0, 4)]); // Keep only last 5 messages
   };
 
   const clearMessage = (id: string) => {
-    setMessages(prev => prev.filter(message => message.id !== id));
+    setMessages((prev) => prev.filter((message) => message.id !== id));
   };
 
   const clearAllMessages = () => {
@@ -66,7 +66,7 @@ export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
     clearAllMessages,
     hasMessages,
     latestMessage,
-    
+
     // Backwards compatibility
     errors: messages,
     addError: addMessage,

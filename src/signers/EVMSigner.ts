@@ -6,18 +6,18 @@
  * The user's private key never leaves the wallet.
  */
 
+import { type Hex, keccak256, toBytes } from 'viem';
 import type { AuthWitnessProvider } from '@aztec/aztec.js/account';
 import type { CompleteAddress } from '@aztec/aztec.js/addresses';
-import { type Hex, keccak256, toBytes } from 'viem';
-import { ExternalSignerType } from '../types/aztec';
-import type { ExternalSigner, ECDSAPublicKey } from './types';
 import { MetaMaskAuthWitnessProvider } from '../accounts/MetaMaskAuthWitnessProvider';
+import { getEIP6963Service } from '../services/evm/EIP6963Service';
+import { ExternalSignerType } from '../types/aztec';
 import {
   recoverPublicKeyFromSignature,
   getPublicKeyRecoveryMessage,
 } from '../utils/evmPublicKeyRecovery';
+import type { ExternalSigner, ECDSAPublicKey } from './types';
 import type { EVMWalletService } from '../services/evm/EVMWalletService';
-import { getEIP6963Service } from '../services/evm/EIP6963Service';
 
 export class EVMSigner implements ExternalSigner {
   readonly type = ExternalSignerType.EVM_WALLET;
@@ -64,7 +64,9 @@ export class EVMSigner implements ExternalSigner {
       : null;
 
     if (this.rdns && !provider) {
-      console.warn(`[EVMSigner] Wallet ${this.rdns} not found via EIP-6963, falling back to window.ethereum`);
+      console.warn(
+        `[EVMSigner] Wallet ${this.rdns} not found via EIP-6963, falling back to window.ethereum`
+      );
     }
 
     await this.evmService.connect(provider ?? undefined, this.rdns);

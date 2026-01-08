@@ -102,7 +102,9 @@ export interface IBrowserWalletAdapter {
   connect(networkName: string): Promise<string[]>;
   disconnect(): Promise<void>;
 
-  executeOperations(ops: BrowserWalletOperation[]): Promise<BrowserWalletOperationResult[]>;
+  executeOperations(
+    ops: BrowserWalletOperation[]
+  ): Promise<BrowserWalletOperationResult[]>;
   toAccountWallet(accountId: string): Promise<AccountWithSecretKey>;
 
   onAccountsChanged(cb: (accounts: string[]) => void): void;

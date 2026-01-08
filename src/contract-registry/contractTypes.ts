@@ -6,33 +6,31 @@ import { contractsConfig } from '../config/contracts';
 /** Type representing the contracts config map */
 export type ContractsConfig = typeof contractsConfig;
 
-/** Valid contract names derived from the config */
+/**
+ * Valid contract names derived from the config.
+ * Provides autocomplete for contract names: 'dripper' | 'token' | ...
+ */
 export type ContractName = keyof ContractsConfig;
 
 /**
- * Infers the contract instance type from a contract class with an `at` method.
+ * Extracts the return type of a static `at` method from a contract class.
  */
-type InferContractInstance<T> = T extends { at(address: infer _A, wallet: infer _W): infer C }
-  ? C
-  : never;
-
-/**
- * Extracts the contract type from a config entry's `contract` property.
- */
-type ExtractContractType<T> = T extends { contract: infer C }
-  ? InferContractInstance<C>
-  : never;
+type ContractFromClass<T> = T extends { at: (...args: never[]) => infer R }
+  ? R
+  : unknown;
 
 /**
  * Maps contract names to their corresponding contract types.
- * Automatically inferred from contractsConfig.
+ * @deprecated Use ContractType<K> directly instead
  */
 export type ContractTypeMap = {
-  [K in ContractName]: ExtractContractType<ContractsConfig[K]>;
+  [K in ContractName]: ContractFromClass<ContractsConfig[K]['contract']>;
 };
 
 /**
  * Get the contract type for a given contract name.
+ * Infers from the `contract` property's static `at` method return type.
  */
-export type ContractType<K extends ContractName> = ContractTypeMap[K];
-
+export type ContractType<K extends ContractName> = ContractFromClass<
+  ContractsConfig[K]['contract']
+>;

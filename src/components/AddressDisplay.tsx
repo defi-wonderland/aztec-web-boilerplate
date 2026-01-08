@@ -1,7 +1,7 @@
 import React from 'react';
-import { copyToClipboard } from '../utils/clipboard';
-import { truncateAddress, formatAddress } from '../utils';
 import { useError } from '../providers/ErrorProvider';
+import { truncateAddress, formatAddress } from '../utils';
+import { copyToClipboard } from '../utils/clipboard';
 
 interface AddressDisplayProps {
   address: string | undefined;
@@ -16,7 +16,7 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
   showCopy = true,
   copyMessage,
   onCopy,
-  className = ''
+  className = '',
 }) => {
   const { addMessage } = useError();
 
