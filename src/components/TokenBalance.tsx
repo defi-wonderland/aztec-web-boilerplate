@@ -2,21 +2,26 @@ import React from 'react';
 import { useTokenBalance, type FormattedBalances } from '../hooks/queries/useTokenBalance';
 
 interface BalanceMetrics {
-  privateBalance: number;
-  publicBalance: number;
-  totalBalance: number;
+  privateBalance: bigint;
+  publicBalance: bigint;
+  totalBalance: bigint;
   privatePercentage: number;
   publicPercentage: number;
 }
 
 const calculateBalanceMetrics = (formattedBalances: FormattedBalances | null): BalanceMetrics => {
-  const privateBalance = parseInt(formattedBalances?.private ?? '0');
-  const publicBalance = parseInt(formattedBalances?.public ?? '0');
+  const privateBalance = BigInt(formattedBalances?.private ?? '0');
+  const publicBalance = BigInt(formattedBalances?.public ?? '0');
   const totalBalance = privateBalance + publicBalance;
 
-  const hasBalance = totalBalance > 0;
-  const privatePercentage = hasBalance ? (privateBalance / totalBalance) * 100 : 0;
-  const publicPercentage = hasBalance ? (publicBalance / totalBalance) * 100 : 0;
+  const hasBalance = totalBalance > 0n;
+  const calculatePercentage = (balance: bigint) => {
+    if (!hasBalance) return 0;
+    return Number((balance * 10000n) / totalBalance) / 100;
+  };
+
+  const privatePercentage = calculatePercentage(privateBalance);
+  const publicPercentage = calculatePercentage(publicBalance);
 
   return {
     privateBalance,
@@ -48,17 +53,17 @@ const BalanceContent: React.FC<BalanceMetrics> = ({
           <span className="balance-icon">🛡️</span>
           <span>Private:</span>
         </div>
-        <span className="balance-value">{privateBalance}</span>
+        <span className="balance-value">{privateBalance.toString()}</span>
       </div>
       <div className="balance-item">
         <div className="balance-label">
           <span className="balance-icon">🌐</span>
           <span>Public:</span>
         </div>
-        <span className="balance-value">{publicBalance}</span>
+        <span className="balance-value">{publicBalance.toString()}</span>
       </div>
 
-      {totalBalance > 0 && (
+      {totalBalance > 0n && (
         <div className="balance-visual">
           <div className="balance-bar">
             {privatePercentage > 0 && (
@@ -84,7 +89,7 @@ const BalanceContent: React.FC<BalanceMetrics> = ({
 
     <div className="balance-total">
       <span className="total-label">Total:</span>
-      <span className="total-value">{totalBalance}</span>
+      <span className="total-value">{totalBalance.toString()}</span>
     </div>
   </>
 );

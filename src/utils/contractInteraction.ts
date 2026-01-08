@@ -63,24 +63,16 @@ export interface ParsedArtifact {
 }
 
 /**
- * Known Aztec struct paths that can be simplified to primitive-like inputs.
- * Maps struct paths to their simplified ParsedType kind.
- * 
- * These structs typically wrap a single primitive value (like `inner: field`)
- * and can be represented as simple inputs rather than nested struct fields.
+ * Known Aztec struct paths normalized to primitive types.
+ * See docs/contract-ui.md for detailed documentation.
  */
 const KNOWN_STRUCT_PATHS: Record<string, ParsedType['kind']> = {
-  // Aztec Address - wraps { inner: field }
   'aztec::protocol_types::address::aztec_address::AztecAddress': 'address',
-  
-  // ETH Address - wraps { inner: field }
   'aztec::protocol_types::address::eth_address::EthAddress': 'eth_address',
-  
-  // Function Selector - wraps { inner: u32 }
-  'aztec::protocol_types::abis::function_selector::FunctionSelector': 'selector',
-  
-  // Compressed String - wraps { value: field } - used for name/symbol in tokens
-  'compressed_string::field_compressed_string::FieldCompressedString': 'compressed_string',
+  'aztec::protocol_types::abis::function_selector::FunctionSelector':
+    'selector',
+  'compressed_string::field_compressed_string::FieldCompressedString':
+    'compressed_string',
 };
 
 const normalizeType = (type: RawParamType): ParsedType => {
@@ -160,11 +152,14 @@ const parseFunction = (fn: RawFunction): ParsedFunction => {
     const path = (param.type.path ?? '').toLowerCase();
     return (
       param.name === 'inputs' &&
-      (path.includes('private_context_inputs') || path.includes('public_context_inputs'))
+      (path.includes('private_context_inputs') ||
+        path.includes('public_context_inputs'))
     );
   };
 
-  const rawParams = (fn.abi?.parameters ?? []).filter((param) => !isSystemContextParam(param));
+  const rawParams = (fn.abi?.parameters ?? []).filter(
+    (param) => !isSystemContextParam(param)
+  );
   const inputs = rawParams.map<ParsedField>((param) => ({
     path: param.name,
     label: param.name,
@@ -181,7 +176,9 @@ const parseFunction = (fn: RawFunction): ParsedFunction => {
 };
 
 export const parseArtifactSource = (source: string): ParsedArtifact => {
-  const parsed = JSON.parse(source) as NoirCompiledContract & { address?: string };
+  const parsed = JSON.parse(source) as NoirCompiledContract & {
+    address?: string;
+  };
 
   if (!parsed || typeof parsed !== 'object') {
     throw new Error('Invalid artifact: expected JSON object');
@@ -193,7 +190,9 @@ export const parseArtifactSource = (source: string): ParsedArtifact => {
 
   const compiled = parsed;
   const artifact = loadContractArtifact(compiled);
-  const functions = (compiled as { functions: RawFunction[] }).functions.map(parseFunction);
+  const functions = (compiled as { functions: RawFunction[] }).functions.map(
+    parseFunction
+  );
 
   return {
     compiled,
@@ -268,8 +267,11 @@ const buildValue = (
       const normalized = value.startsWith('0x') ? value : `0x${value}`;
       try {
         const num = parseInt(normalized, 16);
-        if (isNaN(num) || num < 0 || num > 0xFFFFFFFF) {
-          return { ok: false, error: `Invalid function selector for ${path}: must be 4 bytes` };
+        if (isNaN(num) || num < 0 || num > 0xffffffff) {
+          return {
+            ok: false,
+            error: `Invalid function selector for ${path}: must be 4 bytes`,
+          };
         }
         return { ok: true, value: num };
       } catch {
@@ -325,7 +327,12 @@ export const buildArgsFromInputs = (
 
   for (const input of rootInputs) {
     const rawValue = formValues[input.path] ?? '';
-    const result: BuildResult = buildValue(rawValue, input.type, input.path, formValues);
+    const result: BuildResult = buildValue(
+      rawValue,
+      input.type,
+      input.path,
+      formValues
+    );
 
     if (result.ok === false) {
       errors.push(result.error);
@@ -371,7 +378,7 @@ export const isValidFunctionSelector = (value: string): boolean => {
   const normalized = value.startsWith('0x') ? value : `0x${value}`;
   try {
     const num = parseInt(normalized, 16);
-    return !isNaN(num) && num >= 0 && num <= 0xFFFFFFFF;
+    return !isNaN(num) && num >= 0 && num <= 0xffffffff;
   } catch {
     return false;
   }
@@ -395,20 +402,21 @@ export const analyzeFunctionCapabilities = (
   inputs?: ParsedField[]
 ): FunctionCapabilities => {
   const hasAttr = (value: string): boolean => attributes.includes(value);
-  
+
   const isView = hasAttr('abi_view');
   const isUtility = hasAttr('abi_utility');
   const isInitializer = hasAttr('abi_initializer');
   const attrHasPrivate = hasAttr('abi_private') || hasAttr('private');
   const attrHasPublic = hasAttr('abi_public') || hasAttr('public');
-  
+
   const anyPrivateInput = Boolean(
     inputs?.some((input) => input.visibility === 'private')
   );
   const isPrivate = attrHasPrivate || (!attrHasPublic && anyPrivateInput);
   const isPublic = attrHasPublic;
-  
-  const isExecutable = (isPublic || attrHasPrivate) && !isView && !isInitializer;
+
+  const isExecutable =
+    (isPublic || attrHasPrivate) && !isView && !isInitializer;
   const canSimulate = isView || isUtility || !isExecutable;
 
   return {
@@ -422,13 +430,15 @@ export const analyzeFunctionCapabilities = (
   };
 };
 
-export type CallValidationResult = {
-  valid: true;
-  args: unknown[];
-} | {
-  valid: false;
-  error: string;
-};
+export type CallValidationResult =
+  | {
+      valid: true;
+      args: unknown[];
+    }
+  | {
+      valid: false;
+      error: string;
+    };
 
 /**
  * Validates call prerequisites and builds arguments for contract execution.
@@ -454,17 +464,19 @@ export const validateAndBuildCallArgs = (
   return { valid: true, args };
 };
 
-export type LoadArtifactResult = {
-  success: true;
-  parsed: ParsedArtifact;
-  address: string;
-  contractLabel: string | undefined;
-  shouldCacheInline: boolean;
-  firstFunctionName: string | null;
-} | {
-  success: false;
-  error: string;
-};
+export type LoadArtifactResult =
+  | {
+      success: true;
+      parsed: ParsedArtifact;
+      address: string;
+      contractLabel: string | undefined;
+      shouldCacheInline: boolean;
+      firstFunctionName: string | null;
+    }
+  | {
+      success: false;
+      error: string;
+    };
 
 /**
  * Parses artifact source and prepares data for caching and state updates.
@@ -479,11 +491,18 @@ export const loadAndPrepareArtifact = (
     const parsed = parseArtifactSource(artifactInput);
     const discoveredAddress = (parsed.compiled as { address?: string }).address;
     const contractLabel = (parsed.compiled as { name?: string }).name;
-    
-    const address = discoveredAddress && isValidAztecAddress(discoveredAddress)
-      ? discoveredAddress
-      : currentAddress;
-    
+
+    // Always prefer the user-supplied address (e.g., freshly deployed) over any
+    // embedded address in the artifact to avoid pointing at a stale/prebuilt
+    // instance.
+    const address =
+      (currentAddress &&
+        isValidAztecAddress(currentAddress) &&
+        currentAddress) ||
+      (discoveredAddress && isValidAztecAddress(discoveredAddress)
+        ? discoveredAddress
+        : '');
+
     const shouldCacheInline = artifactInput.length <= maxCacheChars;
     const firstFunctionName = parsed.functions[0]?.name ?? null;
 
@@ -496,7 +515,8 @@ export const loadAndPrepareArtifact = (
       firstFunctionName,
     };
   } catch (err) {
-    const error = err instanceof Error ? err.message : 'Failed to parse artifact';
+    const error =
+      err instanceof Error ? err.message : 'Failed to parse artifact';
     return { success: false, error };
   }
 };

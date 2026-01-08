@@ -9,8 +9,6 @@ import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
 import type { SimulateViewsOp } from '../../types/browserWallet';
 import { WalletType } from '../../types/aztec';
 import { isBrowserWalletConnector } from '../../types/walletConnector';
-import type { ContractConfigMap } from '../../contract-registry';
-import type { TokenContract } from '../../artifacts/Token';
 
 export interface TokenBalance {
   private: bigint;
@@ -50,10 +48,8 @@ interface UseTokenBalanceReturn {
 export const useTokenBalance = (
   options: UseTokenBalanceOptions = {}
 ): UseTokenBalanceReturn => {
-  const { contract: token, isReady: isTokenReady } = useContractRegistration<
-    ContractConfigMap,
-    TokenContract
-  >('token');
+  const { contract: token, isReady: isTokenReady } =
+    useContractRegistration('token');
 
   const {
     account,
@@ -169,13 +165,13 @@ export const useTokenBalance = (
       const fromAddress = account!.getAddress();
 
       const privateBalance = await queuePxeCall(() =>
-        (token as TokenContract).methods
+        token.methods
           .balance_of_private(fromAddress)
           .simulate({ from: fromAddress })
       );
 
       const publicBalance = await queuePxeCall(() =>
-        (token as TokenContract).methods
+        token.methods
           .balance_of_public(fromAddress)
           .simulate({ from: fromAddress })
       );
@@ -222,10 +218,7 @@ export const useTokenBalance = (
  * Hook to manage token balance utilities.
  */
 export const useTokenWithAddress = () => {
-  const { contract: token } = useContractRegistration<
-    ContractConfigMap,
-    TokenContract
-  >('token');
+  const { contract: token } = useContractRegistration('token');
 
   const queryClient = useQueryClient();
 

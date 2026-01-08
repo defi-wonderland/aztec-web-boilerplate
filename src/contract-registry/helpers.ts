@@ -3,28 +3,8 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import type { NetworkConfig } from '../config/networks';
 import type { ContractConfigMap, ContractConfigDefinition } from './types';
 
-// =============================================================================
-// Contract Config Factory
-// =============================================================================
-
-/**
- * Creates a type-safe contract configuration map.
- * Validates that all contract definitions follow the correct structure.
- *
- * @example
- * ```typescript
- * const contracts = createContractConfig({
- *   dripper: {
- *     artifact: DripperContract.artifact,
- *     contract: DripperContract,
- *     address: (config) => config.dripperContractAddress,
- *     deployParams: (config) => ({ ... }),
- *   },
- * });
- * ```
- */
 export const createContractConfig = <
-  T extends Record<string, ContractConfigDefinition<NetworkConfig>>,
+  const T extends ContractConfigMap<NetworkConfig>,
 >(
   configs: T
 ): T & ContractConfigMap<NetworkConfig> => {

@@ -38,3 +38,6 @@ blob-report/
 playwright/.cache/
 
 .env
+
+.cursor/*
+.claude/*

@@ -11,9 +11,11 @@ import { WalletType } from '../../types/aztec';
 import {
   getContractsForConfig,
   type ContractConfigMap,
-  type ContractNames,
   type ContractStatus,
   type UseContractReturn,
+  type ContractsConfig,
+  type ContractName,
+  type ContractType,
 } from '../../contract-registry';
 import { getNetworkArtifacts } from '../../config/networkArtifacts';
 
@@ -31,29 +33,25 @@ interface ExternalWalletContractProxy {
  * 2. Creating a callable contract instance using the wallet
  * 3. Status tracking and error handling
  *
+ * Contract type is automatically inferred from the contract name.
+ *
  * @example
  * ```typescript
- * // Get a callable contract instance
- * const { contract, status, isReady, error, register } = useContractRegistration('dripper');
+ * // Get a callable contract instance - type is inferred
+ * const { contract, isReady } = useContractRegistration('dripper');
  *
- * // Check if ready
- * if (!isReady) {
- *   return <Loading status={status} />;
+ * if (isReady) {
+ *   // contract is typed as DripperContract
+ *   await contract.methods.drip_to_public(amount).send();
  * }
- *
- * if (error) {
- *   return <Error message={error.message} onRetry={register} />;
- * }
- *
- * // Use the contract directly
- * await contract.methods.drip_to_public(recipient).send({ from: wallet.getAddress() });
  * ```
  */
-export function useContractRegistration<
-  T extends ContractConfigMap = ContractConfigMap,
-  TContract = unknown,
->(name: ContractNames<T>): UseContractReturn<TContract> {
-  const { registry, status: registryStatus } = useContractRegistryContext<T>();
+export function useContractRegistration<K extends ContractName>(
+  name: K
+): UseContractReturn<ContractType<K>> {
+  type TContract = ContractType<K>;
+  const { registry, status: registryStatus } =
+    useContractRegistryContext<ContractsConfig>();
   const { connector, account, currentConfig, walletType } =
     useUniversalWallet();
 
@@ -129,7 +127,7 @@ export function useContractRegistration<
         if (instance && definition) {
           hasCreatedContract.current = true;
           try {
-            const callableContract = await queuePxeCall(() =>
+            const callableContract = await queuePxeCall(async () =>
               Contract.at(instance.address, definition.artifact, wallet)
             );
             console.log(

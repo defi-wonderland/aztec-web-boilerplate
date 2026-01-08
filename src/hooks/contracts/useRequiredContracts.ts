@@ -1,109 +1,101 @@
-import { useMemo } from 'react';
-import { useContractRegistration } from '../context/useContractRegistration';
+import { useMemo, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
 import type {
-  ContractConfigMap,
   ContractStatus,
+  ContractName,
+  ContractsConfig,
 } from '../../contract-registry';
 
-type ContractStatusMap<T extends readonly string[]> = {
+type ContractStatusMap<T extends readonly ContractName[]> = {
   [K in T[number]]: ContractStatus;
 };
 
-interface UseRequiredContractsReturn<T extends readonly string[]> {
-  /** Are all required contracts ready? */
+interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
   isReady: boolean;
-  /** Are any contracts still loading? */
   isLoading: boolean;
-  /** Did any contract fail to register? */
   hasError: boolean;
-  /** List of contracts that failed to register */
   failedContracts: T[number][];
-  /** List of contracts still loading */
   pendingContracts: T[number][];
-  /** Individual status per contract */
   statuses: ContractStatusMap<T>;
 }
 
-interface ContractResult {
-  name: string;
-  status: ContractStatus;
-  error: Error | null;
-}
-
 /**
- * Hook to ensure multiple contracts are registered before use.
- * Automatically triggers registration for any unregistered contracts.
+ * Hook to check if multiple contracts are registered and ready.
+ * Automatically triggers registration for unregistered contracts.
  *
- * @param contractNames - Array of contract names to register
- * @returns Object with loading state, errors, and individual statuses
+ * This hook only checks STATUS - it does NOT return contract instances.
+ * Use `useContractRegistration` to get callable contract instances.
  *
  * @example
  * ```tsx
- * const { isReady, isLoading, failedContracts, pendingContracts } = useRequiredContracts(['dripper', 'token'] as const);
+ * const { isReady, isLoading, hasError } = useRequiredContracts(['dripper', 'token'] as const);
  *
- * if (isLoading) {
- *   return <Spinner message={`Loading: ${pendingContracts.join(', ')}`} />;
- * }
- *
- * if (failedContracts.length > 0) {
- *   return <Error message={`Failed to register: ${failedContracts.join(', ')}`} />;
- * }
- *
- * // Safe to use contracts now - isReady is true
+ * if (isLoading) return <Spinner />;
+ * if (hasError) return <Error />;
+ * // Now safe to render UI that uses these contracts
  * ```
  */
-export function useRequiredContracts<
-  T extends readonly string[],
-  TConfig extends ContractConfigMap = ContractConfigMap,
->(contractNames: T): UseRequiredContractsReturn<T> {
-  // Get registration status for each contract
-  // Note: hooks are called unconditionally in the same order each render
-  const contract0 = useContractRegistration<TConfig>(contractNames[0] ?? '');
-  const contract1 = useContractRegistration<TConfig>(contractNames[1] ?? '');
-  const contract2 = useContractRegistration<TConfig>(contractNames[2] ?? '');
-  const contract3 = useContractRegistration<TConfig>(contractNames[3] ?? '');
-  const contract4 = useContractRegistration<TConfig>(contractNames[4] ?? '');
+export function useRequiredContracts<T extends readonly ContractName[]>(
+  contractNames: T
+): UseRequiredContractsReturn<T> {
+  const { registry, status: registryStatus } =
+    useContractRegistryContext<ContractsConfig>();
 
-  // Map results based on actual contract count
-  const allResults = [contract0, contract1, contract2, contract3, contract4];
+  // Subscribe to registry changes
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      if (!registry) return () => {};
+      return registry.subscribe(onStoreChange);
+    },
+    [registry]
+  );
 
+  // Get snapshot of current statuses (serialized for comparison)
+  const getSnapshot = useCallback(() => {
+    if (!registry) return '';
+    return contractNames.map((name) => registry.getStatus(name)).join(',');
+  }, [registry, contractNames]);
+
+  // React will re-render when snapshot changes
+  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  // Trigger registration when registry is ready
+  useEffect(() => {
+    if (registryStatus !== 'ready' || !registry || contractNames.length === 0) {
+      return;
+    }
+
+    registry.registerAll([...contractNames]).catch((err) => {
+      console.error('[useRequiredContracts] Registration failed:', err);
+    });
+  }, [contractNames, registry, registryStatus]);
+
+  // Compute derived state
   return useMemo(() => {
-    const results: ContractResult[] = contractNames.map((name, index) => ({
-      name,
-      status: allResults[index]?.status ?? 'idle',
-      error: allResults[index]?.error ?? null,
-    }));
+    const statuses = contractNames.reduce(
+      (acc, name) => {
+        acc[name as T[number]] = registry?.getStatus(name) ?? 'idle';
+        return acc;
+      },
+      {} as ContractStatusMap<T>
+    );
 
-    const statuses = Object.fromEntries(
-      results.map((r) => [r.name, r.status])
-    ) as ContractStatusMap<T>;
+    const pendingContracts = contractNames.filter((name) => {
+      const status = statuses[name as T[number]];
+      return status === 'idle' || status === 'registering';
+    }) as T[number][];
 
-    const pendingContracts = results
-      .filter((r) => r.status === 'idle' || r.status === 'registering')
-      .map((r) => r.name) as T[number][];
-
-    const failedContracts = results
-      .filter((r) => r.status === 'error')
-      .map((r) => r.name) as T[number][];
-
-    const isReady = results.every((r) => r.status === 'ready');
-    const isLoading = pendingContracts.length > 0;
-    const hasError = failedContracts.length > 0;
+    const failedContracts = contractNames.filter(
+      (name) => statuses[name as T[number]] === 'error'
+    ) as T[number][];
 
     return {
-      isReady,
-      isLoading,
-      hasError,
+      isReady: contractNames.every((name) => statuses[name as T[number]] === 'ready'),
+      isLoading: pendingContracts.length > 0,
+      hasError: failedContracts.length > 0,
       failedContracts,
       pendingContracts,
       statuses,
     };
-  }, [
-    contractNames,
-    allResults[0]?.status,
-    allResults[1]?.status,
-    allResults[2]?.status,
-    allResults[3]?.status,
-    allResults[4]?.status,
-  ]);
+  }, [contractNames, registry]);
 }
