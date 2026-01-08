@@ -68,7 +68,7 @@ const buildDappMetadata = () => ({
   name: 'Aztec Web Boilerplate',
   description: 'Privacy-first application built on Aztec Network',
   url: typeof window !== 'undefined' ? window.location.origin : '',
-  icon:
+  logo:
     typeof window !== 'undefined'
       ? `${window.location.origin}/favicon.ico`
       : '',

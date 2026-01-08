@@ -19,6 +19,8 @@ export default tseslint.config(
       '**/eslint.config.js',
     ],
   },
+  // Prettier config disables ESLint rules that conflict with Prettier formatting
+  prettierConfig,
   {
     extends: [
       js.configs.recommended,
@@ -127,8 +129,6 @@ export default tseslint.config(
       'jsx-a11y/no-static-element-interactions': 'warn',
     },
     settings: {
-      // Spread Prettier config to disable conflicting ESLint rules
-      ...prettierConfig,
       react: {
         version: 'detect',
       },
