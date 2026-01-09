@@ -1,6 +1,6 @@
-import type { CaipAccount } from '@azguardwallet/types';
 import type { ConnectionStatus } from './walletConnector';
 import type { DappMetadata } from '../config/dapp';
+import type { CaipAccount } from '@azguardwallet/types';
 
 /**
  * Azguard wallet connection state

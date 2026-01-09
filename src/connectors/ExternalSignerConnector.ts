@@ -5,18 +5,18 @@
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
 import { WalletType, ExternalSignerType } from '../types/aztec';
+import type { UseExternalSignerWalletReturn } from '../providers/hooks/useExternalSignerWallet';
+import type { ExternalSigner } from '../signers/types';
 import type {
   ExternalSignerWalletConnector,
   ConnectorStatus,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
 } from '../types/walletConnector';
-import type { ExternalSigner } from '../signers/types';
-import type { UseExternalSignerWalletReturn } from '../providers/hooks/useExternalSignerWallet';
 
 export const EXTERNAL_SIGNER_CONNECTOR_ID = 'external-signer' as const;
 

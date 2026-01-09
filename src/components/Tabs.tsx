@@ -8,11 +8,11 @@ interface TabsProps {
   children?: React.ReactNode;
 }
 
-export const Tabs: React.FC<TabsProps> = ({ 
-  tabs, 
-  defaultTab = 'mint', 
+export const Tabs: React.FC<TabsProps> = ({
+  tabs,
+  defaultTab = 'mint',
   onTabChange,
-  children 
+  children,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
 
@@ -27,7 +27,7 @@ export const Tabs: React.FC<TabsProps> = ({
   };
 
   const renderTabContent = () => {
-    const activeTabConfig = tabs.find(tab => tab.id === activeTab);
+    const activeTabConfig = tabs.find((tab) => tab.id === activeTab);
     return activeTabConfig?.component || tabs[0]?.component;
   };
 

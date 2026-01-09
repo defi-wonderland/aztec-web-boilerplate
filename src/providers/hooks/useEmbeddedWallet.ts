@@ -6,21 +6,24 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import type { PXE } from '@aztec/pxe/server';
-import { Fr } from '@aztec/aztec.js/fields';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { AccountManager } from '@aztec/aztec.js/wallet';
 import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
 import { SchnorrAccountContract } from '@aztec/accounts/schnorr/lazy';
 import { getInitialTestAccountsData } from '@aztec/accounts/testing/lazy';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import { Fr } from '@aztec/aztec.js/fields';
+import { AccountManager } from '@aztec/aztec.js/wallet';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import { randomBytes } from '@aztec/foundation/crypto/random';
-import { useSharedPXE, type UseSharedPXEReturn } from './useSharedPXE';
-import { useError } from '../ErrorProvider';
+import type { PXE } from '@aztec/pxe/server';
 import { isValidConfig } from '../../utils';
-import { getConfiguredAccountCredentials, hasConfiguredCredentials } from '../../utils/accountCredentials';
+import {
+  getConfiguredAccountCredentials,
+  hasConfiguredCredentials,
+} from '../../utils/accountCredentials';
+import { useError } from '../ErrorProvider';
+import { useSharedPXE, type UseSharedPXEReturn } from './useSharedPXE';
 import type { NetworkConfig } from '../../config/networks';
 import type { AccountCredentials } from '../../types/aztec';
 import type { ConnectionStatus } from '../../types/walletConnector';
@@ -83,7 +86,8 @@ export const useEmbeddedWallet = (
   const sharedPXE = useSharedPXE({ config, autoInitialize: true });
 
   // Local state
-  const [embeddedAccount, setEmbeddedAccount] = useState<AccountWithSecretKey | null>(null);
+  const [embeddedAccount, setEmbeddedAccount] =
+    useState<AccountWithSecretKey | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
@@ -92,24 +96,12 @@ export const useEmbeddedWallet = (
   // Validate config on mount
   useEffect(() => {
     if (!isValidConfig(config)) {
-      console.warn(`⚠️ Invalid config for ${config.name}, falling back to default`);
+      console.warn(
+        `⚠️ Invalid config for ${config.name}, falling back to default`
+      );
       resetToDefault();
     }
   }, [config, resetToDefault]);
-
-  // Auto-reconnect when PXE is initialized
-  useEffect(() => {
-    if (!sharedPXE.state.isInitialized || embeddedAccount) return;
-
-    const savedAccount = getSavedAccount();
-    if (savedAccount) {
-      console.log('🔄 Found saved account, auto-reconnecting...');
-      reconnectExisting(savedAccount).catch((err) => {
-        console.warn('⚠️ Failed to auto-reconnect:', err);
-        clearSavedAccount();
-      });
-    }
-  }, [sharedPXE.state.isInitialized]);
 
   const connectWithCredentials = async (
     credentials: AccountCredentials,
@@ -125,8 +117,14 @@ export const useEmbeddedWallet = (
 
     const account = await accountManager.getAccount();
     const instance = accountManager.getInstance();
-    const artifact = await accountManager.getAccountContract().getContractArtifact();
-    await wallet.registerContract(instance, artifact, accountManager.getSecretKey());
+    const artifact = await accountManager
+      .getAccountContract()
+      .getContractArtifact();
+    await wallet.registerContract(
+      instance,
+      artifact,
+      accountManager.getSecretKey()
+    );
     wallet.addAccount(account);
 
     setEmbeddedAccount(account);
@@ -136,7 +134,10 @@ export const useEmbeddedWallet = (
     return account;
   };
 
-  const reconnectExisting = async (saved: StoredAccountData, wallet?: MinimalWallet): Promise<AccountWithSecretKey> => {
+  const reconnectExisting = async (
+    saved: StoredAccountData,
+    wallet?: MinimalWallet
+  ): Promise<AccountWithSecretKey> => {
     const walletInstance = wallet ?? sharedPXE.services.wallet;
     if (!walletInstance) {
       throw new Error('Wallet not initialized');
@@ -150,6 +151,19 @@ export const useEmbeddedWallet = (
 
     return connectWithCredentials(credentials, walletInstance);
   };
+
+  useEffect(() => {
+    if (!sharedPXE.state.isInitialized || embeddedAccount) return;
+
+    const savedAccount = getSavedAccount();
+    if (savedAccount) {
+      reconnectExisting(savedAccount).catch((err) => {
+        console.warn('⚠️ Failed to auto-reconnect:', err);
+        clearSavedAccount();
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedPXE.state.isInitialized, embeddedAccount]);
 
   const create = useCallback(async (): Promise<AccountWithSecretKey> => {
     setStatus('connecting');
@@ -175,20 +189,32 @@ export const useEmbeddedWallet = (
 
       const account = await accountManager.getAccount();
       const instance = accountManager.getInstance();
-      const artifact = await accountManager.getAccountContract().getContractArtifact();
-      await wallet.registerContract(instance, artifact, accountManager.getSecretKey());
+      const artifact = await accountManager
+        .getAccountContract()
+        .getContractArtifact();
+      await wallet.registerContract(
+        instance,
+        artifact,
+        accountManager.getSecretKey()
+      );
       wallet.addAccount(account);
 
-      console.log('✅ New embedded account created:', accountManager.address.toString());
+      console.log(
+        '✅ New embedded account created:',
+        accountManager.address.toString()
+      );
 
       // Deploy account
       setStatus('deploying');
       try {
-        const metadata = await wallet.getContractMetadata(accountManager.address);
+        const metadata = await wallet.getContractMetadata(
+          accountManager.address
+        );
         if (!metadata.isContractInitialized) {
           console.log('🚀 Deploying account contract...');
           const deployMethod = await accountManager.getDeployMethod();
-          const paymentMethod = await pxeInstance.getSponsoredFeePaymentMethod();
+          const paymentMethod =
+            await pxeInstance.getSponsoredFeePaymentMethod();
 
           await deployMethod
             .send({
@@ -207,7 +233,8 @@ export const useEmbeddedWallet = (
           message: 'Account deployment failed',
           type: 'warning',
           source: 'wallet',
-          details: deployErr instanceof Error ? deployErr.message : String(deployErr),
+          details:
+            deployErr instanceof Error ? deployErr.message : String(deployErr),
         });
       }
 
@@ -223,84 +250,106 @@ export const useEmbeddedWallet = (
       setStatus('connected');
       return account;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create account';
+      const message =
+        err instanceof Error ? err.message : 'Failed to create account';
       setError(message);
       setStatus('disconnected');
       throw err;
     }
   }, [sharedPXE, addMessage]);
 
-  const connectTest = useCallback(async (index: number): Promise<AccountWithSecretKey> => {
-    setStatus('connecting');
-    setError(null);
+  const connectTest = useCallback(
+    async (index: number): Promise<AccountWithSecretKey> => {
+      setStatus('connecting');
+      setError(null);
 
-    try {
-      const pxeInstance = await sharedPXE.actions.initialize();
-      const wallet = pxeInstance.wallet;
+      try {
+        const pxeInstance = await sharedPXE.actions.initialize();
+        const wallet = pxeInstance.wallet;
 
-      const testAccounts = await getInitialTestAccountsData();
-      const testAccount = testAccounts[index];
+        const testAccounts = await getInitialTestAccountsData();
+        const testAccount = testAccounts[index];
 
-      const accountContract = new SchnorrAccountContract(testAccount.signingKey);
-      const accountManager = await AccountManager.create(
-        wallet,
-        testAccount.secret,
-        accountContract,
-        testAccount.salt
-      );
+        const accountContract = new SchnorrAccountContract(
+          testAccount.signingKey
+        );
+        const accountManager = await AccountManager.create(
+          wallet,
+          testAccount.secret,
+          accountContract,
+          testAccount.salt
+        );
 
-      const account = await accountManager.getAccount();
-      const instance = accountManager.getInstance();
-      const artifact = await accountManager.getAccountContract().getContractArtifact();
-      await wallet.registerContract(instance, artifact, accountManager.getSecretKey());
-      wallet.addAccount(account);
+        const account = await accountManager.getAccount();
+        const instance = accountManager.getInstance();
+        const artifact = await accountManager
+          .getAccountContract()
+          .getContractArtifact();
+        await wallet.registerContract(
+          instance,
+          artifact,
+          accountManager.getSecretKey()
+        );
+        wallet.addAccount(account);
 
-      console.log('✅ Test account connected:', account.getAddress().toString());
-      setEmbeddedAccount(account);
-      setStatus('connected');
+        console.log(
+          '✅ Test account connected:',
+          account.getAddress().toString()
+        );
+        setEmbeddedAccount(account);
+        setStatus('connected');
 
-      return account;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to connect test account';
-      setError(message);
-      setStatus('disconnected');
-      throw err;
-    }
-  }, [sharedPXE]);
-
-  const connectExisting = useCallback(async (): Promise<AccountWithSecretKey | null> => {
-    setStatus('connecting');
-    setError(null);
-
-    try {
-      // Ensure PXE is initialized
-      const pxeInstance = await sharedPXE.actions.initialize();
-      const wallet = pxeInstance.wallet;
-
-      const envCredentials = await getConfiguredAccountCredentials();
-      if (envCredentials) {
-        console.log('🔑 Connecting with configured credentials from env...');
-        const account = await connectWithCredentials(envCredentials, wallet);
         return account;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to connect test account';
+        setError(message);
+        setStatus('disconnected');
+        throw err;
       }
+    },
+    [sharedPXE]
+  );
 
-      const saved = getSavedAccount();
-      if (saved) {
-        console.log('🔄 Connecting with saved credentials from localStorage...');
-        const account = await reconnectExisting(saved, wallet);
-        return account;
+  const connectExisting =
+    useCallback(async (): Promise<AccountWithSecretKey | null> => {
+      setStatus('connecting');
+      setError(null);
+
+      try {
+        // Ensure PXE is initialized
+        const pxeInstance = await sharedPXE.actions.initialize();
+        const wallet = pxeInstance.wallet;
+
+        const envCredentials = await getConfiguredAccountCredentials();
+        if (envCredentials) {
+          console.log('🔑 Connecting with configured credentials from env...');
+          const account = await connectWithCredentials(envCredentials, wallet);
+          return account;
+        }
+
+        const saved = getSavedAccount();
+        if (saved) {
+          console.log(
+            '🔄 Connecting with saved credentials from localStorage...'
+          );
+          const account = await reconnectExisting(saved, wallet);
+          return account;
+        }
+
+        console.warn('No configured or saved account found');
+        setStatus('disconnected');
+        return null;
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Failed to connect existing account';
+        setError(message);
+        setStatus('disconnected');
+        return null;
       }
-
-      console.warn('No configured or saved account found');
-      setStatus('disconnected');
-      return null;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to connect existing account';
-      setError(message);
-      setStatus('disconnected');
-      return null;
-    }
-  }, [sharedPXE]);
+    }, [sharedPXE]);
 
   const disconnect = useCallback(() => {
     setEmbeddedAccount(null);
@@ -322,7 +371,10 @@ export const useEmbeddedWallet = (
     return getSavedAccount() !== null;
   }, []);
 
-  const isLoading = status === 'connecting' || status === 'deploying' || sharedPXE.state.isInitializing;
+  const isLoading =
+    status === 'connecting' ||
+    status === 'deploying' ||
+    sharedPXE.state.isInitializing;
 
   return {
     state: {
@@ -341,7 +393,8 @@ export const useEmbeddedWallet = (
     services: {
       pxe: sharedPXE.services.pxe,
       wallet: sharedPXE.services.wallet,
-      getSponsoredFeePaymentMethod: sharedPXE.services.getSponsoredFeePaymentMethod,
+      getSponsoredFeePaymentMethod:
+        sharedPXE.services.getSponsoredFeePaymentMethod,
     },
     sharedPXE,
     isLoading,

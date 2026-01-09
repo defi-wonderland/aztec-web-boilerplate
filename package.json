@@ -24,7 +24,8 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "yarn prep-test && yarn playwright test",
-    "lint": "prettier --check ./src"
+    "lint": "eslint src && prettier --check ./src",
+    "lint:fix": "eslint src --fix && prettier --write ./src"
   },
   "dependencies": {
     "@azguardwallet/client": "0.6.0",
@@ -47,6 +48,7 @@
     "viem": "2.41.2"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.2",
     "@playwright/test": "1.57.0",
     "@types/node": "22.15.17",
     "@types/react": "19.1.10",
@@ -56,12 +58,22 @@
     "assert": "2.1.0",
     "buffer": "6.0.3",
     "crypto-browserify": "3.12.1",
+    "eslint": "9.39.2",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-prettier": "5.5.4",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "eslint-plugin-react-refresh": "0.4.26",
+    "eslint-plugin-unused-imports": "4.3.0",
+    "globals": "17.0.0",
     "jsdom": "27.3.0",
     "prettier": "3.5.3",
     "process": "0.11.10",
     "stream-browserify": "3.0.0",
-    "tsx": "^4.21.0",
+    "tsx": "4.21.0",
     "typescript": "5.3.3",
+    "typescript-eslint": "8.52.0",
     "util": "0.12.5",
     "vite": "7.1.11",
     "vite-plugin-node-polyfills": "0.24.0",

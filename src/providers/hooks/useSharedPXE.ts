@@ -6,15 +6,15 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { PXE } from '@aztec/pxe/server';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { PXE } from '@aztec/pxe/server';
 import {
   SharedPXEService,
   type SharedPXEInstance,
 } from '../../services/aztec/pxe';
+import type { NetworkConfig } from '../../config/networks';
 import type { AztecStorageService } from '../../services/aztec/storage';
 import type { MinimalWallet } from '../../utils/MinimalWallet';
-import type { NetworkConfig } from '../../config/networks';
 
 export interface SharedPXEState {
   isInitialized: boolean;
@@ -51,7 +51,9 @@ interface UseSharedPXEOptions {
  * @param options.config - Network configuration
  * @param options.autoInitialize - Whether to auto-initialize on mount (default: false)
  */
-export const useSharedPXE = (options: UseSharedPXEOptions): UseSharedPXEReturn => {
+export const useSharedPXE = (
+  options: UseSharedPXEOptions
+): UseSharedPXEReturn => {
   const { config, autoInitialize = false } = options;
 
   const [isInitialized, setIsInitialized] = useState(false);
@@ -64,7 +66,7 @@ export const useSharedPXE = (options: UseSharedPXEOptions): UseSharedPXEReturn =
   // Check if already initialized for this network and reset error state on network change
   useEffect(() => {
     setError(null);
-    
+
     const existingInstance = SharedPXEService.getExistingInstance(
       config.nodeUrl,
       config.name
@@ -107,7 +109,8 @@ export const useSharedPXE = (options: UseSharedPXEOptions): UseSharedPXEReturn =
       setIsInitialized(true);
       return newInstance;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to initialize PXE';
+      const message =
+        err instanceof Error ? err.message : 'Failed to initialize PXE';
       setError(message);
       throw err;
     } finally {
@@ -156,4 +159,3 @@ export const useSharedPXE = (options: UseSharedPXEOptions): UseSharedPXEReturn =
     },
   };
 };
-

@@ -7,10 +7,20 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Roboto',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--bg-gradient-start) 0%,
+    var(--bg-gradient-end) 100%
+  );
   color: var(--text-primary);
   min-height: 100vh;
 }
@@ -289,7 +299,11 @@ body {
   justify-content: center;
   width: 100%;
   padding: 1rem 1.5rem;
-  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-primary) 0%,
+    color-mix(in srgb, var(--accent-primary) 85%, black) 100%
+  );
   color: var(--button-text);
   border: none;
   border-radius: 12px;
@@ -302,7 +316,11 @@ body {
 }
 
 .embedded-wallet-button:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-primary) 90%, white) 0%,
+    var(--accent-primary) 100%
+  );
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(140, 126, 255, 0.3);
 }
@@ -326,7 +344,9 @@ body {
 .modal-content {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-width: 500px;
   width: 100%;
   max-height: calc(100vh - 4rem);
@@ -402,7 +422,11 @@ body {
 .testnet-notice {
   margin-top: 0.5rem;
   padding: 0.75rem;
-  background: color-mix(in srgb, var(--accent-secondary) 10%, var(--bg-primary));
+  background: color-mix(
+    in srgb,
+    var(--accent-secondary) 10%,
+    var(--bg-primary)
+  );
   border: 1px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
   border-radius: 6px;
   font-size: 0.875rem;
@@ -475,7 +499,11 @@ body {
   -webkit-appearance: none;
   -moz-appearance: none;
   padding: 0.75rem 2rem 0.75rem 1rem;
-  background: linear-gradient(180deg, var(--accent-secondary) 0%, color-mix(in srgb, var(--accent-secondary) 85%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-secondary) 0%,
+    color-mix(in srgb, var(--accent-secondary) 85%, black) 100%
+  );
   color: var(--button-text);
   border: none;
   border-radius: 10px;
@@ -489,14 +517,19 @@ body {
 }
 
 .network-select:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 90%, white) 0%, var(--accent-secondary) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-secondary) 90%, white) 0%,
+    var(--accent-secondary) 100%
+  );
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(237, 161, 255, 0.3);
 }
 
 .network-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-secondary) 30%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-secondary) 30%, transparent);
 }
 
 .network-select-arrow {
@@ -527,7 +560,11 @@ body {
 }
 
 .wallet-option-button {
-  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-primary) 0%,
+    color-mix(in srgb, var(--accent-primary) 85%, black) 100%
+  );
   color: var(--button-text);
   border: none;
   border-radius: 10px;
@@ -670,7 +707,11 @@ body {
   justify-content: center;
   width: 100%;
   padding: 1rem 1.5rem;
-  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-primary) 0%,
+    color-mix(in srgb, var(--accent-primary) 85%, black) 100%
+  );
   color: var(--button-text);
   border: none;
   border-radius: 12px;
@@ -683,7 +724,11 @@ body {
 }
 
 .embedded-wallet-button:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-primary) 90%, white) 0%,
+    var(--accent-primary) 100%
+  );
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(140, 126, 255, 0.3);
 }
@@ -707,7 +752,9 @@ body {
 .modal-content {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-width: 500px;
   width: 100%;
   max-height: calc(100vh - 4rem);
@@ -783,7 +830,11 @@ body {
 .testnet-notice {
   margin-top: 0.5rem;
   padding: 0.75rem;
-  background: color-mix(in srgb, var(--accent-secondary) 10%, var(--bg-primary));
+  background: color-mix(
+    in srgb,
+    var(--accent-secondary) 10%,
+    var(--bg-primary)
+  );
   border: 1px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
   border-radius: 6px;
   font-size: 0.875rem;
@@ -856,7 +907,11 @@ body {
   -webkit-appearance: none;
   -moz-appearance: none;
   padding: 0.75rem 2rem 0.75rem 1rem;
-  background: linear-gradient(180deg, var(--accent-secondary) 0%, color-mix(in srgb, var(--accent-secondary) 85%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-secondary) 0%,
+    color-mix(in srgb, var(--accent-secondary) 85%, black) 100%
+  );
   color: var(--button-text);
   border: none;
   border-radius: 10px;
@@ -870,14 +925,19 @@ body {
 }
 
 .network-select:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 90%, white) 0%, var(--accent-secondary) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-secondary) 90%, white) 0%,
+    var(--accent-secondary) 100%
+  );
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(237, 161, 255, 0.3);
 }
 
 .network-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-secondary) 30%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-secondary) 30%, transparent);
 }
 
 .network-select-arrow {
@@ -907,7 +967,11 @@ body {
   -webkit-appearance: none;
   -moz-appearance: none;
   padding: 0.75rem 2rem 0.75rem 1rem;
-  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-primary) 0%,
+    color-mix(in srgb, var(--accent-primary) 85%, black) 100%
+  );
   color: var(--button-text);
   border: none;
   border-radius: 10px;
@@ -921,14 +985,19 @@ body {
 }
 
 .wallet-select:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-primary) 90%, white) 0%,
+    var(--accent-primary) 100%
+  );
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(140, 126, 255, 0.3);
 }
 
 .wallet-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
 
 .wallet-select-arrow {
@@ -988,7 +1057,7 @@ body {
     font-size: 1.5rem;
     gap: 0.75rem;
   }
-  
+
   .nav-title::before {
     font-size: 1.75rem;
   }
@@ -1027,12 +1096,12 @@ body {
     gap: 0.5rem;
     padding: 0.375rem 0.75rem;
   }
-  
+
   .wallet-type {
     display: inline;
     font-size: 0.75rem;
   }
-  
+
   .account-address {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
@@ -1295,8 +1364,12 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .balance-refetch-badge {
@@ -1312,8 +1385,13 @@ body {
 }
 
 @keyframes pulse-badge {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .total-label {
@@ -1805,7 +1883,6 @@ body {
   cursor: default;
 }
 
-
 .form-label-main {
   display: block;
   max-width: 100%;
@@ -1830,7 +1907,8 @@ body {
 .form-select:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-primary) 20%, transparent);
 }
 
 .input-with-copy {
@@ -1880,7 +1958,11 @@ body {
 }
 
 .btn-primary:disabled {
-  background: linear-gradient(135deg, color-mix(in srgb, #8b5cf6 65%, #0a0a0a 35%), color-mix(in srgb, #a855f7 65%, #0a0a0a 35%));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #8b5cf6 65%, #0a0a0a 35%),
+    color-mix(in srgb, #a855f7 65%, #0a0a0a 35%)
+  );
   color: #ffffff;
 }
 
@@ -2033,7 +2115,6 @@ body {
   font-weight: 500;
 }
 
-
 .config-display h4 {
   margin: 0 0 1.5rem 0;
   font-size: 1.25rem;
@@ -2156,7 +2237,7 @@ body {
   .tabs-list {
     overflow-x: auto;
   }
-  
+
   .tab-trigger {
     white-space: nowrap;
     min-width: 7.5rem;
@@ -2164,57 +2245,56 @@ body {
 }
 
 @media (max-width: 48rem) {
-  
   .nav-controls {
     gap: 0.5rem;
   }
-  
+
   .nav-title {
     font-size: 1rem;
   }
-  
+
   .theme-toggle {
     padding: 0.5rem;
     font-size: 0.875rem;
   }
-  
+
   .content-header {
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: 1rem;
   }
-  
+
   .icon-container {
     width: 2.5rem;
     height: 2.5rem;
   }
-  
+
   .icon {
     font-size: 1.25rem;
   }
-  
+
   .content-header h3 {
     font-size: 1.25rem;
   }
-  
+
   .form-section {
     max-width: 100%;
   }
-  
+
   .settings-tabs {
     flex-direction: column;
   }
-  
+
   .config-row {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
-  
+
   .config-label {
     font-weight: 600;
   }
-  
+
   .tab-content-wrapper {
     padding: 1rem;
     min-height: 15rem;
@@ -2294,8 +2374,12 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {
@@ -2497,26 +2581,26 @@ body {
   .senders-content {
     padding: 1.5rem;
   }
-  
+
   .sender-card {
     padding: 1rem;
   }
-  
+
   .sender-address-row {
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
   }
-  
+
   .remove-btn {
     align-self: flex-end;
   }
-  
+
   .info-card {
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .info-icon {
     align-self: flex-start;
   }
@@ -2600,46 +2684,50 @@ body {
    DARK MODE STYLES
    ============================================================================ */
 
-    /* CSS Variables for theming - Aztec Design System */
-    :root {
-      /* Light Theme - Playground Aesthetic */
-      --bg-primary: #ffffff;
-      --bg-secondary: #eeedf1; /* pui-10 */
-      --bg-tertiary: #f8f7fa;
-      --bg-gradient-start: #f8f7fa; /* Darker at top */
-      --bg-gradient-end: #ffffff; /* Lighter at bottom */
-      --text-primary: #321e4c; /* pui-70 */
-      --text-secondary: #5a4a6b;
-      --text-muted: #8b7a9b;
-      --border-color: #d4d1db;
-      --shadow-color: rgba(50, 30, 76, 0.1);
-      --navbar-bg: rgba(238, 237, 241, 0.95);
-      --accent-primary: #8C7EFF; /* purple-60 */
-      --accent-secondary: #EDA1FF; /* pink-50 */
-      --button-text: #eeedf1;
-    }
+/* CSS Variables for theming - Aztec Design System */
+:root {
+  /* Light Theme - Playground Aesthetic */
+  --bg-primary: #ffffff;
+  --bg-secondary: #eeedf1; /* pui-10 */
+  --bg-tertiary: #f8f7fa;
+  --bg-gradient-start: #f8f7fa; /* Darker at top */
+  --bg-gradient-end: #ffffff; /* Lighter at bottom */
+  --text-primary: #321e4c; /* pui-70 */
+  --text-secondary: #5a4a6b;
+  --text-muted: #8b7a9b;
+  --border-color: #d4d1db;
+  --shadow-color: rgba(50, 30, 76, 0.1);
+  --navbar-bg: rgba(238, 237, 241, 0.95);
+  --accent-primary: #8c7eff; /* purple-60 */
+  --accent-secondary: #eda1ff; /* pink-50 */
+  --button-text: #eeedf1;
+}
 
-    .dark {
-      /* Dark Theme - Aztec.network Aesthetic */
-      --bg-primary: #0a0a0a; /* Deep black like aztec.network */
-      --bg-secondary: #1a1a1a; /* Dark grey */
-      --bg-tertiary: #2a2a2a; /* Medium grey */
-      --bg-gradient-start: #1a1a1a; /* Darker at top */
-      --bg-gradient-end: #0a0a0a; /* Deeper black at bottom */
-      --text-primary: #ffffff; /* Pure white text */
-      --text-secondary: #e0e0e0;
-      --text-muted: #a0a0a0;
-      --border-color: #333333;
-      --shadow-color: rgba(0, 0, 0, 0.5);
-      --navbar-bg: rgba(26, 26, 26, 0.95);
-      --accent-primary: #EDA1FF; /* pink-50 */
-      --accent-secondary: #8C7EFF; /* purple-60 */
-      --button-text: #000000; /* Black text on bright buttons */
-    }
+.dark {
+  /* Dark Theme - Aztec.network Aesthetic */
+  --bg-primary: #0a0a0a; /* Deep black like aztec.network */
+  --bg-secondary: #1a1a1a; /* Dark grey */
+  --bg-tertiary: #2a2a2a; /* Medium grey */
+  --bg-gradient-start: #1a1a1a; /* Darker at top */
+  --bg-gradient-end: #0a0a0a; /* Deeper black at bottom */
+  --text-primary: #ffffff; /* Pure white text */
+  --text-secondary: #e0e0e0;
+  --text-muted: #a0a0a0;
+  --border-color: #333333;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --navbar-bg: rgba(26, 26, 26, 0.95);
+  --accent-primary: #eda1ff; /* pink-50 */
+  --accent-secondary: #8c7eff; /* purple-60 */
+  --button-text: #000000; /* Black text on bright buttons */
+}
 
 /* Apply theme variables */
 body {
-  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--bg-gradient-start) 0%,
+    var(--bg-gradient-end) 100%
+  );
   color: var(--text-primary);
 }
 
@@ -2696,7 +2784,9 @@ button {
 }
 
 /* Form elements */
-input, select, textarea {
+input,
+select,
+textarea {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
@@ -2717,50 +2807,62 @@ input::placeholder {
   color: var(--text-primary);
 }
 
-    /* Connected account section */
-    .connected-account-section {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-    }
+/* Connected account section */
+.connected-account-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
 
-    .account-address {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
+.account-address {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
 
-    /* Testnet notice */
-    .testnet-notice {
-      background: color-mix(in srgb, var(--accent-secondary) 15%, var(--bg-primary));
-      border-color: color-mix(in srgb, var(--accent-secondary) 40%, transparent);
-      color: color-mix(in srgb, var(--accent-secondary) 90%, white);
-    }
+/* Testnet notice */
+.testnet-notice {
+  background: color-mix(
+    in srgb,
+    var(--accent-secondary) 15%,
+    var(--bg-primary)
+  );
+  border-color: color-mix(in srgb, var(--accent-secondary) 40%, transparent);
+  color: color-mix(in srgb, var(--accent-secondary) 90%, white);
+}
 
-    .test-account-selector label {
-      color: var(--text-primary);
-    }
+.test-account-selector label {
+  color: var(--text-primary);
+}
 
-    .test-account-select {
-      background: var(--bg-primary);
-      border-color: var(--border-color);
-      color: var(--text-primary);
-    }
+.test-account-select {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
 
-    .test-account-select:disabled {
-      background: var(--bg-secondary);
-      color: var(--text-muted);
-    }
+.test-account-select:disabled {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+}
 
-    /* Embedded wallet button */
-    .embedded-wallet-button {
-      background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
-      color: var(--button-text);
-      box-shadow: 0 4px 12px rgba(237, 161, 255, 0.2);
-    }
+/* Embedded wallet button */
+.embedded-wallet-button {
+  background: linear-gradient(
+    180deg,
+    var(--accent-primary) 0%,
+    color-mix(in srgb, var(--accent-primary) 85%, black) 100%
+  );
+  color: var(--button-text);
+  box-shadow: 0 4px 12px rgba(237, 161, 255, 0.2);
+}
 
-    .embedded-wallet-button:hover {
-      background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
-      box-shadow: 0 6px 20px rgba(237, 161, 255, 0.3);
-    }
+.embedded-wallet-button:hover {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-primary) 90%, white) 0%,
+    var(--accent-primary) 100%
+  );
+  box-shadow: 0 6px 20px rgba(237, 161, 255, 0.3);
+}
 
 /* Comprehensive Dark Mode Overrides */
 .dark {
@@ -2895,11 +2997,11 @@ input::placeholder {
 }
 
 /* Ensure all input elements use proper theming */
-input[type="text"],
-input[type="number"],
-input[type="email"],
-input[type="password"],
-input[type="url"],
+input[type='text'],
+input[type='number'],
+input[type='email'],
+input[type='password'],
+input[type='url'],
 textarea,
 select {
   background: var(--bg-primary) !important;
@@ -2907,15 +3009,16 @@ select {
   border: 1px solid var(--border-color) !important;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="url"]:focus,
+input[type='text']:focus,
+input[type='number']:focus,
+input[type='email']:focus,
+input[type='password']:focus,
+input[type='url']:focus,
 textarea:focus,
 select:focus {
   border-color: var(--accent-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent) !important;
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-primary) 20%, transparent) !important;
 }
 
 /* Testnet Debug Modal Styles */
@@ -3009,15 +3112,24 @@ select:focus {
 }
 
 .modal-button.primary {
-  background: linear-gradient(135deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent-primary) 0%,
+    color-mix(in srgb, var(--accent-primary) 85%, black) 100%
+  );
   color: var(--button-text);
   border-color: var(--accent-primary);
 }
 
 .modal-button.primary:hover {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-primary) 90%, white) 0%,
+    var(--accent-primary) 100%
+  );
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
 
 /* Error state styling */
@@ -3048,7 +3160,11 @@ select:focus {
   -webkit-appearance: none;
   -moz-appearance: none;
   padding: 0.75rem 2rem 0.75rem 1rem;
-  background: linear-gradient(180deg, var(--accent-secondary) 0%, color-mix(in srgb, var(--accent-secondary) 85%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-secondary) 0%,
+    color-mix(in srgb, var(--accent-secondary) 85%, black) 100%
+  );
   color: var(--button-text);
   border: none;
   border-radius: 10px;
@@ -3061,14 +3177,19 @@ select:focus {
 }
 
 .modal-network-selector .network-select:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 90%, white) 0%, var(--accent-secondary) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-secondary) 90%, white) 0%,
+    var(--accent-secondary) 100%
+  );
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(237, 161, 255, 0.3);
 }
 
 .modal-network-selector .network-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-secondary) 30%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-secondary) 30%, transparent);
 }
 
 .modal-network-selector .network-select-arrow {
@@ -3296,10 +3417,15 @@ select:focus {
 /* Warning hint style */
 .input-hint.warning {
   color: var(--warning-color, #f59e0b);
-  background: color-mix(in srgb, var(--warning-color, #f59e0b) 10%, var(--bg-primary));
+  background: color-mix(
+    in srgb,
+    var(--warning-color, #f59e0b) 10%,
+    var(--bg-primary)
+  );
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid color-mix(in srgb, var(--warning-color, #f59e0b) 30%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--warning-color, #f59e0b) 30%, transparent);
 }
 
 .artifact-textarea {
@@ -3397,7 +3523,10 @@ select:focus {
   border-radius: 0.5rem;
   padding: 0.75rem 1rem;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .function-item:hover {
@@ -3560,11 +3689,19 @@ select:focus {
 }
 
 .log-entry.success {
-  border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-color));
+  border-color: color-mix(
+    in srgb,
+    var(--accent-primary) 40%,
+    var(--border-color)
+  );
 }
 
 .log-entry.error {
-  border-color: color-mix(in srgb, var(--accent-secondary) 60%, var(--border-color));
+  border-color: color-mix(
+    in srgb,
+    var(--accent-secondary) 60%,
+    var(--border-color)
+  );
 }
 
 .log-title {
@@ -3737,15 +3874,16 @@ select:focus {
 .wallet-connect-button:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-primary) 20%, transparent);
 }
 
 /* Dark mode specific styling for wallet button */
-[data-theme="dark"] .wallet-connect-button {
+[data-theme='dark'] .wallet-connect-button {
   color: white;
 }
 
-[data-theme="dark"] .wallet-connect-button:hover {
+[data-theme='dark'] .wallet-connect-button:hover {
   background: var(--bg-primary);
   border-color: var(--border-color);
   color: white;
@@ -3803,14 +3941,19 @@ select:focus {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Security Warning Banner */
 .security-warning {
-  background: linear-gradient(135deg, 
-    color-mix(in srgb, #f59e0b 15%, transparent) 0%, 
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #f59e0b 15%, transparent) 0%,
     color-mix(in srgb, #d97706 10%, transparent) 100%
   );
   border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);

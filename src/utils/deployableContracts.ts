@@ -1,4 +1,7 @@
-import { parseArtifactSource, type ParsedFunction } from './contractInteraction';
+import {
+  parseArtifactSource,
+  type ParsedFunction,
+} from './contractInteraction';
 import { toTitleCase } from './string';
 import type { AztecNetwork } from '../config/networks/constants';
 

@@ -5,9 +5,9 @@ interface SecurityWarningProps {
   showDismiss?: boolean;
 }
 
-export const SecurityWarning: React.FC<SecurityWarningProps> = ({ 
+export const SecurityWarning: React.FC<SecurityWarningProps> = ({
   onDismiss,
-  showDismiss = true 
+  showDismiss = true,
 }) => {
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -23,15 +23,18 @@ export const SecurityWarning: React.FC<SecurityWarningProps> = ({
   return (
     <div className="security-warning">
       <div className="security-warning-content">
-        <span className="security-warning-icon" aria-hidden="true">⚠️</span>
+        <span className="security-warning-icon" aria-hidden="true">
+          ⚠️
+        </span>
         <div className="security-warning-text">
           <strong>Test Only</strong>
           <span className="security-warning-detail">
-            Embedded wallet keys are stored locally. Only use for development and testing.
+            Embedded wallet keys are stored locally. Only use for development
+            and testing.
           </span>
         </div>
         {showDismiss && (
-          <button 
+          <button
             className="security-warning-dismiss"
             onClick={handleDismiss}
             aria-label="Dismiss warning"
@@ -44,4 +47,3 @@ export const SecurityWarning: React.FC<SecurityWarningProps> = ({
     </div>
   );
 };
-

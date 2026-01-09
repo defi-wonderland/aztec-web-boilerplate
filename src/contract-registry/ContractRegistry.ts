@@ -1,8 +1,7 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
-import type { PXE } from '@aztec/pxe/server';
 import { createLogger } from '@aztec/foundation/log';
-import type { NetworkConfig } from '../config/networks';
+import type { PXE } from '@aztec/pxe/server';
 import type {
   ContractConfigMap,
   ContractNames,
@@ -11,6 +10,7 @@ import type {
   IContractRegistry,
   RegisteredContract,
 } from './types';
+import type { NetworkConfig } from '../config/networks';
 
 const logger = createLogger('contract-registry');
 

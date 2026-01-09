@@ -1,5 +1,5 @@
-import type { BrowserWalletConnector } from '../types/walletConnector';
 import type { GetTxReceiptOp } from '../types/browserWallet';
+import type { BrowserWalletConnector } from '../types/walletConnector';
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_MAX_ATTEMPTS = 30; // 60 seconds total
@@ -36,7 +36,8 @@ export const waitForBrowserWalletReceipt = async (
       const result = await connector.executeOperation(operation);
 
       if (result.status === 'failed') {
-        const errorMsg = 'error' in result ? String(result.error) : 'Failed to get receipt';
+        const errorMsg =
+          'error' in result ? String(result.error) : 'Failed to get receipt';
         return { success: false, error: errorMsg };
       }
 
@@ -48,7 +49,11 @@ export const waitForBrowserWalletReceipt = async (
           return { success: true };
         }
 
-        if (txStatus === 'dropped' || txStatus === 'failed' || txStatus === 'reverted') {
+        if (
+          txStatus === 'dropped' ||
+          txStatus === 'failed' ||
+          txStatus === 'reverted'
+        ) {
           return { success: false, error: `Transaction ${txStatus}` };
         }
       }
@@ -63,4 +68,3 @@ export const waitForBrowserWalletReceipt = async (
 
   return { success: false, error: 'Transaction confirmation timeout' };
 };
-

@@ -1,14 +1,14 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { contractsConfig } from '../../config/contracts';
+import { WalletType } from '../../types/aztec';
+import { isBrowserWalletConnector } from '../../types/walletConnector';
+import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
 import { useContractRegistration } from '../context/useContractRegistration';
 import { useContractRegistry } from '../context/useContractRegistry';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { queryKeys } from './queryKeys';
-import { contractsConfig } from '../../config/contracts';
-import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
 import type { SimulateViewsOp } from '../../types/browserWallet';
-import { WalletType } from '../../types/aztec';
-import { isBrowserWalletConnector } from '../../types/walletConnector';
 
 export interface TokenBalance {
   private: bigint;

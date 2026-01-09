@@ -9,7 +9,9 @@ import React, {
 } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
-import type { NetworkConfig } from '../config/networks';
+import { TimingToast } from '../components';
+import { contractsConfig } from '../config/contracts';
+import { getNetworkArtifacts } from '../config/networkArtifacts';
 import {
   ContractRegistry,
   getContractsForConfig,
@@ -17,11 +19,9 @@ import {
   type ContractNames,
   type ContractRegistryContextValue,
 } from '../contract-registry';
-import { contractsConfig } from '../config/contracts';
-import { hasAppManagedPXE } from '../types/walletConnector';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
-import { TimingToast } from '../components';
-import { getNetworkArtifacts } from '../config/networkArtifacts';
+import { hasAppManagedPXE } from '../types/walletConnector';
+import type { NetworkConfig } from '../config/networks';
 
 type ContractContextValue<T extends ContractConfigMap = ContractConfigMap> =
   ContractRegistryContextValue<T>;
@@ -41,9 +41,7 @@ const getInitialContracts = <T extends ContractConfigMap>(
     .map(([name]) => name);
 };
 
-interface EmbeddedContractProviderProps<
-  T extends ContractConfigMap = ContractConfigMap,
-> {
+interface EmbeddedContractProviderProps {
   showTimingToast?: boolean;
   children: ReactNode;
 }
@@ -61,7 +59,7 @@ export function EmbeddedContractProvider<
 >({
   showTimingToast = true,
   children,
-}: EmbeddedContractProviderProps<T>): React.ReactElement {
+}: EmbeddedContractProviderProps): React.ReactElement {
   const { connector, isInitialized, currentConfig } = useUniversalWallet();
 
   // Works with both Embedded and External Signer connectors (both have app-managed PXE)
@@ -162,7 +160,15 @@ export function EmbeddedContractProvider<
     };
 
     initializeRegistry();
-  }, [contracts, currentConfig, initialContracts, isInitialized, pxe, showTimingToast, checkContractsCached]);
+  }, [
+    contracts,
+    currentConfig,
+    initialContracts,
+    isInitialized,
+    pxe,
+    showTimingToast,
+    checkContractsCached,
+  ]);
 
   const contextValue = useMemo<ContractContextValue<T>>(
     () => ({

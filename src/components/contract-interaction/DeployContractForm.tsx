@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import type { DeployContractFormProps } from './types';
 import { findConstructor } from '../../utils/deployableContracts';
 import { getPlaceholderForType, getLabelForType } from './helpers';
+import type { DeployContractFormProps } from './types';
 
 /**
  * Form for deploying a new contract.

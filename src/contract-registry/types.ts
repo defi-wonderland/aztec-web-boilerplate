@@ -1,8 +1,8 @@
-import type { ContractArtifact, FunctionAbi } from '@aztec/stdlib/abi';
 import type { AztecAddress } from '@aztec/aztec.js/addresses';
-import type { Fr } from '@aztec/aztec.js/fields';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
+import type { Fr } from '@aztec/aztec.js/fields';
 import type { Wallet } from '@aztec/aztec.js/wallet';
+import type { ContractArtifact, FunctionAbi } from '@aztec/stdlib/abi';
 import type { NetworkConfig } from '../config/networks';
 
 /**
@@ -34,7 +34,10 @@ export interface ContractClass<TContract = unknown> {
 /**
  * Configuration for a single contract in the registry
  */
-export interface ContractConfigDefinition<TConfig = NetworkConfig, TContract = unknown> {
+export interface ContractConfigDefinition<
+  TConfig = NetworkConfig,
+  TContract = unknown,
+> {
   /** The contract artifact containing ABI and bytecode */
   artifact: ContractArtifact;
   /** The contract class with static `at` method for creating callable instances */

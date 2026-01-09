@@ -1,10 +1,10 @@
+import { createAzguardAdapter } from '../adapters';
+import { EVM_WALLETS, type EVMWalletId } from '../config/evmWallets';
+import { ExternalSignerType } from '../types/aztec';
+import { BrowserWalletConnector } from './BrowserWalletConnector';
 import { createEmbeddedConnector } from './EmbeddedConnector';
 import { ExternalSignerConnector } from './ExternalSignerConnector';
-import { BrowserWalletConnector } from './BrowserWalletConnector';
 import type { ConnectorFactory } from './registry';
-import { ExternalSignerType } from '../types/aztec';
-import { EVM_WALLETS, type EVMWalletId } from '../config/evmWallets';
-import { createAzguardAdapter } from '../adapters';
 
 /**
  * Embedded wallet connector preset.

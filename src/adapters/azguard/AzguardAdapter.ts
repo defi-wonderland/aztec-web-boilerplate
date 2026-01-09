@@ -5,8 +5,17 @@
  * connection logic while keeping the hook wallet-agnostic.
  */
 
-import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import { getChainId, type AztecChainId } from '../../config/networks/constants';
+import { parseAddressFromCaip } from '../../utils/azguard';
+import { AzguardWalletService } from './AzguardWalletService';
+import type {
+  IBrowserWalletAdapter,
+  BrowserWalletState,
+  BrowserWalletOperationResult,
+  BrowserWalletOperation,
+} from '../../types/browserWallet';
 import type {
   CaipAccount,
   CaipChain,
@@ -16,15 +25,6 @@ import type {
   RegisterContractOperation,
   Operation,
 } from '@azguardwallet/types';
-import type {
-  IBrowserWalletAdapter,
-  BrowserWalletState,
-  BrowserWalletOperationResult,
-  BrowserWalletOperation,
-} from '../../types/browserWallet';
-import { AzguardWalletService } from './AzguardWalletService';
-import { getChainId, type AztecChainId } from '../../config/networks/constants';
-import { parseAddressFromCaip } from '../../utils/azguard';
 
 // =============================================================================
 // Azguard-specific artifact normalization
@@ -34,7 +34,9 @@ import { parseAddressFromCaip } from '../../utils/azguard';
  * Add `isInternal: false` to function artifacts if missing.
  * Azguard wallet v0.6.0 requires this field in the schema.
  */
-const addIsInternal = <T extends object>(obj: T): T & { isInternal: boolean } => ({
+const addIsInternal = <T extends object>(
+  obj: T
+): T & { isInternal: boolean } => ({
   ...obj,
   isInternal: (obj as T & { isInternal?: boolean }).isInternal ?? false,
 });
@@ -47,7 +49,8 @@ const normalizeArtifactForAzguard = (artifact: ContractArtifact): unknown => ({
   ...artifact,
   functions: artifact.functions.map(addIsInternal),
   ...(artifact.nonDispatchPublicFunctions && {
-    nonDispatchPublicFunctions: artifact.nonDispatchPublicFunctions.map(addIsInternal),
+    nonDispatchPublicFunctions:
+      artifact.nonDispatchPublicFunctions.map(addIsInternal),
   }),
 });
 
@@ -59,13 +62,16 @@ const AZGUARD_METHODS = [
   'add_private_authwit',
   'call',
   'aztec_getTxReceipt',
-];
+] as const;
 
 const buildDappMetadata = () => ({
   name: 'Aztec Web Boilerplate',
   description: 'Privacy-first application built on Aztec Network',
   url: typeof window !== 'undefined' ? window.location.origin : '',
-  icon: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : '',
+  logo:
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/favicon.ico`
+      : '',
 });
 
 export class AzguardAdapter implements IBrowserWalletAdapter {
@@ -93,7 +99,9 @@ export class AzguardAdapter implements IBrowserWalletAdapter {
   async connect(networkName: string): Promise<string[]> {
     const chain: AztecChainId = getChainId(networkName);
     const dappMetadata = buildDappMetadata();
-    const requiredPermissions = [{ chains: [chain], methods: AZGUARD_METHODS }];
+    const requiredPermissions = [
+      { chains: [chain], methods: [...AZGUARD_METHODS] },
+    ];
 
     return this.service.connect(dappMetadata, requiredPermissions);
   }
@@ -102,7 +110,9 @@ export class AzguardAdapter implements IBrowserWalletAdapter {
     return this.service.disconnect();
   }
 
-  async executeOperations(ops: BrowserWalletOperation[]): Promise<BrowserWalletOperationResult[]> {
+  async executeOperations(
+    ops: BrowserWalletOperation[]
+  ): Promise<BrowserWalletOperationResult[]> {
     const azguardOps = ops.map((op) => this.toAzguardOperation(op));
     return this.service.executeOperations(azguardOps);
   }
@@ -158,7 +168,9 @@ export class AzguardAdapter implements IBrowserWalletAdapter {
           address: op.address,
           instance: op.instance,
           // Apply Azguard-specific normalization (adds isInternal to functions)
-          artifact: normalizeArtifactForAzguard(op.artifact as ContractArtifact),
+          artifact: normalizeArtifactForAzguard(
+            op.artifact as ContractArtifact
+          ),
         };
         return azguardOp;
       }
@@ -179,4 +191,5 @@ export class AzguardAdapter implements IBrowserWalletAdapter {
   }
 }
 
-export const createAzguardAdapter = (): IBrowserWalletAdapter => new AzguardAdapter();
+export const createAzguardAdapter = (): IBrowserWalletAdapter =>
+  new AzguardAdapter();

@@ -30,7 +30,8 @@ const ExistingContractForm = ({
         )}
         {isPreconfiguredMode && (
           <span className="input-hint">
-            Pre-filled address, but you can change it to use a different deployment.
+            Pre-filled address, but you can change it to use a different
+            deployment.
           </span>
         )}
       </div>
@@ -70,7 +71,9 @@ const ExistingContractForm = ({
           onClick={onLoad}
           disabled={!canLoad}
           aria-label={
-            isPreconfiguredMode ? 'Load preconfigured contract' : 'Load custom artifact'
+            isPreconfiguredMode
+              ? 'Load preconfigured contract'
+              : 'Load custom artifact'
           }
         >
           {isPreconfiguredMode ? 'Load contract' : 'Load artifact'}
@@ -81,4 +84,3 @@ const ExistingContractForm = ({
 };
 
 export default ExistingContractForm;
-

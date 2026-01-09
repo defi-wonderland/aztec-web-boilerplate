@@ -2,12 +2,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
-import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
-import { useUniversalWallet } from './useUniversalWallet';
 import { contractsConfig } from '../../config/contracts';
-import { queuePxeCall } from '../../utils';
-import { hasAppManagedPXE } from '../../types/walletConnector';
-import { WalletType } from '../../types/aztec';
+import { getNetworkArtifacts } from '../../config/networkArtifacts';
 import {
   getContractsForConfig,
   type ContractConfigMap,
@@ -17,7 +13,11 @@ import {
   type ContractName,
   type ContractType,
 } from '../../contract-registry';
-import { getNetworkArtifacts } from '../../config/networkArtifacts';
+import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
+import { WalletType } from '../../types/aztec';
+import { hasAppManagedPXE } from '../../types/walletConnector';
+import { queuePxeCall } from '../../utils';
+import { useUniversalWallet } from './useUniversalWallet';
 
 interface ExternalWalletContractProxy {
   readonly __browserWalletPlaceholder: true;
@@ -173,25 +173,38 @@ export function useContractRegistration<K extends ContractName>(
       return;
     }
 
-    if (!account) {
-      setContract(null);
-      setStatus('idle');
-      return;
-    }
+    // Cancellation flag to prevent stale microtask updates when dependencies change
+    let cancelled = false;
 
-    try {
-      setStatus('registering');
-      const proxy = createExternalWalletContractProxy();
-      setContract(proxy);
-      setStatus('ready');
-      setError(null);
-    } catch (err) {
-      const hydrationError =
-        err instanceof Error ? err : new Error(String(err));
-      setError(hydrationError);
-      setStatus('error');
-      setContract(null);
-    }
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+
+      if (!account) {
+        setContract(null);
+        setStatus('idle');
+        return;
+      }
+
+      try {
+        setStatus('registering');
+        const proxy = createExternalWalletContractProxy();
+        setContract(proxy);
+        setStatus('ready');
+        setError(null);
+      } catch (err) {
+        const hydrationError =
+          err instanceof Error ? err : new Error(String(err));
+        setError(hydrationError);
+        setStatus('error');
+        setContract(null);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [account, createExternalWalletContractProxy, isBrowserWallet]);
 
   const register = useCallback(async () => {

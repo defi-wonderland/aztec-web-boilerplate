@@ -6,13 +6,13 @@
  */
 
 import { WalletType } from '../types/aztec';
+import type { UseEmbeddedWalletReturn } from '../providers/hooks/useEmbeddedWallet';
 import type {
   EmbeddedWalletConnector,
   ConnectorStatus,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
 } from '../types/walletConnector';
-import type { UseEmbeddedWalletReturn } from '../providers/hooks/useEmbeddedWallet';
 
 export const EMBEDDED_CONNECTOR_ID = 'embedded' as const;
 
@@ -73,7 +73,9 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
   async sendTransaction(
     _request: ConnectorTransactionRequest
   ): Promise<ConnectorTransactionResult> {
-    throw new Error('sendTransaction is not supported for the embedded connector');
+    throw new Error(
+      'sendTransaction is not supported for the embedded connector'
+    );
   }
 
   getPXE() {

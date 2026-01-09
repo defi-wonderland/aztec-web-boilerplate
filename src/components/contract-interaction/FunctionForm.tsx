@@ -1,13 +1,18 @@
 import React from 'react';
-import type { ParsedType } from '../../utils/contractInteraction';
-import type { FunctionFormProps } from './types';
 import {
   getPlaceholderForType,
   getLabelForType,
   shouldTrimInput,
 } from './helpers';
+import type { FunctionFormProps } from './types';
+import type { ParsedType } from '../../utils/contractInteraction';
 
-const FunctionForm = ({ fn, values, onChange, disabled }: FunctionFormProps) => {
+const FunctionForm = ({
+  fn,
+  values,
+  onChange,
+  disabled,
+}: FunctionFormProps) => {
   const handleChange = (path: string, value: string, type: ParsedType) => {
     onChange(path, shouldTrimInput(type) ? value.trim() : value);
   };
@@ -43,7 +48,9 @@ const FunctionForm = ({ fn, values, onChange, disabled }: FunctionFormProps) => 
                   id={input.path}
                   className="form-input"
                   value={values[input.path] ?? ''}
-                  onChange={(e) => handleChange(input.path, e.target.value, input.type)}
+                  onChange={(e) =>
+                    handleChange(input.path, e.target.value, input.type)
+                  }
                   placeholder={getPlaceholderForType(input.type)}
                   disabled={disabled}
                   aria-label={input.path}

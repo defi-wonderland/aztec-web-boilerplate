@@ -1,18 +1,22 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
-import type { CaipAccount } from '@azguardwallet/types';
 import { WalletType, ExternalSignerType } from './aztec';
-import type { ExternalSigner } from '../signers/types';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
 } from './browserWallet';
+import type { ExternalSigner } from '../signers/types';
+import type { CaipAccount } from '@azguardwallet/types';
 
 export type WalletConnectorId = string;
 
-export type ConnectionStatus = 'disconnected' | 'connecting' | 'deploying' | 'connected';
+export type ConnectionStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'deploying'
+  | 'connected';
 
 export interface ConnectorStatus {
   isInstalled: boolean;

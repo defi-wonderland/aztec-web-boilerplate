@@ -6,14 +6,7 @@
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { CaipAccount } from '@azguardwallet/types';
 import { WalletType } from '../types/aztec';
-import type {
-  BrowserWalletConnector as IBrowserWalletConnector,
-  ConnectorStatus,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
-} from '../types/walletConnector';
 import type { UseBrowserWalletReturn } from '../providers/hooks/useBrowserWallet';
 import type {
   IBrowserWalletAdapter,
@@ -22,6 +15,13 @@ import type {
   SendTransactionOp,
   ContractCall,
 } from '../types/browserWallet';
+import type {
+  BrowserWalletConnector as IBrowserWalletConnector,
+  ConnectorStatus,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
+} from '../types/walletConnector';
+import type { CaipAccount } from '@azguardwallet/types';
 
 export const BROWSER_WALLET_CONNECTOR_ID = 'browser-wallet' as const;
 
@@ -132,7 +132,8 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     const result = await this.executeOperation(operation);
 
     if (result.status !== 'ok') {
-      const message = 'error' in result && result.error ? result.error : 'Transaction failed';
+      const message =
+        'error' in result && result.error ? result.error : 'Transaction failed';
       return {
         status: 'failed',
         error: message,
@@ -151,7 +152,9 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
    * Throws if no result is returned.
    */
   async executeOperation(operation: BrowserWalletOperation) {
-    const results = await this.getBrowserState().actions.executeOperations([operation]);
+    const results = await this.getBrowserState().actions.executeOperations([
+      operation,
+    ]);
 
     if (!results.length) {
       throw new Error('No result returned from wallet operation');

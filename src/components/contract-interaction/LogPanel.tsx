@@ -26,4 +26,3 @@ const LogPanel = ({ logs }: { logs: LogEntry[] }) => {
 };
 
 export default LogPanel;
-

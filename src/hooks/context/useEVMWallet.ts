@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import type { Hex } from 'viem';
 import { useUniversalWallet } from './useUniversalWallet';
+import type { Hex } from 'viem';
 
 export const useEVMWallet = () => {
   const { signer, needsSigner } = useUniversalWallet();

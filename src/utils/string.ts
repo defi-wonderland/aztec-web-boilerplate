@@ -26,5 +26,6 @@ export const toTitleCase = (str: string): string => {
  * @returns JSON string with BigInt values converted to strings
  */
 export const safeStringify = (value: unknown): string =>
-  JSON.stringify(value, (_key, v) => (typeof v === 'bigint' ? v.toString() : v));
-
+  JSON.stringify(value, (_key, v) =>
+    typeof v === 'bigint' ? v.toString() : v
+  );

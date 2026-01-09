@@ -1,10 +1,10 @@
 /**
  * Service for handling Aztec wallet storage operations
- * 
+ *
  * ⚠️ SECURITY WARNING: Account keys are stored in localStorage in plain text.
  * This is suitable for TESTNET ONLY. For production apps with real funds,
  * use an external wallet provider (like Azguard).
- * 
+ *
  * The embedded wallet is designed for development and demonstration purposes.
  */
 import { IAztecStorageService, AccountData } from '../../../types/aztec';
@@ -18,7 +18,10 @@ export class AztecStorageService implements IAztecStorageService {
    * ⚠️ Keys are stored in plain text - testnet only!
    */
   saveAccount(accountData: AccountData): void {
-    localStorage.setItem(AztecStorageService.STORAGE_KEY, JSON.stringify(accountData));
+    localStorage.setItem(
+      AztecStorageService.STORAGE_KEY,
+      JSON.stringify(accountData)
+    );
   }
 
   /**
@@ -51,7 +54,10 @@ export class AztecStorageService implements IAztecStorageService {
    * Save senders array to localStorage
    */
   saveSenders(senders: string[]): void {
-    localStorage.setItem(AztecStorageService.SENDERS_STORAGE_KEY, JSON.stringify(senders));
+    localStorage.setItem(
+      AztecStorageService.SENDERS_STORAGE_KEY,
+      JSON.stringify(senders)
+    );
   }
 
   /**
@@ -86,7 +92,7 @@ export class AztecStorageService implements IAztecStorageService {
    */
   removeSender(sender: string): void {
     const existingSenders = this.getSenders();
-    const filteredSenders = existingSenders.filter(s => s !== sender);
+    const filteredSenders = existingSenders.filter((s) => s !== sender);
     this.saveSenders(filteredSenders);
   }
 

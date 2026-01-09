@@ -3,11 +3,9 @@ import {
   type NoirCompiledContract,
 } from '@aztec/aztec.js/abi';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-
 // Devnet artifacts
 import dripperDevnetJson from '../artifacts/devnet/dripper-Dripper.json' with { type: 'json' };
 import tokenDevnetJson from '../artifacts/devnet/token_contract-Token.json' with { type: 'json' };
-
 // Sandbox artifacts
 import dripperSandboxJson from '../artifacts/sandbox/dripper-Dripper.json' with { type: 'json' };
 import tokenSandboxJson from '../artifacts/sandbox/token_contract-Token.json' with { type: 'json' };

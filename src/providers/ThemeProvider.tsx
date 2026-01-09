@@ -12,12 +12,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     if (savedTheme) {
       return savedTheme === 'light';
     }
-    
+
     // Check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    ) {
       return false; // dark mode
     }
-    
+
     return true; // light mode default
   });
 
@@ -29,10 +32,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const themeString = isLightTheme ? 'light' : 'dark';
-    
+
     // Apply theme to document root
     document.documentElement.setAttribute('data-theme', themeString);
-    
+
     // Also add class for easier CSS targeting
     document.documentElement.className = themeString;
   }, [isLightTheme]);
@@ -43,8 +46,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 };

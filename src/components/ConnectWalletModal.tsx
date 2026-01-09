@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet } from '../hooks';
-import { WalletType } from '../types/aztec';
 import {
   isEmbeddedConnector,
   isBrowserWalletConnector,
@@ -40,9 +39,10 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   );
 
   // Check if embedded connector has a saved account
-  const hasSavedEmbeddedAccount = embeddedConnector && isEmbeddedConnector(embeddedConnector)
-    ? embeddedConnector.hasSavedAccount()
-    : false;
+  const hasSavedEmbeddedAccount =
+    embeddedConnector && isEmbeddedConnector(embeddedConnector)
+      ? embeddedConnector.hasSavedAccount()
+      : false;
 
   // Get external signer connectors (MetaMask, etc.)
   const externalSignerConnectors = connectors.filter(
@@ -104,12 +104,13 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
     setIsConnecting(true);
     try {
+      let wallet: AccountWithSecretKey | null = null;
       switch (action) {
         case 'create':
           await embeddedConnector.createAccount();
           break;
         case 'existing':
-          const wallet = await embeddedConnector.connectExistingAccount();
+          wallet = await embeddedConnector.connectExistingAccount();
           if (!wallet) {
             console.warn('No stored account found to connect');
             return;

@@ -1,6 +1,6 @@
 import { embedded, evmWallet } from '../connectors';
-import type { WalletKitConfig } from '../sdk/walletKitConfig';
 import { NETWORK_URLS } from './networks';
+import type { WalletKitConfig } from '../sdk/walletKitConfig';
 
 /**
  * Edit this file to add/remove connectors or update Aztec node URLs.

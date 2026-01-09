@@ -1,0 +1,16 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Auto-generated contract artifacts
+src/artifacts
+src/target
+
+# Contract build output
+contracts/*/target
+
+# Lock files
+yarn.lock
+package-lock.json

@@ -3,9 +3,8 @@
  * See docs/contract-ui.md for documentation.
  */
 import tokenDevnet from '../artifacts/devnet/token_contract-Token.json';
-import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json';
 import dripperSandbox from '../artifacts/sandbox/dripper-Dripper.json';
-
+import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json';
 import {
   loadDeployableContracts,
   type DeployableContractConfig,
@@ -50,4 +49,6 @@ const DEPLOYABLE_CONTRACTS_CONFIG: DeployableContractConfig[] = [
  * Processed deployable contracts with extracted constructors.
  * Do not modify - this is auto-generated from the config above.
  */
-export const DEPLOYABLE_CONTRACTS = loadDeployableContracts(DEPLOYABLE_CONTRACTS_CONFIG);
+export const DEPLOYABLE_CONTRACTS = loadDeployableContracts(
+  DEPLOYABLE_CONTRACTS_CONFIG
+);

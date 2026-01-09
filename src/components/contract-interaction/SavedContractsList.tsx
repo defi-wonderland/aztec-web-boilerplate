@@ -47,7 +47,10 @@ const SavedContractsList = ({
                     {contract.label ?? 'Saved contract'}
                   </div>
                   {isActive && (
-                    <span className="saved-contract-badge" aria-label="Active contract">
+                    <span
+                      className="saved-contract-badge"
+                      aria-label="Active contract"
+                    >
                       Active
                     </span>
                   )}
@@ -86,4 +89,3 @@ const SavedContractsList = ({
 };
 
 export default SavedContractsList;
-

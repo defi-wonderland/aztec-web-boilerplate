@@ -6,6 +6,7 @@
     "moduleResolution": "Bundler",
     "skipLibCheck": true,
     "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,

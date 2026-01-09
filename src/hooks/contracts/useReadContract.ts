@@ -1,20 +1,19 @@
 import { useState, useCallback } from 'react';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
-import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { SimulateViewsOperation } from '@azguardwallet/types';
-import { useUniversalWallet } from '../context/useUniversalWallet';
+import { SimulateViewsOp } from '../../types';
 import {
   isEmbeddedConnector,
   isBrowserWalletConnector,
 } from '../../types/walletConnector';
+import { useUniversalWallet } from '../context/useUniversalWallet';
+import { getContractMethod } from './utils';
 import type {
   MethodsOf,
   ArgsOf,
   ReadContractResult,
 } from '../../types/contractTypes';
-import { getContractMethod } from './utils';
-import { SimulateViewsOp } from '../../types';
 
 /**
  * Type helper to extract contract type from a contract class.
@@ -28,7 +27,7 @@ type ContractClassFor<TContract extends ContractBase> = {
 
 interface ReadContractParams<
   TContract extends ContractBase,
-  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>
+  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
 > {
   /** Contract class - used for type inference and artifact */
   contract: ContractClassFor<TContract>;
@@ -43,11 +42,11 @@ interface ReadContractParams<
 /**
  * Hook for executing read/simulate operations on Aztec contracts.
  * Handles both embedded and browser wallet flows automatically.
- * 
+ *
  * @example
  * ```tsx
  * const { readContract, isPending } = useReadContract();
- * 
+ *
  * // TypeScript infers method type from functionName
  * const result = await readContract({
  *   contract: TokenContract,
@@ -66,7 +65,7 @@ export const useReadContract = () => {
     async <
       TContract extends ContractBase,
       TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
-      TResult = unknown
+      TResult = unknown,
     >(
       params: ReadContractParams<TContract, TMethod>
     ): Promise<ReadContractResult<TResult>> => {
@@ -106,7 +105,10 @@ export const useReadContract = () => {
           const result = await connector.executeOperation(operation);
 
           if (result.status !== 'ok') {
-            const errorMsg = 'error' in result && result.error ? result.error : 'Simulation failed';
+            const errorMsg =
+              'error' in result && result.error
+                ? result.error
+                : 'Simulation failed';
             setError(errorMsg);
             return { success: false, error: errorMsg };
           }

@@ -1,5 +1,8 @@
 import React from 'react';
-import { useTokenBalance, type FormattedBalances } from '../hooks/queries/useTokenBalance';
+import {
+  useTokenBalance,
+  type FormattedBalances,
+} from '../hooks/queries/useTokenBalance';
 
 interface BalanceMetrics {
   privateBalance: bigint;
@@ -9,7 +12,9 @@ interface BalanceMetrics {
   publicPercentage: number;
 }
 
-const calculateBalanceMetrics = (formattedBalances: FormattedBalances | null): BalanceMetrics => {
+const calculateBalanceMetrics = (
+  formattedBalances: FormattedBalances | null
+): BalanceMetrics => {
   const privateBalance = BigInt(formattedBalances?.private ?? '0');
   const publicBalance = BigInt(formattedBalances?.public ?? '0');
   const totalBalance = privateBalance + publicBalance;
@@ -117,9 +122,7 @@ export const TokenBalance: React.FC = () => {
           <span className="balance-refetch-badge">Syncing</span>
         )}
       </div>
-      <div className="card-content">
-        {renderContent()}
-      </div>
+      <div className="card-content">{renderContent()}</div>
     </div>
   );
 };

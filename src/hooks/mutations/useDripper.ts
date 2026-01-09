@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { DripperContract } from '../../artifacts/Dripper';
+import { contractsConfig } from '../../config/contracts';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useWriteContract } from '../contracts/useWriteContract';
 import { queryKeys } from '../queries/queryKeys';
-import { DripperContract } from '../../artifacts/Dripper';
-import { contractsConfig } from '../../config/contracts';
 
 interface DripParams {
   amount: bigint;
@@ -28,7 +28,10 @@ export const useDripper = (options: UseDripperOptions = {}) => {
 
   const invalidateBalance = () => {
     if (!account || !tokenAddress) return;
-    const queryKey = queryKeys.token.balance(tokenAddress, account.getAddress().toString());
+    const queryKey = queryKeys.token.balance(
+      tokenAddress,
+      account.getAddress().toString()
+    );
     queryClient.invalidateQueries({ queryKey });
   };
 

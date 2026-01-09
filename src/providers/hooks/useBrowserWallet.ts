@@ -10,24 +10,26 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import { getChainId, type AztecChainId } from '../../config/networks/constants';
+import { useAsyncOperation } from '../../hooks/useAsyncOperation';
+import { DEFAULT_BROWSER_WALLET_STATE } from '../../types/browserWallet';
+import { getChainFromCaipAccount } from '../../utils/azguard';
+import { buildRegisterContractOperations } from '../../utils/browserWallet';
+import { useError } from '../ErrorProvider';
+import type { NetworkConfig } from '../../config/networks';
 import type {
   IBrowserWalletAdapter,
   BrowserWalletState,
   BrowserWalletOperation,
   BrowserWalletOperationResult,
 } from '../../types/browserWallet';
-import { DEFAULT_BROWSER_WALLET_STATE } from '../../types/browserWallet';
-import { useAsyncOperation } from '../../hooks/useAsyncOperation';
-import { useError } from '../ErrorProvider';
-import { buildRegisterContractOperations } from '../../utils/browserWallet';
-import { getChainFromCaipAccount } from '../../utils/azguard';
-import type { NetworkConfig } from '../../config/networks';
-import { getChainId, type AztecChainId } from '../../config/networks/constants';
 
 export interface BrowserWalletActions {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
-  executeOperations: (ops: BrowserWalletOperation[]) => Promise<BrowserWalletOperationResult[]>;
+  executeOperations: (
+    ops: BrowserWalletOperation[]
+  ) => Promise<BrowserWalletOperationResult[]>;
 }
 
 export interface UseBrowserWalletReturn {
@@ -56,7 +58,8 @@ export const useBrowserWallet = (
   const [walletState, setWalletState] = useState<BrowserWalletState>(
     DEFAULT_BROWSER_WALLET_STATE
   );
-  const [accountWallet, setAccountWallet] = useState<AccountWithSecretKey | null>(null);
+  const [accountWallet, setAccountWallet] =
+    useState<AccountWithSecretKey | null>(null);
 
   const isInitializedRef = useRef(false);
   const contractRegistrationRef = useRef<string | null>(null);
@@ -101,7 +104,10 @@ export const useBrowserWallet = (
         console.error(`❌ Failed to initialize ${adapter.label}:`, err);
         setWalletState((prev) => ({
           ...prev,
-          error: err instanceof Error ? err.message : 'Failed to initialize browser wallet',
+          error:
+            err instanceof Error
+              ? err.message
+              : 'Failed to initialize browser wallet',
         }));
       }
     };
@@ -115,7 +121,11 @@ export const useBrowserWallet = (
 
   // Auto-register contracts when connected
   useEffect(() => {
-    if (!adapter || walletState.status !== 'connected' || !walletState.selectedAccount) {
+    if (
+      !adapter ||
+      walletState.status !== 'connected' ||
+      !walletState.selectedAccount
+    ) {
       contractRegistrationRef.current = null;
       return;
     }
@@ -148,7 +158,9 @@ export const useBrowserWallet = (
         const failed = results.filter((r) => r.status === 'failed').length;
 
         if (failed > 0) {
-          console.warn(`⚠️ Contract registration: ${succeeded}/${operations.length} succeeded`);
+          console.warn(
+            `⚠️ Contract registration: ${succeeded}/${operations.length} succeeded`
+          );
         } else {
           console.log(`✅ All ${succeeded} contracts registered`);
         }
@@ -170,7 +182,11 @@ export const useBrowserWallet = (
 
   // Auto-fetch account wallet when selected account changes
   useEffect(() => {
-    if (!adapter || walletState.status !== 'connected' || !walletState.selectedAccount) {
+    if (
+      !adapter ||
+      walletState.status !== 'connected' ||
+      !walletState.selectedAccount
+    ) {
       setAccountWallet(null);
       return;
     }
@@ -179,7 +195,9 @@ export const useBrowserWallet = (
 
     const fetchAccountWallet = async () => {
       try {
-        const wallet = await adapter.toAccountWallet(walletState.selectedAccount!);
+        const wallet = await adapter.toAccountWallet(
+          walletState.selectedAccount!
+        );
         if (isActive) {
           setAccountWallet(wallet);
         }
@@ -247,7 +265,9 @@ export const useBrowserWallet = (
   }, [executeAsync, addMessage, adapter]);
 
   const handleExecuteOperations = useCallback(
-    async (operations: BrowserWalletOperation[]): Promise<BrowserWalletOperationResult[]> => {
+    async (
+      operations: BrowserWalletOperation[]
+    ): Promise<BrowserWalletOperationResult[]> => {
       if (!adapter) {
         throw new Error('No browser wallet adapter configured');
       }
