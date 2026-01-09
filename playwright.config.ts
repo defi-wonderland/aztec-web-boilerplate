@@ -13,6 +13,10 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: 'http://127.0.0.1:3000',
+    headless: !!process.env.CI,
+    launchOptions: {
+      devtools: !process.env.CI,
+    },
   },
   expect: {
     timeout: 20_000,
