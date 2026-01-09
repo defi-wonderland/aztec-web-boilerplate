@@ -54,6 +54,8 @@ export interface WalletlessOptions {
   accountIndex?: number;
   /** Custom RPC URL, defaults to http://127.0.0.1:8545 */
   rpcUrl?: string;
+  /** Chain ID, defaults to 31337 (Anvil) */
+  chainId?: number;
 }
 
 /**
@@ -64,6 +66,7 @@ async function injectWalletless(
   page: Page,
   provider: E2EProvider,
   account: (typeof ANVIL_ACCOUNTS)[0],
+  chainId: number,
   debug: boolean
 ): Promise<void> {
   // Expose signing functions to the browser
@@ -84,13 +87,25 @@ async function injectWalletless(
     }
   );
 
+  await page.exposeFunction(
+    '__walletless_eth_call__',
+    async (txJson: string, blockTag: string) => {
+      const tx = JSON.parse(txJson);
+      return provider.request({
+        method: 'eth_call',
+        params: [tx, blockTag],
+      });
+    }
+  );
+
   // Inject the browser-side provider
   await page.addInitScript(
-    ({ address, debug }) => {
+    ({ address, chainId, debug }) => {
+      const chainIdHex = `0x${chainId.toString(16)}`;
       const provider = {
         isMetaMask: true,
-        isWalletless: true, // Marker for identification
-        chainId: '0x7a69',
+        isWalletless: true,
+        chainId: chainIdHex,
         selectedAddress: address,
 
         request: async ({
@@ -100,7 +115,7 @@ async function injectWalletless(
           method: string;
           params?: unknown[];
         }) => {
-          if (debug) console.log('[walletless]', method, params);
+          // if (debug) console.log('[walletless]', method, params);
 
           switch (method) {
             case 'eth_requestAccounts':
@@ -108,7 +123,7 @@ async function injectWalletless(
               return [address];
 
             case 'eth_chainId':
-              return '0x7a69';
+              return chainIdHex;
 
             case 'personal_sign':
             case 'eth_sign':
@@ -128,6 +143,15 @@ async function injectWalletless(
             case 'wallet_addEthereumChain':
               return null;
 
+            case 'eth_call': {
+              const tx = params?.[0];
+              const blockTag = (params?.[1] as string) || 'latest';
+              return (window as any).__walletless_eth_call__(
+                JSON.stringify(tx),
+                blockTag
+              );
+            }
+
             default:
               if (debug) console.warn('[walletless] Unhandled:', method);
               throw new Error(`Method not supported: ${method}`);
@@ -141,7 +165,7 @@ async function injectWalletless(
       (window as any).ethereum = provider;
       if (debug) console.log('[walletless] Injected:', address);
     },
-    { address: account.address, debug }
+    { address: account.address, chainId, debug }
   );
 }
 
@@ -161,6 +185,7 @@ export const test = base.extend<{
       debug = false,
       accountIndex = 0,
       rpcUrl = 'http://127.0.0.1:8545',
+      chainId = 31337,
     } = walletlessOptions;
 
     // Clear storage before each test
@@ -177,7 +202,7 @@ export const test = base.extend<{
     let currentAccount = ANVIL_ACCOUNTS[accountIndex];
 
     // Inject provider into page
-    await injectWalletless(page, provider, currentAccount, debug);
+    await injectWalletless(page, provider, currentAccount, chainId, debug);
 
     // Set up console logging if debug enabled
     if (debug) {
