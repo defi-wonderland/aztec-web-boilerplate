@@ -1,9 +1,7 @@
 /**
  * Playwright Fixture for @wonderland/walletless
  *
- * Provides a clean API for E2E testing with walletless provider.
- * Handles all the bridging between Node.js (where walletless runs)
- * and the browser (where the app runs).
+ * Bundles and injects walletless directly into the browser via addInitScript.
  *
  * @example
  * ```ts
@@ -12,39 +10,18 @@
  * test('connect wallet', async ({ page, walletless }) => {
  *   await page.goto('/');
  *   // walletless is already injected as window.ethereum
- *   // Just interact with your app normally
  * });
  * ```
  */
 
 import { test as base, type Page } from '@playwright/test';
-import {
-  createE2EProvider,
-  ANVIL_ACCOUNTS,
-  setSigningAccount,
-  type E2EProvider,
-} from '@wonderland/walletless';
-import { defineChain } from 'viem';
-
-// Default Anvil chain configuration
-const anvil = defineChain({
-  id: 31337,
-  name: 'Anvil',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: {
-    default: { http: ['http://127.0.0.1:8545'] },
-  },
-});
+import { ANVIL_ACCOUNTS } from '@wonderland/walletless';
 
 export interface WalletlessFixture {
-  /** The walletless E2E provider instance */
-  provider: E2EProvider;
   /** Current test account */
   account: (typeof ANVIL_ACCOUNTS)[0];
   /** All available Anvil accounts */
   accounts: typeof ANVIL_ACCOUNTS;
-  /** Switch to a different Anvil account (0-9) */
-  switchAccount: (index: number) => void;
 }
 
 export interface WalletlessOptions {
@@ -58,114 +35,82 @@ export interface WalletlessOptions {
   chainId?: number;
 }
 
+// Cache the bundle to avoid rebuilding on every test
+let bundleCache: string | null = null;
+
+async function getWalletlessBundle(): Promise<string> {
+  if (bundleCache) return bundleCache;
+
+  const { build } = await import('esbuild');
+  const result = await build({
+    stdin: {
+      contents: `export { createE2EProvider } from '@wonderland/walletless';`,
+      resolveDir: process.cwd(),
+      loader: 'ts',
+    },
+    bundle: true,
+    format: 'iife',
+    globalName: 'Walletless',
+    platform: 'browser',
+    target: 'es2020',
+    write: false,
+    minify: true,
+  });
+
+  const bundle = result.outputFiles?.[0]?.text ?? '';
+  // IIFE creates `var Walletless = ...` which doesn't attach to window in addInitScript
+  // Explicitly assign to window.Walletless
+  bundleCache = bundle + '\nwindow.Walletless = Walletless;';
+  return bundleCache;
+}
+
 /**
- * Injects the walletless provider into the page.
- * This bridges the Node.js provider to the browser via exposeFunction.
+ * Injects the walletless provider into the page via addInitScript.
  */
 async function injectWalletless(
   page: Page,
-  provider: E2EProvider,
-  account: (typeof ANVIL_ACCOUNTS)[0],
-  chainId: number,
-  debug: boolean
+  options: {
+    chainId: number;
+    rpcUrl: string;
+    privateKey: string;
+    debug: boolean;
+  }
 ): Promise<void> {
-  // Expose signing functions to the browser
-  await page.exposeFunction('__walletless_sign__', async (message: string) => {
-    return provider.request({
-      method: 'personal_sign',
-      params: [message, account.address],
-    });
-  });
+  const { chainId, rpcUrl, privateKey, debug } = options;
 
-  await page.exposeFunction(
-    '__walletless_signTypedData__',
-    async (typedDataJson: string) => {
-      return provider.request({
-        method: 'eth_signTypedData_v4',
-        params: [account.address, typedDataJson],
-      });
-    }
-  );
+  // Inject the bundled walletless library
+  const bundle = await getWalletlessBundle();
+  await page.addInitScript(bundle);
 
-  await page.exposeFunction(
-    '__walletless_eth_call__',
-    async (txJson: string, blockTag: string) => {
-      const tx = JSON.parse(txJson);
-      return provider.request({
-        method: 'eth_call',
-        params: [tx, blockTag],
-      });
-    }
-  );
-
-  // Inject the browser-side provider
+  // Create and inject the provider
   await page.addInitScript(
-    ({ address, chainId, debug }) => {
-      const chainIdHex = `0x${chainId.toString(16)}`;
-      const provider = {
-        isMetaMask: true,
-        isWalletless: true,
-        chainId: chainIdHex,
-        selectedAddress: address,
+    ({ chainId, rpcUrl, privateKey, debug }) => {
+      try {
+        const anvil = {
+          id: chainId,
+          name: 'Anvil',
+          nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+          rpcUrls: { default: { http: [rpcUrl] } },
+        };
 
-        request: async ({
-          method,
-          params,
-        }: {
-          method: string;
-          params?: unknown[];
-        }) => {
-          // if (debug) console.log('[walletless]', method, params);
+        const provider = (window as any).Walletless.createE2EProvider({
+          rpcUrls: { [chainId]: rpcUrl },
+          chains: [anvil],
+          account: privateKey,
+          debug,
+        });
 
-          switch (method) {
-            case 'eth_requestAccounts':
-            case 'eth_accounts':
-              return [address];
+        // Add compatibility flags
+        (provider as any).isWalletless = true;
+        (provider as any).isMetaMask = true;
 
-            case 'eth_chainId':
-              return chainIdHex;
-
-            case 'personal_sign':
-            case 'eth_sign':
-              return (window as any).__walletless_sign__(params?.[0]);
-
-            case 'eth_signTypedData':
-            case 'eth_signTypedData_v3':
-            case 'eth_signTypedData_v4': {
-              const data =
-                typeof params?.[1] === 'string'
-                  ? params[1]
-                  : JSON.stringify(params?.[1]);
-              return (window as any).__walletless_signTypedData__(data);
-            }
-
-            case 'wallet_switchEthereumChain':
-            case 'wallet_addEthereumChain':
-              return null;
-
-            case 'eth_call': {
-              const tx = params?.[0];
-              const blockTag = (params?.[1] as string) || 'latest';
-              return (window as any).__walletless_eth_call__(
-                JSON.stringify(tx),
-                blockTag
-              );
-            }
-
-            default:
-              if (debug) console.warn('[walletless] Unhandled:', method);
-              throw new Error(`Method not supported: ${method}`);
-          }
-        },
-
-        on: () => {},
-        removeListener: () => {},
-      };
-
-      (window as any).ethereum = provider;
-      if (debug) console.log('[walletless] Injected:', address);
+        (window as any).ethereum = provider;
+        if (debug) console.log('[walletless] Provider injected');
+      } catch (e) {
+        console.error('[walletless] Failed to inject provider:', e);
+      }
     },
-    { address: account.address, chainId, debug }
+    { chainId, rpcUrl, privateKey, debug }
   );
 }
 
@@ -191,23 +136,14 @@ export const test = base.extend<{
     // Clear storage before each test
     await context.clearCookies();
 
-    // Create the walletless provider
-    const provider = createE2EProvider({
-      chains: [anvil],
-      rpcUrls: { 31337: rpcUrl },
-      account: ANVIL_ACCOUNTS[accountIndex].privateKey,
-      debug,
-    });
-
-    let currentAccount = ANVIL_ACCOUNTS[accountIndex];
-
-    // Inject provider into page
-    await injectWalletless(page, provider, currentAccount, chainId, debug);
+    // Inject the walletless provider into the browser
+    const privateKey = ANVIL_ACCOUNTS[accountIndex].privateKey;
+    await injectWalletless(page, { chainId, rpcUrl, privateKey, debug });
 
     // Set up console logging if debug enabled
     if (debug) {
       page.on('console', (msg) => {
-        if (msg.text().includes('[walletless]')) {
+        if (msg.text().includes('Walletless')) {
           console.log(`[browser] ${msg.text()}`);
         }
       });
@@ -215,16 +151,8 @@ export const test = base.extend<{
 
     // Provide the fixture to tests
     await use({
-      provider,
-      account: currentAccount,
+      account: ANVIL_ACCOUNTS[accountIndex],
       accounts: ANVIL_ACCOUNTS,
-      switchAccount: (index: number) => {
-        if (index < 0 || index > 9) {
-          throw new Error('Account index must be 0-9');
-        }
-        currentAccount = ANVIL_ACCOUNTS[index];
-        setSigningAccount(provider, index);
-      },
     });
   },
 });
