@@ -111,15 +111,6 @@ export interface UseContractRegistryReturn<T extends ContractConfigMap> {
 }
 
 /**
- * Context value for the contract registry
- */
-export interface ContractRegistryContextValue<T extends ContractConfigMap> {
-  registry: IContractRegistry<T> | null;
-  status: 'initializing' | 'ready' | 'error';
-  error?: Error;
-}
-
-/**
  * Interface for the ContractRegistry class
  */
 export interface IContractRegistry<T extends ContractConfigMap> {

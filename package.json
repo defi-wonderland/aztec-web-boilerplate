@@ -45,7 +45,8 @@
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-router-dom": "7.8.0",
-    "viem": "2.41.2"
+    "viem": "2.41.2",
+    "zustand": "5.0.9"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",

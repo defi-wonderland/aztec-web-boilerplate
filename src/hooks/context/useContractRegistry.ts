@@ -1,6 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
-import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
+import { useContractRegistryContext } from '../../providers/ContractRegistryContext';
+import {
+  useContractRegistryStatus,
+  useContractRegistryError,
+} from '../../store/contractRegistry';
 import type {
   ContractConfigMap,
   ContractNames,
@@ -39,7 +43,9 @@ import type {
 export function useContractRegistry<
   T extends ContractConfigMap = ContractConfigMap,
 >(): UseContractRegistryReturn<T> {
-  const { registry, status, error } = useContractRegistryContext<T>();
+  const { registry } = useContractRegistryContext<T>();
+  const status = useContractRegistryStatus();
+  const error = useContractRegistryError();
 
   const isRegistered = useCallback(
     (name: ContractNames<T>): boolean => {

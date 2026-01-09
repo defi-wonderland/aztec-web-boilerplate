@@ -22,6 +22,33 @@ export interface BrowserWalletOperationResult {
   error?: string;
 }
 
+/**
+ * A single action within a connector transaction request.
+ */
+export interface ConnectorTransactionAction {
+  contract: string;
+  method: string;
+  args: unknown[];
+}
+
+/**
+ * Request to send a transaction via a connector.
+ */
+export interface ConnectorTransactionRequest {
+  actions: ConnectorTransactionAction[];
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Result of a connector transaction.
+ */
+export interface ConnectorTransactionResult {
+  status: 'success' | 'failed';
+  txHash?: string;
+  error?: string;
+  rawResult?: unknown;
+}
+
 // ============================================================================
 // Generic Operations (wallet-agnostic)
 // ============================================================================

@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useCallback, useSyncExternalStore } from 'react';
-import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
+import { useContractRegistryContext } from '../../providers/ContractRegistryContext';
 import type {
   ContractStatus,
   ContractName,

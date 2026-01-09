@@ -1,8 +1,9 @@
 import React from 'react';
-import { useTheme } from '../hooks/context/useTheme';
+import { useIsLightTheme, useToggleTheme } from '../store/theme';
 
 export const ThemeToggle: React.FC = () => {
-  const { isLightTheme, toggleTheme } = useTheme();
+  const isLightTheme = useIsLightTheme();
+  const toggleTheme = useToggleTheme();
 
   return (
     <button

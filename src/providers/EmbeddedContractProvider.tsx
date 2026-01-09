@@ -1,12 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
 import { TimingToast } from '../components';
@@ -17,18 +9,19 @@ import {
   getContractsForConfig,
   type ContractConfigMap,
   type ContractNames,
-  type ContractRegistryContextValue,
 } from '../contract-registry';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
+import {
+  useContractRegistryStore,
+  useContractRegistryStatus,
+  useContractRegistryTimingInfo,
+} from '../store/contractRegistry';
 import { hasAppManagedPXE } from '../types/walletConnector';
+import {
+  ContractRegistryContext,
+  type ContractContextValue,
+} from './ContractRegistryContext';
 import type { NetworkConfig } from '../config/networks';
-
-type ContractContextValue<T extends ContractConfigMap = ContractConfigMap> =
-  ContractRegistryContextValue<T>;
-
-const ContractRegistryContext = createContext<ContractContextValue | null>(
-  null
-);
 
 /**
  * Get contracts to load at initialization (lazyRegister !== true)
@@ -60,11 +53,14 @@ export function EmbeddedContractProvider<
   showTimingToast = true,
   children,
 }: EmbeddedContractProviderProps): React.ReactElement {
-  const { connector, isInitialized, currentConfig } = useUniversalWallet();
+  const { currentConfig, isConnected, isInitialized, connector } =
+    useUniversalWallet();
 
-  // Works with both Embedded and External Signer connectors (both have app-managed PXE)
-  const appManagedConnector = hasAppManagedPXE(connector) ? connector : null;
-  const pxe = appManagedConnector?.getPXE() ?? null;
+  // Get PXE from the active connector (embedded or external signer)
+  const pxe = hasAppManagedPXE(connector) ? connector.getPXE() : null;
+
+  // Only register contracts when wallet is connected and PXE is ready
+  const isReady = isConnected && isInitialized && pxe !== null;
 
   const contracts = useMemo(
     () =>
@@ -80,15 +76,10 @@ export function EmbeddedContractProvider<
     [contracts]
   );
 
-  const [status, setStatus] = useState<'initializing' | 'ready' | 'error'>(
-    'initializing'
-  );
-  const [error, setError] = useState<Error | undefined>();
-  const [timingInfo, setTimingInfo] = useState<{
-    elapsedMs: number;
-    contractCount: number;
-    fromCache: boolean;
-  } | null>(null);
+  const { setStatus, setError, setTimingInfo } = useContractRegistryStore();
+  const status = useContractRegistryStatus();
+  const timingInfo = useContractRegistryTimingInfo();
+
   const registryRef = useRef<ContractRegistry<T> | null>(null);
   const initializingRef = useRef(false);
 
@@ -118,7 +109,7 @@ export function EmbeddedContractProvider<
   );
 
   useEffect(() => {
-    if (!isInitialized || !pxe || initializingRef.current) {
+    if (!isReady || initializingRef.current) {
       return;
     }
 
@@ -164,22 +155,25 @@ export function EmbeddedContractProvider<
     contracts,
     currentConfig,
     initialContracts,
-    isInitialized,
+    isReady,
     pxe,
     showTimingToast,
     checkContractsCached,
+    setStatus,
+    setError,
+    setTimingInfo,
   ]);
 
-  const contextValue = useMemo<ContractContextValue<T>>(
+  const contextValue = useMemo(
     () => ({
       registry: registryRef.current,
-      status,
-      error,
     }),
-    [status, error]
+    // Re-compute when status changes to get updated registryRef
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [status]
   );
 
-  if (!isInitialized || !appManagedConnector || !pxe) {
+  if (!isReady) {
     return <>{children}</>;
   }
 
@@ -198,22 +192,4 @@ export function EmbeddedContractProvider<
       )}
     </ContractRegistryContext.Provider>
   );
-}
-
-const FALLBACK_CONTRACT_CONTEXT: ContractContextValue<ContractConfigMap> = {
-  registry: null,
-  status: 'error',
-  error: new Error('Contract registry context not available'),
-};
-
-export function useContractRegistryContext<
-  T extends ContractConfigMap = ContractConfigMap,
->(): ContractContextValue<T> {
-  const context = useContext(ContractRegistryContext);
-
-  if (context === null) {
-    return FALLBACK_CONTRACT_CONTEXT as ContractContextValue<T>;
-  }
-
-  return context as ContractContextValue<T>;
 }

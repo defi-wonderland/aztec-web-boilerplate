@@ -1,7 +1,9 @@
 import React from 'react';
-import type { LogEntry } from './types';
+import { useContractCallLogs } from '../../store';
 
-const LogPanel = ({ logs }: { logs: LogEntry[] }) => {
+const LogPanel: React.FC = () => {
+  const logs = useContractCallLogs();
+
   return (
     <div className="log-panel">
       <div className="log-header">

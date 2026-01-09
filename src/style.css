@@ -3645,6 +3645,14 @@ select:focus {
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* Invoke Flow Layout */
+.invoke-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .log-panel {

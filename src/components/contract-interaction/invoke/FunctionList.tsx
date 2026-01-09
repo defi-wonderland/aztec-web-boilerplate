@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FunctionListProps } from './types';
+import type { FunctionListProps } from '../types';
 
 const EmptyIcon = () => (
   <span role="img" aria-label="warning" className="empty-icon empty-icon-sm">

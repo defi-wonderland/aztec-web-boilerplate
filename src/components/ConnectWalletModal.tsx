@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet } from '../hooks';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useWalletStore } from '../store/wallet';
 import {
   isEmbeddedConnector,
   isBrowserWalletConnector,
@@ -23,61 +25,41 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
-  const {
-    connectors,
-    isInitialized,
-    isLoading,
-    error,
-    currentConfig,
-    switchToNetwork,
-    getNetworkOptions,
-  } = useUniversalWallet();
+  const { connectors, currentConfig, switchToNetwork, getNetworkOptions } =
+    useUniversalWallet();
 
-  // Get embedded connector
+  const { connectEmbedded, connectExistingEmbedded, hasSavedEmbeddedAccount } =
+    useWalletStore();
+
   const embeddedConnector = connectors.find((conn) =>
     isEmbeddedConnector(conn)
   );
 
-  // Check if embedded connector has a saved account
-  const hasSavedEmbeddedAccount =
-    embeddedConnector && isEmbeddedConnector(embeddedConnector)
-      ? embeddedConnector.hasSavedAccount()
-      : false;
+  const hasSavedEmbeddedAccountValue = hasSavedEmbeddedAccount();
 
-  // Get external signer connectors (MetaMask, etc.)
   const externalSignerConnectors = connectors.filter(
     (conn): conn is ExternalSignerWalletConnector =>
       isExternalSignerConnector(conn)
   );
 
-  // Get browser wallet connectors (Azguard, etc.)
   const browserWalletConnectors = connectors.filter((conn) =>
     isBrowserWalletConnector(conn)
   );
 
-  // Disable functionality when no network is selected, network is initializing, or failed
-  const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';
-  const isNetworkInitializing =
-    isNetworkSelected && !isInitialized && isLoading;
-  const isNetworkFailed = isNetworkSelected && error && !isInitialized;
+  // Check network availability
+  const { status: networkStatus, error: networkError } =
+    useNetworkStatus(currentConfig);
+  const isNetworkSelected = !!currentConfig?.name;
+  const isNetworkReady = networkStatus === 'online';
+
   const isActionDisabled =
-    !isNetworkSelected ||
-    isNetworkInitializing ||
-    isNetworkFailed ||
-    isConnecting;
+    !isNetworkSelected || !isNetworkReady || isConnecting;
 
   const isConnectorDisabled = (connector: WalletConnector) => {
     try {
       const status = connector.getStatus();
-      return (
-        !isNetworkSelected ||
-        isNetworkInitializing ||
-        isNetworkFailed ||
-        isConnecting ||
-        status.status === 'connected'
-      );
+      return isActionDisabled || status.status === 'connected';
     } catch {
-      // Connector not initialized yet
       return true;
     }
   };
@@ -101,26 +83,25 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   }, [isOpen]);
 
   const handleEmbeddedWalletAction = async (action: 'create' | 'existing') => {
-    if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
+    if (isConnecting || !embeddedConnector) return;
     setIsConnecting(true);
     try {
-      let wallet: AccountWithSecretKey | null = null;
       switch (action) {
         case 'create':
-          await embeddedConnector.createAccount();
+          await connectEmbedded();
           break;
-        case 'existing':
-          wallet = await embeddedConnector.connectExistingAccount();
+        case 'existing': {
+          const wallet = await connectExistingEmbedded();
           if (!wallet) {
-            console.warn('No stored account found to connect');
             return;
           }
           break;
+        }
       }
       onWalletConnected?.();
       onClose();
-    } catch (err) {
-      console.error(`Failed to ${action} account:`, err);
+    } catch {
+      // Connection failed - error state handled by store
     } finally {
       setIsConnecting(false);
     }
@@ -140,8 +121,8 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
       await connector.connect();
       onWalletConnected?.();
       onClose();
-    } catch (err) {
-      console.error(`Failed to connect ${connector.label}:`, err);
+    } catch {
+      // Connection failed - error state handled by store
     } finally {
       setConnectingId(null);
     }
@@ -155,8 +136,8 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
       await connector.connect();
       onWalletConnected?.();
       onClose();
-    } catch (err) {
-      console.error(`Failed to connect ${connector.label}:`, err);
+    } catch {
+      // Connection failed - error state handled by store
     } finally {
       setConnectingId(null);
     }
@@ -164,11 +145,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
 
   const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const networkName = event.target.value;
-    console.log('🔄 Network change requested from modal:', {
-      from: currentConfig.name,
-      to: networkName,
-    });
-
     if (networkName && networkName !== currentConfig.name) {
       switchToNetwork(networkName);
     }
@@ -227,11 +203,29 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const modalRoot = document.getElementById('modal-root');
   if (!modalRoot) return null;
 
+  const handleOverlayKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
   return createPortal(
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      onKeyDown={handleOverlayKeyDown}
+    >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+      <div
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
         <div className="modal-header">
-          <h3>Connect Wallet</h3>
+          <h3 id="modal-title">Connect Wallet</h3>
           <button className="modal-close-button" onClick={onClose}>
             ×
           </button>
@@ -247,25 +241,28 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
             className={`network-status ${
               !isNetworkSelected
                 ? 'not-connected'
-                : isNetworkInitializing
+                : networkStatus === 'checking'
                   ? 'initializing'
-                  : isNetworkFailed
-                    ? 'failed'
-                    : 'connected'
+                  : networkStatus === 'online'
+                    ? 'connected'
+                    : 'failed'
             }`}
           >
-            {!isNetworkSelected && <span>Network not connected</span>}
-            {isNetworkInitializing && (
+            {!isNetworkSelected && <span>Network not selected</span>}
+            {networkStatus === 'checking' && (
               <>
                 <div className="initializing-spinner"></div>
-                <span>Initializing network connection...</span>
+                <span>Checking {currentConfig.displayName}...</span>
               </>
             )}
-            {isNetworkFailed && (
-              <span>{currentConfig.displayName} connection failed</span>
+            {(networkStatus === 'offline' || networkStatus === 'error') && (
+              <span>
+                {currentConfig.displayName} unavailable
+                {networkError && ` - ${networkError}`}
+              </span>
             )}
-            {isNetworkSelected && isInitialized && (
-              <span>{currentConfig.displayName} connected</span>
+            {networkStatus === 'online' && (
+              <span>{currentConfig.displayName} available</span>
             )}
           </div>
 
@@ -285,10 +282,10 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                     title={
                       !isNetworkSelected
                         ? 'Please select a network first'
-                        : isNetworkInitializing
-                          ? 'Network is initializing...'
-                          : isNetworkFailed
-                            ? 'Network connection failed'
+                        : networkStatus === 'checking'
+                          ? 'Checking network...'
+                          : !isNetworkReady
+                            ? 'Network unavailable'
                             : ''
                     }
                   >
@@ -319,10 +316,10 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                     title={
                       !isNetworkSelected
                         ? 'Please select a network first'
-                        : isNetworkInitializing
-                          ? 'Network is initializing...'
-                          : isNetworkFailed
-                            ? 'Network connection failed'
+                        : networkStatus === 'checking'
+                          ? 'Checking network...'
+                          : !isNetworkReady
+                            ? 'Network unavailable'
                             : ''
                     }
                   >
@@ -344,16 +341,16 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
               <button
                 onClick={() => handleEmbeddedWalletAction('existing')}
                 type="button"
-                disabled={isActionDisabled || !hasSavedEmbeddedAccount}
+                disabled={isActionDisabled || !hasSavedEmbeddedAccountValue}
                 className="modal-action-button primary"
                 title={
                   !isNetworkSelected
                     ? 'Please select a network first'
-                    : isNetworkInitializing
-                      ? 'Network is initializing...'
-                      : isNetworkFailed
-                        ? 'Network connection failed'
-                        : !hasSavedEmbeddedAccount
+                    : networkStatus === 'checking'
+                      ? 'Checking network...'
+                      : !isNetworkReady
+                        ? 'Network unavailable'
+                        : !hasSavedEmbeddedAccountValue
                           ? 'No saved account found'
                           : ''
                 }
@@ -368,10 +365,10 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                 title={
                   !isNetworkSelected
                     ? 'Please select a network first'
-                    : isNetworkInitializing
-                      ? 'Network is initializing...'
-                      : isNetworkFailed
-                        ? 'Network connection failed'
+                    : networkStatus === 'checking'
+                      ? 'Checking network...'
+                      : !isNetworkReady
+                        ? 'Network unavailable'
                         : ''
                 }
               >
