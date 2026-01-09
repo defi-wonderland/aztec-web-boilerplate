@@ -4642,6 +4642,28 @@
     loupe "^3.1.4"
     tinyrainbow "^2.0.0"
 
+"@wagmi/connectors@7.0.7":
+  version "7.0.7"
+  resolved "https://registry.yarnpkg.com/@wagmi/connectors/-/connectors-7.0.7.tgz#bb22459f062a3da859d3b075ce3319f10cf2fba1"
+  integrity sha512-aJ+Ktjm31htgeIUXWjsomn0KyZUNF3MUT1WSaNKE6h0GZA3zwhiFwk3IbhuYi4qaBnaqEuHkWw6TgRtVqSfCfw==
+
+"@wagmi/core@3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@wagmi/core/-/core-3.1.0.tgz#a57e33b42978b6e6cdf3a5fc37447a2bd6c22607"
+  integrity sha512-+lp2NO3pTP7Rk2y7ZsVZTOAo03ohtdg7epmAtlSMw+MGi83Ylss+6sNMfVetKTyhAh7QofcHxlHP1VgKCev8MA==
+  dependencies:
+    eventemitter3 "5.0.1"
+    mipd "0.0.7"
+    zustand "5.0.0"
+
+"@wonderland/walletless@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@wonderland/walletless/-/walletless-1.0.0.tgz#54523b460281f7ff3ec1d2839376611eb11ee8ce"
+  integrity sha512-aYY2f+0XzKtTqiXLEgrhPk3U3cewJzJH+EWnpulv/EHrlujjipzpXxM64dBP1TMSEt2t32OH77qEUWCiQLaxUA==
+  dependencies:
+    viem "2.43.5"
+    wagmi "3.2.0"
+
 abitype@1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/abitype/-/abitype-1.1.0.tgz#510c5b3f92901877977af5e864841f443bf55406"
@@ -7943,6 +7965,11 @@ minipass@^7.1.2:
   resolved "https://registry.yarnpkg.com/minipass/-/minipass-7.1.2.tgz#93a9626ce5e5e66bd4db86849e7515e92340a707"
   integrity sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==
 
+mipd@0.0.7:
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/mipd/-/mipd-0.0.7.tgz#bb5559e21fa18dc3d9fe1c08902ef14b7ce32fd9"
+  integrity sha512-aAPZPNDQ3uMTdKbuO2YmAw2TxLHO0moa4YKAyETM/DTj5FloZo+a+8tU+iv4GmW+sOxKLSRwcSFuczk+Cpt6fg==
+
 mortice@^3.0.4:
   version "3.3.1"
   resolved "https://registry.yarnpkg.com/mortice/-/mortice-3.3.1.tgz#ff52db518da2f5f389abf987c01fc190638c6a2f"
@@ -9810,6 +9837,11 @@ url@^0.11.4:
     punycode "^1.4.1"
     qs "^6.12.3"
 
+use-sync-external-store@1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.4.0.tgz#adbc795d8eeb47029963016cefdf89dc799fcebc"
+  integrity sha512-9WXSPC5fMv61vaupRkCKCxsPxBocVnwakBEkMIHHpkTTg6icbJtg6jzgtLDm4bl3cSHAca52rYWih0k4K3PfHw==
+
 util-deprecate@^1.0.1, util-deprecate@~1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
@@ -9851,7 +9883,7 @@ vary@^1.1.2, vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
 
-viem@2.41.2:
+viem@2.41.2, viem@2.43.5:
   version "2.41.2"
   resolved "https://registry.yarnpkg.com/viem/-/viem-2.41.2.tgz#117eab182b6b5501e47462269bb63f8b365a802e"
   integrity sha512-LYliajglBe1FU6+EH9mSWozp+gRA/QcHfxeD9Odf83AdH5fwUS7DroH4gHvlv6Sshqi1uXrYFA2B/EOczxd15g==
@@ -9981,6 +10013,15 @@ w3c-xmlserializer@^5.0.0:
   integrity sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==
   dependencies:
     xml-name-validator "^5.0.0"
+
+wagmi@3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/wagmi/-/wagmi-3.2.0.tgz#2d72192dce060e96bd0b22bf98ef6427c441796f"
+  integrity sha512-rSaMjiSc9zmBEt2CrTnhhbCJZOf+5c4hkDFlChAq8xUEHb4Av13nQ5/cCLVh2WtvFS1H2OK1FcZ64T6+J4bgHQ==
+  dependencies:
+    "@wagmi/connectors" "7.0.7"
+    "@wagmi/core" "3.1.0"
+    use-sync-external-store "1.4.0"
 
 weak-lru-cache@^1.2.2:
   version "1.2.2"
@@ -10198,3 +10239,8 @@ zod@^3.23.8:
   version "4.3.5"
   resolved "https://registry.yarnpkg.com/zod/-/zod-4.3.5.tgz#aeb269a6f9fc259b1212c348c7c5432aaa474d2a"
   integrity sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==
+
+zustand@5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/zustand/-/zustand-5.0.0.tgz#71f8aaecf185592a3ba2743d7516607361899da9"
+  integrity sha512-LE+VcmbartOPM+auOjCCLQOsQ05zUTp8RkgwRzefUk+2jISdMMFnxvyTjA4YNWr5ZGXYbVsEMZosttuxUBkojQ==
