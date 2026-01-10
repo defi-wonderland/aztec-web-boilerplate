@@ -72,6 +72,14 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error('Account not available');
       }
 
+      // Simulate first to catch revert reasons before sending
+      console.log('[useDripper] Simulating drip_to_public...', {
+        dripperAddress,
+        tokenAddress,
+        amount: amount.toString(),
+        account: account.getAddress().toString(),
+      });
+
       const result = await writeContract({
         contract: DripperContract,
         address: dripperAddress,
@@ -80,9 +88,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       });
 
       if (!result.success) {
+        console.error('[useDripper] drip_to_public failed:', result.error);
         throw new Error(result.error ?? 'drip_to_public failed');
       }
 
+      console.log('[useDripper] drip_to_public success:', result);
       invalidateBalance();
     },
     onSuccess: () => options.onDripToPublicSuccess?.(),
