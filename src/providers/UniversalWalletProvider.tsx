@@ -1,29 +1,14 @@
-import React, {
-  type ReactNode,
-  useState,
-  useMemo,
-  useEffect,
-  useCallback,
-} from 'react';
+import React, { type ReactNode, useEffect } from 'react';
 import { setNetworkPresets } from '../hooks/context/useUniversalWallet';
-import { createAztecWalletKit, type AztecWalletKit } from '../sdk/walletKit';
+import { createAztecWalletKit } from '../sdk/walletKit';
 import {
   getNetworkStore,
   useCurrentNetwork,
   useNetworkActions,
 } from '../store/network';
-import { useWalletState } from '../store/wallet';
-import { WalletType } from '../types/aztec';
+import { useWalletActions } from '../store/wallet';
 import { isValidConfig } from '../utils';
-import { WalletContext, type WalletContextType } from './WalletContext';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
-import type {
-  WalletConnector,
-  WalletConnectorId,
-} from '../types/walletConnector';
-
-export type { WalletContextType } from './WalletContext';
-export { WalletContext } from './WalletContext';
 
 interface UniversalWalletProviderProps {
   config: WalletKitConfig;
@@ -35,8 +20,8 @@ export const UniversalWalletProvider: React.FC<
 > = ({ config: walletKitConfig, children }) => {
   const { initialize: initializeNetwork, resetToDefault } = useNetworkActions();
   const currentConfig = useCurrentNetwork();
+  const { setConnectors, disconnect } = useWalletActions();
 
-  // Initialize network presets
   useEffect(() => {
     setNetworkPresets(walletKitConfig.networks);
 
@@ -45,7 +30,6 @@ export const UniversalWalletProvider: React.FC<
     }
   }, [walletKitConfig.networks, initializeNetwork]);
 
-  // Validate config on change
   useEffect(() => {
     if (!isValidConfig(currentConfig)) {
       console.warn(
@@ -55,99 +39,22 @@ export const UniversalWalletProvider: React.FC<
     }
   }, [currentConfig, resetToDefault]);
 
-  const [walletKit] = useState<AztecWalletKit>(() =>
-    createAztecWalletKit({
+  useEffect(() => {
+    const walletKit = createAztecWalletKit({
       aztecNode: currentConfig.nodeUrl,
       connectors: walletKitConfig.connectors,
-    })
-  );
+    });
+    setConnectors(walletKit.getConnectors());
 
-  const connectors = walletKit.getConnectors();
-
-  const { account, status, walletType, error, isPXEReady } = useWalletState();
-
-  // Find active connector - re-evaluate when wallet state changes
-  const activeConnector = useMemo(() => {
-    void account;
-    void walletType;
-    void status;
-
-    return (
-      connectors.find((c) => {
-        try {
-          return c.getStatus().status === 'connected';
-        } catch {
-          return false;
-        }
-      }) ?? null
-    );
-  }, [connectors, account, walletType, status]);
-
-  const activeAccount = activeConnector?.getAccount() ?? null;
-  const activeWalletType = activeConnector?.type ?? null;
-
-  // Derive state from store
-  const derivedState = useMemo(() => {
-    const isConnected = activeConnector !== null;
-    const isInitialized =
-      isPXEReady || walletType === WalletType.BROWSER_WALLET;
-    const isLoading = status === 'connecting' || status === 'deploying';
-
-    return {
-      walletType: activeWalletType,
-      isConnected,
-      isInitialized,
-      isLoading,
-      error,
+    return () => {
+      disconnect();
     };
   }, [
-    activeConnector,
-    activeWalletType,
-    isPXEReady,
-    walletType,
-    status,
-    error,
+    currentConfig.nodeUrl,
+    setConnectors,
+    walletKitConfig.connectors,
+    disconnect,
   ]);
 
-  // Connect to a specific connector
-  const connectWith = useCallback(
-    async (connectorId: WalletConnectorId): Promise<WalletConnector> => {
-      if (activeConnector && activeConnector.id !== connectorId) {
-        await activeConnector.disconnect();
-      }
-      return walletKit.connect(connectorId);
-    },
-    [activeConnector, walletKit]
-  );
-
-  // Disconnect current connector
-  const handleDisconnect = useCallback(async (): Promise<void> => {
-    if (!activeConnector) return;
-    await activeConnector.disconnect();
-  }, [activeConnector]);
-
-  const contextValue: WalletContextType = useMemo(
-    () => ({
-      connectors,
-      connector: activeConnector,
-      account: activeAccount,
-      ...derivedState,
-      connect: connectWith,
-      disconnect: handleDisconnect,
-    }),
-    [
-      connectors,
-      activeConnector,
-      activeAccount,
-      derivedState,
-      connectWith,
-      handleDisconnect,
-    ]
-  );
-
-  return (
-    <WalletContext.Provider value={contextValue}>
-      {children}
-    </WalletContext.Provider>
-  );
+  return <>{children}</>;
 };

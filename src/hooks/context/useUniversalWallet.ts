@@ -7,8 +7,12 @@ import {
   buildNetworkOptions,
   useNetworkStore,
 } from '../../store/network';
+import {
+  useWalletActions,
+  useWalletConnectors,
+  useWalletView,
+} from '../../store/wallet';
 import { WalletType } from '../../types/aztec';
-import { useWalletContext } from './useWalletContext';
 import type { NetworkPreset } from '../../sdk/walletKitConfig';
 import type { Hex } from 'viem';
 
@@ -26,21 +30,19 @@ export interface UniversalWalletReturn {
     getService: () => EVMWalletService;
   };
 
-  /** Whether a wallet is connected (has account) */
   isConnected: boolean;
-  /** Whether the wallet is ready (PXE ready + connected for embedded, or browser wallet connected) */
   isInitialized: boolean;
   isLoading: boolean;
   needsSigner: boolean;
   error: string | null;
   walletType: WalletType | null;
 
-  account: ReturnType<typeof useWalletContext>['account'];
-  connector: ReturnType<typeof useWalletContext>['connector'];
-  connectors: ReturnType<typeof useWalletContext>['connectors'];
+  account: ReturnType<typeof useWalletView>['account'];
+  connector: ReturnType<typeof useWalletConnectors>[number] | null;
+  connectors: ReturnType<typeof useWalletConnectors>;
 
   disconnect: () => Promise<void>;
-  connectWith: ReturnType<typeof useWalletContext>['connect'];
+  connectWith: (connectorId: string) => Promise<void>;
 }
 
 let cachedPresets: NetworkPreset[] = [];
@@ -51,16 +53,24 @@ export const setNetworkPresets = (presets: NetworkPreset[]) => {
 };
 
 export const useUniversalWallet = (): UniversalWalletReturn => {
-  const context = useWalletContext();
-
   const currentConfig = useCurrentNetwork();
   const { switchToNetwork, resetToDefault } = useNetworkActions();
   const configuredNetworks = useNetworkStore((s) => s.configuredNetworks);
+  const connectors = useWalletConnectors();
+  const { connect, disconnect } = useWalletActions();
+  const {
+    account,
+    walletType,
+    status,
+    error,
+    isPXEReady,
+    activeConnectorId,
+    connectingConnectorId,
+  } = useWalletView();
 
   const evmAddress = useEVMAddress();
   const evmIsAvailable = useEVMAvailable();
 
-  // EVM connect/disconnect using service directly
   const evmConnect = useCallback(
     async (rdns?: string): Promise<Hex | undefined> => {
       const evmService = getEVMWalletService();
@@ -105,9 +115,32 @@ export const useUniversalWallet = (): UniversalWalletReturn => {
     [configuredNetworks]
   );
 
-  // Determine if external signer needs EVM connection
+  const activeConnector =
+    connectors.find((candidate) => candidate.id === activeConnectorId) ?? null;
+
+  const isConnected = activeConnector !== null && status === 'connected';
+  const isInitialized = isPXEReady || walletType === WalletType.BROWSER_WALLET;
+  const isLoading =
+    status === 'connecting' ||
+    status === 'deploying' ||
+    connectingConnectorId !== null;
   const needsSigner =
-    context.walletType === WalletType.EXTERNAL_SIGNER && evmAddress === null;
+    walletType === WalletType.EXTERNAL_SIGNER && evmAddress === null;
+
+  const connectWith = useCallback(
+    async (connectorId: string) => {
+      await connect(connectorId);
+    },
+    [connect]
+  );
+
+  const handleDisconnect = useCallback(async () => {
+    if (activeConnector) {
+      await activeConnector.disconnect();
+      return;
+    }
+    disconnect();
+  }, [activeConnector, disconnect]);
 
   return {
     currentConfig,
@@ -115,16 +148,16 @@ export const useUniversalWallet = (): UniversalWalletReturn => {
     switchToNetwork,
     resetToDefault,
     signer,
-    isConnected: context.isConnected,
-    isInitialized: context.isInitialized,
-    isLoading: context.isLoading,
+    isConnected,
+    isInitialized,
+    isLoading,
     needsSigner,
-    error: context.error,
-    walletType: context.walletType,
-    account: context.account,
-    connector: context.connector,
-    connectors: context.connectors,
-    disconnect: context.disconnect,
-    connectWith: context.connect,
+    error,
+    walletType,
+    account,
+    connector: activeConnector,
+    connectors,
+    disconnect: handleDisconnect,
+    connectWith,
   };
 };

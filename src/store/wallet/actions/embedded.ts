@@ -5,6 +5,7 @@ import { Fr } from '@aztec/aztec.js/fields';
 import { AccountManager } from '@aztec/aztec.js/wallet';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import { randomBytes } from '@aztec/foundation/crypto/random';
+import { EMBEDDED_CONNECTOR_ID } from '../../../connectors';
 import { SharedPXEService } from '../../../services/aztec/pxe';
 import { WalletType } from '../../../types/aztec';
 import {
@@ -13,6 +14,7 @@ import {
 } from '../../../utils/accountCredentials';
 import { getNetworkStore } from '../../network';
 import type { AccountCredentials } from '../../../types/aztec';
+import type { WalletConnectorId } from '../../../types/walletConnector';
 import type { MinimalWallet } from '../../../utils/MinimalWallet';
 import type { SetState, GetState } from '../types';
 
@@ -85,10 +87,17 @@ const connectWithCredentials = async (
 };
 
 export const createEmbeddedActions = (set: SetState, _get: GetState) => ({
-  connectEmbedded: async (): Promise<AccountWithSecretKey> => {
-    set({ status: 'connecting', error: null, pxeError: null });
+  connectEmbedded: async (
+    connectorId: WalletConnectorId = EMBEDDED_CONNECTOR_ID
+  ): Promise<AccountWithSecretKey> => {
+    const connectWith = _get()._connectWith;
+    return connectWith(connectorId, async (_connector) => {
+      set({
+        status: 'connecting',
+        error: null,
+        pxeError: null,
+      });
 
-    try {
       const config = getNetworkStore().currentConfig;
       set({ pxeStatus: 'initializing', pxeError: null });
       const pxeInstance = await SharedPXEService.getInstance(
@@ -155,26 +164,23 @@ export const createEmbeddedActions = (set: SetState, _get: GetState) => ({
       set({
         account,
         walletType: WalletType.EMBEDDED,
-        status: 'connected',
       });
+
       return account;
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to create account';
-      set({
-        status: 'disconnected',
-        error: message,
-        pxeStatus: 'error',
-        pxeError: message,
-      });
-      throw err;
-    }
+    });
   },
 
-  connectExistingEmbedded: async (): Promise<AccountWithSecretKey | null> => {
-    set({ status: 'connecting', error: null, pxeError: null });
+  connectExistingEmbedded: async (
+    connectorId: WalletConnectorId = EMBEDDED_CONNECTOR_ID
+  ): Promise<AccountWithSecretKey | null> => {
+    const connectWith = _get()._connectWith;
+    return connectWith(connectorId, async (_connector) => {
+      set({
+        status: 'connecting',
+        error: null,
+        pxeError: null,
+      });
 
-    try {
       const config = getNetworkStore().currentConfig;
       set({ pxeStatus: 'initializing', pxeError: null });
       const pxeInstance = await SharedPXEService.getInstance(
@@ -205,21 +211,13 @@ export const createEmbeddedActions = (set: SetState, _get: GetState) => ({
         return account;
       }
 
-      set({ status: 'disconnected', pxeStatus: 'idle', pxeError: null });
-      return null;
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Failed to connect existing account';
       set({
         status: 'disconnected',
-        error: message,
-        pxeStatus: 'error',
-        pxeError: message,
+        pxeStatus: 'idle',
+        pxeError: null,
       });
       return null;
-    }
+    });
   },
 
   hasSavedEmbeddedAccount: (): boolean => {

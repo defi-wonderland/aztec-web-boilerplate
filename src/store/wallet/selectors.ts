@@ -1,10 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useWalletStore } from './store';
 
-/**
- * Core wallet state - account, status, type, error, and PXE readiness
- */
-export const useWalletState = () =>
+export const useWalletView = () =>
   useWalletStore(
     useShallow((state) => ({
       account: state.account,
@@ -12,15 +9,20 @@ export const useWalletState = () =>
       walletType: state.walletType,
       error: state.error,
       isPXEReady: state.pxeStatus === 'ready',
+      pxeStatus: state.pxeStatus,
+      activeConnectorId: state.activeConnectorId,
+      connectingConnectorId: state.connectingConnectorId,
     }))
   );
 
-/**
- * All wallet actions
- */
+export const useWalletConnectors = () =>
+  useWalletStore((state) => state.connectors);
+
 export const useWalletActions = () =>
   useWalletStore(
     useShallow((state) => ({
+      setConnectors: state.setConnectors,
+      connect: state.connect,
       connectEmbedded: state.connectEmbedded,
       connectExistingEmbedded: state.connectExistingEmbedded,
       hasSavedEmbeddedAccount: state.hasSavedEmbeddedAccount,

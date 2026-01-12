@@ -1,7 +1,11 @@
 export { useWalletStore, getWalletStore } from './store';
 export type { WalletStore, PXEStatus } from './store';
 
-export { useWalletState, useWalletActions } from './selectors';
+export {
+  useWalletView,
+  useWalletActions,
+  useWalletConnectors,
+} from './selectors';
 
 // Action utilities
 export { clearSavedAccount } from './actions/embedded';

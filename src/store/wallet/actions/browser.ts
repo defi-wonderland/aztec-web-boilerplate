@@ -1,6 +1,7 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { WalletType } from '../../../types/aztec';
 import type { IBrowserWalletAdapter } from '../../../types/browserWallet';
+import type { WalletConnectorId } from '../../../types/walletConnector';
 import type { SetState, GetState, WalletState } from '../types';
 
 // Track current adapter and account wallet for the browser wallet
@@ -10,11 +11,16 @@ let currentAccountWallet: AccountWithSecretKey | null = null;
 export const createBrowserActions = (set: SetState, _get: GetState) => ({
   connectBrowserWallet: async (
     adapter: IBrowserWalletAdapter,
-    networkName: string
+    networkName: string,
+    connectorId?: WalletConnectorId
   ): Promise<void> => {
-    set({ status: 'connecting', error: null });
+    const connectWith = _get()._connectWith;
+    await connectWith(connectorId ?? 'browser', async (_connector) => {
+      set({
+        status: 'connecting',
+        error: null,
+      });
 
-    try {
       const accounts = await adapter.connect(networkName);
 
       const selectedAccount = accounts.length > 0 ? accounts[0] : null;
@@ -36,18 +42,12 @@ export const createBrowserActions = (set: SetState, _get: GetState) => ({
       set({
         account: accountWallet,
         walletType: WalletType.BROWSER_WALLET,
-        status: 'connected',
         caipAccount: selectedAccount,
         caipAccounts: accounts,
         supportedChains: state.supportedChains,
         isInstalled: state.isInstalled,
       });
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to connect browser wallet';
-      set({ status: 'disconnected', error: message });
-      throw err;
-    }
+    });
   },
 
   setBrowserWalletState: (

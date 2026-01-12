@@ -64,6 +64,8 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
 
   private _adapter: IBrowserWalletAdapter | null = null;
   private _initPromise: Promise<void> | null = null;
+  // Guards async account hydration to avoid stale updates; not related to crypto tokens
+  private latestAccountChangeMarker: symbol | null = null;
 
   constructor(config: BrowserWalletConnectorConfig) {
     this.id = config.id;
@@ -71,7 +73,13 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     this.adapterFactory = config.adapterFactory;
 
     // Start initialization immediately (eager init for "installed" badge)
-    this.ensureInitialized();
+    void this.ensureInitialized().catch((error) => {
+      // Swallow to avoid unhandled rejection; installation status will remain false
+      console.warn(
+        `[BrowserWalletConnector:${this.id}] initialize failed`,
+        error
+      );
+    });
   }
 
   /**
@@ -101,6 +109,9 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
 
     // Set up event listeners
     adapter.onAccountsChanged(async (accounts) => {
+      const updateMarker = Symbol('accountsChanged');
+      this.latestAccountChangeMarker = updateMarker;
+
       const selectedAccount = accounts.length > 0 ? accounts[0] : null;
 
       useWalletStore.getState().setBrowserWalletState({
@@ -111,9 +122,15 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
       if (selectedAccount) {
         try {
           const accountWallet = await adapter.toAccountWallet(selectedAccount);
+          if (this.latestAccountChangeMarker !== updateMarker) {
+            return;
+          }
           setCurrentAccountWallet(accountWallet);
           useWalletStore.setState({ account: accountWallet });
         } catch {
+          if (this.latestAccountChangeMarker !== updateMarker) {
+            return;
+          }
           setCurrentAccountWallet(null);
           useWalletStore.setState({ account: null });
         }
@@ -196,7 +213,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
 
     const adapter = this.getAdapter();
     const config = getNetworkStore().currentConfig;
-    await getWalletStore().connectBrowserWallet(adapter, config.name);
+    await getWalletStore().connectBrowserWallet(adapter, config.name, this.id);
   }
 
   async disconnect(): Promise<void> {

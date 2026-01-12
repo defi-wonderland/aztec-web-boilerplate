@@ -1,15 +1,19 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { ExternalSigner } from '../../signers/types';
-import type { ExternalSignerType } from '../../types/aztec';
+import type { ExternalSignerType, WalletType } from '../../types/aztec';
 import type { IBrowserWalletAdapter } from '../../types/browserWallet';
-import type { ConnectionStatus } from '../../types/walletConnector';
+import type {
+  ConnectionStatus,
+  WalletConnector,
+  WalletConnectorId,
+} from '../../types/walletConnector';
 
 export type PXEStatus = 'idle' | 'initializing' | 'ready' | 'error';
 
 export type WalletState = {
   // Core state (always relevant)
   account: AccountWithSecretKey | null;
-  walletType: string | null;
+  walletType: WalletType | null;
   status: ConnectionStatus;
   error: string | null;
 
@@ -26,23 +30,42 @@ export type WalletState = {
   caipAccounts: string[];
   supportedChains: string[];
   isInstalled: boolean;
+
+  // Connector management
+  connectors: WalletConnector[];
+  activeConnectorId: WalletConnectorId | null;
+  connectingConnectorId: WalletConnectorId | null;
 };
 
 export type WalletActions = {
+  _connectWith: <T>(
+    connectorId: WalletConnectorId,
+    run: (connector: WalletConnector) => Promise<T>
+  ) => Promise<T>;
+  // Connector management
+  setConnectors: (connectors: WalletConnector[]) => void;
+  connect: (connectorId: WalletConnectorId) => Promise<void>;
+
   // Embedded
-  connectEmbedded: () => Promise<AccountWithSecretKey>;
-  connectExistingEmbedded: () => Promise<AccountWithSecretKey | null>;
+  connectEmbedded: (
+    connectorId?: WalletConnectorId
+  ) => Promise<AccountWithSecretKey>;
+  connectExistingEmbedded: (
+    connectorId?: WalletConnectorId
+  ) => Promise<AccountWithSecretKey | null>;
   hasSavedEmbeddedAccount: () => boolean;
 
   // External Signer
   connectExternalSigner: (
-    signer: ExternalSigner
+    signer: ExternalSigner,
+    connectorId?: WalletConnectorId
   ) => Promise<AccountWithSecretKey>;
 
   // Browser Wallet
   connectBrowserWallet: (
     adapter: IBrowserWalletAdapter,
-    networkName: string
+    networkName: string,
+    connectorId?: WalletConnectorId
   ) => Promise<void>;
   setBrowserWalletState: (
     state: Partial<

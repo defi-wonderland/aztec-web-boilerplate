@@ -113,7 +113,7 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
 
   async connect(): Promise<void> {
     const signer = this.getSigner();
-    await getWalletStore().connectExternalSigner(signer);
+    await getWalletStore().connectExternalSigner(signer, this.id);
   }
 
   async disconnect(): Promise<void> {
