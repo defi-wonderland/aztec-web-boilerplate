@@ -42,6 +42,7 @@ export type WalletActions = {
     connectorId: WalletConnectorId,
     run: (connector: WalletConnector) => Promise<T>
   ) => Promise<T>;
+  _disconnectWith: (cleanup?: () => Promise<void> | void) => Promise<void>;
   // Connector management
   setConnectors: (connectors: WalletConnector[]) => void;
   connect: (connectorId: WalletConnectorId) => Promise<void>;
@@ -65,19 +66,23 @@ export type WalletActions = {
   connectBrowserWallet: (
     adapter: IBrowserWalletAdapter,
     networkName: string,
-    connectorId?: WalletConnectorId
+    connectorId: WalletConnectorId
   ) => Promise<void>;
   setBrowserWalletState: (
     state: Partial<
       Pick<
         WalletState,
-        'caipAccount' | 'caipAccounts' | 'supportedChains' | 'isInstalled'
+        | 'account'
+        | 'caipAccount'
+        | 'caipAccounts'
+        | 'supportedChains'
+        | 'isInstalled'
       >
     >
   ) => void;
 
   // Shared
-  disconnect: () => void;
+  disconnect: (cleanup?: () => Promise<void> | void) => Promise<void>;
   setError: (error: string | null) => void;
   setPXEStatus: (status: PXEStatus, error?: string | null) => void;
   reset: () => void;

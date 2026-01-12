@@ -10,7 +10,6 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { getNetworkStore } from '../store/network';
 import {
   getWalletStore,
-  useWalletStore,
   getCurrentAdapter,
   getCurrentAccountWallet,
   setCurrentAdapter,
@@ -102,7 +101,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     await adapter.initialize();
     const state = adapter.getState();
 
-    useWalletStore.getState().setBrowserWalletState({
+    getWalletStore().setBrowserWalletState({
       isInstalled: state.isInstalled,
       supportedChains: state.supportedChains,
     });
@@ -113,8 +112,9 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
       this.latestAccountChangeMarker = updateMarker;
 
       const selectedAccount = accounts.length > 0 ? accounts[0] : null;
+      const store = getWalletStore();
 
-      useWalletStore.getState().setBrowserWalletState({
+      store.setBrowserWalletState({
         caipAccounts: accounts,
         caipAccount: selectedAccount,
       });
@@ -126,22 +126,22 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
             return;
           }
           setCurrentAccountWallet(accountWallet);
-          useWalletStore.setState({ account: accountWallet });
+          getWalletStore().setBrowserWalletState({ account: accountWallet });
         } catch {
           if (this.latestAccountChangeMarker !== updateMarker) {
             return;
           }
           setCurrentAccountWallet(null);
-          useWalletStore.setState({ account: null });
+          getWalletStore().setBrowserWalletState({ account: null });
         }
       } else {
         setCurrentAccountWallet(null);
-        useWalletStore.setState({ account: null });
+        getWalletStore().setBrowserWalletState({ account: null });
       }
     });
 
-    adapter.onDisconnected(() => {
-      useWalletStore.getState().disconnect();
+    adapter.onDisconnected(async () => {
+      await getWalletStore().disconnect();
     });
 
     // Register adapter globally for operations
@@ -217,8 +217,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   }
 
   async disconnect(): Promise<void> {
-    await disconnectBrowserWallet();
-    getWalletStore().disconnect();
+    await getWalletStore().disconnect(disconnectBrowserWallet);
   }
 
   async sendTransaction(

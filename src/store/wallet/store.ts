@@ -78,6 +78,35 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     }
   },
 
+  _disconnectWith: async (cleanup?: () => Promise<void> | void) => {
+    const { activeConnectorId, connectors } = get();
+    if (!activeConnectorId) return;
+
+    try {
+      if (cleanup) {
+        await cleanup();
+      }
+    } finally {
+      set({
+        account: null,
+        walletType: null,
+        status: 'disconnected',
+        error: null,
+        signerType: null,
+        connectedRdns: null,
+        caipAccount: null,
+        caipAccounts: [],
+        supportedChains: [],
+        isInstalled: false,
+        activeConnectorId: null,
+        connectingConnectorId: null,
+        pxeStatus: 'idle',
+        pxeError: null,
+        connectors,
+      });
+    }
+  },
+
   setConnectors: (connectors) => set({ connectors }),
 
   connect: async (connectorId) => {
@@ -94,23 +123,8 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
   ...createBrowserActions(set, get),
 
   // Shared actions
-  disconnect: () => {
-    set({
-      account: null,
-      walletType: null,
-      status: 'disconnected',
-      error: null,
-      signerType: null,
-      connectedRdns: null,
-      caipAccount: null,
-      caipAccounts: [],
-      supportedChains: [],
-      isInstalled: false,
-      activeConnectorId: null,
-      connectingConnectorId: null,
-      pxeStatus: 'idle',
-      pxeError: null,
-    });
+  disconnect: async (cleanup?: () => Promise<void> | void) => {
+    await get()._disconnectWith(cleanup);
   },
 
   setError: (error) => set({ error }),

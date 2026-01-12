@@ -12,10 +12,10 @@ export const createBrowserActions = (set: SetState, _get: GetState) => ({
   connectBrowserWallet: async (
     adapter: IBrowserWalletAdapter,
     networkName: string,
-    connectorId?: WalletConnectorId
+    connectorId: WalletConnectorId
   ): Promise<void> => {
     const connectWith = _get()._connectWith;
-    await connectWith(connectorId ?? 'browser', async (_connector) => {
+    await connectWith(connectorId, async () => {
       set({
         status: 'connecting',
         error: null,
@@ -54,7 +54,11 @@ export const createBrowserActions = (set: SetState, _get: GetState) => ({
     state: Partial<
       Pick<
         WalletState,
-        'caipAccount' | 'caipAccounts' | 'supportedChains' | 'isInstalled'
+        | 'account'
+        | 'caipAccount'
+        | 'caipAccounts'
+        | 'supportedChains'
+        | 'isInstalled'
       >
     >
   ) => {

@@ -345,8 +345,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                           : ''
                 }
               >
-                {connectingConnectorId === EMBEDDED_CONNECTOR_ID ||
-                status === 'connecting'
+                {connectingConnectorId === EMBEDDED_CONNECTOR_ID
                   ? 'Connecting...'
                   : 'Connect Existing Account'}
               </button>
@@ -368,8 +367,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                         : ''
                 }
               >
-                {connectingConnectorId === EMBEDDED_CONNECTOR_ID ||
-                status === 'connecting'
+                {connectingConnectorId === EMBEDDED_CONNECTOR_ID
                   ? 'Creating...'
                   : 'Create New Account'}
               </button>

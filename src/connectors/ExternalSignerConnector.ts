@@ -117,8 +117,7 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   }
 
   async disconnect(): Promise<void> {
-    disconnectExternalSigner();
-    getWalletStore().disconnect();
+    await getWalletStore().disconnect(disconnectExternalSigner);
   }
 
   getPXE(): PXE | null {

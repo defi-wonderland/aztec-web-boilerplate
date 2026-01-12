@@ -57,9 +57,7 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
   }
 
   async disconnect(): Promise<void> {
-    const state = getWalletStore();
-    state.disconnect();
-    clearSavedAccount();
+    await getWalletStore().disconnect(clearSavedAccount);
   }
 
   getPXE(): PXE | null {
