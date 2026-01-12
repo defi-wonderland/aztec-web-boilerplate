@@ -1,10 +1,5 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { Fr } from '@aztec/aztec.js/fields';
-import { AccountManager } from '@aztec/aztec.js/wallet';
-import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
-import { EcdsaKEthSignerAccountContract } from '../../../accounts/EcdsaKEthSignerAccountContract';
-import { SharedPXEService } from '../../../services/aztec/pxe';
+import { createExternalSignerAccount } from '../../../services/wallet';
 import { WalletType } from '../../../types/aztec';
 import { getNetworkStore } from '../../network';
 import type { ExternalSigner } from '../../../signers/types';
@@ -20,99 +15,35 @@ export const createExternalSignerActions = (set: SetState, _get: GetState) => ({
     connectorId?: WalletConnectorId
   ): Promise<AccountWithSecretKey> => {
     const connectWith = _get()._connectWith;
-    return connectWith(
-      connectorId ?? signer.rdns ?? 'external',
-      async (_connector) => {
-        set({
-          status: 'connecting',
-          error: null,
-          pxeError: null,
-        });
+    return connectWith(connectorId ?? signer.rdns ?? 'external', async () => {
+      set({
+        status: 'connecting',
+        error: null,
+        pxeError: null,
+      });
 
-        if (!signer.isConnected()) {
-          await signer.connect();
-        }
+      const config = getNetworkStore().currentConfig;
 
-        const config = getNetworkStore().currentConfig;
-        set({ pxeStatus: 'initializing', pxeError: null });
-        const pxeInstance = await SharedPXEService.getInstance(
-          config.nodeUrl,
-          config.name
-        );
-        set({ pxeStatus: 'ready', pxeError: null });
+      set({ pxeStatus: 'initializing', pxeError: null });
 
-        const { x, y } = await signer.getPublicKey();
+      const result = await createExternalSignerAccount(signer, config);
 
-        const authWitnessProvider = signer.createAuthWitnessProvider(
-          {} as Parameters<typeof signer.createAuthWitnessProvider>[0]
-        );
+      set({ pxeStatus: 'ready', pxeError: null });
 
-        const accountContract = new EcdsaKEthSignerAccountContract(
-          x,
-          y,
-          authWitnessProvider
-        );
-
-        const secretKeyBuffer = await signer.deriveSecretKey();
-        const secretKey = await poseidon2Hash([Fr.fromBuffer(secretKeyBuffer)]);
-        const salt = Fr.fromBuffer(signer.deriveSalt());
-
-        const wallet = pxeInstance.wallet;
-        const accountManager = await AccountManager.create(
-          wallet,
-          secretKey,
-          accountContract,
-          salt
-        );
-
-        const account = await accountManager.getAccount();
-
-        const instance = accountManager.getInstance();
-        const artifact = await accountManager
-          .getAccountContract()
-          .getContractArtifact();
-        await wallet.registerContract(
-          instance,
-          artifact,
-          accountManager.getSecretKey()
-        );
-
-        wallet.addAccount(account);
-
-        const accountAddress = accountManager.address;
-
+      if (result.deployment.deployed) {
         set({ status: 'deploying' });
-        try {
-          const metadata = await wallet.getContractMetadata(accountAddress);
-          if (!metadata.isContractInitialized) {
-            const deployMethod = await accountManager.getDeployMethod();
-            const paymentMethod =
-              await pxeInstance.getSponsoredFeePaymentMethod();
-
-            await deployMethod
-              .send({
-                from: AztecAddress.ZERO,
-                fee: { paymentMethod },
-                skipClassPublication: true,
-                skipInstancePublication: true,
-              })
-              .wait({ timeout: 120 });
-          }
-        } catch {
-          // Don't throw - account is created, just not deployed
-        }
-
-        currentSigner = signer;
-        set({
-          account,
-          walletType: WalletType.EXTERNAL_SIGNER,
-          signerType: signer.type,
-          connectedRdns: signer.rdns ?? null,
-        });
-
-        return account;
       }
-    );
+
+      currentSigner = signer;
+      set({
+        account: result.account,
+        walletType: WalletType.EXTERNAL_SIGNER,
+        signerType: result.signerType,
+        connectedRdns: result.rdns,
+      });
+
+      return result.account;
+    });
   },
 });
 

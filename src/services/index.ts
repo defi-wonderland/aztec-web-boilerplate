@@ -7,3 +7,5 @@ export {
   type EVMWalletListener,
   type EVMWalletState,
 } from './evm';
+
+export * from './wallet';
