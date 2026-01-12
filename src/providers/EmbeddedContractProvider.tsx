@@ -17,10 +17,6 @@ import {
   useContractRegistryTimingInfo,
 } from '../store/contractRegistry';
 import { hasAppManagedPXE } from '../types/walletConnector';
-import {
-  ContractRegistryContext,
-  type ContractContextValue,
-} from './ContractRegistryContext';
 import type { NetworkConfig } from '../config/networks';
 
 /**
@@ -76,7 +72,8 @@ export function EmbeddedContractProvider<
     [contracts]
   );
 
-  const { setStatus, setError, setTimingInfo } = useContractRegistryStore();
+  const { setStatus, setError, setTimingInfo, setRegistry } =
+    useContractRegistryStore();
   const status = useContractRegistryStatus();
   const timingInfo = useContractRegistryTimingInfo();
 
@@ -119,6 +116,7 @@ export function EmbeddedContractProvider<
       try {
         const registry = createRegistry(pxe, contracts, currentConfig);
         registryRef.current = registry;
+        setRegistry(registry);
 
         const allCached = await checkContractsCached(
           pxe,
@@ -162,25 +160,15 @@ export function EmbeddedContractProvider<
     setStatus,
     setError,
     setTimingInfo,
+    setRegistry,
   ]);
-
-  const contextValue = useMemo(
-    () => ({
-      registry: registryRef.current,
-    }),
-    // Re-compute when status changes to get updated registryRef
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [status]
-  );
 
   if (!isReady) {
     return <>{children}</>;
   }
 
   return (
-    <ContractRegistryContext.Provider
-      value={contextValue as ContractContextValue}
-    >
+    <>
       {children}
       {showTimingToast && timingInfo && status === 'ready' && (
         <TimingToast
@@ -190,6 +178,6 @@ export function EmbeddedContractProvider<
           onClose={() => setTimingInfo(null)}
         />
       )}
-    </ContractRegistryContext.Provider>
+    </>
   );
 }

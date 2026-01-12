@@ -1,16 +1,16 @@
 import { useCallback, useMemo } from 'react';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import {
-  useContractRegistryContext,
-  type ContractConfigMap,
-  type ContractNames,
-  type ContractStatus,
-  type UseContractRegistryReturn,
-} from '../../contract-registry';
-import {
   useContractRegistryStatus,
   useContractRegistryError,
+  useContractRegistryStore,
 } from '../../store/contractRegistry';
+import type {
+  ContractConfigMap,
+  ContractNames,
+  ContractStatus,
+  UseContractRegistryReturn,
+} from '../../contract-registry';
 
 /**
  * Hook for accessing the contract registry and its operations.
@@ -26,7 +26,7 @@ import {
  *   register,
  *   registerMany,
  *   status,
- * } = useContractRegistry<typeof contractsConfig>();
+ * } = useContractRegistry();
  *
  * // Check if a contract is ready
  * if (isRegistered('dripper')) {
@@ -40,36 +40,36 @@ import {
  * await registerMany(['dripper', 'token']);
  * ```
  */
-export function useContractRegistry<
-  T extends ContractConfigMap = ContractConfigMap,
->(): UseContractRegistryReturn<T> {
-  const registry = useContractRegistryContext<T>();
+export function useContractRegistry(): UseContractRegistryReturn<ContractConfigMap> {
+  const registry = useContractRegistryStore((state) => state.registry);
   const status = useContractRegistryStatus();
   const error = useContractRegistryError();
 
   const isRegistered = useCallback(
-    (name: ContractNames<T>): boolean => {
+    (name: ContractNames<ContractConfigMap>): boolean => {
       return registry?.isRegistered(name) ?? false;
     },
     [registry]
   );
 
   const getInstance = useCallback(
-    (name: ContractNames<T>): ContractInstanceWithAddress | null => {
+    (
+      name: ContractNames<ContractConfigMap>
+    ): ContractInstanceWithAddress | null => {
       return registry?.getInstance(name) ?? null;
     },
     [registry]
   );
 
   const getStatus = useCallback(
-    (name: ContractNames<T>): ContractStatus => {
+    (name: ContractNames<ContractConfigMap>): ContractStatus => {
       return registry?.getStatus(name) ?? 'idle';
     },
     [registry]
   );
 
   const register = useCallback(
-    async (name: ContractNames<T>): Promise<void> => {
+    async (name: ContractNames<ContractConfigMap>): Promise<void> => {
       if (!registry) {
         throw new Error('Contract registry not initialized');
       }
@@ -79,7 +79,7 @@ export function useContractRegistry<
   );
 
   const registerMany = useCallback(
-    async (names: ContractNames<T>[]): Promise<void> => {
+    async (names: ContractNames<ContractConfigMap>[]): Promise<void> => {
       if (!registry) {
         throw new Error('Contract registry not initialized');
       }
@@ -88,9 +88,10 @@ export function useContractRegistry<
     [registry]
   );
 
-  const getRegisteredNames = useCallback((): ContractNames<T>[] => {
-    return registry?.getRegisteredNames() ?? [];
-  }, [registry]);
+  const getRegisteredNames =
+    useCallback((): ContractNames<ContractConfigMap>[] => {
+      return registry?.getRegisteredNames() ?? [];
+    }, [registry]);
 
   const subscribe = useCallback(
     (callback: () => void): (() => void) => {
