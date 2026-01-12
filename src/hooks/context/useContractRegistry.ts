@@ -1,16 +1,16 @@
 import { useCallback, useMemo } from 'react';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
-import { useContractRegistryContext } from '../../providers/ContractRegistryContext';
+import {
+  useContractRegistryContext,
+  type ContractConfigMap,
+  type ContractNames,
+  type ContractStatus,
+  type UseContractRegistryReturn,
+} from '../../contract-registry';
 import {
   useContractRegistryStatus,
   useContractRegistryError,
 } from '../../store/contractRegistry';
-import type {
-  ContractConfigMap,
-  ContractNames,
-  ContractStatus,
-  UseContractRegistryReturn,
-} from '../../contract-registry';
 
 /**
  * Hook for accessing the contract registry and its operations.
@@ -43,7 +43,7 @@ import type {
 export function useContractRegistry<
   T extends ContractConfigMap = ContractConfigMap,
 >(): UseContractRegistryReturn<T> {
-  const { registry } = useContractRegistryContext<T>();
+  const registry = useContractRegistryContext<T>();
   const status = useContractRegistryStatus();
   const error = useContractRegistryError();
 
@@ -92,6 +92,14 @@ export function useContractRegistry<
     return registry?.getRegisteredNames() ?? [];
   }, [registry]);
 
+  const subscribe = useCallback(
+    (callback: () => void): (() => void) => {
+      if (!registry) return () => {};
+      return registry.subscribe(callback);
+    },
+    [registry]
+  );
+
   return useMemo(
     () => ({
       isRegistered,
@@ -100,6 +108,7 @@ export function useContractRegistry<
       register,
       registerMany,
       getRegisteredNames,
+      subscribe,
       status,
       error,
     }),
@@ -110,6 +119,7 @@ export function useContractRegistry<
       register,
       registerMany,
       getRegisteredNames,
+      subscribe,
       status,
       error,
     ]

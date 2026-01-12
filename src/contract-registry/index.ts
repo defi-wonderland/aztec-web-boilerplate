@@ -28,3 +28,9 @@ export {
 
 // Registry class
 export { ContractRegistry } from './ContractRegistry';
+
+// Registry context utilities
+export {
+  ContractRegistryContext,
+  useContractRegistryContext,
+} from '../providers/ContractRegistryContext';

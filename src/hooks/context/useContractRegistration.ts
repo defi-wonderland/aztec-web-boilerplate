@@ -6,6 +6,7 @@ import { contractsConfig } from '../../config/contracts';
 import { getNetworkArtifacts } from '../../config/networkArtifacts';
 import {
   getContractsForConfig,
+  useContractRegistryContext,
   type ContractConfigMap,
   type ContractStatus,
   type UseContractReturn,
@@ -13,7 +14,6 @@ import {
   type ContractName,
   type ContractType,
 } from '../../contract-registry';
-import { useContractRegistryContext } from '../../providers/ContractRegistryContext';
 import { useContractRegistryStatus } from '../../store';
 import { WalletType } from '../../types/aztec';
 import { hasAppManagedPXE } from '../../types/walletConnector';
@@ -51,7 +51,7 @@ export function useContractRegistration<K extends ContractName>(
   name: K
 ): UseContractReturn<ContractType<K>> {
   type TContract = ContractType<K>;
-  const { registry } = useContractRegistryContext<ContractsConfig>();
+  const registry = useContractRegistryContext<ContractsConfig>();
   const registryStatus = useContractRegistryStatus();
   const { connector, account, currentConfig, walletType } =
     useUniversalWallet();

@@ -4,23 +4,25 @@ import type {
   IContractRegistry,
 } from '../contract-registry';
 
-export type ContractContextValue<
-  T extends ContractConfigMap = ContractConfigMap,
-> = {
+type ContractContextValue<T extends ContractConfigMap = ContractConfigMap> = {
   registry: IContractRegistry<T> | null;
 };
 
 export const ContractRegistryContext =
   createContext<ContractContextValue | null>(null);
 
+/**
+ * Hook to access the contract registry instance from context.
+ * Returns the registry directly (or null if not available).
+ */
 export function useContractRegistryContext<
   T extends ContractConfigMap = ContractConfigMap,
->(): ContractContextValue<T> {
+>(): IContractRegistry<T> | null {
   const context = useContext(ContractRegistryContext);
 
   if (context === null) {
-    return { registry: null } as ContractContextValue<T>;
+    return null;
   }
 
-  return context as ContractContextValue<T>;
+  return context.registry as IContractRegistry<T> | null;
 }
