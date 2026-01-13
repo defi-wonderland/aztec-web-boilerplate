@@ -87,13 +87,11 @@ const styles = {
 
 Use the custom utility classes defined in `globals.css` for theme support:
 
-| Class                                                       | Purpose           |
-| ----------------------------------------------------------- | ----------------- |
-| `bg-surface`, `bg-surface-secondary`, `bg-surface-tertiary` | Background colors |
-| `text-default`, `text-muted`, `text-accent`                 | Text colors       |
-| `border-default`                                            | Border colors     |
-| `gradient-primary`, `gradient-secondary`                    | Gradients         |
-| `shadow-theme`, `shadow-theme-hover`, `shadow-theme-lg`     | Shadows           |
+- Backgrounds: `bg-surface`, `bg-surface-secondary`, `bg-surface-tertiary`
+- Text: `text-default`, `text-muted`, `text-accent`
+- Borders: `border-default`
+- Gradients: `gradient-primary`, `gradient-secondary`
+- Shadows: `shadow-theme`, `shadow-theme-hover`, `shadow-theme-lg`
 
 ## Dark Mode
 

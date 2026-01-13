@@ -12,19 +12,17 @@ This project has a curated set of UI components in `src/components/ui/`. **Alway
 
 ### Available Components
 
-| Component  | Usage                                                                             |
-| ---------- | --------------------------------------------------------------------------------- |
-| `Button`   | All clickable actions (variants: primary, secondary, ghost, danger, icon, toggle) |
-| `Input`    | Text inputs with label, error, and helper text support                            |
-| `Textarea` | Multi-line text inputs                                                            |
-| `Select`   | Dropdowns (SelectTrigger, SelectContent, SelectItem)                              |
-| `Card`     | Content containers (CardHeader, CardTitle, CardDescription, CardContent)          |
-| `Badge`    | Status indicators (variants: default, primary, success, warning, error, info)     |
-| `Tabs`     | Tab navigation (TabsList, TabsTrigger, TabsContent)                               |
-| `Dialog`   | Modals (DialogTrigger, DialogContent, DialogHeader, DialogFooter)                 |
-| `Toast`    | Notifications via `useToast()` hook                                               |
-| `Tooltip`  | Hover information (TooltipTrigger, TooltipContent)                                |
-| `Toggle`   | Toggle buttons with pressed state                                                 |
+- **`Button`** - All clickable actions (variants: primary, secondary, ghost, danger, icon, toggle)
+- **`Input`** - Text inputs with label, error, and helper text support
+- **`Textarea`** - Multi-line text inputs
+- **`Select`** - Dropdowns (SelectTrigger, SelectContent, SelectItem)
+- **`Card`** - Content containers (CardHeader, CardTitle, CardDescription, CardContent)
+- **`Badge`** - Status indicators (variants: default, primary, success, warning, error, info)
+- **`Tabs`** - Tab navigation (TabsList, TabsTrigger, TabsContent)
+- **`Dialog`** - Modals (DialogTrigger, DialogContent, DialogHeader, DialogFooter)
+- **`Toast`** - Notifications via `useToast()` hook
+- **`Tooltip`** - Hover information (TooltipTrigger, TooltipContent)
+- **`Toggle`** - Toggle buttons with pressed state
 
 ### Usage Example
 
@@ -60,6 +58,7 @@ When you need a new UI component:
 3. Style with Tailwind using CVA (class-variance-authority) for variants
 4. Export from `src/components/ui/index.ts`
 5. Add examples to `UIComponentsShowcase.tsx`
+6. **Update the components list** in this file's "Available Components" section and CLAUDE.md
 
 ### Radix Integration Pattern
 
@@ -98,8 +97,6 @@ const DialogContent = React.forwardRef<...>(({ className, ...props }, ref) => (
 
 Use the provided hooks from `src/hooks/`:
 
-| Hook         | Purpose                                                           |
-| ------------ | ----------------------------------------------------------------- |
-| `useToast()` | Show toast notifications (success, error, warning, info, loading) |
-| `useModal()` | Manage modal state with `MODAL_IDS`                               |
-| `useTheme()` | Access and toggle light/dark theme                                |
+- `useToast()` - Notifications (success/error/warning/info/loading)
+- `useModal()` - Modal state (`MODAL_IDS`)
+- `useTheme()` - Theme toggle

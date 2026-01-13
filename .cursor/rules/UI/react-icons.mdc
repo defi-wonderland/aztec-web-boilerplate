@@ -1,0 +1,90 @@
+---
+description: Icon usage guidelines with Lucide React
+globs: **/*.tsx
+version: 1.0.0
+---
+
+# Icon Guidelines
+
+## Icon Library
+
+This project uses **Lucide React** for all icons. Browse available icons at: https://lucide.dev/icons/
+
+## Installation
+
+Icons are already available via the `lucide-react` package.
+
+## Usage
+
+```tsx
+import { Home, Settings, User, AlertTriangle } from 'lucide-react';
+
+const styles = {
+  icon: {
+    sm: 'h-4 w-4',
+    md: 'h-5 w-5',
+    lg: 'h-6 w-6',
+  },
+} as const;
+
+// Usage
+<Home className={styles.icon.md} />
+<AlertTriangle className={styles.icon.sm} />
+```
+
+## Standard Sizes
+
+- `h-4 w-4` (sm) - Inline text, buttons
+- `h-5 w-5` (md) - Default
+- `h-6 w-6` (lg) - Headers
+- `h-8 w-8` (xl) - Card headers, hero
+
+## Styling Icons
+
+Always define icon classes in the styles object:
+
+```tsx
+const styles = {
+  headerIcon: 'h-8 w-8 text-accent',
+  buttonIcon: 'h-4 w-4',
+  warningIcon: 'h-5 w-5 text-amber-500',
+} as const;
+```
+
+## Icons in Buttons
+
+Use the `icon` prop on the Button component:
+
+```tsx
+import { Rocket } from 'lucide-react';
+import { Button } from '../components/ui';
+
+<Button icon={<Rocket className={styles.icon.sm} />}>Deploy</Button>;
+```
+
+## Icon-Only Buttons
+
+Use Button with `variant="icon"` and `size="icon"`:
+
+```tsx
+import { Copy, X } from 'lucide-react';
+import { Button } from '../components/ui';
+
+<Button variant="icon" size="icon">
+  <Copy className={styles.icon.sm} />
+</Button>;
+```
+
+## Common Icons by Purpose
+
+- **Actions**: `Copy`, `Download`, `Upload`, `Edit`, `Trash2`, `Plus`, `Minus`
+- **Navigation**: `Home`, `Settings`, `Menu`, `ChevronLeft`, `ChevronRight`, `ExternalLink`
+- **Status**: `Check`, `X`, `AlertTriangle`, `Info`, `XCircle`, `CheckCircle`
+- **Objects**: `User`, `Mail`, `Calendar`, `File`, `Folder`, `Image`
+- **Crypto/Blockchain**: `Coins`, `Wallet`, `Shield`, `Globe`, `Lock`, `Key`
+
+## Do NOT Use
+
+- Emojis for icons (❌ 🚀 ✅) - use Lucide icons instead
+- Inline SVGs - import from Lucide
+- Other icon libraries - maintain consistency with Lucide

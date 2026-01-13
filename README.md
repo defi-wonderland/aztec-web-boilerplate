@@ -257,24 +257,6 @@ export const BadComponent = () => (
 );
 ```
 
-### UI Component Library
-
-The project includes a set of reusable UI components in `src/components/ui/`:
-
-| Component  | Usage                                                                             |
-| ---------- | --------------------------------------------------------------------------------- |
-| `Button`   | All clickable actions (variants: primary, secondary, ghost, danger, icon, toggle) |
-| `Input`    | Text inputs with label, error, and helper text support                            |
-| `Textarea` | Multi-line text inputs                                                            |
-| `Select`   | Dropdowns (SelectTrigger, SelectContent, SelectItem)                              |
-| `Card`     | Content containers (CardHeader, CardTitle, CardDescription, CardContent)          |
-| `Badge`    | Status indicators (variants: default, primary, success, warning, error, info)     |
-| `Tabs`     | Tab navigation (TabsList, TabsTrigger, TabsContent)                               |
-| `Dialog`   | Modals (DialogTrigger, DialogContent, DialogHeader, DialogFooter)                 |
-| `Toast`    | Notifications via `useToast()` hook                                               |
-| `Tooltip`  | Hover information (TooltipTrigger, TooltipContent)                                |
-| `Toggle`   | Toggle buttons with pressed state                                                 |
-
 ### Component Demo
 
 A live showcase of all UI components is available in the app under the **"UI Components"** tab, or you can view the source at:
@@ -293,20 +275,6 @@ When you need a new UI component:
 4. Export from `src/components/ui/index.ts`
 5. **Add examples to `UIComponentsShowcase.tsx`** for documentation
 6. Update the component table above
-
-### Icons
-
-Use **[Lucide React](https://lucide.dev/icons/)** for all icons:
-
-```tsx
-import { Home, Settings } from 'lucide-react';
-
-const styles = {
-  icon: { sm: 'h-4 w-4', md: 'h-5 w-5' },
-} as const;
-
-<Home className={styles.icon.md} />;
-```
 
 ---
 
