@@ -149,45 +149,25 @@ async function mintToPublic(
   await expect(dripButton).toBeVisible({ timeout: 10000 });
   await expect(dripButton).toBeEnabled({ timeout: 30000 });
 
-  // Log button state before clicking
-  const buttonText = await dripButton.textContent();
-  console.log('Drip button text before click:', buttonText);
-
   // Click the drip button
   await dripButton.click();
   console.log('Drip button clicked');
 
-  // Wait for transaction to process - button text changes to "Processing..."
-  // Use a polling approach since the state change might be very quick
-  const startTime = Date.now();
-  let sawProcessing = false;
+  // Small delay to let React update the button state
+  await page.waitForTimeout(100);
 
-  while (Date.now() - startTime < WALLET_OPERATION_TIMEOUT) {
-    const currentText = await dripButton.textContent();
-
-    if (currentText?.includes('Processing')) {
-      sawProcessing = true;
-      console.log('Transaction processing...');
-    }
-
-    // Check if processing is done (back to "Drip to")
-    if (sawProcessing && currentText?.includes('Drip to')) {
-      console.log('Transaction completed');
-      break;
-    }
-
-    // Also check for success notification - indicates transaction completed
-    const successNotification = page.locator('.error-item.info');
-    if (await successNotification.isVisible()) {
-      const notifText = await successNotification.textContent();
-      if (notifText?.includes('Successfully minted')) {
-        console.log('Success notification appeared:', notifText);
-        break;
-      }
-    }
-
-    await page.waitForTimeout(500);
+  // Wait for button to show "Processing..." (transaction in progress)
+  // Use a try-catch since it might be too fast to catch
+  try {
+    await expect(dripButton).toContainText('Processing', { timeout: 2000 });
+    console.log('Transaction processing...');
+  } catch {
+    console.log('Processing state too fast to catch, checking if already done...');
   }
+
+  // Wait for button to return to "Drip to" (transaction complete)
+  await expect(dripButton).toContainText('Drip to', { timeout: 60000 });
+  console.log('Transaction completed');
 }
 
 test.describe('Mint to Public - Walletless (MetaMask)', () => {
