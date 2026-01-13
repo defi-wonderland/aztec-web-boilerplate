@@ -6,7 +6,7 @@ import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { createStore } from '@aztec/kv-store/indexeddb';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
-import { createPXE } from '@aztec/pxe/client/lazy';
+import { createPXE } from '@aztec/pxe/client/bundle';
 import { getPXEConfig } from '@aztec/pxe/config';
 import type { PXE } from '@aztec/pxe/server';
 import { MinimalWallet } from '../../../utils/MinimalWallet';

@@ -1,12 +1,12 @@
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import {
   type AccountWithSecretKey,
   type Account,
   SignerlessAccount,
 } from '@aztec/aztec.js/account';
-import { BaseWallet } from '@aztec/aztec.js/wallet';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { AztecNode } from '@aztec/aztec.js/node';
 import type { PXE } from '@aztec/pxe/server';
+import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
 
 export class MinimalWallet extends BaseWallet {
   private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
@@ -57,4 +57,3 @@ export class MinimalWallet extends BaseWallet {
     }));
   }
 }
-
