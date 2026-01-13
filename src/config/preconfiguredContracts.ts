@@ -1,5 +1,5 @@
-import tokenDevnet from '../artifacts/devnet/token_contract-Token.json';
-import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json';
+import tokenDevnet from '../artifacts/devnet/token_contract-Token.json' with { type: 'json' };
+import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json' with { type: 'json' };
 import type { AztecNetwork } from './networks/constants';
 
 export type PreconfiguredContract = {

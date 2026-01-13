@@ -2,9 +2,9 @@
  * Deployable Contracts Configuration.
  * See docs/contract-ui.md for documentation.
  */
-import tokenDevnet from '../artifacts/devnet/token_contract-Token.json';
-import dripperSandbox from '../artifacts/sandbox/dripper-Dripper.json';
-import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json';
+import tokenDevnet from '../artifacts/devnet/token_contract-Token.json' with { type: 'json' };
+import dripperSandbox from '../artifacts/sandbox/dripper-Dripper.json' with { type: 'json' };
+import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json' with { type: 'json' };
 import {
   loadDeployableContracts,
   type DeployableContractConfig,
