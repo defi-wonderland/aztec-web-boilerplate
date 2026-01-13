@@ -23,7 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:e2e": "yarn prep-test && yarn playwright test",
+    "test:e2e": "yarn prep-test && yarn playwright test --project=chromium",
     "lint": "eslint src && prettier --check ./src",
     "lint:fix": "eslint src --fix && prettier --write ./src"
   },
