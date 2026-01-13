@@ -9,7 +9,11 @@ import React, {
 } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
-import { TimingToast } from '../components';
+import { Zap, RefreshCw } from 'lucide-react';
+
+const styles = {
+  toastIcon: 'h-5 w-5',
+} as const;
 import { contractsConfig } from '../config/contracts';
 import { getNetworkArtifacts } from '../config/networkArtifacts';
 import {
@@ -20,6 +24,7 @@ import {
   type ContractRegistryContextValue,
 } from '../contract-registry';
 import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
+import { useToast } from '../hooks/context/useToast';
 import { hasAppManagedPXE } from '../types/walletConnector';
 import type { NetworkConfig } from '../config/networks';
 
@@ -61,6 +66,7 @@ export function EmbeddedContractProvider<
   children,
 }: EmbeddedContractProviderProps): React.ReactElement {
   const { connector, isInitialized, currentConfig } = useUniversalWallet();
+  const { addToast } = useToast();
 
   // Works with both Embedded and External Signer connectors (both have app-managed PXE)
   const appManagedConnector = hasAppManagedPXE(connector) ? connector : null;
@@ -84,11 +90,6 @@ export function EmbeddedContractProvider<
     'initializing'
   );
   const [error, setError] = useState<Error | undefined>();
-  const [timingInfo, setTimingInfo] = useState<{
-    elapsedMs: number;
-    contractCount: number;
-    fromCache: boolean;
-  } | null>(null);
   const registryRef = useRef<ContractRegistry<T> | null>(null);
   const initializingRef = useRef(false);
 
@@ -138,11 +139,21 @@ export function EmbeddedContractProvider<
         await registry.registerAll(initialContracts);
         const elapsedMs = performance.now() - start;
 
-        if (showTimingToast) {
-          setTimingInfo({
-            elapsedMs,
-            contractCount: initialContracts.length,
-            fromCache: allCached,
+        if (showTimingToast && initialContracts.length > 0) {
+          const labelSuffix = initialContracts.length === 1 ? '' : 's';
+          const sourceText = allCached ? 'Cached in PXE' : 'Fresh registration';
+          const icon = allCached ? (
+            <Zap className={styles.toastIcon} />
+          ) : (
+            <RefreshCw className={styles.toastIcon} />
+          );
+
+          addToast({
+            title: `Contracts loaded in ${elapsedMs.toFixed(0)}ms`,
+            description: `${initialContracts.length} contract${labelSuffix} • ${sourceText}`,
+            variant: 'info',
+            icon,
+            duration: 8000,
           });
         }
 
@@ -161,6 +172,7 @@ export function EmbeddedContractProvider<
 
     initializeRegistry();
   }, [
+    addToast,
     contracts,
     currentConfig,
     initialContracts,
@@ -188,14 +200,6 @@ export function EmbeddedContractProvider<
       value={contextValue as ContractContextValue}
     >
       {children}
-      {showTimingToast && timingInfo && status === 'ready' && (
-        <TimingToast
-          elapsedMs={timingInfo.elapsedMs}
-          contractCount={timingInfo.contractCount}
-          fromCache={timingInfo.fromCache}
-          onClose={() => setTimingInfo(null)}
-        />
-      )}
     </ContractRegistryContext.Provider>
   );
 }

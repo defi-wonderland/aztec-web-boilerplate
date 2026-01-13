@@ -3,22 +3,27 @@ import DeployContractForm from './DeployContractForm';
 import ExistingContractForm from './ExistingContractForm';
 import PreconfiguredSelector from './PreconfiguredSelector';
 import SavedContractsList from './SavedContractsList';
-import type { ArtifactLoaderProps, ArtifactLoaderMode } from './types';
+import type { ArtifactLoaderProps } from './types';
+
+/**
+ * ArtifactLoader styles - semantic pattern.
+ */
+const styles = {
+  card: 'rounded-lg border border-default bg-surface-secondary p-4 space-y-4',
+} as const;
 
 /**
  * Orchestrator component for loading existing contracts or deploying new ones.
- * Composes sub-components for different functionalities.
+ * Renders content based on the mode prop - tabs are managed externally.
  */
 const ArtifactLoader = ({
   mode = 'existing',
-  onModeChange,
   existing,
   saved,
   preconfigured,
   deploy,
-}: ArtifactLoaderProps) => {
+}: Omit<ArtifactLoaderProps, 'onModeChange'>) => {
   const isDeployMode = mode === 'deploy';
-  const hasDeployableContracts = Boolean(deploy);
   const hasPreconfigured = Boolean(preconfigured?.options.length);
 
   const isCustomMode = !preconfigured?.selectedId;
@@ -37,43 +42,8 @@ const ArtifactLoader = ({
         isPreconfiguredMode
     ) && !isLoadingPreconfigured;
 
-  const handleModeToggle = (newMode: ArtifactLoaderMode) => {
-    onModeChange?.(newMode);
-  };
-
   return (
-    <div className="loader-card">
-      {hasDeployableContracts && (
-        <div className="mode-toggle-container">
-          <div
-            className="mode-toggle"
-            role="tablist"
-            aria-label="Contract mode"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!isDeployMode}
-              className={`mode-toggle-btn${!isDeployMode ? ' active' : ''}`}
-              onClick={() => handleModeToggle('existing')}
-              disabled={deploy?.isDeploying}
-            >
-              Use Existing
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={isDeployMode}
-              className={`mode-toggle-btn${isDeployMode ? ' active' : ''}`}
-              onClick={() => handleModeToggle('deploy')}
-              disabled={deploy?.isDeploying}
-            >
-              Deploy New
-            </button>
-          </div>
-        </div>
-      )}
-
+    <div className={styles.card}>
       {isDeployMode && deploy && (
         <DeployContractForm
           deployableContracts={deploy.contracts}

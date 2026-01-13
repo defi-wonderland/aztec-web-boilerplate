@@ -1,24 +1,105 @@
 ---
 description: React component development guidelines
 globs: **/*.tsx
-version: 1.0.0
+version: 2.0.0
 ---
 
 # React Component Guidelines
 
-## Component Structure
-- Abstract complex logic from render functions
-- Keep render methods simple and declarative
-- Split complex components into smaller ones
-- Use hooks for side effects and state management
+## UI Component Library
 
-## Import Order
-1. React imports
-2. Third-party libraries
-3. Internal files
+This project has a curated set of UI components in `src/components/ui/`. **Always use these components instead of creating new ones or using native HTML elements.**
+
+### Available Components
+
+| Component  | Usage                                                                             |
+| ---------- | --------------------------------------------------------------------------------- |
+| `Button`   | All clickable actions (variants: primary, secondary, ghost, danger, icon, toggle) |
+| `Input`    | Text inputs with label, error, and helper text support                            |
+| `Textarea` | Multi-line text inputs                                                            |
+| `Select`   | Dropdowns (SelectTrigger, SelectContent, SelectItem)                              |
+| `Card`     | Content containers (CardHeader, CardTitle, CardDescription, CardContent)          |
+| `Badge`    | Status indicators (variants: default, primary, success, warning, error, info)     |
+| `Tabs`     | Tab navigation (TabsList, TabsTrigger, TabsContent)                               |
+| `Dialog`   | Modals (DialogTrigger, DialogContent, DialogHeader, DialogFooter)                 |
+| `Toast`    | Notifications via `useToast()` hook                                               |
+| `Tooltip`  | Hover information (TooltipTrigger, TooltipContent)                                |
+| `Toggle`   | Toggle buttons with pressed state                                                 |
+
+### Usage Example
+
+```tsx
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Badge,
+} from '../components/ui';
+
+const MyComponent = () => (
+  <Card>
+    <CardHeader>
+      <CardTitle>Title</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <Badge variant="success">Active</Badge>
+      <Button variant="primary">Submit</Button>
+    </CardContent>
+  </Card>
+);
+```
+
+## Adding New Components
+
+When you need a new UI component:
+
+1. **Check Radix UI Primitives first**: https://www.radix-ui.com/primitives/docs/overview/introduction
+2. If it exists in Radix, create a wrapper in `src/components/ui/`
+3. Style with Tailwind using CVA (class-variance-authority) for variants
+4. Export from `src/components/ui/index.ts`
+5. Add examples to `UIComponentsShowcase.tsx`
+
+### Radix Integration Pattern
+
+```tsx
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { cn } from '../../utils';
+
+const DialogContent = React.forwardRef<...>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Portal>
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn('base-classes', className)}
+      {...props}
+    />
+  </DialogPrimitive.Portal>
+));
+```
+
+## Component Structure
+
+1. **Imports**: React → Third-party → Internal
+2. **Styles object**: Define all Tailwind classes
+3. **Types/Interfaces**: Component props
+4. **Component function**: Keep render logic simple
+5. **Export**: Named exports preferred
 
 ## Best Practices
-- Use logical AND (`&&`) over ternary conditionals for clarity
-- Keep components focused and reusable
-- Follow React hooks best practices
-- Avoid inline styles
+
+- Use logical AND (`&&`) over ternary for conditional rendering
+- Keep components focused and single-purpose
+- Use hooks for side effects and state management
+- Split complex components into smaller ones
+- Abstract complex logic from render functions
+
+## Hooks
+
+Use the provided hooks from `src/hooks/`:
+
+| Hook         | Purpose                                                           |
+| ------------ | ----------------------------------------------------------------- |
+| `useToast()` | Show toast notifications (success, error, warning, info, loading) |
+| `useModal()` | Manage modal state with `MODAL_IDS`                               |
+| `useTheme()` | Access and toggle light/dark theme                                |

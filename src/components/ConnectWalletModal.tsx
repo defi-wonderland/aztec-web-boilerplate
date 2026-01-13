@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { useUniversalWallet } from '../hooks';
+import {
+  Wallet,
+  Plus,
+  Link,
+  Globe,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react';
+import { useUniversalWallet, useModal, MODAL_IDS } from '../hooks';
 import {
   isEmbeddedConnector,
   isBrowserWalletConnector,
@@ -8,18 +16,59 @@ import {
   type WalletConnector,
   type ExternalSignerWalletConnector,
 } from '../types/walletConnector';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from './ui/Dialog';
+import { Button } from './ui/Button';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from './ui/Select';
+import { Badge } from './ui/Badge';
+import { cn } from '../utils';
 
 interface ConnectWalletModalProps {
-  isOpen: boolean;
-  onClose: () => void;
   onWalletConnected?: () => void;
 }
 
+const styles = {
+  content: 'max-w-md',
+  description: 'text-muted text-sm',
+  contentWrapper: 'flex flex-col gap-4 mt-4',
+  section: 'flex flex-col gap-3',
+  sectionLabel: 'text-sm font-semibold text-default',
+  dialogTitle: 'flex items-center gap-2',
+  icon: {
+    sm: 'h-4 w-4',
+    md: 'h-5 w-5',
+    accent: 'text-accent',
+  },
+  networkStatus: {
+    base: 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm',
+    notConnected:
+      'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+    initializing: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+    failed: 'bg-red-500/10 text-red-400 border border-red-500/20',
+    connected: 'bg-green-500/10 text-green-400 border border-green-500/20',
+  },
+  spinner: 'animate-spin h-4 w-4',
+  actionButton: 'w-full justify-center',
+  embeddedActions: 'flex flex-col gap-2',
+  badgeWrapper: 'self-start',
+  divider: 'border-t border-border my-2',
+};
+
 export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
-  isOpen,
-  onClose,
   onWalletConnected,
 }) => {
+  const { isOpen, close, onOpenChange } = useModal(MODAL_IDS.CONNECT_WALLET);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
@@ -66,6 +115,22 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     isNetworkFailed ||
     isConnecting;
 
+  // Check if any connector is already connected
+  const hasConnectedWallet = connectors.some((connector) => {
+    try {
+      return connector.getStatus().status === 'connected';
+    } catch {
+      return false;
+    }
+  });
+
+  // Close modal if wallet is already connected when modal opens
+  useEffect(() => {
+    if (isOpen && hasConnectedWallet && !isConnecting) {
+      close();
+    }
+  }, [isOpen, hasConnectedWallet, isConnecting, close]);
+
   const isConnectorDisabled = (connector: WalletConnector) => {
     try {
       const status = connector.getStatus();
@@ -82,43 +147,25 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     }
   };
 
-  // Apply modal-open class to root when modal is open
-  useEffect(() => {
-    const rootElement = document.getElementById('root');
-    if (rootElement) {
-      if (isOpen) {
-        rootElement.classList.add('modal-open');
-      } else {
-        rootElement.classList.remove('modal-open');
-      }
-    }
-
-    return () => {
-      if (rootElement) {
-        rootElement.classList.remove('modal-open');
-      }
-    };
-  }, [isOpen]);
-
   const handleEmbeddedWalletAction = async (action: 'create' | 'existing') => {
     if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
     setIsConnecting(true);
     try {
-      let wallet: AccountWithSecretKey | null = null;
       switch (action) {
         case 'create':
           await embeddedConnector.createAccount();
           break;
-        case 'existing':
-          wallet = await embeddedConnector.connectExistingAccount();
+        case 'existing': {
+          const wallet = await embeddedConnector.connectExistingAccount();
           if (!wallet) {
             console.warn('No stored account found to connect');
             return;
           }
           break;
+        }
       }
       onWalletConnected?.();
-      onClose();
+      close();
     } catch (err) {
       console.error(`Failed to ${action} account:`, err);
     } finally {
@@ -139,7 +186,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     try {
       await connector.connect();
       onWalletConnected?.();
-      onClose();
+      close();
     } catch (err) {
       console.error(`Failed to connect ${connector.label}:`, err);
     } finally {
@@ -154,7 +201,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     try {
       await connector.connect();
       onWalletConnected?.();
-      onClose();
+      close();
     } catch (err) {
       console.error(`Failed to connect ${connector.label}:`, err);
     } finally {
@@ -162,8 +209,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     }
   };
 
-  const handleNetworkChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const networkName = event.target.value;
+  const handleNetworkChange = (networkName: string) => {
     console.log('🔄 Network change requested from modal:', {
       from: currentConfig.name,
       to: networkName,
@@ -186,202 +232,174 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     }
   };
 
-  const renderNetworkSelector = () => {
-    const networkOptions = getNetworkOptions();
-
-    return (
-      <div className="network-connect-section">
-        <label className="wallet-section-label">Network</label>
-        <div className="modal-network-selector">
-          <div className="network-select-wrapper">
-            <select
-              id="modal-network-selector"
-              name="modal-network-selector"
-              value={currentConfig?.name || ''}
-              onChange={handleNetworkChange}
-              className="network-select"
-              title="Select network configuration"
-            >
-              <option value="" disabled>
-                Network
-              </option>
-              {networkOptions.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                  disabled={option.disabled}
-                >
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <span className="network-select-arrow">▼</span>
-          </div>
-        </div>
-      </div>
-    );
+  const getNetworkStatusStyle = () => {
+    if (!isNetworkSelected) return styles.networkStatus.notConnected;
+    if (isNetworkInitializing) return styles.networkStatus.initializing;
+    if (isNetworkFailed) return styles.networkStatus.failed;
+    return styles.networkStatus.connected;
   };
 
-  if (!isOpen) return null;
+  const networkOptions = getNetworkOptions();
 
-  const modalRoot = document.getElementById('modal-root');
-  if (!modalRoot) return null;
-
-  return createPortal(
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Connect Wallet</h3>
-          <button className="modal-close-button" onClick={onClose}>
-            ×
-          </button>
-        </div>
-        <div className="modal-body">
-          <p className="modal-description">
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className={styles.content}>
+        <DialogHeader>
+          <DialogTitle className={styles.dialogTitle}>
+            <Wallet className={cn(styles.icon.md, styles.icon.accent)} />
+            Connect Wallet
+          </DialogTitle>
+          <DialogDescription className={styles.description}>
             Create or connect to an Aztec account using a wallet.
-          </p>
+          </DialogDescription>
+        </DialogHeader>
 
-          {renderNetworkSelector()}
+        <div className={styles.contentWrapper}>
+          {/* Network Section */}
+          <div className={styles.section}>
+            <label className={styles.sectionLabel}>Network</label>
+            <Select
+              value={currentConfig?.name || ''}
+              onValueChange={handleNetworkChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select network" />
+              </SelectTrigger>
+              <SelectContent>
+                {networkOptions.map((option) => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    disabled={option.disabled}
+                  >
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <div
-            className={`network-status ${
-              !isNetworkSelected
-                ? 'not-connected'
-                : isNetworkInitializing
-                  ? 'initializing'
-                  : isNetworkFailed
-                    ? 'failed'
-                    : 'connected'
-            }`}
-          >
-            {!isNetworkSelected && <span>Network not connected</span>}
-            {isNetworkInitializing && (
-              <>
-                <div className="initializing-spinner"></div>
-                <span>Initializing network connection...</span>
-              </>
-            )}
-            {isNetworkFailed && (
-              <span>{currentConfig.displayName} connection failed</span>
-            )}
-            {isNetworkSelected && isInitialized && (
-              <span>{currentConfig.displayName} connected</span>
-            )}
+            {/* Network Status */}
+            <div
+              className={cn(styles.networkStatus.base, getNetworkStatusStyle())}
+            >
+              {!isNetworkSelected && (
+                <>
+                  <AlertCircle className={styles.icon.sm} />
+                  <span>Network not connected</span>
+                </>
+              )}
+              {isNetworkInitializing && (
+                <>
+                  <Loader2 className={styles.spinner} />
+                  <span>Initializing network connection...</span>
+                </>
+              )}
+              {isNetworkFailed && (
+                <>
+                  <AlertCircle className={styles.icon.sm} />
+                  <span>{currentConfig.displayName} connection failed</span>
+                </>
+              )}
+              {isNetworkSelected && isInitialized && (
+                <>
+                  <CheckCircle className={styles.icon.sm} />
+                  <span>{currentConfig.displayName} connected</span>
+                </>
+              )}
+            </div>
           </div>
 
+          {/* Browser Wallet Section */}
           {browserWalletConnectors.length > 0 && (
-            <div className="browser-wallet-section">
-              <label className="wallet-section-label">Browser Wallet</label>
+            <div className={styles.section}>
+              <label className={styles.sectionLabel}>Browser Wallet</label>
               {browserWalletConnectors.map((connector) => {
                 const status = getConnectorStatus(connector);
                 const isThisConnecting = connectingId === connector.id;
+                const isConnected = status.status === 'connected';
+
                 return (
-                  <button
+                  <Button
                     key={connector.id}
                     onClick={() => handleBrowserWalletConnect(connector)}
-                    type="button"
                     disabled={isConnectorDisabled(connector)}
-                    className="modal-action-button browser-wallet-connect"
-                    title={
-                      !isNetworkSelected
-                        ? 'Please select a network first'
-                        : isNetworkInitializing
-                          ? 'Network is initializing...'
-                          : isNetworkFailed
-                            ? 'Network connection failed'
-                            : ''
+                    variant={isConnected ? 'secondary' : 'primary'}
+                    className={styles.actionButton}
+                    isLoading={
+                      isThisConnecting || status.status === 'connecting'
                     }
+                    icon={<Globe className={styles.icon.sm} />}
                   >
-                    {isThisConnecting || status.status === 'connecting'
-                      ? 'Connecting...'
-                      : status.status === 'connected'
-                        ? `${connector.label} Connected`
-                        : `Connect ${connector.label}`}
-                  </button>
+                    {isConnected && `${connector.label} Connected`}
+                    {!isConnected && `Connect ${connector.label}`}
+                  </Button>
                 );
               })}
             </div>
           )}
 
+          {/* External Signer Section */}
           {externalSignerConnectors.length > 0 && (
-            <div className="browser-wallet-section">
-              <label className="wallet-section-label">External Signer</label>
+            <div className={styles.section}>
+              <label className={styles.sectionLabel}>External Signer</label>
               {externalSignerConnectors.map((connector) => {
                 const status = getConnectorStatus(connector);
                 const isThisConnecting = connectingId === connector.id;
+                const isConnected = status.status === 'connected';
+
                 return (
-                  <button
+                  <Button
                     key={connector.id}
                     onClick={() => handleExternalSignerConnect(connector)}
-                    type="button"
                     disabled={isConnectorDisabled(connector)}
-                    className="modal-action-button browser-wallet-connect"
-                    title={
-                      !isNetworkSelected
-                        ? 'Please select a network first'
-                        : isNetworkInitializing
-                          ? 'Network is initializing...'
-                          : isNetworkFailed
-                            ? 'Network connection failed'
-                            : ''
+                    variant={isConnected ? 'secondary' : 'primary'}
+                    className={styles.actionButton}
+                    isLoading={
+                      isThisConnecting || status.status === 'connecting'
                     }
+                    icon={<Link className={styles.icon.sm} />}
                   >
-                    {isThisConnecting || status.status === 'connecting'
-                      ? 'Connecting...'
-                      : status.status === 'connected'
-                        ? `${connector.label} Connected`
-                        : `Connect ${connector.label}`}
-                  </button>
+                    {isConnected && `${connector.label} Connected`}
+                    {!isConnected && `Connect ${connector.label}`}
+                  </Button>
                 );
               })}
             </div>
           )}
 
-          <div className="embedded-connect-section">
-            <label className="wallet-section-label">Embedded Wallet</label>
-
-            <div className="modal-actions">
-              <button
+          {/* Embedded Wallet Section */}
+          <div className={styles.section}>
+            <label className={styles.sectionLabel}>Embedded Wallet</label>
+            <div className={styles.embeddedActions}>
+              <Button
                 onClick={() => handleEmbeddedWalletAction('existing')}
-                type="button"
                 disabled={isActionDisabled || !hasSavedEmbeddedAccount}
-                className="modal-action-button primary"
-                title={
-                  !isNetworkSelected
-                    ? 'Please select a network first'
-                    : isNetworkInitializing
-                      ? 'Network is initializing...'
-                      : isNetworkFailed
-                        ? 'Network connection failed'
-                        : !hasSavedEmbeddedAccount
-                          ? 'No saved account found'
-                          : ''
-                }
+                variant="secondary"
+                className={styles.actionButton}
+                isLoading={isConnecting}
+                icon={<Link className={styles.icon.sm} />}
               >
-                {isConnecting ? 'Connecting...' : 'Connect Existing Account'}
-              </button>
-              <button
+                Connect Existing Account
+              </Button>
+              {!hasSavedEmbeddedAccount && (
+                <Badge variant="warning" className={styles.badgeWrapper}>
+                  No saved account found
+                </Badge>
+              )}
+              <Button
                 onClick={() => handleEmbeddedWalletAction('create')}
-                type="button"
                 disabled={isActionDisabled}
-                className="modal-action-button primary"
-                title={
-                  !isNetworkSelected
-                    ? 'Please select a network first'
-                    : isNetworkInitializing
-                      ? 'Network is initializing...'
-                      : isNetworkFailed
-                        ? 'Network connection failed'
-                        : ''
-                }
+                variant="primary"
+                className={styles.actionButton}
+                isLoading={isConnecting}
+                icon={<Plus className={styles.icon.sm} />}
               >
-                {isConnecting ? 'Creating...' : 'Create New Account'}
-              </button>
+                Create New Account
+              </Button>
             </div>
           </div>
         </div>
-      </div>
-    </div>,
-    modalRoot
+      </DialogContent>
+    </Dialog>
   );
 };

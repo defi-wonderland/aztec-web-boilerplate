@@ -1,42 +1,62 @@
 import React, { useState } from 'react';
+import { Settings, Home, Globe } from 'lucide-react';
 import { ConfigDisplay } from '../components/settings';
 import type { AztecNetwork } from '../config/networks/constants';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '../components/ui';
+
+const styles = {
+  headerRow: 'flex flex-row items-start gap-3',
+  headerIcon: 'h-8 w-8 text-accent',
+  tabIcon: 'h-4 w-4',
+} as const;
 
 export const SettingsCard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AztecNetwork>('sandbox');
 
   return (
-    <div className="settings-content">
-      <div className="content-header">
-        <div className="icon-container">
-          <span className="icon">⚙️</span>
-        </div>
+    <Card>
+      <CardHeader className={styles.headerRow}>
+        <Settings className={styles.headerIcon} />
         <div>
-          <h3>Network Configuration</h3>
-          <p>View and configure network settings</p>
+          <CardTitle>Network Configuration</CardTitle>
+          <CardDescription>View and configure network settings</CardDescription>
         </div>
-      </div>
+      </CardHeader>
 
-      <div className="settings-tabs">
-        <button
-          className={`settings-tab ${activeTab === 'sandbox' ? 'active' : ''}`}
-          onClick={() => setActiveTab('sandbox')}
+      <CardContent>
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as AztecNetwork)}
         >
-          <span className="tab-icon">🏠</span>
-          <span className="tab-label">Sandbox</span>
-        </button>
-        <button
-          className={`settings-tab ${activeTab === 'devnet' ? 'active' : ''}`}
-          onClick={() => setActiveTab('devnet')}
-        >
-          <span className="tab-icon">🌐</span>
-          <span className="tab-label">Devnet</span>
-        </button>
-      </div>
+          <TabsList>
+            <TabsTrigger value="sandbox">
+              <Home className={styles.tabIcon} />
+              Sandbox
+            </TabsTrigger>
+            <TabsTrigger value="devnet">
+              <Globe className={styles.tabIcon} />
+              Devnet
+            </TabsTrigger>
+          </TabsList>
 
-      <div className="settings-tab-content">
-        <ConfigDisplay networkName={activeTab} />
-      </div>
-    </div>
+          <TabsContent value="sandbox">
+            <ConfigDisplay networkName="sandbox" />
+          </TabsContent>
+          <TabsContent value="devnet">
+            <ConfigDisplay networkName="devnet" />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };

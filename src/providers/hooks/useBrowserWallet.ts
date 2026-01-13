@@ -15,7 +15,7 @@ import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { DEFAULT_BROWSER_WALLET_STATE } from '../../types/browserWallet';
 import { getChainFromCaipAccount } from '../../utils/azguard';
 import { buildRegisterContractOperations } from '../../utils/browserWallet';
-import { useError } from '../ErrorProvider';
+import { useToast } from '../../hooks';
 import type { NetworkConfig } from '../../config/networks';
 import type {
   IBrowserWalletAdapter,
@@ -65,7 +65,7 @@ export const useBrowserWallet = (
   const contractRegistrationRef = useRef<string | null>(null);
 
   const { isLoading, error, executeAsync } = useAsyncOperation();
-  const { addMessage } = useError();
+  const { success, info } = useToast();
 
   useEffect(() => {
     if (!adapter || isInitializedRef.current) return;
@@ -92,11 +92,7 @@ export const useBrowserWallet = (
             selectedAccount: null,
           }));
 
-          addMessage({
-            message: 'Browser wallet disconnected',
-            type: 'info',
-            source: 'wallet',
-          });
+          info('Browser wallet disconnected');
         });
 
         console.log(`✅ ${adapter.label} initialized`);
@@ -117,7 +113,7 @@ export const useBrowserWallet = (
     return () => {
       adapter.destroy();
     };
-  }, [adapter, addMessage]);
+  }, [adapter, info]);
 
   // Auto-register contracts when connected
   useEffect(() => {
@@ -231,15 +227,14 @@ export const useBrowserWallet = (
         error: null,
       }));
 
-      addMessage({
-        message: `Connected with ${accounts.length} account(s)`,
-        type: 'success',
-        source: 'wallet',
-      });
+      success(
+        'Wallet connected',
+        `Connected with ${accounts.length} account(s)`
+      );
 
       console.log(`✅ ${adapter.label} connected:`, accounts);
     }, `connect to ${adapter.label}`);
-  }, [currentConfig.name, executeAsync, addMessage, adapter]);
+  }, [currentConfig.name, executeAsync, success, adapter]);
 
   const handleDisconnect = useCallback(async (): Promise<void> => {
     if (!adapter) return;
@@ -254,15 +249,11 @@ export const useBrowserWallet = (
         error: null,
       }));
 
-      addMessage({
-        message: `Disconnected from ${adapter.label}`,
-        type: 'info',
-        source: 'wallet',
-      });
+      info('Wallet disconnected', `Disconnected from ${adapter.label}`);
 
       console.log(`✅ ${adapter.label} disconnected`);
     }, `disconnect from ${adapter.label}`);
-  }, [executeAsync, addMessage, adapter]);
+  }, [executeAsync, info, adapter]);
 
   const handleExecuteOperations = useCallback(
     async (

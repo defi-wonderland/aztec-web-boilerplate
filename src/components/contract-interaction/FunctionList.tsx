@@ -1,11 +1,42 @@
 import React from 'react';
+import { AlertTriangle, Search } from 'lucide-react';
+import { cn } from '../../utils';
+import { Input } from '../ui';
 import type { FunctionListProps } from './types';
 
-const EmptyIcon = () => (
-  <span role="img" aria-label="warning" className="empty-icon empty-icon-sm">
-    ⚠️
-  </span>
-);
+/**
+ * FunctionList styles - semantic pattern.
+ */
+const styles = {
+  card: 'rounded-lg border border-default bg-surface-secondary p-4 space-y-4',
+  // Search input
+  searchLabel: 'text-sm font-semibold text-default mb-2 block',
+  // Container for groups (no scroll here, each group has its own)
+  groupsContainer: 'space-y-4',
+  // Groups
+  group: 'space-y-2',
+  groupHeader: 'space-y-0.5',
+  groupLabel: 'text-xs font-semibold text-accent uppercase tracking-wide',
+  groupDescription: 'text-xs text-muted',
+  // Function list - each group has its own scroll with accent-themed scrollbar
+  functionList: 'space-y-1 max-h-64 overflow-y-auto scrollbar-accent',
+  functionItem: cn(
+    'w-full text-left px-3 py-2 rounded-lg',
+    'transition-all duration-200 cursor-pointer',
+    'hover:bg-surface-tertiary',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
+  ),
+  functionItemActive: 'bg-accent/10 border border-accent/30',
+  functionItemInactive: 'bg-surface border border-transparent',
+  functionName: 'text-sm font-medium text-default block',
+  functionMeta: 'text-xs text-muted',
+  // Empty state
+  emptyState: 'py-8 text-center text-sm text-muted',
+  icon: {
+    sm: 'h-4 w-4',
+    md: 'h-5 w-5',
+  },
+} as const;
 
 const FunctionList = ({
   groups,
@@ -19,59 +50,69 @@ const FunctionList = ({
   const title = contractName
     ? `Search functions · ${contractName}`
     : 'Search functions';
+
   return (
-    <div className="function-list-card">
-      <div className="form-group">
-        <label htmlFor="function-filter">{title}</label>
-        <input
+    <div className={styles.card}>
+      <div>
+        <label htmlFor="function-filter" className={styles.searchLabel}>
+          {title}
+        </label>
+        <Input
           id="function-filter"
-          className="form-input"
           value={filter}
           onChange={(e) => onFilterChange(e.target.value)}
           placeholder="Type to filter"
         />
       </div>
-      {groups.map((group) => {
-        const description =
-          group.id === 'callable'
-            ? 'State-changing calls that submit transactions.'
-            : 'Read-only or unconstrained helpers; simulate to preview.';
-        return (
-          <div className="function-group" key={group.id}>
-            <div className="function-group-header">
-              <div className="function-group-label">{group.label}</div>
-              <div className="function-group-description">{description}</div>
+
+      <div className={styles.groupsContainer}>
+        {groups.map((group) => {
+          const description =
+            group.id === 'callable'
+              ? 'State-changing calls that submit transactions.'
+              : 'Read-only or unconstrained helpers; simulate to preview.';
+          return (
+            <div className={styles.group} key={group.id}>
+              <div className={styles.groupHeader}>
+                <div className={styles.groupLabel}>{group.label}</div>
+                <div className={styles.groupDescription}>{description}</div>
+              </div>
+              <div className={styles.functionList}>
+                {group.items.map((fn) => {
+                  const isActive = selected === fn.name;
+                  return (
+                    <button
+                      key={fn.name}
+                      type="button"
+                      className={cn(
+                        styles.functionItem,
+                        isActive ? styles.functionItemActive : styles.functionItemInactive
+                      )}
+                      onClick={() => onSelect(fn.name)}
+                    >
+                      <span className={styles.functionName}>{fn.name}</span>
+                      <span className={styles.functionMeta}>
+                        {fn.attributes.join(' · ') || 'public'}
+                      </span>
+                    </button>
+                  );
+                })}
+                {group.items.length === 0 && (
+                  <div className={styles.emptyState}>No functions in this group.</div>
+                )}
+              </div>
             </div>
-            <div className="function-list">
-              {group.items.map((fn) => (
-                <button
-                  key={fn.name}
-                  type="button"
-                  className={`function-item ${selected === fn.name ? 'active' : ''}`}
-                  onClick={() => onSelect(fn.name)}
-                >
-                  <span className="function-name">{fn.name}</span>
-                  <span className="function-meta">
-                    {fn.attributes.join(' · ') || 'public'}
-                  </span>
-                </button>
-              ))}
-              {group.items.length === 0 && (
-                <div className="empty-state">No functions in this group.</div>
-              )}
-            </div>
+          );
+        })}
+
+        {groups.length === 0 && (
+          <div className={styles.emptyState}>
+            <AlertTriangle className={`${styles.icon.md} mx-auto mb-2 text-amber-500`} />
+            {hasContract && 'No functions found for current filter.'}
+            {!hasContract && 'Load or select a contract to view its functions.'}
           </div>
-        );
-      })}
-      {groups.length === 0 && (
-        <div className="empty-state">
-          <EmptyIcon />
-          <br />
-          {hasContract
-            ? 'No functions found for current filter.'
-            : 'Load or select a contract to view its functions.'}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

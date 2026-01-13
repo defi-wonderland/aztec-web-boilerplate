@@ -15,7 +15,7 @@ import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import type { PXE } from '@aztec/pxe/server';
 import { EcdsaKEthSignerAccountContract } from '../../accounts/EcdsaKEthSignerAccountContract';
 import { ExternalSignerType } from '../../types/aztec';
-import { useError } from '../ErrorProvider';
+import { useToast } from '../../hooks';
 import { useSharedPXE, type UseSharedPXEReturn } from './useSharedPXE';
 import type { NetworkConfig } from '../../config/networks';
 import type { ExternalSigner } from '../../signers/types';
@@ -76,7 +76,7 @@ export const useExternalSignerWallet = (
   const [error, setError] = useState<string | null>(null);
 
   const currentSignerRef = useRef<ExternalSigner | null>(null);
-  const { addMessage } = useError();
+  const { warning, error: toastError } = useToast();
 
   const connect = useCallback(
     async (signer: ExternalSigner): Promise<AccountWithSecretKey> => {
@@ -167,15 +167,10 @@ export const useExternalSignerWallet = (
           }
         } catch (deployErr) {
           console.error('❌ Account deployment failed:', deployErr);
-          addMessage({
-            message: 'Account deployment failed',
-            type: 'warning',
-            source: 'wallet',
-            details:
-              deployErr instanceof Error
-                ? deployErr.message
-                : String(deployErr),
-          });
+          warning(
+            'Account deployment failed',
+            'The account was created but deployment failed. Check console for details.'
+          );
         }
 
         // Update state
@@ -196,16 +191,14 @@ export const useExternalSignerWallet = (
         // Disconnect the signer so next attempt can use a different wallet
         signer.disconnect();
 
-        addMessage({
-          message: 'Failed to create Aztec account',
-          type: 'error',
-          source: 'wallet',
-          details: message,
-        });
+        toastError(
+          'Failed to create Aztec account',
+          'Connection failed. Check console for details.'
+        );
         throw err;
       }
     },
-    [sharedPXE, addMessage]
+    [sharedPXE, warning, toastError]
   );
 
   const disconnect = useCallback(() => {

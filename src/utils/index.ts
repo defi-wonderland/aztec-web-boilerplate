@@ -8,6 +8,7 @@ import {
 } from '../config/networks/constants';
 import { isBrowserWalletConnector } from '../types/walletConnector';
 import type { WalletConnector } from '../types/walletConnector';
+export { cn } from './cn';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
 export { toTitleCase } from './string';

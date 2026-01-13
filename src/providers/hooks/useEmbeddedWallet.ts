@@ -22,7 +22,7 @@ import {
   getConfiguredAccountCredentials,
   hasConfiguredCredentials,
 } from '../../utils/accountCredentials';
-import { useError } from '../ErrorProvider';
+import { useToast } from '../../hooks';
 import { useSharedPXE, type UseSharedPXEReturn } from './useSharedPXE';
 import type { NetworkConfig } from '../../config/networks';
 import type { AccountCredentials } from '../../types/aztec';
@@ -91,7 +91,7 @@ export const useEmbeddedWallet = (
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
-  const { addMessage } = useError();
+  const { warning } = useToast();
 
   // Validate config on mount
   useEffect(() => {
@@ -229,13 +229,10 @@ export const useEmbeddedWallet = (
         }
       } catch (deployErr) {
         console.error('❌ Account deployment failed:', deployErr);
-        addMessage({
-          message: 'Account deployment failed',
-          type: 'warning',
-          source: 'wallet',
-          details:
-            deployErr instanceof Error ? deployErr.message : String(deployErr),
-        });
+        warning(
+          'Account deployment failed',
+          'The account was created but deployment failed. Check console for details.'
+        );
       }
 
       // Save account credentials
@@ -256,7 +253,7 @@ export const useEmbeddedWallet = (
       setStatus('disconnected');
       throw err;
     }
-  }, [sharedPXE, addMessage]);
+  }, [sharedPXE, warning]);
 
   const connectTest = useCallback(
     async (index: number): Promise<AccountWithSecretKey> => {

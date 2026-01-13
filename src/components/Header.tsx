@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { useUniversalWallet } from '../hooks';
-import { useError } from '../providers/ErrorProvider';
+import React, { useCallback } from 'react';
+import { Hammer } from 'lucide-react';
+import { useUniversalWallet, useModal, MODAL_IDS, useToast } from '../hooks';
 import { WalletType } from '../types/aztec';
 import {
   truncateAddress,
@@ -9,7 +9,31 @@ import {
 } from '../utils';
 import { copyToClipboard } from '../utils/clipboard';
 import { ConnectWalletModal } from './ConnectWalletModal';
-import { ThemeToggle } from './ThemeToggle';
+import {
+  ThemeToggle,
+  Button,
+  Badge,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from './ui';
+
+const styles = {
+  // Navbar container
+  navbar:
+    'sticky top-0 z-40 w-full backdrop-blur-md bg-surface/80 border-b border-default',
+  navContainer:
+    'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16',
+  // Logo/Title
+  navTitle: 'text-xl font-semibold text-default flex items-center gap-2',
+  navTitleIcon: 'h-6 w-6 text-accent',
+  // Controls section
+  navControls: 'flex items-center gap-3',
+  // Connected account section
+  accountSection: 'flex items-center gap-2',
+  walletBadge: 'hidden sm:inline-flex',
+  addressButton: 'font-mono',
+} as const;
 
 interface ConnectedAccountProps {
   walletName: string;
@@ -17,12 +41,15 @@ interface ConnectedAccountProps {
   onDisconnect: () => void;
 }
 
+/**
+ * Connected account display with copy and disconnect actions.
+ */
 const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
   walletName,
   address,
   onDisconnect,
 }) => {
-  const { addMessage } = useError();
+  const { success } = useToast();
 
   const caipParts = parseCaipAddress(address);
   const displayAddress = caipParts
@@ -32,58 +59,57 @@ const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
 
   const handleCopy = async () => {
     await copyToClipboard(copyAddress, {
-      onSuccess: () =>
-        addMessage({
-          message: `${walletName} address copied: ${copyAddress}`,
-          type: 'success',
-        }),
+      onSuccess: () => success('Address copied', displayAddress),
     });
   };
 
   return (
-    <div className="connected-account-section">
-      <span className="wallet-type">{walletName}</span>
-      <button
-        type="button"
-        className="account-address"
-        onClick={handleCopy}
-        aria-label="Copy connected address"
-        title="Copy address"
-      >
-        {displayAddress}
-      </button>
-      <button
-        onClick={onDisconnect}
-        type="button"
-        className="disconnect-button"
-      >
-        Disconnect
-      </button>
+    <div className={styles.accountSection}>
+      <Badge variant="primary" className={styles.walletBadge}>
+        {walletName}
+      </Badge>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleCopy}
+            aria-label="Copy connected address"
+            className={styles.addressButton}
+          >
+            {displayAddress}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Click to copy full address</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="danger-outline" size="sm" onClick={onDisconnect}>
+            Disconnect
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Disconnect wallet</TooltipContent>
+      </Tooltip>
     </div>
   );
 };
 
-interface ConnectButtonProps {
-  onClick: () => void;
-}
-
-const ConnectButton: React.FC<ConnectButtonProps> = ({ onClick }) => (
-  <button onClick={onClick} className="wallet-connect-button" type="button">
-    Connect Wallet
-  </button>
-);
-
+/**
+ * Application header with wallet connection and theme toggle.
+ */
 export const Header: React.FC = () => {
   const { account, walletType, disconnect, connector } = useUniversalWallet();
-  const [showWalletModal, setShowWalletModal] = useState(false);
+  const { open: openWalletModal, close: closeWalletModal } = useModal(
+    MODAL_IDS.CONNECT_WALLET
+  );
 
   const handleDisconnect = useCallback(async () => {
     await disconnect();
   }, [disconnect]);
 
   const handleWalletConnected = useCallback(() => {
-    setShowWalletModal(false);
-  }, []);
+    closeWalletModal();
+  }, [closeWalletModal]);
 
   const renderAccountSection = () => {
     const status = connector?.getStatus();
@@ -107,25 +133,28 @@ export const Header: React.FC = () => {
       );
     }
 
-    return <ConnectButton onClick={() => setShowWalletModal(true)} />;
+    return (
+      <Button variant="secondary" size="sm" onClick={openWalletModal}>
+        Connect Wallet
+      </Button>
+    );
   };
 
   return (
     <>
-      <nav className="navbar">
-        <div className="nav-container">
-          <div className="nav-title">Aztec Web Boilerplate</div>
-          <div className="nav-controls">
-            <div className="account-controls">{renderAccountSection()}</div>
+      <nav className={styles.navbar}>
+        <div className={styles.navContainer}>
+          <div className={styles.navTitle}>
+            <Hammer className={styles.navTitleIcon} />
+            Aztec Web Boilerplate
+          </div>
+          <div className={styles.navControls}>
+            {renderAccountSection()}
             <ThemeToggle />
           </div>
         </div>
       </nav>
-      <ConnectWalletModal
-        isOpen={showWalletModal}
-        onClose={() => setShowWalletModal(false)}
-        onWalletConnected={handleWalletConnected}
-      />
+      <ConnectWalletModal onWalletConnected={handleWalletConnected} />
     </>
   );
 };
