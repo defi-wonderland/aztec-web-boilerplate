@@ -116,10 +116,10 @@ function copyAztecStandardsArtifacts(projectRoot: string, forceOverwrite: boolea
 
   // Copy TypeScript wrappers from artifacts/
   const artifactsDir = path.join(projectRoot, ARTIFACTS_OUTPUT_DIR);
-  
+
   // Remove old .ts files first to avoid tsx resolution conflicts
   cleanOldTsWrappers(artifactsDir, ['Dripper', 'Token']);
-  
+
   console.log(`\n   📁 Copying TypeScript wrappers to ${ARTIFACTS_OUTPUT_DIR}/`);
   copyFiles(
     path.join(npmPackagePath, 'artifacts'),
@@ -142,79 +142,39 @@ function copyAztecStandardsArtifacts(projectRoot: string, forceOverwrite: boolea
 }
 
 /**
- * Compile local contracts (e.g., ECDSA account contract)
+ * Compile local contracts using workspace Nargo.toml at root level
  */
 function compileLocalContracts(projectRoot: string, forceOverwrite: boolean): boolean {
-  const contractsDir = path.join(projectRoot, LOCAL_CONTRACTS_DIR);
+  const workspaceNargo = path.join(projectRoot, 'Nargo.toml');
 
-  if (!fs.existsSync(contractsDir)) {
-    console.log(`⚠️ No local contracts directory found at ${contractsDir}`);
-    return true;
+  if (!fs.existsSync(workspaceNargo)) {
+    console.error(`❌ No workspace Nargo.toml found at ${projectRoot}`);
+    return false;
   }
 
-  // Find all contract directories (those with Nargo.toml)
-  const contractDirs = fs.readdirSync(contractsDir).filter((dir) => {
-    const nargoPath = path.join(contractsDir, dir, 'Nargo.toml');
-    return fs.existsSync(nargoPath);
-  });
+  console.log('\n🔨 Compiling contracts from workspace...');
 
-  if (contractDirs.length === 0) {
-    console.log('📭 No local contracts found to compile');
-    return true;
+  // Compile all contracts from workspace root
+  if (!tryRun(`cd "${projectRoot}" && aztec compile`)) {
+    console.error('   ❌ Failed to compile contracts');
+    return false;
   }
 
-  console.log(`\n🔨 Processing ${contractDirs.length} local contract(s)...`);
-  let allSuccess = true;
+  console.log('   ✅ Contracts compiled successfully');
 
-  for (const contractDir of contractDirs) {
-    const contractPath = path.join(contractsDir, contractDir);
-    const targetDir = path.join(contractPath, 'target');
-    const artifactsDir = path.join(projectRoot, ARTIFACTS_OUTPUT_DIR);
 
-    console.log(`\n   📦 Processing ${contractDir}...`);
+  // TODO: This might not be needed because `yarn codegen` takes care of using a path relative to the target/
+  // Copy artifacts from target/ to src/artifacts/
+  const targetDir = path.join(projectRoot, 'target');
+  const artifactsDir = path.join(projectRoot, ARTIFACTS_OUTPUT_DIR);
 
-    // Check if we already have compiled artifacts
-    const hasExistingArtifacts = fs.existsSync(targetDir) &&
-      fs.readdirSync(targetDir).some((f) => f.endsWith('.json') && !f.endsWith('.bak'));
-
-    // Try to compile (using nargo or aztec-nargo)
-    let compiled = false;
-    
-    // Try nargo first (standard Noir compiler)
-    if (tryRun(`cd "${contractPath}" && nargo compile 2>/dev/null`)) {
-      console.log(`   ✅ ${contractDir} compiled with nargo`);
-      compiled = true;
-    }
-    // Try aztec-nargo if available
-    else if (tryRun(`cd "${contractPath}" && aztec-nargo compile 2>/dev/null`)) {
-      console.log(`   ✅ ${contractDir} compiled with aztec-nargo`);
-      compiled = true;
-    }
-    // Try aztec compile as fallback
-    else if (tryRun(`cd "${contractPath}" && aztec compile . 2>/dev/null`)) {
-      console.log(`   ✅ ${contractDir} compiled with aztec compile`);
-      compiled = true;
-    }
-
-    if (!compiled) {
-      if (hasExistingArtifacts) {
-        console.log(`   ⚠️ Compilation failed, but using existing artifacts`);
-      } else {
-        console.warn(`   ❌ Failed to compile ${contractDir} (no existing artifacts)`);
-        allSuccess = false;
-        continue;
-      }
-    }
-
-    // Copy artifacts to src/artifacts
-    if (fs.existsSync(targetDir)) {
-      copyFiles(targetDir, artifactsDir, forceOverwrite, (file) =>
-        file.endsWith('.json') && !file.endsWith('.bak')
-      );
-    }
+  if (fs.existsSync(targetDir)) {
+    copyFiles(targetDir, artifactsDir, forceOverwrite, (file) =>
+      file.endsWith('.json') && !file.endsWith('.bak')
+    );
   }
 
-  return allSuccess;
+  return true;
 }
 
 async function main() {
