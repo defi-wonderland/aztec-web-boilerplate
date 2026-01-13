@@ -3228,7 +3228,7 @@
     mipd "0.0.7"
     zustand "5.0.0"
 
-"@wonderland/walletless@^1.0.0":
+"@wonderland/walletless@1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@wonderland/walletless/-/walletless-1.0.0.tgz#54523b460281f7ff3ec1d2839376611eb11ee8ce"
   integrity sha512-aYY2f+0XzKtTqiXLEgrhPk3U3cewJzJH+EWnpulv/EHrlujjipzpXxM64dBP1TMSEt2t32OH77qEUWCiQLaxUA==
