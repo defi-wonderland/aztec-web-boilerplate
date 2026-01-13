@@ -1,7 +1,7 @@
 ---
 description: React component development guidelines
 globs: **/*.tsx
-version: 2.0.0
+version: 1.0.0
 ---
 
 # React Component Guidelines
@@ -54,11 +54,22 @@ const MyComponent = () => (
 When you need a new UI component:
 
 1. **Check Radix UI Primitives first**: https://www.radix-ui.com/primitives/docs/overview/introduction
-2. If it exists in Radix, create a wrapper in `src/components/ui/`
+2. If it exists in Radix, create a wrapper in `src/components/ui/ComponentName.tsx`
 3. Style with Tailwind using CVA (class-variance-authority) for variants
-4. Export from `src/components/ui/index.ts`
+4. **Use internal module pattern** for exports:
+
+   ```typescript
+   // src/components/ui/MyComponent.tsx
+   export const MyComponent = () => { ... }
+
+   // src/components/ui/index.ts (public interface)
+   export { MyComponent, type MyComponentProps } from './MyComponent';
+   ```
+
 5. Add examples to `UIComponentsShowcase.tsx`
-6. **Update the components list** in this file's "Available Components" section and CLAUDE.md
+6. **Update documentation**:
+   - Add to the "Available Components" list in this file
+   - Update `CLAUDE.md` if it's a commonly-used component
 
 ### Radix Integration Pattern
 
