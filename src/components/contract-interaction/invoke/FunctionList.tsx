@@ -26,7 +26,7 @@ const styles = {
     'hover:bg-surface-tertiary',
     'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
   ),
-  functionItemActive: 'bg-accent/10 border border-accent/30',
+  functionItemActive: 'bg-accent/5 border border-gray-400 dark:border-gray-600',
   functionItemInactive: 'bg-surface border border-transparent',
   functionName: 'text-sm font-medium text-default block',
   functionMeta: 'text-xs text-muted',

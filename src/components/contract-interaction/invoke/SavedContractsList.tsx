@@ -11,7 +11,7 @@ const styles = {
   contractsList: 'flex flex-col gap-2',
   card: {
     base: 'flex items-center justify-between gap-4 p-3 rounded-lg border transition-colors',
-    active: 'bg-accent/10 border-accent/30',
+    active: 'bg-accent/5 border-gray-400 dark:border-gray-600',
     inactive: 'bg-surface-secondary border-default hover:border-accent/20',
   },
   contractInfo: 'flex flex-col gap-0.5 min-w-0 flex-1',
