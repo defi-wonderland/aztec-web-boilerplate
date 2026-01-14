@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // Run with: tsx scripts/build-contracts.ts [--force]
 // This script copies artifacts from @defi-wonderland/aztec-standards and compiles local contracts
 
@@ -78,7 +77,9 @@ function copyFiles(
     copiedCount++;
   }
 
-  console.log(`   📊 Copied ${copiedCount} items, skipped ${skippedCount} existing items`);
+  console.log(
+    `   📊 Copied ${copiedCount} items, skipped ${skippedCount} existing items`
+  );
   return copiedCount;
 }
 
@@ -99,28 +100,36 @@ function cleanOldTsWrappers(artifactsDir: string, contracts: string[]): void {
 /**
  * Copy aztec-standards artifacts from node_modules
  */
-function copyAztecStandardsArtifacts(projectRoot: string, forceOverwrite: boolean): void {
+function copyAztecStandardsArtifacts(
+  projectRoot: string,
+  forceOverwrite: boolean
+): void {
   console.log('\n📦 Copying aztec-standards artifacts from node_modules...');
 
   const npmPackagePath = path.join(projectRoot, NPM_PACKAGE_PATH);
 
   if (!fs.existsSync(npmPackagePath)) {
-    console.error(`❌ Package @defi-wonderland/aztec-standards not found at ${npmPackagePath}`);
+    console.error(
+      `❌ Package @defi-wonderland/aztec-standards not found at ${npmPackagePath}`
+    );
     console.error('   Run: yarn add @defi-wonderland/aztec-standards');
     throw new Error('Missing aztec-standards package');
   }
 
   // Filter for Dripper and Token contracts only
   const contractFilter = (file: string) =>
-    (file.includes('Dripper') || file.includes('Token')) && !file.endsWith('.bak');
+    (file.includes('Dripper') || file.includes('Token')) &&
+    !file.endsWith('.bak');
 
   // Copy TypeScript wrappers from artifacts/
   const artifactsDir = path.join(projectRoot, ARTIFACTS_OUTPUT_DIR);
-  
+
   // Remove old .ts files first to avoid tsx resolution conflicts
   cleanOldTsWrappers(artifactsDir, ['Dripper', 'Token']);
-  
-  console.log(`\n   📁 Copying TypeScript wrappers to ${ARTIFACTS_OUTPUT_DIR}/`);
+
+  console.log(
+    `\n   📁 Copying TypeScript wrappers to ${ARTIFACTS_OUTPUT_DIR}/`
+  );
   copyFiles(
     path.join(npmPackagePath, 'artifacts'),
     artifactsDir,
@@ -144,7 +153,10 @@ function copyAztecStandardsArtifacts(projectRoot: string, forceOverwrite: boolea
 /**
  * Compile local contracts (e.g., ECDSA account contract)
  */
-function compileLocalContracts(projectRoot: string, forceOverwrite: boolean): boolean {
+function compileLocalContracts(
+  projectRoot: string,
+  forceOverwrite: boolean
+): boolean {
   const contractsDir = path.join(projectRoot, LOCAL_CONTRACTS_DIR);
 
   if (!fs.existsSync(contractsDir)) {
@@ -174,19 +186,24 @@ function compileLocalContracts(projectRoot: string, forceOverwrite: boolean): bo
     console.log(`\n   📦 Processing ${contractDir}...`);
 
     // Check if we already have compiled artifacts
-    const hasExistingArtifacts = fs.existsSync(targetDir) &&
-      fs.readdirSync(targetDir).some((f) => f.endsWith('.json') && !f.endsWith('.bak'));
+    const hasExistingArtifacts =
+      fs.existsSync(targetDir) &&
+      fs
+        .readdirSync(targetDir)
+        .some((f) => f.endsWith('.json') && !f.endsWith('.bak'));
 
     // Try to compile (using nargo or aztec-nargo)
     let compiled = false;
-    
+
     // Try nargo first (standard Noir compiler)
     if (tryRun(`cd "${contractPath}" && nargo compile 2>/dev/null`)) {
       console.log(`   ✅ ${contractDir} compiled with nargo`);
       compiled = true;
     }
     // Try aztec-nargo if available
-    else if (tryRun(`cd "${contractPath}" && aztec-nargo compile 2>/dev/null`)) {
+    else if (
+      tryRun(`cd "${contractPath}" && aztec-nargo compile 2>/dev/null`)
+    ) {
       console.log(`   ✅ ${contractDir} compiled with aztec-nargo`);
       compiled = true;
     }
@@ -200,7 +217,9 @@ function compileLocalContracts(projectRoot: string, forceOverwrite: boolean): bo
       if (hasExistingArtifacts) {
         console.log(`   ⚠️ Compilation failed, but using existing artifacts`);
       } else {
-        console.warn(`   ❌ Failed to compile ${contractDir} (no existing artifacts)`);
+        console.warn(
+          `   ❌ Failed to compile ${contractDir} (no existing artifacts)`
+        );
         allSuccess = false;
         continue;
       }
@@ -208,8 +227,11 @@ function compileLocalContracts(projectRoot: string, forceOverwrite: boolean): bo
 
     // Copy artifacts to src/artifacts
     if (fs.existsSync(targetDir)) {
-      copyFiles(targetDir, artifactsDir, forceOverwrite, (file) =>
-        file.endsWith('.json') && !file.endsWith('.bak')
+      copyFiles(
+        targetDir,
+        artifactsDir,
+        forceOverwrite,
+        (file) => file.endsWith('.json') && !file.endsWith('.bak')
       );
     }
   }
@@ -256,4 +278,3 @@ async function main() {
 }
 
 main();
-
