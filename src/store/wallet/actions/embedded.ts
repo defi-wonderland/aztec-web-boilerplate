@@ -27,11 +27,7 @@ export const createEmbeddedActions = (set: SetState, get: GetState) => ({
 
       const config = getNetworkStore().currentConfig;
 
-      set({ pxeStatus: 'initializing', pxeError: null });
-
       const result = await createEmbeddedAccount(config);
-
-      set({ pxeStatus: 'ready', pxeError: null });
 
       // Save credentials
       saveAccount(result.credentials);
@@ -62,12 +58,8 @@ export const createEmbeddedActions = (set: SetState, get: GetState) => ({
 
       const config = getNetworkStore().currentConfig;
 
-      set({ pxeStatus: 'initializing', pxeError: null });
-
       try {
         const result = await loadExistingEmbeddedAccount(config);
-
-        set({ pxeStatus: 'ready', pxeError: null });
 
         set({
           account: result.account,

@@ -24,11 +24,7 @@ export const createExternalSignerActions = (set: SetState, get: GetState) => ({
 
       const config = getNetworkStore().currentConfig;
 
-      set({ pxeStatus: 'initializing', pxeError: null });
-
       const result = await createExternalSignerAccount(signer, config);
-
-      set({ pxeStatus: 'ready', pxeError: null });
 
       if (result.deployment.deployed) {
         set({ status: 'deploying' });

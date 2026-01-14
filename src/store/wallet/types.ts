@@ -9,6 +9,7 @@ import type {
 } from '../../types/walletConnector';
 
 export type PXEStatus = 'idle' | 'initializing' | 'ready' | 'error';
+export type NetworkStatus = 'idle' | 'checking' | 'available' | 'error';
 
 /**
  * Valid PXE state transitions:
@@ -40,6 +41,10 @@ export type WalletState = {
   walletType: WalletType | null;
   status: ConnectionStatus;
   error: string | null;
+
+  // Network availability check
+  networkStatus: NetworkStatus;
+  networkError: string | null;
 
   // PXE initialization flags (services stay in singleton)
   pxeStatus: PXEStatus;
@@ -108,7 +113,9 @@ export type WalletActions = {
   // Shared
   disconnect: (cleanup?: () => Promise<void> | void) => Promise<void>;
   setError: (error: string | null) => void;
+  setNetworkStatus: (status: NetworkStatus, error?: string | null) => void;
   setPXEStatus: (status: PXEStatus, error?: string | null) => void;
+  checkNetwork: () => Promise<void>;
   reset: () => void;
   syncFromStorage: () => Promise<void>;
 };

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
+import { NetworkService } from '../../services/aztec/network';
 import { getContractRegistryStore } from '../contractRegistry';
+import { getNetworkStore } from '../network';
 import { createBrowserActions } from './actions/browser';
 import { createEmbeddedActions } from './actions/embedded';
 import { createExternalSignerActions } from './actions/externalSigner';
@@ -11,7 +13,7 @@ import type {
   WalletConnectorId,
 } from '../../types/walletConnector';
 
-export type { WalletStore, PXEStatus } from './types';
+export type { WalletStore, PXEStatus, NetworkStatus } from './types';
 
 const WALLET_CONNECTION_STORAGE_KEY = 'aztec-wallet-connection';
 
@@ -50,6 +52,8 @@ const INITIAL_STATE: WalletState = {
   walletType: null,
   status: 'disconnected',
   error: null,
+  networkStatus: 'idle',
+  networkError: null,
   pxeStatus: 'idle',
   pxeError: null,
   signerType: null,
@@ -170,6 +174,10 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   setError: (error) => set({ error }),
 
+  setNetworkStatus: (networkStatus, networkError = null) => {
+    set({ networkStatus, networkError });
+  },
+
   setPXEStatus: (pxeStatus, pxeError = null) => {
     const currentStatus = get().pxeStatus;
     if (!isValidPXETransition(currentStatus, pxeStatus)) {
@@ -178,6 +186,25 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
       );
     }
     set({ pxeStatus, pxeError });
+  },
+
+  checkNetwork: async () => {
+    const { networkStatus } = get();
+    if (networkStatus === 'checking' || networkStatus === 'available') {
+      return;
+    }
+
+    const { currentConfig } = getNetworkStore();
+    set({ networkStatus: 'checking', networkError: null });
+
+    try {
+      await NetworkService.checkAvailability(currentConfig.nodeUrl);
+      set({ networkStatus: 'available' });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to connect to network';
+      set({ networkStatus: 'error', networkError: message });
+    }
   },
 
   reset: () =>

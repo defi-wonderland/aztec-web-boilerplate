@@ -8,6 +8,8 @@ export const useWalletView = () =>
       status: state.status,
       walletType: state.walletType,
       error: state.error,
+      networkStatus: state.networkStatus,
+      networkError: state.networkError,
       isPXEReady: state.pxeStatus === 'ready',
       pxeStatus: state.pxeStatus,
       activeConnectorId: state.activeConnectorId,
@@ -31,7 +33,9 @@ export const useWalletActions = () =>
       setBrowserWalletState: state.setBrowserWalletState,
       disconnect: state.disconnect,
       setError: state.setError,
+      setNetworkStatus: state.setNetworkStatus,
       setPXEStatus: state.setPXEStatus,
+      checkNetwork: state.checkNetwork,
       reset: state.reset,
     }))
   );

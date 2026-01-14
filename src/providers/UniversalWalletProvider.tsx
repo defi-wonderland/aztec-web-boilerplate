@@ -6,7 +6,11 @@ import {
   useCurrentNetwork,
   useNetworkActions,
 } from '../store/network';
-import { useWalletActions, setupWalletCrossTabSync } from '../store/wallet';
+import {
+  useWalletActions,
+  setupWalletCrossTabSync,
+  getWalletStore,
+} from '../store/wallet';
 import { isValidConfig } from '../utils';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
 
@@ -40,6 +44,12 @@ export const UniversalWalletProvider: React.FC<
       resetToDefault();
     }
   }, [currentConfig, resetToDefault]);
+
+  useEffect(() => {
+    if (isValidConfig(currentConfig)) {
+      getWalletStore().checkNetwork();
+    }
+  }, [currentConfig]);
 
   useEffect(() => {
     const walletKit = createAztecWalletKit({
