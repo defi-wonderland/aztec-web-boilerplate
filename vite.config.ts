@@ -85,6 +85,11 @@ export default defineConfig({
     alias: {
       // External fee payment module
       '@aztec-fee-payment': path.resolve(__dirname, '../fee-payment/src/ts/dist'),
+      // Ensure buffer shim resolves from local node_modules (for external deps)
+      'vite-plugin-node-polyfills/shims/buffer': path.resolve(
+        __dirname,
+        'node_modules/vite-plugin-node-polyfills/shims/buffer'
+      ),
       // Additional polyfills for blockchain dependencies
       crypto: 'crypto-browserify',
       stream: 'stream-browserify',
