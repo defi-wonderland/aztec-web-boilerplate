@@ -165,7 +165,6 @@ export interface DeployConfig {
  */
 export interface ArtifactLoaderProps {
   mode?: ArtifactLoaderMode;
-  onModeChange?: (mode: ArtifactLoaderMode) => void;
   existing: ExistingContractConfig;
   saved: SavedContractsConfig;
   preconfigured?: PreconfiguredConfig;

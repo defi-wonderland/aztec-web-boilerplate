@@ -22,7 +22,7 @@ const ArtifactLoader = ({
   saved,
   preconfigured,
   deploy,
-}: Omit<ArtifactLoaderProps, 'onModeChange'>) => {
+}: ArtifactLoaderProps) => {
   const isDeployMode = mode === 'deploy';
   const hasPreconfigured = Boolean(preconfigured?.options.length);
 

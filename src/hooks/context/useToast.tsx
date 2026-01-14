@@ -73,8 +73,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 /**
  * Generate unique ID for toasts
  */
-const generateId = () =>
-  `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+const generateId = () => crypto.randomUUID();
 
 /**
  * Default toast duration in milliseconds
