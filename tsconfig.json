@@ -11,7 +11,11 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@aztec-fee-payment/*": ["../fee-payment/src/ts/dist/*"]
+    }
   },
   "include": [
     "src/**/*.{ts,tsx}",

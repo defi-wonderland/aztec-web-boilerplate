@@ -1,5 +1,13 @@
 import type { AztecNetwork } from './constants';
 
+/**
+ * Fee Payment Contracts configuration for a network.
+ */
+export interface FeePaymentContractsConfig {
+  /** Metered FPC address - tracks internal balances, deducts max gas cost */
+  metered?: string;
+}
+
 export interface NetworkConfig {
   name: AztecNetwork;
   displayName: string;
@@ -12,4 +20,6 @@ export interface NetworkConfig {
   tokenDeploymentSalt: string;
   proverEnabled: boolean;
   isTestnet: boolean;
+  /** Fee payment contracts configuration */
+  feePaymentContracts?: FeePaymentContractsConfig;
 }

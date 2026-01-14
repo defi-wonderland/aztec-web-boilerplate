@@ -1,3 +1,4 @@
+import path from 'path';
 import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
@@ -82,6 +83,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // External fee payment module
+      '@aztec-fee-payment': path.resolve(__dirname, '../fee-payment/src/ts/dist'),
       // Additional polyfills for blockchain dependencies
       crypto: 'crypto-browserify',
       stream: 'stream-browserify',
@@ -176,6 +179,7 @@ export default defineConfig({
       '@aztec/ethereum',
       '@aztec/accounts',
       '@defi-wonderland/aztec-standards',
+      '@aztec-fee-payment',
       'noirc_abi_wasm',
     ],
     esbuildOptions: {

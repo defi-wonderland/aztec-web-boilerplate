@@ -3,6 +3,7 @@ import { loadContractArtifact } from '@aztec/aztec.js/abi';
 import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
+import { useFeePayment } from '../../providers/FeePaymentProvider';
 import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
@@ -29,6 +30,7 @@ export interface DeployParams {
 
 export const useContractDeployer = () => {
   const { connector, account } = useUniversalWallet();
+  const { getFeePaymentMethod } = useFeePayment();
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,7 +103,9 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
+        const paymentMethod = await getFeePaymentMethod(() =>
+          connector.getSponsoredFeePaymentMethod()
+        );
 
         const receipt = await deployMethod
           .send({
@@ -129,7 +133,7 @@ export const useContractDeployer = () => {
         setIsDeploying(false);
       }
     },
-    [connector, account]
+    [connector, account, getFeePaymentMethod]
   );
 
   const clearError = useCallback(() => {

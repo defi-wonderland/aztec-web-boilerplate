@@ -13,4 +13,28 @@ declare global {
   }
 }
 
+/**
+ * Type declarations for @aztec-fee-payment module.
+ */
+declare module '@aztec-fee-payment/fee-payment-methods' {
+  import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
+  import type { AztecAddress } from '@aztec/aztec.js/addresses';
+
+  export class MeteredFeePaymentMethod implements FeePaymentMethod {
+    constructor(fpcAddress: AztecAddress);
+    getAsset(): Promise<AztecAddress>;
+    getFeePayer(): Promise<AztecAddress>;
+    getExecutionPayload(): Promise<unknown>;
+    getGasSettings(): unknown;
+  }
+
+  export class MeteredExactFeePaymentMethod implements FeePaymentMethod {
+    constructor(fpcAddress: AztecAddress);
+    getAsset(): Promise<AztecAddress>;
+    getFeePayer(): Promise<AztecAddress>;
+    getExecutionPayload(): Promise<unknown>;
+    getGasSettings(): unknown;
+  }
+}
+
 export {};

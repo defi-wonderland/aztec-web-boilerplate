@@ -5,6 +5,7 @@ import { queryClient } from '../lib/queryClient';
 import { ModalProvider, ToastProvider } from '../hooks';
 import { Toaster, TooltipProvider } from '../components/ui';
 import { EmbeddedContractProvider } from './EmbeddedContractProvider';
+import { FeePaymentProviderWrapper } from './FeePaymentProviderWrapper';
 import { ThemeProvider } from './ThemeProvider';
 import { UniversalWalletProvider } from './UniversalWalletProvider';
 
@@ -20,7 +21,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           <ToastProvider>
             <ModalProvider>
               <UniversalWalletProvider config={walletKitConfig}>
-                <EmbeddedContractProvider>{children}</EmbeddedContractProvider>
+                <FeePaymentProviderWrapper>
+                  <EmbeddedContractProvider>{children}</EmbeddedContractProvider>
+                </FeePaymentProviderWrapper>
               </UniversalWalletProvider>
             </ModalProvider>
             <Toaster />

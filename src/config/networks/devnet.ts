@@ -21,4 +21,8 @@ export const DEVNET_CONFIG: NetworkConfig = {
   tokenDeploymentSalt: '1337',
   proverEnabled: true,
   isTestnet: true,
+  feePaymentContracts: {
+    metered:
+      '0x0b0d9f0bae3058318e81634ea393e13d56587d1099d6deadcf8019b40eb5d012',
+  },
 };

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
+import { useFeePayment } from '../../providers/FeePaymentProvider';
 import {
   isBrowserWalletConnector,
   hasAppManagedPXE,
@@ -73,6 +74,7 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
 export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const { timeout = 900, receiptPolling } = options;
   const { connector, account } = useUniversalWallet();
+  const { getFeePaymentMethod } = useFeePayment();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -155,7 +157,9 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          const paymentMethod = await connector.getSponsoredFeePaymentMethod();
+          const paymentMethod = await getFeePaymentMethod(() =>
+            connector.getSponsoredFeePaymentMethod()
+          );
           const contractAddress = AztecAddress.fromString(address);
 
           // Create contract instance
@@ -205,7 +209,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
         setIsPending(false);
       }
     },
-    [connector, account, timeout]
+    [connector, account, timeout, getFeePaymentMethod]
   );
 
   const reset = useCallback(() => {

@@ -9,6 +9,7 @@ import { Wrench, AlertTriangle } from 'lucide-react';
 import { iconSize } from '../utils';
 import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 import ArtifactLoader from '../components/contract-interaction/ArtifactLoader';
+import { FeePaymentSelector } from '../components/FeePaymentSelector';
 import FunctionForm from '../components/contract-interaction/FunctionForm';
 import FunctionList from '../components/contract-interaction/FunctionList';
 import LogPanel from '../components/contract-interaction/LogPanel';
@@ -1066,6 +1067,10 @@ export const ContractInteractionCard: React.FC = () => {
             Owner differs from the connected wallet; private balances for other
             addresses will usually appear as 0.
           </div>
+        )}
+
+        {!isDeployMode && selectedFn && (
+          <FeePaymentSelector disabled={isBusy} className="mb-4" />
         )}
 
         {!isDeployMode && (
