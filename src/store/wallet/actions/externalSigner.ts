@@ -36,6 +36,7 @@ export const createExternalSignerActions = (set: SetState, get: GetState) => ({
         walletType: WalletType.EXTERNAL_SIGNER,
         signerType: result.signerType,
         connectedRdns: result.rdns,
+        pxeStatus: 'ready',
       });
 
       return result.account;

@@ -39,6 +39,7 @@ export const createEmbeddedActions = (set: SetState, get: GetState) => ({
       set({
         account: result.account,
         walletType: WalletType.EMBEDDED,
+        pxeStatus: 'ready',
       });
 
       return result.account;
@@ -65,6 +66,7 @@ export const createEmbeddedActions = (set: SetState, get: GetState) => ({
           account: result.account,
           walletType: WalletType.EMBEDDED,
           status: 'connected',
+          pxeStatus: 'ready',
         });
 
         return result.account;
