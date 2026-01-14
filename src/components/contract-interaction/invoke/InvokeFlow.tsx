@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
+import { Play, Zap } from 'lucide-react';
 import { useContractInvoker } from '../../../hooks/contracts';
 import { usePreconfiguredContracts } from '../../../hooks/useInteractionContracts';
 import {
@@ -8,16 +9,30 @@ import {
   useFormValues,
   useFormActions,
 } from '../../../store';
+import { iconSize } from '../../../utils';
 import {
   analyzeFunctionCapabilities,
   isValidAztecAddress,
 } from '../../../utils/contractInteraction';
+import { Button } from '../../ui';
 import ExistingContractForm from './ExistingContractForm';
 import FunctionForm from './FunctionForm';
 import FunctionList from './FunctionList';
 import PreconfiguredSelector from './PreconfiguredSelector';
 import SavedContractsList from './SavedContractsList';
 import type { AztecNetwork } from '../../../config/networks/constants';
+
+const styles = {
+  container: 'flex flex-col gap-6',
+  grid: 'grid gap-6 lg:grid-cols-2',
+  loaderCard:
+    'flex flex-col gap-4 rounded-lg border border-default bg-surface-secondary p-4',
+  hint: 'text-sm text-muted p-3 rounded-lg bg-blue-500/10 border border-blue-500/20',
+  hintError:
+    'text-sm text-red-500 p-3 rounded-lg bg-red-500/10 border border-red-500/20',
+  actionRow: 'flex flex-wrap items-center gap-3 pt-4',
+  errorInline: 'text-sm text-red-500',
+} as const;
 
 export interface InvokeFlowProps {
   networkName?: AztecNetwork;
@@ -110,7 +125,6 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
   const simulateDisabled = !selectedFn || isBusy || !capabilities.canSimulate;
   const executeDisabled = !selectedFn || isBusy || !capabilities.isExecutable;
 
-  // Handlers
   const handleAddressChange = useCallback(
     (value: string) => {
       setAddress(value);
@@ -145,9 +159,9 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
   );
 
   return (
-    <div className="invoke-flow">
-      <div className="contract-grid">
-        <div className="loader-card">
+    <div className={styles.container}>
+      <div className={styles.grid}>
+        <div className={styles.loaderCard}>
           {hasPreconfigured && (
             <PreconfiguredSelector
               preconfigured={preconfiguredOptions}
@@ -201,38 +215,40 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
       )}
 
       {selectedFn && capabilities.isPrivate && (
-        <div className="input-hint" role="status">
+        <p className={styles.hint} role="status">
           This is a private function. Results can only be proven by the note
           owner; querying other addresses will likely return 0 or fail.
-        </div>
+        </p>
       )}
 
       {ownerMismatchWarning && (
-        <div className="input-hint error" role="alert">
+        <p className={styles.hintError} role="alert">
           Owner differs from the connected wallet; private balances for other
           addresses will usually appear as 0.
-        </div>
+        </p>
       )}
 
-      <div className="action-row">
-        <button
-          type="button"
-          className="btn btn-secondary"
+      <div className={styles.actionRow}>
+        <Button
+          variant="secondary"
           disabled={simulateDisabled}
+          isLoading={isSimulating}
           onClick={() => selectedFnName && onSimulate(selectedFnName)}
+          icon={<Play size={iconSize()} />}
         >
           {isSimulating ? 'Simulating...' : 'Simulate'}
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary"
+        </Button>
+        <Button
+          variant="primary"
           disabled={executeDisabled}
+          isLoading={isExecuting}
           onClick={() => selectedFnName && onExecute(selectedFnName)}
+          icon={<Zap size={iconSize()} />}
         >
           {isExecuting ? 'Executing...' : 'Execute'}
-        </button>
+        </Button>
         {error && (
-          <span className="input-hint error" role="alert">
+          <span className={styles.errorInline} role="alert">
             {error}
           </span>
         )}

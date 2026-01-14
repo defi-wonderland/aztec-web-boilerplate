@@ -5,6 +5,7 @@ import React, {
   useRef,
   useEffect,
 } from 'react';
+import { Rocket } from 'lucide-react';
 import { useDeployableContracts } from '../../../hooks/useInteractionContracts';
 import {
   useSelectedDeployable,
@@ -15,18 +16,40 @@ import {
   useFormValues,
   useFormActions,
 } from '../../../store';
+import { iconSize } from '../../../utils';
 import { constants } from '../../../utils/contractCache';
 import {
   loadAndPrepareArtifact,
   type ParsedFunction,
 } from '../../../utils/contractInteraction';
 import { toTitleCase } from '../../../utils/string';
+import {
+  Button,
+  Textarea,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../../ui';
 import ParameterInputs from '../ParameterInputs';
 import type { AztecNetwork } from '../../../config/networks/constants';
 import type {
   ContractConstructor,
   DeployableContract,
 } from '../../../utils/deployableContracts';
+
+const styles = {
+  section: 'flex flex-col gap-4',
+  formGroup: 'flex flex-col gap-2',
+  label: 'text-sm font-semibold text-default',
+  constructorParams: 'flex flex-col gap-3 pt-4 border-t border-default',
+  sectionTitle: 'text-sm font-semibold text-default',
+  hint: 'text-sm text-muted',
+  hintError: 'text-sm text-red-500',
+  hintWarning: 'text-sm text-amber-500',
+  actionRow: 'flex gap-2 pt-4',
+} as const;
 
 export interface DeployFlowProps {
   networkName?: AztecNetwork;
@@ -133,8 +156,6 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
   const effectiveConstructor = useMemo(() => {
     if (!effectiveDeployable) return null;
     if (isCustomSelected && customDeployable.contract) {
-      // In custom mode, selectedConstructor is null (findConstructorByName returns null
-      // when deployableId is null), so use constructorName directly from the store
       return (
         customDeployable.contract.constructors.find(
           (c) => c.name === constructorName
@@ -150,7 +171,10 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
     selectedConstructor,
   ]);
 
-  const constructorInputs = effectiveConstructor?.inputs ?? [];
+  const constructorInputs = useMemo(
+    () => effectiveConstructor?.inputs ?? [],
+    [effectiveConstructor]
+  );
 
   const hasNoConstructorInputs =
     effectiveConstructor &&
@@ -176,17 +200,16 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
   ]);
 
   const handleDeployableChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const value = e.target.value || null;
-      setDeployableId(value);
+    (value: string) => {
+      setDeployableId(value === 'custom' ? null : value || null);
       setCustomArtifactInput('');
     },
     [setDeployableId]
   );
 
   const handleConstructorChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setSelectedConstructor(e.target.value || null);
+    (value: string) => {
+      setSelectedConstructor(value || null);
     },
     [setSelectedConstructor]
   );
@@ -236,84 +259,81 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
   }, [effectiveDeployable, effectiveConstructor, formValues, onDeploy]);
 
   return (
-    <div className="deploy-section">
-      <div className="form-group">
-        <label htmlFor="deployable-contract">Contract to Deploy</label>
-        <select
-          id="deployable-contract"
-          className="form-input"
-          value={deployableId ?? ''}
-          onChange={handleDeployableChange}
+    <div className={styles.section}>
+      <div className={styles.formGroup}>
+        <label htmlFor="deployable-contract" className={styles.label}>
+          Contract to Deploy
+        </label>
+        <Select
+          value={deployableId ?? 'custom'}
+          onValueChange={handleDeployableChange}
           disabled={isDeploying}
-          aria-label="Select contract to deploy"
         >
-          <option value="">Custom artifact (paste JSON)</option>
-          {deployableContracts.map((contract) => (
-            <option key={contract.id} value={contract.id}>
-              {contract.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="deployable-contract">
+            <SelectValue placeholder="Custom artifact (paste JSON)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="custom">Custom artifact (paste JSON)</SelectItem>
+            {deployableContracts.map((contract) => (
+              <SelectItem key={contract.id} value={contract.id}>
+                {contract.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {isCustomSelected && (
-        <div className="form-group">
-          <label htmlFor="custom-artifact">
-            Custom contract artifact (JSON)
-          </label>
-          <textarea
-            id="custom-artifact"
-            className="form-input"
-            value={customArtifactInput}
-            onChange={handleCustomArtifactChange}
-            placeholder="Paste the compiled contract artifact JSON here"
-            disabled={isDeploying}
-            aria-label="Custom contract artifact JSON"
-            rows={6}
-          />
-          {customDeployable.error ? (
-            <div className="input-hint error" role="alert">
-              {customDeployable.error}
-            </div>
-          ) : (
+        <Textarea
+          id="custom-artifact"
+          label="Custom contract artifact (JSON)"
+          value={customArtifactInput}
+          onChange={handleCustomArtifactChange}
+          placeholder="Paste the compiled contract artifact JSON here"
+          disabled={isDeploying}
+          rows={6}
+          error={customDeployable.error ?? undefined}
+          helperText={
             customArtifactInput &&
-            !effectiveDeployable && (
-              <div className="input-hint warning" role="status">
-                Provide a valid artifact to load constructors.
-              </div>
-            )
-          )}
-        </div>
+            !effectiveDeployable &&
+            !customDeployable.error
+              ? 'Provide a valid artifact to load constructors.'
+              : undefined
+          }
+        />
       )}
 
       {effectiveDeployable && (
-        <div className="form-group">
-          <label htmlFor="constructor-select">Constructor</label>
-          <select
-            id="constructor-select"
-            className="form-input"
+        <div className={styles.formGroup}>
+          <label htmlFor="constructor-select" className={styles.label}>
+            Constructor
+          </label>
+          <Select
             value={effectiveConstructor?.name ?? ''}
-            onChange={handleConstructorChange}
+            onValueChange={handleConstructorChange}
             disabled={isDeploying}
-            aria-label="Select constructor"
           >
-            <option value="">Select a constructor...</option>
-            {effectiveDeployable.constructors.map((ctor) => (
-              <option key={ctor.name} value={ctor.name}>
-                {ctor.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="constructor-select">
+              <SelectValue placeholder="Select a constructor..." />
+            </SelectTrigger>
+            <SelectContent>
+              {effectiveDeployable.constructors.map((ctor) => (
+                <SelectItem key={ctor.name} value={ctor.name}>
+                  {ctor.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
       {effectiveConstructor && (
-        <div className="constructor-params">
-          <div className="form-section-title">Constructor Parameters</div>
+        <div className={styles.constructorParams}>
+          <div className={styles.sectionTitle}>Constructor Parameters</div>
           {hasNoConstructorInputs && (
-            <div className="input-hint" role="status">
+            <p className={styles.hint}>
               This constructor requires no parameters.
-            </div>
+            </p>
           )}
           <ParameterInputs
             inputs={constructorInputs}
@@ -326,27 +346,27 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
       )}
 
       {deploymentError && (
-        <div className="input-hint error" role="alert">
+        <p className={styles.hintError} role="alert">
           {deploymentError}
-        </div>
+        </p>
       )}
 
       {!canDeploy && effectiveConstructor && (
-        <div className="input-hint warning" role="alert">
+        <p className={styles.hintWarning} role="alert">
           Contract deployment is not yet supported for your wallet type.
-        </div>
+        </p>
       )}
 
-      <div className="action-row">
-        <button
-          type="button"
-          className="btn btn-primary"
+      <div className={styles.actionRow}>
+        <Button
+          variant="primary"
           onClick={handleDeploy}
           disabled={!canDeploy || !isDeployFormValid || isDeploying}
-          aria-label="Deploy contract"
+          isLoading={isDeploying}
+          icon={<Rocket size={iconSize()} />}
         >
           {isDeploying ? 'Deploying...' : 'Deploy Contract'}
-        </button>
+        </Button>
       </div>
     </div>
   );

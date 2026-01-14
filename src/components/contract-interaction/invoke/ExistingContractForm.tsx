@@ -1,7 +1,20 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
+import { iconSize } from '../../../utils';
+import { Button, Input, Textarea } from '../../ui';
 import type { ExistingContractFormProps } from '../types';
 
-const ExistingContractForm = ({
+const styles = {
+  section: 'flex flex-col gap-4',
+  textareaWrapper: 'relative',
+  loadingOverlay:
+    'absolute inset-0 flex items-center justify-center gap-2 bg-surface/80 rounded-lg text-muted',
+  hint: 'text-sm text-muted',
+  hintError: 'text-sm text-red-500',
+  actionRow: 'flex gap-2 pt-2',
+} as const;
+
+const ExistingContractForm: React.FC<ExistingContractFormProps> = ({
   address,
   artifactInput,
   onAddressChange,
@@ -12,62 +25,54 @@ const ExistingContractForm = ({
   isPreconfiguredMode,
   isLoadingPreconfigured = false,
   canLoad,
-}: ExistingContractFormProps) => {
+}) => {
+  const addressError =
+    !isValidAddress && address ? 'Invalid Aztec address' : undefined;
+
   return (
-    <>
-      <div className="form-group">
-        <label htmlFor="contract-address">Contract Address</label>
-        <input
-          id="contract-address"
-          className="form-input"
-          value={address}
-          onChange={(e) => onAddressChange(e.target.value)}
-          placeholder="Paste deployed contract address"
-          aria-label="Contract address"
+    <div className={styles.section}>
+      <Input
+        id="contract-address"
+        label="Contract Address"
+        value={address}
+        onChange={(e) => onAddressChange(e.target.value)}
+        placeholder="0x1d64b9cf07d536e6b218c14256c4965a..."
+        error={addressError}
+        helperText={
+          isPreconfiguredMode
+            ? 'Pre-filled address, but you can change it to use a different deployment.'
+            : undefined
+        }
+      />
+
+      <div className={styles.textareaWrapper}>
+        <Textarea
+          id="artifact-json"
+          label="Artifact (JSON)"
+          value={isLoadingPreconfigured ? '' : artifactInput}
+          onChange={(e) => onArtifactChange(e.target.value)}
+          placeholder={
+            isLoadingPreconfigured
+              ? 'Loading artifact...'
+              : 'Paste compiled artifact JSON'
+          }
+          disabled={isPreconfiguredMode || isLoadingPreconfigured}
+          readOnly={isPreconfiguredMode}
+          rows={4}
         />
-        {!isValidAddress && address && (
-          <span className="input-hint error">Invalid Aztec address</span>
-        )}
-        {isPreconfiguredMode && (
-          <span className="input-hint">
-            Pre-filled address, but you can change it to use a different
-            deployment.
-          </span>
+        {isLoadingPreconfigured && (
+          <div className={styles.loadingOverlay}>
+            <Loader2 size={iconSize()} className="animate-spin" />
+            <span>Loading artifact...</span>
+          </div>
         )}
       </div>
 
-      <div className="form-group">
-        <label htmlFor="artifact-json">Artifact (JSON)</label>
-        <div className="artifact-textarea-wrapper">
-          <textarea
-            id="artifact-json"
-            className={`form-input artifact-textarea${isPreconfiguredMode ? ' input-disabled' : ''}${isLoadingPreconfigured ? ' loading' : ''}`}
-            value={isLoadingPreconfigured ? '' : artifactInput}
-            onChange={(e) => onArtifactChange(e.target.value)}
-            placeholder={
-              isLoadingPreconfigured
-                ? 'Loading artifact...'
-                : 'Paste compiled artifact JSON'
-            }
-            aria-label="Artifact JSON"
-            disabled={isPreconfiguredMode || isLoadingPreconfigured}
-            readOnly={isPreconfiguredMode}
-          />
-          {isLoadingPreconfigured && (
-            <div className="artifact-loading-overlay">
-              <div className="loading-spinner" />
-              <span>Loading artifact...</span>
-            </div>
-          )}
-        </div>
-      </div>
+      {error && <p className={styles.hintError}>{error}</p>}
 
-      {error && <div className="input-hint error">{error}</div>}
-
-      <div className="action-row">
-        <button
-          type="button"
-          className="btn btn-primary"
+      <div className={styles.actionRow}>
+        <Button
+          variant="primary"
           onClick={onLoad}
           disabled={!canLoad}
           aria-label={
@@ -77,9 +82,9 @@ const ExistingContractForm = ({
           }
         >
           {isPreconfiguredMode ? 'Load contract' : 'Load artifact'}
-        </button>
+        </Button>
       </div>
-    </>
+    </div>
   );
 };
 

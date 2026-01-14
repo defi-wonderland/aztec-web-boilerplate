@@ -56,6 +56,7 @@ const styles = {
     base: 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm',
     notConnected:
       'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+    idle: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
     initializing: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
     failed: 'bg-red-500/10 text-red-400 border border-red-500/20',
     connected: 'bg-green-500/10 text-green-400 border border-green-500/20',
@@ -99,6 +100,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const isNetworkInitializing = pxeStatus === 'initializing';
   const isNetworkFailed = pxeStatus === 'error';
   const isNetworkReady = isPXEReady;
+  const isNetworkIdle = pxeStatus === 'idle' && isNetworkSelected;
 
   const isActionDisabled = !isNetworkSelected || connectingConnectorId !== null;
 
@@ -206,6 +208,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     if (isNetworkInitializing) return styles.networkStatus.initializing;
     if (isNetworkFailed) return styles.networkStatus.failed;
     if (isNetworkReady) return styles.networkStatus.connected;
+    if (isNetworkIdle) return styles.networkStatus.idle;
     return styles.networkStatus.notConnected;
   };
 
@@ -256,6 +259,12 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                 <>
                   <AlertCircle size={iconSize()} />
                   <span>Network not connected</span>
+                </>
+              )}
+              {isNetworkIdle && (
+                <>
+                  <CheckCircle size={iconSize()} />
+                  <span>{currentConfig.displayName} ready to connect</span>
                 </>
               )}
               {isNetworkInitializing && (

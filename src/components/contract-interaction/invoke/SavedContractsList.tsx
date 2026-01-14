@@ -1,14 +1,35 @@
 import React from 'react';
+import { Trash2 } from 'lucide-react';
+import { cn, iconSize } from '../../../utils';
+import { Button, Badge } from '../../ui';
 import type { SavedContractsListProps } from '../types';
 
-const SavedContractsList = ({
+const styles = {
+  section: 'flex flex-col gap-3 pt-4 border-t border-default',
+  header: 'flex items-center justify-between',
+  label: 'text-sm font-semibold text-default',
+  contractsList: 'flex flex-col gap-2',
+  card: {
+    base: 'flex items-center justify-between gap-4 p-3 rounded-lg border transition-colors',
+    active: 'bg-accent/10 border-accent/30',
+    inactive: 'bg-surface-secondary border-default hover:border-accent/20',
+  },
+  contractInfo: 'flex flex-col gap-0.5 min-w-0 flex-1',
+  contractTitle: 'flex items-center gap-2',
+  contractName: 'text-sm font-medium text-default truncate',
+  contractAddress: 'text-xs text-muted font-mono truncate',
+  contractMeta: 'text-xs text-muted',
+  actions: 'flex gap-2 shrink-0',
+} as const;
+
+const SavedContractsList: React.FC<SavedContractsListProps> = ({
   contracts,
   activeAddress,
   onApply,
   onDelete,
   onClearAll,
   canClear,
-}: SavedContractsListProps) => {
+}) => {
   const normalizedActiveAddress = activeAddress.trim().toLowerCase();
 
   if (contracts.length === 0) {
@@ -16,69 +37,66 @@ const SavedContractsList = ({
   }
 
   return (
-    <div className="form-group">
-      <div className="saved-contracts-header">
-        <label>Saved contracts</label>
-        <button
-          type="button"
-          className="btn btn-small btn-danger-outline"
+    <div className={styles.section}>
+      <div className={styles.header}>
+        <label className={styles.label}>Saved contracts</label>
+        <Button
+          variant="danger"
+          size="sm"
           onClick={onClearAll}
           disabled={!canClear}
-          aria-label="Clear all saved contracts"
-          title="Remove all saved contracts from cache"
+          icon={<Trash2 size={iconSize()} />}
         >
-          Clear all saved
-        </button>
+          Clear all
+        </Button>
       </div>
-      <div className="saved-contracts">
+
+      <div className={styles.contractsList}>
         {contracts.map((contract) => {
           const isActive =
             normalizedActiveAddress === contract.address.trim().toLowerCase();
-          const useLabel = isActive ? 'Active' : 'Use';
 
           return (
             <div
-              className={`saved-contract-card${isActive ? ' active' : ''}`}
+              className={cn(
+                styles.card.base,
+                isActive ? styles.card.active : styles.card.inactive
+              )}
               key={contract.address}
             >
-              <div className="saved-contract-info">
-                <div className="saved-contract-title">
-                  <div className="saved-contract-name">
+              <div className={styles.contractInfo}>
+                <div className={styles.contractTitle}>
+                  <span className={styles.contractName}>
                     {contract.label ?? 'Saved contract'}
-                  </div>
-                  {isActive && (
-                    <span
-                      className="saved-contract-badge"
-                      aria-label="Active contract"
-                    >
-                      Active
-                    </span>
-                  )}
+                  </span>
+                  {isActive && <Badge variant="primary">Active</Badge>}
                 </div>
-                <div className="saved-contract-address">{contract.address}</div>
-                <div className="saved-contract-meta">
+                <span className={styles.contractAddress}>
+                  {contract.address}
+                </span>
+                <span className={styles.contractMeta}>
                   {contract.artifact || contract.artifactKey
                     ? 'Artifact cached'
                     : 'Address only'}
-                </div>
+                </span>
               </div>
-              <div className="saved-contract-actions">
-                <button
-                  type="button"
-                  className="btn btn-primary"
+
+              <div className={styles.actions}>
+                <Button
+                  variant={isActive ? 'secondary' : 'primary'}
+                  size="sm"
                   onClick={() => onApply(contract)}
                   disabled={isActive}
-                  aria-pressed={isActive}
                 >
-                  {useLabel}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
+                  {isActive ? 'Active' : 'Use'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => onDelete(contract.address)}
                 >
                   Delete
-                </button>
+                </Button>
               </div>
             </div>
           );

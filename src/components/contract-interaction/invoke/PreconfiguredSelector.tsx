@@ -1,51 +1,75 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
+import { iconSize } from '../../../utils';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../../ui';
 import type { PreconfiguredSelectorProps } from '../types';
 
-const PreconfiguredSelector = ({
+const styles = {
+  section: 'flex flex-col gap-2',
+  label: 'text-sm font-semibold text-default',
+  hint: 'text-sm text-muted',
+  hintSuccess: 'text-sm text-green-600',
+  hintLoading: 'flex items-center gap-2 text-sm text-muted',
+} as const;
+
+const PreconfiguredSelector: React.FC<PreconfiguredSelectorProps> = ({
   preconfigured,
   selectedId,
   onSelect,
   isLoading = false,
   disabled = false,
-}: PreconfiguredSelectorProps) => {
+}) => {
   const isCustomMode = !selectedId;
   const isPreconfiguredMode = Boolean(selectedId);
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value || null;
-    onSelect(value);
+  const handleSelectChange = (value: string) => {
+    onSelect(value === 'custom' ? null : value || null);
   };
 
   return (
-    <div className="form-group">
-      <label htmlFor="preconfigured-contract">Contract Source</label>
-      <select
-        id="preconfigured-contract"
-        className="form-input"
-        value={selectedId ?? ''}
-        onChange={handleSelectChange}
+    <div className={styles.section}>
+      <label htmlFor="preconfigured-contract" className={styles.label}>
+        Contract Source
+      </label>
+      <Select
+        value={selectedId ?? 'custom'}
+        onValueChange={handleSelectChange}
         disabled={disabled || isLoading}
-        aria-label="Select contract source"
       >
-        <option value="">Custom (enter manually)</option>
-        {preconfigured.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.label}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger id="preconfigured-contract">
+          <SelectValue placeholder="Custom (enter manually)" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="custom">Custom (enter manually)</SelectItem>
+          {preconfigured.map((c) => (
+            <SelectItem key={c.id} value={c.id}>
+              {c.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       {isCustomMode && (
-        <div className="input-hint">
+        <p className={styles.hint}>
           Enter your own contract address and artifact below.
-        </div>
+        </p>
       )}
       {isPreconfiguredMode && !isLoading && (
-        <div className="input-hint success">
+        <p className={styles.hintSuccess}>
           Artifact is pre-filled. Address can be changed if needed.
-        </div>
+        </p>
       )}
       {isLoading && (
-        <div className="input-hint loading">Loading contract data...</div>
+        <p className={styles.hintLoading}>
+          <Loader2 size={iconSize()} className="animate-spin" />
+          Loading contract data...
+        </p>
       )}
     </div>
   );

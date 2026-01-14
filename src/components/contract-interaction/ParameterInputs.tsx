@@ -1,10 +1,15 @@
 import React from 'react';
+import { Input } from '../ui';
 import {
   getPlaceholderForType,
   getLabelForType,
   shouldTrimInput,
 } from './helpers';
 import type { ParsedType } from '../../utils/contractInteraction';
+
+const styles = {
+  grid: 'grid gap-4 sm:grid-cols-2',
+} as const;
 
 export interface ParameterInput {
   path: string;
@@ -43,42 +48,29 @@ const ParameterInputs: React.FC<ParameterInputsProps> = ({
   }
 
   return (
-    <div className="form-grid">
+    <div className={styles.grid}>
       {filteredInputs.map((input) => {
         const typeLabel = getLabelForType(input.type);
         const inputId = idPrefix ? `${idPrefix}-${input.path}` : input.path;
         const hasNestedPath = showNestedPath && input.path.includes('.');
 
         return (
-          <div className="form-group" key={input.path}>
-            <label
-              htmlFor={inputId}
-              title={
-                hasNestedPath ? `${input.label} (${input.path})` : input.label
-              }
-            >
-              <span className="form-label-row">
-                <span className="form-label-main">{input.label}</span>
-                {typeLabel && (
-                  <span className="form-type-hint">{typeLabel}</span>
-                )}
-              </span>
-              {hasNestedPath && (
-                <span className="form-sub-label">({input.path})</span>
-              )}
-            </label>
-            <input
-              id={inputId}
-              className="form-input"
-              value={values[input.path] ?? ''}
-              onChange={(e) =>
-                handleChange(input.path, e.target.value, input.type)
-              }
-              placeholder={getPlaceholderForType(input.type)}
-              disabled={disabled}
-              aria-label={hasNestedPath ? input.path : input.label}
-            />
-          </div>
+          <Input
+            key={input.path}
+            id={inputId}
+            label={input.label}
+            value={values[input.path] ?? ''}
+            onChange={(e) =>
+              handleChange(input.path, e.target.value, input.type)
+            }
+            placeholder={getPlaceholderForType(input.type)}
+            disabled={disabled}
+            helperText={
+              hasNestedPath
+                ? `Path: ${input.path}${typeLabel ? ` · ${typeLabel}` : ''}`
+                : typeLabel || undefined
+            }
+          />
         );
       })}
     </div>
