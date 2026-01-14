@@ -6,6 +6,7 @@ import {
 } from '../../config/networks';
 import { isValidConfig } from '../../utils';
 import { getContractRegistryStore } from '../contractRegistry';
+import { getWalletStore } from '../wallet';
 import type { AztecNetwork } from '../../config/networks/constants';
 import type { NetworkPreset } from '../../sdk/walletKitConfig';
 
@@ -81,6 +82,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
     const config = configuredNetworks[name as AztecNetwork];
     if (config && config.name !== currentConfig.name) {
       getContractRegistryStore().reset();
+      getWalletStore().setPXEStatus('idle');
       set({ currentConfig: config });
       localStorage.setItem(STORAGE_KEY, name);
       return true;
@@ -89,19 +91,28 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   },
 
   resetToDefault: () => {
-    const { defaultNetwork, configuredNetworks } = get();
+    const { defaultNetwork, configuredNetworks, currentConfig } = get();
     const defaultConfig = configuredNetworks[defaultNetwork] ?? SANDBOX_CONFIG;
+    if (defaultConfig.name !== currentConfig.name) {
+      getContractRegistryStore().reset();
+      getWalletStore().setPXEStatus('idle');
+    }
     localStorage.setItem(STORAGE_KEY, defaultNetwork);
     set({ currentConfig: defaultConfig });
   },
 
   syncFromStorage: () => {
-    const { configuredNetworks } = get();
+    const { configuredNetworks, currentConfig } = get();
     const savedNetwork = localStorage.getItem(
       STORAGE_KEY
     ) as AztecNetwork | null;
     if (savedNetwork && configuredNetworks[savedNetwork]) {
-      set({ currentConfig: configuredNetworks[savedNetwork] });
+      const newConfig = configuredNetworks[savedNetwork];
+      if (newConfig.name !== currentConfig.name) {
+        getContractRegistryStore().reset();
+        getWalletStore().setPXEStatus('idle');
+      }
+      set({ currentConfig: newConfig });
     }
   },
 }));

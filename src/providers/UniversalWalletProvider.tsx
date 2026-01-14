@@ -6,7 +6,7 @@ import {
   useCurrentNetwork,
   useNetworkActions,
 } from '../store/network';
-import { useWalletActions } from '../store/wallet';
+import { useWalletActions, setupWalletCrossTabSync } from '../store/wallet';
 import { isValidConfig } from '../utils';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
 
@@ -28,6 +28,8 @@ export const UniversalWalletProvider: React.FC<
     if (!getNetworkStore().isInitialized) {
       initializeNetwork(walletKitConfig.networks);
     }
+
+    setupWalletCrossTabSync();
   }, [walletKitConfig.networks, initializeNetwork]);
 
   useEffect(() => {

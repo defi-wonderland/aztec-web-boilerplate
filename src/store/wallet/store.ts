@@ -3,13 +3,47 @@ import { getContractRegistryStore } from '../contractRegistry';
 import { createBrowserActions } from './actions/browser';
 import { createEmbeddedActions } from './actions/embedded';
 import { createExternalSignerActions } from './actions/externalSigner';
+import { isValidPXETransition } from './types';
 import type { WalletStore, WalletState } from './types';
+import type { WalletType } from '../../types/aztec';
 import type {
   WalletConnector,
   WalletConnectorId,
 } from '../../types/walletConnector';
 
 export type { WalletStore, PXEStatus } from './types';
+
+const WALLET_CONNECTION_STORAGE_KEY = 'aztec-wallet-connection';
+
+interface StoredWalletConnection {
+  connectorId: WalletConnectorId;
+  walletType: WalletType;
+}
+
+const saveWalletConnection = (data: StoredWalletConnection): void => {
+  try {
+    localStorage.setItem(WALLET_CONNECTION_STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+const clearWalletConnection = (): void => {
+  try {
+    localStorage.removeItem(WALLET_CONNECTION_STORAGE_KEY);
+  } catch {
+    // Ignore
+  }
+};
+
+const getStoredWalletConnection = (): StoredWalletConnection | null => {
+  try {
+    const data = localStorage.getItem(WALLET_CONNECTION_STORAGE_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+};
 
 const INITIAL_STATE: WalletState = {
   account: null,
@@ -64,6 +98,10 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         status: 'connected',
         connectingConnectorId: null,
       });
+      saveWalletConnection({
+        connectorId: connector.id,
+        walletType: connector.type,
+      });
       return result;
     } catch (err) {
       const message =
@@ -88,6 +126,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         await cleanup();
       }
     } finally {
+      clearWalletConnection();
       getContractRegistryStore().reset();
       set({
         account: null,
@@ -131,13 +170,58 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   setError: (error) => set({ error }),
 
-  setPXEStatus: (pxeStatus, pxeError = null) => set({ pxeStatus, pxeError }),
+  setPXEStatus: (pxeStatus, pxeError = null) => {
+    const currentStatus = get().pxeStatus;
+    if (!isValidPXETransition(currentStatus, pxeStatus)) {
+      console.warn(
+        `Invalid PXE state transition: ${currentStatus} → ${pxeStatus}`
+      );
+    }
+    set({ pxeStatus, pxeError });
+  },
 
   reset: () =>
     set((state) => ({
       ...INITIAL_STATE,
       connectors: state.connectors,
     })),
+
+  syncFromStorage: async () => {
+    const { activeConnectorId, connectExistingEmbedded } = get();
+    const stored = getStoredWalletConnection();
+
+    if (stored && !activeConnectorId) {
+      // Another tab connected - try to reconnect if embedded wallet
+      if (stored.walletType === 'embedded') {
+        try {
+          await connectExistingEmbedded(stored.connectorId);
+        } catch {
+          // Silent fail - user can manually reconnect
+        }
+      }
+    } else if (!stored && activeConnectorId) {
+      // Another tab disconnected - clear our state
+      clearWalletConnection();
+      getContractRegistryStore().reset();
+      set((state) => ({
+        ...INITIAL_STATE,
+        connectors: state.connectors,
+      }));
+    }
+  },
 }));
 
 export const getWalletStore = () => useWalletStore.getState();
+
+let isWalletListenerSetup = false;
+
+export const setupWalletCrossTabSync = (): void => {
+  if (isWalletListenerSetup) return;
+  isWalletListenerSetup = true;
+
+  window.addEventListener('storage', (e: StorageEvent) => {
+    if (e.key === WALLET_CONNECTION_STORAGE_KEY) {
+      getWalletStore().syncFromStorage();
+    }
+  });
+};

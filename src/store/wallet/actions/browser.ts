@@ -8,13 +8,13 @@ import type { SetState, GetState, WalletState } from '../types';
 let currentAdapter: IBrowserWalletAdapter | null = null;
 let currentAccountWallet: AccountWithSecretKey | null = null;
 
-export const createBrowserActions = (set: SetState, _get: GetState) => ({
+export const createBrowserActions = (set: SetState, get: GetState) => ({
   connectBrowserWallet: async (
     adapter: IBrowserWalletAdapter,
     networkName: string,
     connectorId: WalletConnectorId
   ): Promise<void> => {
-    const connectWith = _get()._connectWith;
+    const connectWith = get()._connectWith;
     await connectWith(connectorId, async () => {
       set({
         status: 'connecting',

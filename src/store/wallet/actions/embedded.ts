@@ -13,11 +13,11 @@ import { getNetworkStore } from '../../network';
 import type { WalletConnectorId } from '../../../types/walletConnector';
 import type { SetState, GetState } from '../types';
 
-export const createEmbeddedActions = (set: SetState, _get: GetState) => ({
+export const createEmbeddedActions = (set: SetState, get: GetState) => ({
   connectEmbedded: async (
     connectorId: WalletConnectorId = EMBEDDED_CONNECTOR_ID
   ): Promise<AccountWithSecretKey> => {
-    const connectWith = _get()._connectWith;
+    const connectWith = get()._connectWith;
     return connectWith(connectorId, async () => {
       set({
         status: 'connecting',
@@ -52,7 +52,7 @@ export const createEmbeddedActions = (set: SetState, _get: GetState) => ({
   connectExistingEmbedded: async (
     connectorId: WalletConnectorId = EMBEDDED_CONNECTOR_ID
   ): Promise<AccountWithSecretKey | null> => {
-    const connectWith = _get()._connectWith;
+    const connectWith = get()._connectWith;
     return connectWith(connectorId, async () => {
       set({
         status: 'connecting',

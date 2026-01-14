@@ -1,5 +1,10 @@
-export { useWalletStore, getWalletStore } from './store';
+export {
+  useWalletStore,
+  getWalletStore,
+  setupWalletCrossTabSync,
+} from './store';
 export type { WalletStore, PXEStatus } from './store';
+export { isValidPXETransition, VALID_PXE_TRANSITIONS } from './types';
 
 export {
   useWalletView,

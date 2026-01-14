@@ -10,6 +10,30 @@ import type {
 
 export type PXEStatus = 'idle' | 'initializing' | 'ready' | 'error';
 
+/**
+ * Valid PXE state transitions:
+ * - idle → initializing (starting PXE init)
+ * - initializing → ready (PXE init success)
+ * - initializing → error (PXE init failed)
+ * - ready → idle (disconnect/reset)
+ * - error → idle (disconnect/reset)
+ * - error → initializing (retry)
+ */
+export const VALID_PXE_TRANSITIONS: Record<PXEStatus, PXEStatus[]> = {
+  idle: ['initializing'],
+  initializing: ['ready', 'error'],
+  ready: ['idle'],
+  error: ['idle', 'initializing'],
+};
+
+export const isValidPXETransition = (
+  from: PXEStatus,
+  to: PXEStatus
+): boolean => {
+  if (from === to) return true;
+  return VALID_PXE_TRANSITIONS[from]?.includes(to) ?? false;
+};
+
 export type WalletState = {
   // Core state (always relevant)
   account: AccountWithSecretKey | null;
@@ -86,6 +110,7 @@ export type WalletActions = {
   setError: (error: string | null) => void;
   setPXEStatus: (status: PXEStatus, error?: string | null) => void;
   reset: () => void;
+  syncFromStorage: () => Promise<void>;
 };
 
 export type WalletStore = WalletState & WalletActions;

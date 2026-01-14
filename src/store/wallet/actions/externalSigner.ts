@@ -9,12 +9,12 @@ import type { SetState, GetState } from '../types';
 // Track current signer for disconnect
 let currentSigner: ExternalSigner | null = null;
 
-export const createExternalSignerActions = (set: SetState, _get: GetState) => ({
+export const createExternalSignerActions = (set: SetState, get: GetState) => ({
   connectExternalSigner: async (
     signer: ExternalSigner,
     connectorId?: WalletConnectorId
   ): Promise<AccountWithSecretKey> => {
-    const connectWith = _get()._connectWith;
+    const connectWith = get()._connectWith;
     return connectWith(connectorId ?? signer.rdns ?? 'external', async () => {
       set({
         status: 'connecting',
