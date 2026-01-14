@@ -1,5 +1,27 @@
 import React from 'react';
+import { cn } from '../../utils';
+import { Input, Textarea, Button } from '../ui';
 import type { ExistingContractFormProps } from './types';
+
+/**
+ * ExistingContractForm styles - semantic pattern.
+ */
+const styles = {
+  container: 'space-y-4',
+  formGroup: 'space-y-1.5',
+  label: 'block text-sm font-semibold text-default',
+  hint: 'text-xs text-muted mt-1',
+  hintError: 'text-xs text-red-500 mt-1',
+  textareaWrapper: 'relative',
+  loadingOverlay: cn(
+    'absolute inset-0 flex items-center justify-center gap-2',
+    'bg-surface/80 backdrop-blur-sm rounded-lg',
+    'text-sm text-muted'
+  ),
+  loadingSpinner:
+    'animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent',
+  actionRow: 'pt-2',
+} as const;
 
 const ExistingContractForm = ({
   address,
@@ -14,34 +36,37 @@ const ExistingContractForm = ({
   canLoad,
 }: ExistingContractFormProps) => {
   return (
-    <>
-      <div className="form-group">
-        <label htmlFor="contract-address">Contract Address</label>
-        <input
+    <div className={styles.container}>
+      <div className={styles.formGroup}>
+        <label htmlFor="contract-address" className={styles.label}>
+          Contract Address
+        </label>
+        <Input
           id="contract-address"
-          className="form-input"
           value={address}
           onChange={(e) => onAddressChange(e.target.value)}
           placeholder="Paste deployed contract address"
           aria-label="Contract address"
+          hasError={!isValidAddress && Boolean(address)}
         />
         {!isValidAddress && address && (
-          <span className="input-hint error">Invalid Aztec address</span>
+          <span className={styles.hintError}>Invalid Aztec address</span>
         )}
         {isPreconfiguredMode && (
-          <span className="input-hint">
+          <span className={styles.hint}>
             Pre-filled address, but you can change it to use a different
             deployment.
           </span>
         )}
       </div>
 
-      <div className="form-group">
-        <label htmlFor="artifact-json">Artifact (JSON)</label>
-        <div className="artifact-textarea-wrapper">
-          <textarea
+      <div className={styles.formGroup}>
+        <label htmlFor="artifact-json" className={styles.label}>
+          Artifact (JSON)
+        </label>
+        <div className={styles.textareaWrapper}>
+          <Textarea
             id="artifact-json"
-            className={`form-input artifact-textarea${isPreconfiguredMode ? ' input-disabled' : ''}${isLoadingPreconfigured ? ' loading' : ''}`}
             value={isLoadingPreconfigured ? '' : artifactInput}
             onChange={(e) => onArtifactChange(e.target.value)}
             placeholder={
@@ -52,22 +77,22 @@ const ExistingContractForm = ({
             aria-label="Artifact JSON"
             disabled={isPreconfiguredMode || isLoadingPreconfigured}
             readOnly={isPreconfiguredMode}
+            rows={6}
           />
           {isLoadingPreconfigured && (
-            <div className="artifact-loading-overlay">
-              <div className="loading-spinner" />
+            <div className={styles.loadingOverlay}>
+              <div className={styles.loadingSpinner} />
               <span>Loading artifact...</span>
             </div>
           )}
         </div>
       </div>
 
-      {error && <div className="input-hint error">{error}</div>}
+      {error && <div className={styles.hintError}>{error}</div>}
 
-      <div className="action-row">
-        <button
-          type="button"
-          className="btn btn-primary"
+      <div className={styles.actionRow}>
+        <Button
+          variant="primary"
           onClick={onLoad}
           disabled={!canLoad}
           aria-label={
@@ -77,9 +102,9 @@ const ExistingContractForm = ({
           }
         >
           {isPreconfiguredMode ? 'Load contract' : 'Load artifact'}
-        </button>
+        </Button>
       </div>
-    </>
+    </div>
   );
 };
 

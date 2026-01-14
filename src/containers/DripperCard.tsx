@@ -1,13 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { Coins, Copy, Shield, Globe, AlertTriangle } from 'lucide-react';
 import { TokenBalance } from '../components/TokenBalance';
 import { useUniversalWallet, useRequiredContracts } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
-import { useError } from '../providers/ErrorProvider';
+import { useToast, type LoadingToastResult } from '../hooks';
+import { iconSize } from '../utils';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Input,
+  Button,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '../components/ui';
+
+const styles = {
+  // Header
+  headerRow: 'flex flex-row items-start gap-4',
+  headerIcon: 'text-accent',
+  // Form
+  formContainer: 'space-y-4',
+  formSection: 'space-y-4',
+  formGroup: 'space-y-2',
+  label: 'block text-sm font-semibold text-default',
+  // Input with copy button
+  inputWithCopy: 'relative flex w-full',
+  inputTokenAddress: 'pr-10 font-mono text-xs',
+  copyButtonPosition: 'absolute right-2 top-1/2 -translate-y-1/2',
+  // Amount & Type row
+  amountTypeRow: 'flex flex-col gap-4 sm:flex-row sm:items-end',
+  amountWrapper: 'flex-1',
+  dripTypeWrapper: 'w-full sm:w-48',
+  // Select item icons
+  selectItemContent: 'flex items-center gap-2',
+  // Loading state
+  loadingContainer:
+    'flex flex-col items-center justify-center py-8 gap-4 text-muted',
+  loadingSpinner:
+    'animate-spin rounded-full h-8 w-8 border-2 border-current border-t-transparent',
+  loadingText: 'text-sm',
+  // Error state
+  errorContainer: 'text-center py-6',
+  errorIcon: 'text-amber-500 mx-auto mb-2',
+  errorTitle: 'text-lg font-semibold text-default mb-1',
+  errorText: 'text-sm text-muted',
+} as const;
 
 export const DripperCard: React.FC = () => {
   const { account, isInitialized, connectors, connector, currentConfig } =
     useUniversalWallet();
-  const { addError } = useError();
+  const { success, loading } = useToast();
 
   const {
     isReady: contractsReady,
@@ -19,41 +70,40 @@ export const DripperCard: React.FC = () => {
 
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
+  const loadingToastRef = useRef<LoadingToastResult | null>(null);
 
   const { dripToPrivate, dripToPublic, isReady } = useDripper({
     onDripToPrivateSuccess: () => {
-      addError({
-        message: `Successfully minted ${amount} tokens to private balance`,
-        type: 'info',
-        source: 'dripper',
-      });
+      loadingToastRef.current?.success(
+        'Tokens minted successfully',
+        `${amount} tokens added to private balance`
+      );
+      loadingToastRef.current = null;
       setAmount('');
     },
-    onDripToPrivateError: (error) => {
-      addError({
-        message: error.message,
-        type: 'error',
-        source: 'dripper',
-        details:
-          'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.',
-      });
+    onDripToPrivateError: (err) => {
+      console.error('❌ Failed to mint tokens to private balance:', err);
+      loadingToastRef.current?.error(
+        'Minting failed',
+        'Failed to mint tokens. Check console for details.'
+      );
+      loadingToastRef.current = null;
     },
     onDripToPublicSuccess: () => {
-      addError({
-        message: `Successfully minted ${amount} tokens to public balance`,
-        type: 'info',
-        source: 'dripper',
-      });
+      loadingToastRef.current?.success(
+        'Tokens minted successfully',
+        `${amount} tokens added to public balance`
+      );
+      loadingToastRef.current = null;
       setAmount('');
     },
-    onDripToPublicError: (error) => {
-      addError({
-        message: error.message,
-        type: 'error',
-        source: 'dripper',
-        details:
-          'Token minting failed. This might be due to insufficient permissions, network issues, or invalid parameters.',
-      });
+    onDripToPublicError: (err) => {
+      console.error('❌ Failed to mint tokens to public balance:', err);
+      loadingToastRef.current?.error(
+        'Minting failed',
+        'Failed to mint tokens. Check console for details.'
+      );
+      loadingToastRef.current = null;
     },
   });
 
@@ -64,6 +114,12 @@ export const DripperCard: React.FC = () => {
 
   const handleDrip = () => {
     if (!amount || !isReady) return;
+
+    // Show persistent loading toast
+    loadingToastRef.current = loading(
+      'Processing',
+      `Minting ${amount} tokens to ${dripType} balance...`
+    );
 
     const amountBigInt = BigInt(amount);
 
@@ -76,6 +132,7 @@ export const DripperCard: React.FC = () => {
 
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(currentConfig.tokenContractAddress);
+    success('Token address copied');
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,128 +161,147 @@ export const DripperCard: React.FC = () => {
 
   if (contractsHasError) {
     return (
-      <div className="dripper-content">
-        <div className="content-header">
-          <div className="icon-container">
-            <span className="icon">⚠️</span>
-          </div>
-          <div>
-            <h3>Contract Registration Failed</h3>
-            <p>Failed to register: {failedContracts.join(', ')}</p>
-          </div>
-        </div>
-      </div>
+      <Card>
+        <CardContent className={styles.errorContainer}>
+          <AlertTriangle size={iconSize('2xl')} className={styles.errorIcon} />
+          <h3 className={styles.errorTitle}>Contract Registration Failed</h3>
+          <p className={styles.errorText}>
+            Failed to register: {failedContracts.join(', ')}
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="dripper-content">
-      <div className="content-header">
-        <div className="icon-container">
-          <span className="icon">💰</span>
-        </div>
+    <Card>
+      <CardHeader className={styles.headerRow}>
+        <Coins size={iconSize('xl')} className={styles.headerIcon} />
         <div>
-          <h3>Dripper - Mint Tokens</h3>
-          <p>Mint new tokens to your balance</p>
+          <CardTitle>Dripper - Mint Tokens</CardTitle>
+          <CardDescription>Mint new tokens to your balance</CardDescription>
         </div>
-      </div>
+      </CardHeader>
 
-      <div className="mint-form-container">
+      <CardContent className={styles.formContainer}>
         {contractsLoading ? (
-          <div className="form-section">
-            <div className="flex flex-col items-center justify-center py-2rem gap-1rem opacity-70">
-              <div className="animate-spin rounded-full h-2rem w-2rem border-b-2 border-current" />
-              <p className="text-0.875rem">
-                Loading contracts: {pendingContracts.join(', ')}...
-              </p>
-            </div>
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingSpinner} />
+            <p className={styles.loadingText}>
+              Loading contracts: {pendingContracts.join(', ')}...
+            </p>
           </div>
         ) : (
-          <>
+          <div className={styles.formSection}>
+            {/* Token Address - First, so user knows which token */}
+            <div className={styles.formGroup}>
+              <label htmlFor="token-address" className={styles.label}>
+                Token Address
+              </label>
+              <div className={styles.inputWithCopy}>
+                <Input
+                  id="token-address"
+                  value={currentConfig.tokenContractAddress}
+                  readOnly
+                  className={styles.inputTokenAddress}
+                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="icon"
+                      size="icon"
+                      onClick={handleCopyAddress}
+                      aria-label="Copy address to clipboard"
+                      className={styles.copyButtonPosition}
+                    >
+                      <Copy size={iconSize()} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Copy to clipboard</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+
+            {/* Balance - Shows current state */}
             <TokenBalance />
 
-            <div className="form-section">
-              <div className="form-group">
-                <label htmlFor="token-address">Token Address</label>
-                <div className="input-with-copy">
-                  <input
-                    id="token-address"
-                    type="text"
-                    value={currentConfig.tokenContractAddress}
-                    readOnly
-                    className="form-input"
-                    aria-label="Token contract address"
-                  />
-                  <button
-                    type="button"
-                    className="copy-button"
-                    onClick={handleCopyAddress}
-                    title="Copy to clipboard"
-                    aria-label="Copy address to clipboard"
-                  >
-                    📋
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="amount">Amount</label>
-                <input
+            {/* Amount & Drip Type - Side by side on larger screens */}
+            <div className={styles.amountTypeRow}>
+              <div className={styles.amountWrapper}>
+                <Input
                   id="amount"
+                  label="Amount"
                   type="text"
                   inputMode="numeric"
                   value={amount}
                   onChange={handleAmountChange}
-                  placeholder="Enter amount to mint"
+                  placeholder="Enter amount"
                   disabled={isProcessing || !isReady}
-                  className="form-input"
-                  aria-label="Amount to mint"
                 />
               </div>
-
-              <div className="form-group">
-                <label htmlFor="drip-type">Drip Type</label>
-                <select
-                  id="drip-type"
-                  value={dripType}
-                  onChange={(e) =>
-                    setDripType(e.target.value as 'private' | 'public')
-                  }
-                  disabled={isProcessing || !isReady}
-                  className="form-select"
-                  aria-label="Select drip type"
-                >
-                  <option value="private">Private Balance</option>
-                  <option value="public">Public Balance</option>
-                </select>
+              <div className={styles.dripTypeWrapper}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="drip-type" className={styles.label}>
+                    Drip Type
+                  </label>
+                  <Select
+                    value={dripType}
+                    onValueChange={(value) =>
+                      setDripType(value as 'private' | 'public')
+                    }
+                    disabled={isProcessing || !isReady}
+                  >
+                    <SelectTrigger id="drip-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">
+                        <span className={styles.selectItemContent}>
+                          <Shield size={iconSize()} /> Private
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="public">
+                        <span className={styles.selectItemContent}>
+                          <Globe size={iconSize()} /> Public
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-
-              <button
-                type="button"
-                onClick={handleDrip}
-                disabled={
-                  !amount ||
-                  isProcessing ||
-                  isWalletBusy ||
-                  !isReady ||
-                  !contractsReady
-                }
-                className="btn btn-primary"
-                aria-label={`Drip tokens to ${dripType} balance`}
-              >
-                <span className="btn-icon">
-                  {dripType === 'private' ? '🛡️' : '🌐'}
-                </span>
-                {isWalletBusy
-                  ? 'Wallet Busy...'
-                  : isProcessing
-                    ? 'Processing...'
-                    : `Drip to ${dripType}`}
-              </button>
             </div>
-          </>
+
+            {/* Submit Button */}
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={handleDrip}
+              disabled={
+                !amount ||
+                isProcessing ||
+                isWalletBusy ||
+                !isReady ||
+                !contractsReady
+              }
+              isLoading={isProcessing}
+              icon={
+                dripType === 'private' ? (
+                  <Shield size={iconSize()} />
+                ) : (
+                  <Globe size={iconSize()} />
+                )
+              }
+            >
+              {isWalletBusy
+                ? 'Wallet Busy...'
+                : isProcessing
+                  ? 'Processing...'
+                  : `Drip to ${dripType}`}
+            </Button>
+          </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

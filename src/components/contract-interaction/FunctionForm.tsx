@@ -4,8 +4,23 @@ import {
   getLabelForType,
   shouldTrimInput,
 } from './helpers';
+import { Input } from '../ui';
 import type { FunctionFormProps } from './types';
 import type { ParsedType } from '../../utils/contractInteraction';
+
+/**
+ * FunctionForm styles - semantic pattern.
+ */
+const styles = {
+  section: 'mt-4 p-4 rounded-lg border border-default bg-surface-secondary',
+  grid: 'grid gap-4 sm:grid-cols-2',
+  formGroup: 'space-y-1.5',
+  label: 'block text-sm font-semibold text-default',
+  labelRow: 'flex items-center gap-2',
+  labelMain: 'text-default',
+  typeHint: 'text-xs text-muted font-normal',
+  subLabel: 'block text-xs text-muted',
+} as const;
 
 const FunctionForm = ({
   fn,
@@ -18,35 +33,35 @@ const FunctionForm = ({
   };
 
   return (
-    <div className="form-section">
-      <div className="form-grid">
+    <div className={styles.section}>
+      <div className={styles.grid}>
         {fn.inputs
           .filter((input) => input.type.kind !== 'struct')
           .map((input) => {
             const typeLabel = getLabelForType(input.type);
             return (
-              <div className="form-group" key={input.path}>
+              <div className={styles.formGroup} key={input.path}>
                 <label
                   htmlFor={input.path}
+                  className={styles.label}
                   title={
                     input.path.includes('.')
                       ? `${input.label} (${input.path})`
                       : input.label
                   }
                 >
-                  <span className="form-label-row">
-                    <span className="form-label-main">{input.label}</span>
+                  <span className={styles.labelRow}>
+                    <span className={styles.labelMain}>{input.label}</span>
                     {typeLabel && (
-                      <span className="form-type-hint">{typeLabel}</span>
+                      <span className={styles.typeHint}>{typeLabel}</span>
                     )}
                   </span>
                   {input.path.includes('.') && (
-                    <span className="form-sub-label">({input.path})</span>
+                    <span className={styles.subLabel}>({input.path})</span>
                   )}
                 </label>
-                <input
+                <Input
                   id={input.path}
-                  className="form-input"
                   value={values[input.path] ?? ''}
                   onChange={(e) =>
                     handleChange(input.path, e.target.value, input.type)

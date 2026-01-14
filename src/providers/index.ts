@@ -1,5 +1,4 @@
 export { AppProvider } from './AppProvider';
-export { ErrorProvider } from './ErrorProvider';
 export {
   UniversalWalletProvider,
   type SignerContextType,

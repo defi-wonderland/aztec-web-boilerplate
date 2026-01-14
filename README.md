@@ -49,7 +49,7 @@ Edit `src/config/walletKit.ts` to customize wallet connectors and networks:
 export const walletKitConfig: WalletKitConfig = {
   // Available connectors: embedded(), azguard()
   connectors: [embedded(), azguard()],
-  
+
   // Networks to support
   networks: [
     {
@@ -74,7 +74,9 @@ export const contractsConfig = createContractConfig({
     artifact: DripperContract.artifact,
     contract: DripperContract,
     address: (config) => config.dripperContractAddress,
-    deployParams: (config) => ({ /* ... */ }),
+    deployParams: (config) => ({
+      /* ... */
+    }),
     lazyRegister: false, // Register immediately at initialization
   },
 
@@ -82,7 +84,9 @@ export const contractsConfig = createContractConfig({
     artifact: TokenContract.artifact,
     contract: TokenContract,
     address: (config) => config.tokenContractAddress,
-    deployParams: (config) => ({ /* ... */ }),
+    deployParams: (config) => ({
+      /* ... */
+    }),
     lazyRegister: false,
   },
 });
@@ -117,7 +121,7 @@ If you want to use [Azguard Wallet](https://azguardwallet.io/), you'll need to c
 4. Click **"Create New FPC"**
 5. Configure your FPC:
    - **Name**: Any name you prefer (e.g., "Sponsored FPC")
-   - **FPC Address**: 
+   - **FPC Address**:
      ```
      0x1586f476995be97f07ebd415340a14be48dc28c6c661cc6bdddb80ae790caa4e
      ```
@@ -146,7 +150,6 @@ bash -i <(curl -s https://install.aztec.network)
 # Currently we use 3.0.0-devnet.20251212 version, make sure you have the right one
 aztec-up 3.0.0-devnet.20251212
 ```
-
 
 ### Start Sandbox
 
@@ -215,6 +218,9 @@ aztec-web-boilerplate/
 │   ├── providers/             # React context providers
 │   ├── services/              # Service layer
 │   │   └── aztec/             # Aztec-specific services
+│   ├── styles/                # Tailwind CSS configuration
+│   │   ├── globals.css        # Global styles & theme variables
+│   │   └── theme.ts           # CVA variants for components
 │   ├── types/                 # TypeScript type definitions
 │   └── utils/                 # Utility functions
 └── tests/                     # Test suites
@@ -222,10 +228,59 @@ aztec-web-boilerplate/
 
 ---
 
+## UI Development
+
+This project uses **Tailwind CSS v4** for styling and **Radix UI Primitives** for accessible components.
+
+### The Styles Pattern
+
+All Tailwind classes **must** be defined in a `styles` object at the top of the component file. **Never use inline className strings directly in JSX**.
+
+```tsx
+// ✅ Correct
+const styles = {
+  container: 'flex flex-col gap-4',
+  title: 'text-lg font-semibold text-default',
+} as const;
+
+export const MyComponent = () => (
+  <div className={styles.container}>
+    <h1 className={styles.title}>Title</h1>
+  </div>
+);
+
+// ❌ Wrong - inline classes are forbidden
+export const BadComponent = () => (
+  <div className="flex flex-col gap-4">
+    <h1 className="text-lg font-semibold">Title</h1>
+  </div>
+);
+```
+
+### Component Demo
+
+A live showcase of all UI components is available in the app under the **"UI Components"** tab, or you can view the source at:
+
+📄 **`src/containers/UIComponentsShowcase.tsx`**
+
+This showcase serves as living documentation for the design system.
+
+### Adding New UI Components
+
+When you need a new UI component:
+
+1. **Check [Radix UI Primitives](https://www.radix-ui.com/primitives/docs/overview/introduction) first** - If the component exists there, use it as the base
+2. Create a wrapper in `src/components/ui/`
+3. Style with Tailwind using the semantic styles pattern
+4. Export from `src/components/ui/index.ts`
+5. **Add examples to `UIComponentsShowcase.tsx`** for documentation
+6. Update the component table above
+
+---
+
 ## Available Commands
 
 ### Contract Development
-
 
 ### Testing & Quality
 
@@ -261,10 +316,10 @@ yarn lint                     # Check code formatting
 
 ### Wallet Options
 
-| Wallet | Description | Use Case |
-|--------|-------------|----------|
-| **Embedded** | Keys generated and stored in browser | Quick testing, simple dApps |
-| **Azguard** | External browser extension wallet | Production apps, user-controlled keys |
+| Wallet       | Description                          | Use Case                              |
+| ------------ | ------------------------------------ | ------------------------------------- |
+| **Embedded** | Keys generated and stored in browser | Quick testing, simple dApps           |
+| **Azguard**  | External browser extension wallet    | Production apps, user-controlled keys |
 
 ---
 
@@ -310,14 +365,15 @@ import type { IBrowserWalletAdapter } from '../../types/browserWallet';
 export class ObsidianAdapter implements IBrowserWalletAdapter {
   readonly id = 'obsidian';
   readonly label = 'Obsidian Wallet';
-  
+
   private service: ObsidianWalletService;
 
   // Implement all IBrowserWalletAdapter methods
   // Translate generic operations to wallet-specific format
 }
 
-export const createObsidianAdapter = (): IBrowserWalletAdapter => new ObsidianAdapter();
+export const createObsidianAdapter = (): IBrowserWalletAdapter =>
+  new ObsidianAdapter();
 ```
 
 ### 4. Add the Factory Function
@@ -346,6 +402,7 @@ connectors: [embedded(), azguard(), obsidian()],
 ### 6. Export from Index Files
 
 Make sure to properly export your adapter and factory from:
+
 - `src/adapters/obsidian/index.ts`
 - `src/adapters/index.ts`
 - `src/connectors/index.ts`
@@ -356,10 +413,10 @@ Make sure to properly export your adapter and factory from:
 
 ## Network Information
 
-| Network | Node URL | Chain ID |
-|---------|----------|----------|
-| Devnet | `https://devnet.aztec-labs.com/` | `aztec:1674512022` |
-| Sandbox | `http://localhost:8080` | `aztec:0` |
+| Network | Node URL                         | Chain ID           |
+| ------- | -------------------------------- | ------------------ |
+| Devnet  | `https://devnet.aztec-labs.com/` | `aztec:1674512022` |
+| Sandbox | `http://localhost:8080`          | `aztec:0`          |
 
 ---
 

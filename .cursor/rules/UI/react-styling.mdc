@@ -1,19 +1,118 @@
 ---
-description: React styling guidelines
+description: React styling guidelines with Tailwind CSS
 globs: **/*.tsx
 version: 1.0.0
 ---
 
 # React Styling Guidelines
 
-## Style Organization
-- Use CSS-in-JS or external stylesheets
-- Follow team styling conventions
-- Maintain consistent spacing and formatting
-- Use design system tokens when available
+## The Styles Pattern (MANDATORY)
 
-## Best Practices
-- Implement responsive design patterns
-- Use CSS modules or styled-components
-- Follow BEM or similar naming conventions
-- Keep styles modular and reusable
+All Tailwind classes MUST be defined in a `styles` object at the top of the component file. **NEVER use inline className strings directly in JSX**.
+
+### ✅ Correct Pattern
+
+```tsx
+const styles = {
+  container: 'flex flex-col gap-4',
+  title: 'text-lg font-semibold text-default',
+  button: 'px-4 py-2 bg-accent text-on-accent rounded-lg',
+} as const;
+
+export const MyComponent = () => (
+  <div className={styles.container}>
+    <h1 className={styles.title}>Title</h1>
+    <button className={styles.button}>Click</button>
+  </div>
+);
+```
+
+### ❌ Incorrect Pattern
+
+```tsx
+// NEVER do this - inline className strings are forbidden
+export const MyComponent = () => (
+  <div className="flex flex-col gap-4">
+    <h1 className="text-lg font-semibold text-default">Title</h1>
+  </div>
+);
+```
+
+## Style Object Rules
+
+1. **Location**: Define `styles` object BEFORE the component function
+2. **Type Safety**: Always use `as const` for type inference
+3. **Naming**: Use camelCase keys that describe the element's purpose
+4. **Grouping**: Group related styles with comments
+5. **Nested Objects**: Use for icon sizes or variants (e.g., `icon: { sm: '...', md: '...' }`)
+
+### Example with Grouping
+
+```tsx
+const styles = {
+  // Layout
+  container: 'flex flex-col gap-4 p-6',
+  header: 'flex items-center justify-between',
+  content: 'space-y-4',
+  // Typography
+  title: 'text-xl font-bold text-default',
+  description: 'text-sm text-muted',
+  // Icons
+  icon: {
+    sm: 'h-4 w-4',
+    md: 'h-5 w-5',
+    lg: 'h-6 w-6',
+  },
+} as const;
+```
+
+## Using cn() for Conditional Classes
+
+Use the `cn()` utility from `@/utils` ONLY when you need conditional or dynamic classes:
+
+```tsx
+import { cn } from '../utils';
+
+const styles = {
+  button: 'px-4 py-2 rounded-lg transition-colors',
+  buttonActive: 'bg-accent text-on-accent',
+  buttonInactive: 'bg-surface text-muted',
+} as const;
+
+// Usage with cn() for conditionals
+<button className={cn(styles.button, isActive ? styles.buttonActive : styles.buttonInactive)}>
+```
+
+## Theme-Aware Custom Classes
+
+Use the custom utility classes defined in `globals.css` for theme support:
+
+- Backgrounds: `bg-surface`, `bg-surface-secondary`, `bg-surface-tertiary`
+- Text: `text-default`, `text-muted`, `text-accent`
+- Borders: `border-default`
+- Gradients: `gradient-primary`, `gradient-secondary`
+- Shadows: `shadow-theme`, `shadow-theme-hover`, `shadow-theme-lg`
+
+## Dark Mode
+
+The `dark:` variant is configured in `globals.css`. Use it for theme-specific overrides:
+
+```tsx
+const styles = {
+  text: 'text-gray-900 dark:text-gray-100',
+} as const;
+```
+
+## Component-Specific Styling via Props
+
+When a UI component accepts a `className` prop, pass additional styles through it:
+
+```tsx
+<Button variant="primary" className={styles.submitButton}>
+  Submit
+</Button>
+```
+
+## Exceptions
+
+The only exception to the styles pattern is for **primitive UI components** in `src/components/ui/`. These internal components may use inline classes as they are the building blocks.

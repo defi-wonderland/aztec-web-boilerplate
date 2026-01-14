@@ -5,11 +5,26 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { Wrench, AlertTriangle } from 'lucide-react';
+import { iconSize } from '../utils';
 import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 import ArtifactLoader from '../components/contract-interaction/ArtifactLoader';
 import FunctionForm from '../components/contract-interaction/FunctionForm';
 import FunctionList from '../components/contract-interaction/FunctionList';
 import LogPanel from '../components/contract-interaction/LogPanel';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Button,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '../components/ui';
+import { FileUp, Rocket } from 'lucide-react';
 import { DEPLOYABLE_CONTRACTS } from '../config/deployableContracts';
 import { PRECONFIGURED_CONTRACTS } from '../config/preconfiguredContracts';
 import { useUniversalWallet } from '../hooks';
@@ -175,6 +190,28 @@ const requestPersistentStorage = async () => {
     await navigator.storage.persist();
   }
 };
+
+/**
+ * ContractInteractionCard styles - semantic pattern.
+ */
+const styles = {
+  // Header
+  headerIcon: 'text-accent',
+  cardHeader: 'flex flex-row items-start gap-3',
+  // Tab
+  tabsList: 'mb-4',
+  // Grid layout
+  contractGrid: 'grid gap-4 md:grid-cols-2',
+  contractGridDeploy: 'grid gap-4 md:grid-cols-1',
+  // Hints and messages
+  inputHint:
+    'text-sm text-muted p-3 rounded-lg bg-surface-secondary border border-default mt-4',
+  inputHintError:
+    'text-sm text-red-500 p-3 rounded-lg bg-red-500/10 border border-red-500/30 mt-4',
+  // Action buttons row
+  actionRow: 'flex items-center gap-4 mt-4',
+  actionButton: 'flex-1',
+} as const;
 
 export const ContractInteractionCard: React.FC = () => {
   const { isConnected, isInitialized, account, currentConfig } =
@@ -887,133 +924,182 @@ export const ContractInteractionCard: React.FC = () => {
   }
 
   return (
-    <div className="contract-content">
-      <div className="content-header">
-        <div className="icon-container">
-          <span className="icon">🧰</span>
-        </div>
+    <Card>
+      <CardHeader className={styles.cardHeader}>
+        <Wrench size={iconSize('xl')} className={styles.headerIcon} />
         <div>
-          <h3>Contract Interaction</h3>
-          <p>
-            {isDeployMode
-              ? 'Deploy a new contract instance with custom constructor parameters.'
-              : 'Load a contract artifact to explore callable and read-only functions, then simulate or execute with your inputs.'}
-          </p>
+          <CardTitle>Contract Interaction</CardTitle>
+          <CardDescription>
+            {isDeployMode &&
+              'Deploy a new contract instance with custom constructor parameters.'}
+            {!isDeployMode &&
+              'Load a contract artifact to explore callable and read-only functions, then simulate or execute with your inputs.'}
+          </CardDescription>
         </div>
-      </div>
+      </CardHeader>
 
-      <div className={`contract-grid${isDeployMode ? ' deploy-mode' : ''}`}>
-        <ArtifactLoader
-          mode={deployment.mode}
-          onModeChange={handleModeChange}
-          existing={{
-            address: artifact.address,
-            artifactInput: artifact.artifactInput,
-            onAddressChange: (v) => updateArtifact({ address: v }),
-            onArtifactChange: (v) => updateArtifact({ artifactInput: v }),
-            onLoad: handleLoadArtifact,
-            error: artifact.parseError,
-            isValidAddress:
-              !artifact.address || isValidAztecAddress(artifact.address),
-          }}
-          saved={{
-            contracts: savedContracts,
-            activeAddress: artifact.address,
-            onApply: handleApplySaved,
-            onDelete: handleDeleteSaved,
-            onClearAll: handleClearCache,
-            hasCache,
-          }}
-          preconfigured={{
-            options: PRECONFIGURED_CONTRACTS.filter(
-              (c) => !c.network || c.network === currentConfig?.name
-            ),
-            selectedId: artifact.selectedPreconfiguredId,
-            onSelect: handleApplyPreconfigured,
-            isLoading: artifact.isLoadingPreconfigured,
-          }}
-          deploy={{
-            contracts: deployableContracts,
-            selectedContractId: deployment.selectedDeployableId,
-            onSelectContract: handleSelectDeployable,
-            isCustomSelected,
-            customDeployable: customDeployableContract,
-            selectedConstructorName: deployment.selectedConstructorName,
-            onSelectConstructor: handleSelectConstructor,
-            formValues: deployment.formValues,
-            onFormValueChange: handleDeploymentFormChange,
-            onDeploy: handleDeploy,
-            isDeploying,
-            error: deploymentErrorMessage,
-            canDeploy: canDeploy(),
-            customArtifactInput: deployment.customArtifactInput,
-            onCustomArtifactChange: handleCustomArtifactChange,
-            customArtifactError,
-          }}
-        />
-        {!isDeployMode && (
-          <FunctionList
-            groups={grouped}
-            selected={selectedFn?.name ?? null}
-            onSelect={(name) => updateExecutor({ selectedFnName: name })}
-            filter={executor.filter}
-            onFilterChange={(v) => updateExecutor({ filter: v })}
-            contractName={contractName ?? undefined}
-            hasContract={hasContract}
+      <CardContent>
+        <Tabs
+          value={deployment.mode}
+          onValueChange={(value) =>
+            handleModeChange(value as ArtifactLoaderMode)
+          }
+        >
+          <TabsList className={styles.tabsList}>
+            <TabsTrigger value="existing" disabled={isDeploying}>
+              <FileUp size={iconSize()} />
+              Use Contract
+            </TabsTrigger>
+            <TabsTrigger value="deploy" disabled={isDeploying}>
+              <Rocket size={iconSize()} />
+              Deploy New Contract
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="existing">
+            <div className={styles.contractGrid}>
+              <ArtifactLoader
+                mode="existing"
+                existing={{
+                  address: artifact.address,
+                  artifactInput: artifact.artifactInput,
+                  onAddressChange: (v) => updateArtifact({ address: v }),
+                  onArtifactChange: (v) => updateArtifact({ artifactInput: v }),
+                  onLoad: handleLoadArtifact,
+                  error: artifact.parseError,
+                  isValidAddress:
+                    !artifact.address || isValidAztecAddress(artifact.address),
+                }}
+                saved={{
+                  contracts: savedContracts,
+                  activeAddress: artifact.address,
+                  onApply: handleApplySaved,
+                  onDelete: handleDeleteSaved,
+                  onClearAll: handleClearCache,
+                  hasCache,
+                }}
+                preconfigured={{
+                  options: PRECONFIGURED_CONTRACTS.filter(
+                    (c) => !c.network || c.network === currentConfig?.name
+                  ),
+                  selectedId: artifact.selectedPreconfiguredId,
+                  onSelect: handleApplyPreconfigured,
+                  isLoading: artifact.isLoadingPreconfigured,
+                }}
+              />
+              <FunctionList
+                groups={grouped}
+                selected={selectedFn?.name ?? null}
+                onSelect={(name) => updateExecutor({ selectedFnName: name })}
+                filter={executor.filter}
+                onFilterChange={(v) => updateExecutor({ filter: v })}
+                contractName={contractName ?? undefined}
+                hasContract={hasContract}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="deploy">
+            <div className={styles.contractGridDeploy}>
+              <ArtifactLoader
+                mode="deploy"
+                existing={{
+                  address: artifact.address,
+                  artifactInput: artifact.artifactInput,
+                  onAddressChange: (v) => updateArtifact({ address: v }),
+                  onArtifactChange: (v) => updateArtifact({ artifactInput: v }),
+                  onLoad: handleLoadArtifact,
+                  error: artifact.parseError,
+                  isValidAddress:
+                    !artifact.address || isValidAztecAddress(artifact.address),
+                }}
+                saved={{
+                  contracts: savedContracts,
+                  activeAddress: artifact.address,
+                  onApply: handleApplySaved,
+                  onDelete: handleDeleteSaved,
+                  onClearAll: handleClearCache,
+                  hasCache,
+                }}
+                deploy={{
+                  contracts: deployableContracts,
+                  selectedContractId: deployment.selectedDeployableId,
+                  onSelectContract: handleSelectDeployable,
+                  isCustomSelected,
+                  customDeployable: customDeployableContract,
+                  selectedConstructorName: deployment.selectedConstructorName,
+                  onSelectConstructor: handleSelectConstructor,
+                  formValues: deployment.formValues,
+                  onFormValueChange: handleDeploymentFormChange,
+                  onDeploy: handleDeploy,
+                  isDeploying,
+                  error: deploymentErrorMessage,
+                  canDeploy: canDeploy(),
+                  customArtifactInput: deployment.customArtifactInput,
+                  onCustomArtifactChange: handleCustomArtifactChange,
+                  customArtifactError,
+                }}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {!isDeployMode && selectedFn && (
+          <FunctionForm
+            fn={selectedFn}
+            values={executor.formValues}
+            onChange={handleValueChange}
+            disabled={isBusy}
           />
         )}
-      </div>
 
-      {!isDeployMode && selectedFn && (
-        <FunctionForm
-          fn={selectedFn}
-          values={executor.formValues}
-          onChange={handleValueChange}
-          disabled={isBusy}
-        />
-      )}
+        {!isDeployMode && selectedFn && capabilities.isPrivate && (
+          <div className={styles.inputHint} role="status">
+            This is a private function. Results can only be proven by the note
+            owner; querying other addresses will likely return 0 or fail.
+          </div>
+        )}
 
-      {!isDeployMode && selectedFn && capabilities.isPrivate && (
-        <div className="input-hint" role="status">
-          This is a private function. Results can only be proven by the note
-          owner; querying other addresses will likely return 0 or fail.
-        </div>
-      )}
+        {!isDeployMode && ownerMismatchWarning && (
+          <div className={styles.inputHintError} role="alert">
+            <AlertTriangle size={iconSize()} className="inline mr-1" />
+            Owner differs from the connected wallet; private balances for other
+            addresses will usually appear as 0.
+          </div>
+        )}
 
-      {!isDeployMode && ownerMismatchWarning && (
-        <div className="input-hint error" role="alert">
-          Owner differs from the connected wallet; private balances for other
-          addresses will usually appear as 0.
-        </div>
-      )}
+        {!isDeployMode && (
+          <div className={styles.actionRow}>
+            <Button
+              variant="secondary"
+              disabled={simulateDisabled}
+              onClick={() => handleCall('simulate')}
+              isLoading={isSimulating}
+              className={styles.actionButton}
+            >
+              {isSimulating ? 'Simulating...' : 'Simulate'}
+            </Button>
+            <Button
+              variant="primary"
+              disabled={executeDisabled}
+              onClick={() => handleCall('execute')}
+              isLoading={isExecuting}
+              className={styles.actionButton}
+            >
+              {isExecuting ? 'Executing...' : 'Execute'}
+            </Button>
+          </div>
+        )}
 
-      {!isDeployMode && (
-        <div className="action-row">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={simulateDisabled}
-            onClick={() => handleCall('simulate')}
-          >
-            {isSimulating ? 'Simulating...' : 'Simulate'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={executeDisabled}
-            onClick={() => handleCall('execute')}
-          >
-            {isExecuting ? 'Executing...' : 'Execute'}
-          </button>
-          {callerError && (
-            <span className="input-hint error" role="alert">
-              {callerError}
-            </span>
-          )}
-        </div>
-      )}
+        {!isDeployMode && callerError && (
+          <div className={styles.inputHintError} role="alert">
+            <AlertTriangle size={iconSize()} className="inline mr-1" />
+            {callerError}
+          </div>
+        )}
 
-      <LogPanel logs={logs} />
-    </div>
+        <LogPanel logs={logs} />
+      </CardContent>
+    </Card>
   );
 };

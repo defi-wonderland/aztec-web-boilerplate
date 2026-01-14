@@ -1,7 +1,7 @@
 import type { ParsedFunction } from '../../utils/contractInteraction';
 import type { DeployableContract } from '../../utils/deployableContracts';
 
-export type LogLevel = 'info' | 'error' | 'success';
+export type LogLevel = 'info' | 'error' | 'success' | 'warning';
 
 export interface LogEntry {
   id: string;
@@ -165,7 +165,6 @@ export interface DeployConfig {
  */
 export interface ArtifactLoaderProps {
   mode?: ArtifactLoaderMode;
-  onModeChange?: (mode: ArtifactLoaderMode) => void;
   existing: ExistingContractConfig;
   saved: SavedContractsConfig;
   preconfigured?: PreconfiguredConfig;

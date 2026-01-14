@@ -2,6 +2,10 @@ import React from 'react';
 import { useUniversalWallet } from '../hooks';
 import { MainContent } from './MainContent';
 
+const styles = {
+  container: 'w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6',
+} as const;
+
 export const Layout: React.FC = () => {
   const { isInitialized, isConnected } = useUniversalWallet();
 
@@ -12,7 +16,7 @@ export const Layout: React.FC = () => {
   }
 
   return (
-    <div className="layout-container">
+    <div className={styles.container}>
       <MainContent />
     </div>
   );

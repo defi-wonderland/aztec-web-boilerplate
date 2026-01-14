@@ -1,7 +1,38 @@
 import React, { useMemo } from 'react';
+import { Rocket } from 'lucide-react';
+import { iconSize } from '../../utils';
 import { findConstructor } from '../../utils/deployableContracts';
 import { getPlaceholderForType, getLabelForType } from './helpers';
+import {
+  Input,
+  Textarea,
+  Button,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../ui';
 import type { DeployContractFormProps } from './types';
+
+/**
+ * DeployContractForm styles - semantic pattern.
+ */
+const styles = {
+  section: 'space-y-4',
+  formGroup: 'space-y-1.5',
+  label: 'block text-sm font-semibold text-default',
+  labelRow: 'flex items-center gap-2',
+  labelMain: 'text-default',
+  typeHint: 'text-xs text-muted font-normal',
+  hint: 'text-xs text-muted mt-1',
+  hintError: 'text-xs text-red-500 mt-1',
+  hintWarning: 'text-xs text-amber-500 mt-1',
+  paramsSection: 'space-y-3',
+  sectionTitle: 'text-sm font-semibold text-default mb-3',
+  paramsGrid: 'grid gap-4 sm:grid-cols-2',
+  actionRow: 'pt-2',
+} as const;
 
 /**
  * Form for deploying a new contract.
@@ -54,7 +85,6 @@ const DeployContractForm = ({
 
   const hasNoConstructorInputs =
     selectedConstructor && constructorInputs.length === 0;
-  const selectedDeployableValue = selectedDeployableId ?? '';
 
   const isDeployFormValid = useMemo(() => {
     if (isCustomSelected && customArtifactError) return false;
@@ -73,15 +103,13 @@ const DeployContractForm = ({
     selectedDeployable,
   ]);
 
-  const handleDeployableChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { value } = e.target;
-    const contractId = value || null;
+  const handleDeployableChange = (value: string) => {
+    const contractId = value === 'custom' ? null : value;
     onSelectDeployable(contractId);
   };
 
-  const handleConstructorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const constructorName = e.target.value;
-    onSelectConstructor(constructorName);
+  const handleConstructorChange = (value: string) => {
+    onSelectConstructor(value);
   };
 
   const handleParamChange = (paramName: string, value: string) => {
@@ -93,34 +121,37 @@ const DeployContractForm = ({
   };
 
   return (
-    <div className="deploy-section">
-      <div className="form-group">
-        <label htmlFor="deployable-contract">Contract to Deploy</label>
-        <select
-          id="deployable-contract"
-          className="form-input"
-          value={selectedDeployableValue}
-          onChange={handleDeployableChange}
+    <div className={styles.section}>
+      <div className={styles.formGroup}>
+        <label htmlFor="deployable-contract" className={styles.label}>
+          Contract to Deploy
+        </label>
+        <Select
+          value={selectedDeployableId ?? 'custom'}
+          onValueChange={handleDeployableChange}
           disabled={isDeploying}
-          aria-label="Select contract to deploy"
         >
-          <option value="">Custom artifact (paste JSON)</option>
-          {deployableContracts.map((contract) => (
-            <option key={contract.id} value={contract.id}>
-              {contract.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="deployable-contract">
+            <SelectValue placeholder="Select contract to deploy" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="custom">Custom artifact (paste JSON)</SelectItem>
+            {deployableContracts.map((contract) => (
+              <SelectItem key={contract.id} value={contract.id}>
+                {contract.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {isCustomSelected && (
-        <div className="form-group">
-          <label htmlFor="custom-artifact">
+        <div className={styles.formGroup}>
+          <label htmlFor="custom-artifact" className={styles.label}>
             Custom contract artifact (JSON)
           </label>
-          <textarea
+          <Textarea
             id="custom-artifact"
-            className="form-input"
             value={customArtifactInput}
             onChange={(e) => onCustomArtifactChange(e.target.value)}
             placeholder="Paste the compiled contract artifact JSON here"
@@ -128,67 +159,72 @@ const DeployContractForm = ({
             aria-label="Custom contract artifact JSON"
             rows={6}
           />
-          {customArtifactError ? (
-            <div className="input-hint error" role="alert">
+          {customArtifactError && (
+            <div className={styles.hintError} role="alert">
               {customArtifactError}
             </div>
-          ) : (
+          )}
+          {!customArtifactError &&
             customArtifactInput &&
             !selectedDeployable && (
-              <div className="input-hint warning" role="status">
+              <div className={styles.hintWarning} role="status">
                 Provide a valid artifact to load constructors.
               </div>
-            )
-          )}
+            )}
         </div>
       )}
 
       {selectedDeployable && (
-        <div className="form-group">
-          <label htmlFor="constructor-select">Constructor</label>
-          <select
-            id="constructor-select"
-            className="form-input"
+        <div className={styles.formGroup}>
+          <label htmlFor="constructor-select" className={styles.label}>
+            Constructor
+          </label>
+          <Select
             value={selectedConstructorName ?? ''}
-            onChange={handleConstructorChange}
+            onValueChange={handleConstructorChange}
             disabled={isDeploying}
-            aria-label="Select constructor"
           >
-            <option value="">Select a constructor...</option>
-            {selectedDeployable.constructors.map((ctor) => (
-              <option key={ctor.name} value={ctor.name}>
-                {ctor.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="constructor-select">
+              <SelectValue placeholder="Select a constructor..." />
+            </SelectTrigger>
+            <SelectContent>
+              {selectedDeployable.constructors.map((ctor) => (
+                <SelectItem key={ctor.name} value={ctor.name}>
+                  {ctor.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
       {selectedConstructor && (
-        <div className="constructor-params">
-          <div className="form-section-title">Constructor Parameters</div>
+        <div className={styles.paramsSection}>
+          <div className={styles.sectionTitle}>Constructor Parameters</div>
           {hasNoConstructorInputs && (
-            <div className="input-hint" role="status">
+            <div className={styles.hint} role="status">
               This constructor requires no parameters.
             </div>
           )}
           {constructorInputs.length > 0 && (
-            <div className="form-grid">
+            <div className={styles.paramsGrid}>
               {constructorInputs.map((input) => {
                 const typeLabel = getLabelForType(input.type);
                 return (
-                  <div className="form-group" key={input.path}>
-                    <label htmlFor={`param-${input.path}`}>
-                      <span className="form-label-row">
-                        <span className="form-label-main">{input.label}</span>
+                  <div className={styles.formGroup} key={input.path}>
+                    <label
+                      htmlFor={`param-${input.path}`}
+                      className={styles.label}
+                    >
+                      <span className={styles.labelRow}>
+                        <span className={styles.labelMain}>{input.label}</span>
                         {typeLabel && (
-                          <span className="form-type-hint">{typeLabel}</span>
+                          <span className={styles.typeHint}>{typeLabel}</span>
                         )}
                       </span>
                     </label>
-                    <input
+                    <Input
                       id={`param-${input.path}`}
-                      className="form-input"
                       value={formValues[input.path] ?? ''}
                       onChange={(e) =>
                         handleParamChange(input.path, e.target.value)
@@ -206,27 +242,28 @@ const DeployContractForm = ({
       )}
 
       {deploymentError && (
-        <div className="input-hint error" role="alert">
+        <div className={styles.hintError} role="alert">
           {deploymentError}
         </div>
       )}
 
       {!canDeploy && selectedConstructor && (
-        <div className="input-hint warning" role="alert">
+        <div className={styles.hintWarning} role="alert">
           Contract deployment is not yet supported for your wallet type.
         </div>
       )}
 
-      <div className="action-row">
-        <button
-          type="button"
-          className="btn btn-primary"
+      <div className={styles.actionRow}>
+        <Button
+          variant="primary"
           onClick={handleDeploy}
           disabled={!canDeploy || !isDeployFormValid || isDeploying}
+          isLoading={isDeploying}
+          icon={<Rocket size={iconSize()} />}
           aria-label="Deploy contract"
         >
           {isDeploying ? 'Deploying...' : 'Deploy Contract'}
-        </button>
+        </Button>
       </div>
     </div>
   );
