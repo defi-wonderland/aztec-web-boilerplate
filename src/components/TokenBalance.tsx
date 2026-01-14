@@ -4,6 +4,7 @@ import {
   useTokenBalance,
   type FormattedBalances,
 } from '../hooks/queries/useTokenBalance';
+import { iconSize } from '../utils';
 import { Card, CardContent, CardTitle, Badge } from './ui';
 
 interface BalanceMetrics {
@@ -15,12 +16,6 @@ interface BalanceMetrics {
 }
 
 const styles = {
-  // Icon sizes
-  icon: {
-    sm: 'h-3 w-3',
-    md: 'h-4 w-4',
-    lg: 'h-5 w-5',
-  },
   // Loading state
   loadingContainer: 'flex items-center justify-center gap-3 py-4 text-muted',
   loadingSpinner:
@@ -46,7 +41,7 @@ const styles = {
   cardWrapper: 'mb-4',
   cardHeader: 'flex items-center justify-between pb-3',
   cardTitle: 'flex items-center gap-2 text-base',
-  cardTitleIcon: 'h-5 w-5 text-accent',
+  cardTitleIcon: 'text-accent',
   syncBadge: 'animate-pulse',
 } as const;
 
@@ -93,14 +88,14 @@ const BalanceContent: React.FC<BalanceMetrics> = ({
     <div className={styles.balanceItems}>
       <div className={styles.balanceItem}>
         <div className={styles.balanceLabel}>
-          <Shield className={styles.icon.md} />
+          <Shield size={iconSize()} />
           <span>Private:</span>
         </div>
         <span className={styles.balanceValue}>{privateBalance.toString()}</span>
       </div>
       <div className={styles.balanceItem}>
         <div className={styles.balanceLabel}>
-          <Globe className={styles.icon.md} />
+          <Globe size={iconSize()} />
           <span>Public:</span>
         </div>
         <span className={styles.balanceValue}>{publicBalance.toString()}</span>
@@ -124,12 +119,10 @@ const BalanceContent: React.FC<BalanceMetrics> = ({
           </div>
           <div className={styles.percentages}>
             <span className={styles.percentageItem}>
-              <Shield className={styles.icon.sm} />{' '}
-              {privatePercentage.toFixed(0)}%
+              <Shield size={iconSize('xs')} /> {privatePercentage.toFixed(0)}%
             </span>
             <span className={styles.percentageItem}>
-              <Globe className={styles.icon.sm} /> {publicPercentage.toFixed(0)}
-              %
+              <Globe size={iconSize('xs')} /> {publicPercentage.toFixed(0)}%
             </span>
           </div>
         </div>
@@ -151,7 +144,7 @@ export const TokenBalance: React.FC = () => {
     <Card padding="sm" className={styles.cardWrapper}>
       <div className={styles.cardHeader}>
         <CardTitle className={styles.cardTitle}>
-          <Coins className={styles.cardTitleIcon} />
+          <Coins size={iconSize('md')} className={styles.cardTitleIcon} />
           Your Balance
         </CardTitle>
         {isFetching && !isLoading && (

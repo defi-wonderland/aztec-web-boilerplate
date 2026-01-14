@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Rocket } from 'lucide-react';
+import { iconSize } from '../../utils';
 import { findConstructor } from '../../utils/deployableContracts';
 import { getPlaceholderForType, getLabelForType } from './helpers';
 import {
@@ -31,9 +32,6 @@ const styles = {
   sectionTitle: 'text-sm font-semibold text-default mb-3',
   paramsGrid: 'grid gap-4 sm:grid-cols-2',
   actionRow: 'pt-2',
-  icon: {
-    sm: 'h-4 w-4',
-  },
 } as const;
 
 /**
@@ -261,7 +259,7 @@ const DeployContractForm = ({
           onClick={handleDeploy}
           disabled={!canDeploy || !isDeployFormValid || isDeploying}
           isLoading={isDeploying}
-          icon={<Rocket className={styles.icon.sm} />}
+          icon={<Rocket size={iconSize()} />}
           aria-label="Deploy contract"
         >
           {isDeploying ? 'Deploying...' : 'Deploy Contract'}

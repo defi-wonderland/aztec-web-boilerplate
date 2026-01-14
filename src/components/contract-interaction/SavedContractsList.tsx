@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import { cn } from '../../utils';
+import { cn, iconSize } from '../../utils';
 import { Button, Badge } from '../ui';
 import type { SavedContractsListProps } from './types';
 
@@ -22,9 +22,6 @@ const styles = {
   address: 'text-xs font-mono text-muted truncate mt-0.5',
   meta: 'text-xs text-muted mt-1',
   actions: 'flex items-center gap-2 flex-shrink-0',
-  icon: {
-    sm: 'h-4 w-4',
-  },
 } as const;
 
 const SavedContractsList = ({
@@ -52,7 +49,7 @@ const SavedContractsList = ({
           disabled={!canClear}
           aria-label="Clear all saved contracts"
           title="Remove all saved contracts from cache"
-          icon={<Trash2 className={styles.icon.sm} />}
+          icon={<Trash2 size={iconSize()} />}
         >
           Clear all
         </Button>

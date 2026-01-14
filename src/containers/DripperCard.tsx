@@ -4,6 +4,7 @@ import { TokenBalance } from '../components/TokenBalance';
 import { useUniversalWallet, useRequiredContracts } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
 import { useToast, type LoadingToastResult } from '../hooks';
+import { iconSize } from '../utils';
 import {
   Card,
   CardHeader,
@@ -25,7 +26,7 @@ import {
 const styles = {
   // Header
   headerRow: 'flex flex-row items-start gap-4',
-  headerIcon: 'h-8 w-8 text-accent',
+  headerIcon: 'text-accent',
   // Form
   formContainer: 'space-y-4',
   formSection: 'space-y-4',
@@ -35,16 +36,12 @@ const styles = {
   inputWithCopy: 'relative flex w-full',
   inputTokenAddress: 'pr-10 font-mono text-xs',
   copyButtonPosition: 'absolute right-2 top-1/2 -translate-y-1/2',
-  copyIcon: 'h-4 w-4',
   // Amount & Type row
   amountTypeRow: 'flex flex-col gap-4 sm:flex-row sm:items-end',
   amountWrapper: 'flex-1',
   dripTypeWrapper: 'w-full sm:w-48',
   // Select item icons
   selectItemContent: 'flex items-center gap-2',
-  selectItemIcon: 'h-4 w-4',
-  // Button icon
-  buttonIcon: 'h-4 w-4',
   // Loading state
   loadingContainer:
     'flex flex-col items-center justify-center py-8 gap-4 text-muted',
@@ -53,7 +50,7 @@ const styles = {
   loadingText: 'text-sm',
   // Error state
   errorContainer: 'text-center py-6',
-  errorIcon: 'h-12 w-12 text-amber-500 mx-auto mb-2',
+  errorIcon: 'text-amber-500 mx-auto mb-2',
   errorTitle: 'text-lg font-semibold text-default mb-1',
   errorText: 'text-sm text-muted',
 } as const;
@@ -166,7 +163,7 @@ export const DripperCard: React.FC = () => {
     return (
       <Card>
         <CardContent className={styles.errorContainer}>
-          <AlertTriangle className={styles.errorIcon} />
+          <AlertTriangle size={iconSize('2xl')} className={styles.errorIcon} />
           <h3 className={styles.errorTitle}>Contract Registration Failed</h3>
           <p className={styles.errorText}>
             Failed to register: {failedContracts.join(', ')}
@@ -179,7 +176,7 @@ export const DripperCard: React.FC = () => {
   return (
     <Card>
       <CardHeader className={styles.headerRow}>
-        <Coins className={styles.headerIcon} />
+        <Coins size={iconSize('xl')} className={styles.headerIcon} />
         <div>
           <CardTitle>Dripper - Mint Tokens</CardTitle>
           <CardDescription>Mint new tokens to your balance</CardDescription>
@@ -217,7 +214,7 @@ export const DripperCard: React.FC = () => {
                       aria-label="Copy address to clipboard"
                       className={styles.copyButtonPosition}
                     >
-                      <Copy className={styles.copyIcon} />
+                      <Copy size={iconSize()} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Copy to clipboard</TooltipContent>
@@ -260,12 +257,12 @@ export const DripperCard: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="private">
                         <span className={styles.selectItemContent}>
-                          <Shield className={styles.selectItemIcon} /> Private
+                          <Shield size={iconSize()} /> Private
                         </span>
                       </SelectItem>
                       <SelectItem value="public">
                         <span className={styles.selectItemContent}>
-                          <Globe className={styles.selectItemIcon} /> Public
+                          <Globe size={iconSize()} /> Public
                         </span>
                       </SelectItem>
                     </SelectContent>
@@ -290,9 +287,9 @@ export const DripperCard: React.FC = () => {
               isLoading={isProcessing}
               icon={
                 dripType === 'private' ? (
-                  <Shield className={styles.buttonIcon} />
+                  <Shield size={iconSize()} />
                 ) : (
-                  <Globe className={styles.buttonIcon} />
+                  <Globe size={iconSize()} />
                 )
               }
             >

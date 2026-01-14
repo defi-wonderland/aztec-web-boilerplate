@@ -10,45 +10,41 @@ version: 1.0.0
 
 This project uses **Lucide React** for all icons. Browse available icons at: https://lucide.dev/icons/
 
-## Installation
-
-Icons are already available via the `lucide-react` package.
-
 ## Usage
 
+Use the `iconSize()` utility with Lucide's `size` prop for consistent sizing:
+
 ```tsx
-import { Home, Settings, User, AlertTriangle } from 'lucide-react';
+import { Home, Settings, AlertTriangle } from 'lucide-react';
+import { iconSize } from '../utils';
 
-const styles = {
-  icon: {
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-    lg: 'h-6 w-6',
-  },
-} as const;
-
-// Usage
-<Home className={styles.icon.md} />
-<AlertTriangle className={styles.icon.sm} />
+// Usage - size prop with iconSize(), className for colors/styles
+<Home size={iconSize()} />              // sm (16px) - default
+<Settings size={iconSize('md')} />      // md (20px)
+<AlertTriangle size={iconSize('lg')} className="text-amber-500" />
 ```
 
 ## Standard Sizes
 
-- `h-4 w-4` (sm) - Inline text, buttons
-- `h-5 w-5` (md) - Default
-- `h-6 w-6` (lg) - Headers
-- `h-8 w-8` (xl) - Card headers, hero
+- `iconSize('xs')` - 12px - Very small inline elements
+- `iconSize()` - 16px (sm) - **Default**, inline text, buttons
+- `iconSize('md')` - 20px - Slightly larger, tab icons
+- `iconSize('lg')` - 24px - Headers
+- `iconSize('xl')` - 32px - Card headers, hero sections
+- `iconSize('2xl')` - 48px - Large illustrations, error states
 
 ## Styling Icons
 
-Always define icon classes in the styles object:
+Use `size` prop for dimensions, `className` for colors and other styles:
 
 ```tsx
 const styles = {
-  headerIcon: 'h-8 w-8 text-accent',
-  buttonIcon: 'h-4 w-4',
-  warningIcon: 'h-5 w-5 text-amber-500',
+  headerIcon: 'text-accent',
+  warningIcon: 'text-amber-500',
 } as const;
+
+<Coins size={iconSize('xl')} className={styles.headerIcon} />
+<AlertTriangle size={iconSize('md')} className={styles.warningIcon} />
 ```
 
 ## Icons in Buttons
@@ -57,9 +53,10 @@ Use the `icon` prop on the Button component:
 
 ```tsx
 import { Rocket } from 'lucide-react';
+import { iconSize } from '../utils';
 import { Button } from '../components/ui';
 
-<Button icon={<Rocket className={styles.icon.sm} />}>Deploy</Button>;
+<Button icon={<Rocket size={iconSize()} />}>Deploy</Button>;
 ```
 
 ## Icon-Only Buttons
@@ -67,11 +64,12 @@ import { Button } from '../components/ui';
 Use Button with `variant="icon"` and `size="icon"`:
 
 ```tsx
-import { Copy, X } from 'lucide-react';
+import { Copy } from 'lucide-react';
+import { iconSize } from '../utils';
 import { Button } from '../components/ui';
 
 <Button variant="icon" size="icon">
-  <Copy className={styles.icon.sm} />
+  <Copy size={iconSize()} />
 </Button>;
 ```
 
@@ -88,3 +86,4 @@ import { Button } from '../components/ui';
 - Emojis for icons (❌ 🚀 ✅) - use Lucide icons instead
 - Inline SVGs - import from Lucide
 - Other icon libraries - maintain consistency with Lucide
+- Hardcoded `h-X w-X` classes for icon sizing - use `iconSize()` instead

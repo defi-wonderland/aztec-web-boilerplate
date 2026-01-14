@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import { Wrench, AlertTriangle } from 'lucide-react';
+import { iconSize } from '../utils';
 import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 import ArtifactLoader from '../components/contract-interaction/ArtifactLoader';
 import FunctionForm from '../components/contract-interaction/FunctionForm';
@@ -194,17 +195,10 @@ const requestPersistentStorage = async () => {
  * ContractInteractionCard styles - semantic pattern.
  */
 const styles = {
-  // Icon sizes
-  icon: {
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-    lg: 'h-8 w-8',
-  },
   // Header
-  headerIcon: 'h-8 w-8 text-accent',
+  headerIcon: 'text-accent',
   cardHeader: 'flex flex-row items-start gap-3',
-  // Tab icon
-  tabIcon: 'h-4 w-4',
+  // Tab
   tabsList: 'mb-4',
   // Grid layout
   contractGrid: 'grid gap-4 md:grid-cols-2',
@@ -932,7 +926,7 @@ export const ContractInteractionCard: React.FC = () => {
   return (
     <Card>
       <CardHeader className={styles.cardHeader}>
-        <Wrench className={styles.headerIcon} />
+        <Wrench size={iconSize('xl')} className={styles.headerIcon} />
         <div>
           <CardTitle>Contract Interaction</CardTitle>
           <CardDescription>
@@ -953,11 +947,11 @@ export const ContractInteractionCard: React.FC = () => {
         >
           <TabsList className={styles.tabsList}>
             <TabsTrigger value="existing" disabled={isDeploying}>
-              <FileUp className={styles.tabIcon} />
+              <FileUp size={iconSize()} />
               Use Contract
             </TabsTrigger>
             <TabsTrigger value="deploy" disabled={isDeploying}>
-              <Rocket className={styles.tabIcon} />
+              <Rocket size={iconSize()} />
               Deploy New Contract
             </TabsTrigger>
           </TabsList>
@@ -1068,7 +1062,7 @@ export const ContractInteractionCard: React.FC = () => {
 
         {!isDeployMode && ownerMismatchWarning && (
           <div className={styles.inputHintError} role="alert">
-            <AlertTriangle className={`${styles.icon.sm} inline mr-1`} />
+            <AlertTriangle size={iconSize()} className="inline mr-1" />
             Owner differs from the connected wallet; private balances for other
             addresses will usually appear as 0.
           </div>
@@ -1099,7 +1093,7 @@ export const ContractInteractionCard: React.FC = () => {
 
         {!isDeployMode && callerError && (
           <div className={styles.inputHintError} role="alert">
-            <AlertTriangle className={`${styles.icon.sm} inline mr-1`} />
+            <AlertTriangle size={iconSize()} className="inline mr-1" />
             {callerError}
           </div>
         )}

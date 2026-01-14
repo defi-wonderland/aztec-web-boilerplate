@@ -1,11 +1,12 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
+import { iconSize } from '../../utils';
 import { useTheme } from '../../hooks/context/useTheme';
 import { Toggle } from './Toggle';
 import { Tooltip, TooltipTrigger, TooltipContent } from './Tooltip';
 
 const styles = {
-  icon: 'h-4 w-4 transition-transform duration-300',
+  icon: 'transition-transform duration-300',
 } as const;
 
 /**
@@ -27,8 +28,8 @@ export const ThemeToggle: React.FC = () => {
           onPressedChange={toggleTheme}
           aria-label={`Switch to ${isLightTheme ? 'dark' : 'light'} mode`}
         >
-          {isLightTheme && <Sun className={styles.icon} />}
-          {!isLightTheme && <Moon className={styles.icon} />}
+          {isLightTheme && <Sun size={iconSize()} className={styles.icon} />}
+          {!isLightTheme && <Moon size={iconSize()} className={styles.icon} />}
         </Toggle>
       </TooltipTrigger>
       <TooltipContent>

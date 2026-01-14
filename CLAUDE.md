@@ -129,39 +129,52 @@ const MyComponent = () => (
 
 Use **Lucide React** for all icons: https://lucide.dev/icons/
 
+Use the `iconSize()` utility with Lucide's `size` prop for consistent sizing:
+
 ```tsx
 import { Home, Settings, AlertTriangle } from 'lucide-react';
+import { iconSize } from '../utils';
 
-const styles = {
-  icon: {
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-    lg: 'h-6 w-6',
-  },
-} as const;
-
-<Home className={styles.icon.md} />;
+// Usage - size prop with iconSize(), className for colors/styles
+<Home size={iconSize()} />                           // sm (16px) - default
+<Settings size={iconSize('md')} />                   // md (20px)
+<AlertTriangle size={iconSize('lg')} className={styles.iconStyles} />
 ```
 
 ### Standard Sizes
 
-- `h-4 w-4` (sm) - Inline text, buttons
-- `h-5 w-5` (md) - Default
-- `h-6 w-6` (lg) - Headers
-- `h-8 w-8` (xl) - Card headers, hero
+- `iconSize('xs')` - 12px - Very small inline elements
+- `iconSize()` - 16px (sm) - **Default**, inline text, buttons
+- `iconSize('md')` - 20px - Slightly larger, tab icons
+- `iconSize('lg')` - 24px - Headers
+- `iconSize('xl')` - 32px - Card headers, hero sections
+- `iconSize('2xl')` - 48px - Large illustrations, error states
+
+### Styling Icons
+
+Use `size` prop for dimensions, `className` for colors:
+
+```tsx
+const styles = {
+  headerIcon: 'text-accent',
+  warningIcon: 'text-amber-500',
+} as const;
+
+<Coins size={iconSize('xl')} className={styles.headerIcon} />;
+```
 
 ### Icons in Buttons
 
 ```tsx
-<Button icon={<Rocket className={styles.icon.sm} />}>Deploy</Button>
+<Button icon={<Rocket size={iconSize()} />}>Deploy</Button>
 
 // Icon-only button
 <Button variant="icon" size="icon">
-  <Copy className={styles.icon.sm} />
+  <Copy size={iconSize()} />
 </Button>
 ```
 
-**Do NOT use**: Emojis, inline SVGs, or other icon libraries.
+**Do NOT use**: Emojis, inline SVGs, other icon libraries, or hardcoded pixel values.
 
 ## Hooks
 

@@ -28,6 +28,7 @@ import {
   ExternalLink,
   BookOpen,
 } from 'lucide-react';
+import { iconSize } from '../utils';
 import {
   Card,
   CardHeader,
@@ -64,7 +65,7 @@ import { useToast } from '../hooks';
 
 const styles = {
   headerRow: 'flex flex-row items-start gap-4',
-  headerIcon: 'h-8 w-8 text-accent',
+  headerIcon: 'text-accent',
   // Sections
   sectionsContainer: 'space-y-8',
   section: 'space-y-4',
@@ -77,11 +78,6 @@ const styles = {
   componentColumn: 'flex flex-col gap-3',
   // Labels
   variantLabel: 'text-xs text-muted font-mono',
-  // Icons
-  icon: {
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-  },
   // Tab content
   tabContent: 'p-4 bg-surface-secondary rounded-lg mt-2',
   // Dialog
@@ -120,7 +116,7 @@ export const UIComponentsShowcase: React.FC = () => {
   return (
     <Card>
       <CardHeader className={styles.headerRow}>
-        <Layers className={styles.headerIcon} />
+        <Layers size={iconSize('xl')} className={styles.headerIcon} />
         <div>
           <CardTitle>UI Components</CardTitle>
           <CardDescription>
@@ -160,13 +156,8 @@ export const UIComponentsShowcase: React.FC = () => {
           <div className={styles.componentColumn}>
             <span className={styles.variantLabel}>With Icons</span>
             <div className={styles.componentGrid}>
-              <Button icon={<Rocket className={styles.icon.sm} />}>
-                Deploy
-              </Button>
-              <Button
-                variant="secondary"
-                icon={<Copy className={styles.icon.sm} />}
-              >
+              <Button icon={<Rocket size={iconSize()} />}>Deploy</Button>
+              <Button variant="secondary" icon={<Copy size={iconSize()} />}>
                 Copy
               </Button>
             </div>
@@ -176,13 +167,13 @@ export const UIComponentsShowcase: React.FC = () => {
             <span className={styles.variantLabel}>Icon Buttons</span>
             <div className={styles.componentGrid}>
               <Button variant="icon" size="icon">
-                <Copy className={styles.icon.sm} />
+                <Copy size={iconSize()} />
               </Button>
               <Button variant="icon" size="icon">
-                <X className={styles.icon.sm} />
+                <X size={iconSize()} />
               </Button>
               <Button variant="toggle" size="icon">
-                <Sun className={styles.icon.sm} />
+                <Sun size={iconSize()} />
               </Button>
             </div>
           </div>
@@ -315,10 +306,10 @@ export const UIComponentsShowcase: React.FC = () => {
               className={styles.link}
             >
               Lucide React
-              <ExternalLink className={styles.icon.sm} />
+              <ExternalLink size={iconSize()} />
             </a>
-            . Use consistent sizing via the styles object (h-4 w-4 for sm, h-5
-            w-5 for md).
+            . Use the iconSize() utility for consistent sizing: iconSize() for
+            sm (16px default), iconSize('md') for md (20px).
           </p>
 
           <div className={styles.iconGrid}>
@@ -344,7 +335,7 @@ export const UIComponentsShowcase: React.FC = () => {
             ].map(({ Icon, name }) => (
               <div key={name} className={styles.iconItem}>
                 <div className={styles.iconBox}>
-                  <Icon className={styles.icon.md} />
+                  <Icon size={iconSize('md')} />
                 </div>
                 <span className={styles.iconName}>{name}</span>
               </div>
@@ -367,9 +358,9 @@ export const UIComponentsShowcase: React.FC = () => {
                 onPressedChange={setTogglePressed}
               >
                 {togglePressed ? (
-                  <Moon className={styles.icon.sm} />
+                  <Moon size={iconSize()} />
                 ) : (
-                  <Sun className={styles.icon.sm} />
+                  <Sun size={iconSize()} />
                 )}
               </Toggle>
             </div>
@@ -377,7 +368,7 @@ export const UIComponentsShowcase: React.FC = () => {
             <div className={styles.componentColumn}>
               <span className={styles.variantLabel}>Ghost</span>
               <Toggle variant="ghost">
-                <Bell className={styles.icon.sm} />
+                <Bell size={iconSize()} />
               </Toggle>
             </div>
           </div>
@@ -401,7 +392,7 @@ export const UIComponentsShowcase: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="icon" size="icon">
-                  <Info className={styles.icon.sm} />
+                  <Info size={iconSize()} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Information tooltip</TooltipContent>
@@ -484,28 +475,28 @@ export const UIComponentsShowcase: React.FC = () => {
               onClick={() =>
                 success('Success!', 'Operation completed successfully')
               }
-              icon={<Check className={styles.icon.sm} />}
+              icon={<Check size={iconSize()} />}
             >
               Success Toast
             </Button>
             <Button
               variant="secondary"
               onClick={() => error('Error!', 'Something went wrong')}
-              icon={<XCircle className={styles.icon.sm} />}
+              icon={<XCircle size={iconSize()} />}
             >
               Error Toast
             </Button>
             <Button
               variant="secondary"
               onClick={() => warning('Warning!', 'Please review this action')}
-              icon={<AlertTriangle className={styles.icon.sm} />}
+              icon={<AlertTriangle size={iconSize()} />}
             >
               Warning Toast
             </Button>
             <Button
               variant="secondary"
               onClick={() => info('Info', 'Here is some information')}
-              icon={<Info className={styles.icon.sm} />}
+              icon={<Info size={iconSize()} />}
             >
               Info Toast
             </Button>
@@ -564,7 +555,7 @@ export const UIComponentsShowcase: React.FC = () => {
 
           <div className={styles.guidelineBox}>
             <div className={styles.guidelineTitle}>
-              <BookOpen className={styles.icon.md} />
+              <BookOpen size={iconSize('md')} />
               Adding New Components
             </div>
             <p className={styles.guidelineText}>
@@ -576,7 +567,7 @@ export const UIComponentsShowcase: React.FC = () => {
                 className={styles.link}
               >
                 Radix UI Primitives
-                <ExternalLink className={styles.icon.sm} />
+                <ExternalLink size={iconSize()} />
               </a>{' '}
               first. If the component exists there, you must use it as the base.
             </p>

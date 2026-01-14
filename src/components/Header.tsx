@@ -6,6 +6,7 @@ import {
   truncateAddress,
   truncateCaipAddress,
   parseCaipAddress,
+  iconSize,
 } from '../utils';
 import { copyToClipboard } from '../utils/clipboard';
 import { ConnectWalletModal } from './ConnectWalletModal';
@@ -26,7 +27,7 @@ const styles = {
     'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16',
   // Logo/Title
   navTitle: 'text-xl font-semibold text-default flex items-center gap-2',
-  navTitleIcon: 'h-6 w-6 text-accent',
+  navTitleIcon: 'text-accent',
   // Controls section
   navControls: 'flex items-center gap-3',
   // Connected account section
@@ -145,7 +146,7 @@ export const Header: React.FC = () => {
       <nav className={styles.navbar}>
         <div className={styles.navContainer}>
           <div className={styles.navTitle}>
-            <Hammer className={styles.navTitleIcon} />
+            <Hammer size={iconSize('lg')} className={styles.navTitleIcon} />
             Aztec Web Boilerplate
           </div>
           <div className={styles.navControls}>

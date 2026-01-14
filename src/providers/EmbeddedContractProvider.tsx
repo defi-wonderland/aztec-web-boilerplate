@@ -10,10 +10,7 @@ import React, {
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
 import { Zap, RefreshCw } from 'lucide-react';
-
-const styles = {
-  toastIcon: 'h-5 w-5',
-} as const;
+import { iconSize } from '../utils';
 import { contractsConfig } from '../config/contracts';
 import { getNetworkArtifacts } from '../config/networkArtifacts';
 import {
@@ -143,9 +140,9 @@ export function EmbeddedContractProvider<
           const labelSuffix = initialContracts.length === 1 ? '' : 's';
           const sourceText = allCached ? 'Cached in PXE' : 'Fresh registration';
           const icon = allCached ? (
-            <Zap className={styles.toastIcon} />
+            <Zap size={iconSize('md')} />
           ) : (
-            <RefreshCw className={styles.toastIcon} />
+            <RefreshCw size={iconSize('md')} />
           );
 
           addToast({

@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
+import { iconSize } from '../../utils';
 import {
   Toast,
   ToastProvider as RadixToastProvider,
@@ -17,31 +18,27 @@ import { useToast, type ToastVariant } from '../../hooks/context/useToast';
 const styles = {
   toastContent: 'flex items-start gap-3 flex-1 min-w-0',
   iconWrapper: 'shrink-0 mt-0.5',
-  icon: 'h-5 w-5',
   textWrapper: 'flex-1 min-w-0',
   actionWrapper: 'shrink-0 ml-2',
   spinner:
     'h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent',
 } as const;
 
+const ICON_SIZE = iconSize('md');
+
 /**
  * Loading spinner component
  */
-const LoadingSpinner: React.FC<{ className?: string }> = () => (
-  <div className={styles.spinner} />
-);
+const LoadingSpinner: React.FC = () => <div className={styles.spinner} />;
 
 /**
  * Icon mapping for toast variants
  */
-const VARIANT_ICONS: Record<
-  ToastVariant,
-  React.FC<{ className?: string }> | null
-> = {
-  success: CheckCircle,
-  error: XCircle,
-  warning: AlertTriangle,
-  info: Info,
+const VARIANT_ICONS: Record<ToastVariant, React.FC | null> = {
+  success: () => <CheckCircle size={ICON_SIZE} />,
+  error: () => <XCircle size={ICON_SIZE} />,
+  warning: () => <AlertTriangle size={ICON_SIZE} />,
+  info: () => <Info size={ICON_SIZE} />,
   loading: LoadingSpinner,
   default: null,
 };
@@ -109,7 +106,7 @@ export const Toaster: React.FC = () => {
               )}
               {IconComponent && (
                 <div className={styles.iconWrapper}>
-                  <IconComponent className={styles.icon} />
+                  <IconComponent />
                 </div>
               )}
               <div className={styles.textWrapper}>

@@ -1,6 +1,6 @@
 import React from 'react';
-import { AlertTriangle, Search } from 'lucide-react';
-import { cn } from '../../utils';
+import { AlertTriangle } from 'lucide-react';
+import { cn, iconSize } from '../../utils';
 import { Input } from '../ui';
 import type { FunctionListProps } from './types';
 
@@ -32,10 +32,7 @@ const styles = {
   functionMeta: 'text-xs text-muted',
   // Empty state
   emptyState: 'py-8 text-center text-sm text-muted',
-  icon: {
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-  },
+  emptyIcon: 'mx-auto mb-2 text-amber-500',
 } as const;
 
 const FunctionList = ({
@@ -86,7 +83,9 @@ const FunctionList = ({
                       type="button"
                       className={cn(
                         styles.functionItem,
-                        isActive ? styles.functionItemActive : styles.functionItemInactive
+                        isActive
+                          ? styles.functionItemActive
+                          : styles.functionItemInactive
                       )}
                       onClick={() => onSelect(fn.name)}
                     >
@@ -98,7 +97,9 @@ const FunctionList = ({
                   );
                 })}
                 {group.items.length === 0 && (
-                  <div className={styles.emptyState}>No functions in this group.</div>
+                  <div className={styles.emptyState}>
+                    No functions in this group.
+                  </div>
                 )}
               </div>
             </div>
@@ -107,7 +108,7 @@ const FunctionList = ({
 
         {groups.length === 0 && (
           <div className={styles.emptyState}>
-            <AlertTriangle className={`${styles.icon.md} mx-auto mb-2 text-amber-500`} />
+            <AlertTriangle size={iconSize('md')} className={styles.emptyIcon} />
             {hasContract && 'No functions found for current filter.'}
             {!hasContract && 'Load or select a contract to view its functions.'}
           </div>

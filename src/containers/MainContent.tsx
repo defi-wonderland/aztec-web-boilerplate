@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Coins, Wrench, Settings, Layers } from 'lucide-react';
 import { Tabs, SecurityWarning } from '../components';
 import { useUniversalWallet } from '../hooks';
+import { iconSize } from '../utils';
 import { TabConfig, TabType } from '../types';
 import { isEmbeddedConnector } from '../types/walletConnector';
 import { ContractInteractionCard } from './ContractInteractionCard';
@@ -11,7 +12,6 @@ import { UIComponentsShowcase } from './UIComponentsShowcase';
 
 const styles = {
   main: 'flex flex-col gap-6',
-  tabIcon: 'h-5 w-5',
 } as const;
 
 export const MainContent: React.FC = () => {
@@ -27,25 +27,25 @@ export const MainContent: React.FC = () => {
     {
       id: 'mint',
       label: 'Mint Tokens',
-      icon: <Coins className={styles.tabIcon} />,
+      icon: <Coins size={iconSize('md')} />,
       component: <DripperCard />,
     },
     {
       id: 'contract',
       label: 'Contract UI',
-      icon: <Wrench className={styles.tabIcon} />,
+      icon: <Wrench size={iconSize('md')} />,
       component: <ContractInteractionCard />,
     },
     {
       id: 'settings',
       label: 'Settings',
-      icon: <Settings className={styles.tabIcon} />,
+      icon: <Settings size={iconSize('md')} />,
       component: <SettingsCard />,
     },
     {
       id: 'components',
       label: 'UI Components',
-      icon: <Layers className={styles.tabIcon} />,
+      icon: <Layers size={iconSize('md')} />,
       component: <UIComponentsShowcase />,
     },
   ];

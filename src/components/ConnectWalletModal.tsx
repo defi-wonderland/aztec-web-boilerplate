@@ -32,7 +32,7 @@ import {
   SelectItem,
 } from './ui/Select';
 import { Badge } from './ui/Badge';
-import { cn } from '../utils';
+import { cn, iconSize } from '../utils';
 
 interface ConnectWalletModalProps {
   onWalletConnected?: () => void;
@@ -45,11 +45,7 @@ const styles = {
   section: 'flex flex-col gap-3',
   sectionLabel: 'text-sm font-semibold text-default',
   dialogTitle: 'flex items-center gap-2',
-  icon: {
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-    accent: 'text-accent',
-  },
+  iconAccent: 'text-accent',
   networkStatus: {
     base: 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm',
     notConnected:
@@ -58,7 +54,6 @@ const styles = {
     failed: 'bg-red-500/10 text-red-400 border border-red-500/20',
     connected: 'bg-green-500/10 text-green-400 border border-green-500/20',
   },
-  spinner: 'animate-spin h-4 w-4',
   actionButton: 'w-full justify-center',
   embeddedActions: 'flex flex-col gap-2',
   badgeWrapper: 'self-start',
@@ -246,7 +241,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
       <DialogContent className={styles.content}>
         <DialogHeader>
           <DialogTitle className={styles.dialogTitle}>
-            <Wallet className={cn(styles.icon.md, styles.icon.accent)} />
+            <Wallet size={iconSize('md')} className={styles.iconAccent} />
             Connect Wallet
           </DialogTitle>
           <DialogDescription className={styles.description}>
@@ -284,25 +279,25 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
             >
               {!isNetworkSelected && (
                 <>
-                  <AlertCircle className={styles.icon.sm} />
+                  <AlertCircle size={iconSize()} />
                   <span>Network not connected</span>
                 </>
               )}
               {isNetworkInitializing && (
                 <>
-                  <Loader2 className={styles.spinner} />
+                  <Loader2 size={iconSize()} className="animate-spin" />
                   <span>Initializing network connection...</span>
                 </>
               )}
               {isNetworkFailed && (
                 <>
-                  <AlertCircle className={styles.icon.sm} />
+                  <AlertCircle size={iconSize()} />
                   <span>{currentConfig.displayName} connection failed</span>
                 </>
               )}
               {isNetworkSelected && isInitialized && (
                 <>
-                  <CheckCircle className={styles.icon.sm} />
+                  <CheckCircle size={iconSize()} />
                   <span>{currentConfig.displayName} connected</span>
                 </>
               )}
@@ -328,7 +323,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                     isLoading={
                       isThisConnecting || status.status === 'connecting'
                     }
-                    icon={<Globe className={styles.icon.sm} />}
+                    icon={<Globe size={iconSize()} />}
                   >
                     {isConnected && `${connector.label} Connected`}
                     {!isConnected && `Connect ${connector.label}`}
@@ -357,7 +352,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                     isLoading={
                       isThisConnecting || status.status === 'connecting'
                     }
-                    icon={<Link className={styles.icon.sm} />}
+                    icon={<Link size={iconSize()} />}
                   >
                     {isConnected && `${connector.label} Connected`}
                     {!isConnected && `Connect ${connector.label}`}
@@ -377,7 +372,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                 variant="secondary"
                 className={styles.actionButton}
                 isLoading={isConnecting}
-                icon={<Link className={styles.icon.sm} />}
+                icon={<Link size={iconSize()} />}
               >
                 Connect Existing Account
               </Button>
@@ -392,7 +387,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                 variant="primary"
                 className={styles.actionButton}
                 isLoading={isConnecting}
-                icon={<Plus className={styles.icon.sm} />}
+                icon={<Plus size={iconSize()} />}
               >
                 Create New Account
               </Button>

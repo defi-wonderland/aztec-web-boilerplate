@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, Home, Globe } from 'lucide-react';
+import { iconSize } from '../utils';
 import { ConfigDisplay } from '../components/settings';
 import type { AztecNetwork } from '../config/networks/constants';
 import {
@@ -16,8 +17,7 @@ import {
 
 const styles = {
   headerRow: 'flex flex-row items-start gap-3',
-  headerIcon: 'h-8 w-8 text-accent',
-  tabIcon: 'h-4 w-4',
+  headerIcon: 'text-accent',
 } as const;
 
 export const SettingsCard: React.FC = () => {
@@ -26,7 +26,7 @@ export const SettingsCard: React.FC = () => {
   return (
     <Card>
       <CardHeader className={styles.headerRow}>
-        <Settings className={styles.headerIcon} />
+        <Settings size={iconSize('xl')} className={styles.headerIcon} />
         <div>
           <CardTitle>Network Configuration</CardTitle>
           <CardDescription>View and configure network settings</CardDescription>
@@ -40,11 +40,11 @@ export const SettingsCard: React.FC = () => {
         >
           <TabsList>
             <TabsTrigger value="sandbox">
-              <Home className={styles.tabIcon} />
+              <Home size={iconSize()} />
               Sandbox
             </TabsTrigger>
             <TabsTrigger value="devnet">
-              <Globe className={styles.tabIcon} />
+              <Globe size={iconSize()} />
               Devnet
             </TabsTrigger>
           </TabsList>
