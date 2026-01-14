@@ -5,6 +5,7 @@ import {
   type NetworkConfig,
 } from '../../config/networks';
 import { isValidConfig } from '../../utils';
+import { getContractRegistryStore } from '../contractRegistry';
 import type { AztecNetwork } from '../../config/networks/constants';
 import type { NetworkPreset } from '../../sdk/walletKitConfig';
 
@@ -76,9 +77,10 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   },
 
   switchToNetwork: (name) => {
-    const { configuredNetworks } = get();
+    const { configuredNetworks, currentConfig } = get();
     const config = configuredNetworks[name as AztecNetwork];
-    if (config) {
+    if (config && config.name !== currentConfig.name) {
+      getContractRegistryStore().reset();
       set({ currentConfig: config });
       localStorage.setItem(STORAGE_KEY, name);
       return true;

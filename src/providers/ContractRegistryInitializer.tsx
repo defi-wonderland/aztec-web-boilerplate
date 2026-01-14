@@ -28,7 +28,7 @@ const getInitialContracts = <T extends ContractConfigMap>(
     .map(([name]) => name);
 };
 
-interface EmbeddedContractProviderProps {
+interface ContractRegistryInitializerProps {
   showTimingToast?: boolean;
   children: ReactNode;
 }
@@ -41,12 +41,12 @@ const createRegistry = <T extends ContractConfigMap>(
   return new ContractRegistry(pxe, contracts, config);
 };
 
-export function EmbeddedContractProvider<
+export function ContractRegistryInitializer<
   T extends ContractConfigMap = ContractConfigMap,
 >({
   showTimingToast = true,
   children,
-}: EmbeddedContractProviderProps): React.ReactElement {
+}: ContractRegistryInitializerProps): React.ReactElement {
   const { connector, isInitialized, isConnected, currentConfig } =
     useUniversalWallet();
   const { addToast } = useToast();

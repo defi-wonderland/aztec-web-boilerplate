@@ -4,10 +4,7 @@ import type { FormValues } from '../../store/form';
 import type { ParsedFunction } from '../../utils/contractInteraction';
 import type { DeployableContract } from '../../utils/deployableContracts';
 
-/**
- * Invoke-specific status for UI state management.
- */
-export type InvokeStatus = 'idle' | 'simulating' | 'executing';
+export type LogLevel = 'info' | 'error' | 'success' | 'warning';
 
 export interface DeployResult {
   success: boolean;
@@ -173,7 +170,6 @@ export interface DeployConfig {
  */
 export interface ArtifactLoaderProps {
   mode?: ArtifactLoaderMode;
-  onModeChange?: (mode: ArtifactLoaderMode) => void;
   existing: ExistingContractConfig;
   saved: SavedContractsConfig;
   preconfigured?: PreconfiguredConfig;

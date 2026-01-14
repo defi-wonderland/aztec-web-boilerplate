@@ -1,0 +1,331 @@
+/**
+ * =============================================================================
+ * TAILWIND CSS v4 + CUSTOM THEME SYSTEM
+ * =============================================================================
+ *
+ * This file contains:
+ * 1. Google Fonts imports
+ * 2. Tailwind CSS v4 base import
+ * 3. CSS custom properties (variables) for theming
+ * 4. Base styles for body and box-sizing
+ * 5. Custom utility classes that use CSS variables (for theme support)
+ * 6. Modal support styles
+ *
+ * IMPORTANT: Custom utility classes (bg-surface, text-accent, etc.) are defined
+ * here because Tailwind v4's @theme directive doesn't support dynamic CSS
+ * variables at build time. These classes reference CSS variables directly
+ * for light/dark mode support.
+ */
+
+/* =============================================================================
+   FONTS
+   ============================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* =============================================================================
+   TAILWIND v4
+   ============================================================================= */
+
+@import 'tailwindcss';
+
+/* Enable dark mode with .dark class selector */
+@variant dark (&:where(.dark, .dark *));
+
+/* =============================================================================
+   CSS VARIABLES - THEME TOKENS
+   
+   Light mode: Soft purple/pink playground aesthetic
+   Dark mode: Aztec.network inspired dark aesthetic
+   ============================================================================= */
+
+:root {
+  /* Background colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #eeedf1;
+  --bg-tertiary: #f8f7fa;
+  --bg-gradient-start: #f8f7fa;
+  --bg-gradient-end: #ffffff;
+
+  /* Text colors */
+  --text-primary: #321e4c;
+  --text-secondary: #5a4a6b;
+  --text-muted: #8b7a9b;
+
+  /* Accent colors */
+  --accent-primary: #8c7eff;
+  --accent-secondary: #eda1ff;
+
+  /* UI colors */
+  --border-color: #d4d1db;
+  --shadow-color: rgba(50, 30, 76, 0.1);
+  --navbar-bg: rgba(238, 237, 241, 0.95);
+  --button-text: #eeedf1;
+
+  /* Semantic colors */
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+}
+
+.dark {
+  /* Background colors */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --bg-gradient-start: #1a1a1a;
+  --bg-gradient-end: #0a0a0a;
+
+  /* Text colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #a0a0a0;
+
+  /* Accent colors - swapped for dark mode */
+  --accent-primary: #eda1ff;
+  --accent-secondary: #8c7eff;
+
+  /* UI colors */
+  --border-color: #333333;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --navbar-bg: rgba(26, 26, 26, 0.95);
+  --button-text: #000000;
+}
+
+/* =============================================================================
+   BASE STYLES
+   ============================================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(
+    180deg,
+    var(--bg-gradient-start) 0%,
+    var(--bg-gradient-end) 100%
+  );
+  color: var(--text-primary);
+}
+
+/* =============================================================================
+   CUSTOM THEME UTILITIES
+   
+   These classes use CSS variables for automatic light/dark mode switching.
+   Use these in theme.ts CVA variants for theme-aware components.
+   ============================================================================= */
+
+/* --- Background Colors --- */
+.bg-surface {
+  background-color: var(--bg-primary);
+}
+.bg-surface-secondary {
+  background-color: var(--bg-secondary);
+}
+.bg-surface-tertiary {
+  background-color: var(--bg-tertiary);
+}
+.bg-accent {
+  background-color: var(--accent-primary);
+}
+.bg-accent-secondary {
+  background-color: var(--accent-secondary);
+}
+
+/* --- Hover variants for backgrounds --- */
+.hover\:bg-surface:hover {
+  background-color: var(--bg-primary);
+}
+.hover\:bg-surface-secondary:hover {
+  background-color: var(--bg-secondary);
+}
+.hover\:bg-surface-tertiary:hover {
+  background-color: var(--bg-tertiary);
+}
+.hover\:bg-accent:hover {
+  background-color: var(--accent-primary);
+}
+
+/* --- Data state variants for backgrounds (Radix UI) --- */
+.data-\[state\=active\]\:bg-surface[data-state='active'] {
+  background-color: var(--bg-primary);
+}
+.data-\[state\=active\]\:bg-surface-tertiary[data-state='active'] {
+  background-color: var(--bg-tertiary);
+}
+
+/* --- Text Colors --- */
+.text-default {
+  color: var(--text-primary);
+}
+.text-secondary {
+  color: var(--text-secondary);
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.text-accent {
+  color: var(--accent-primary);
+}
+.text-accent-secondary {
+  color: var(--accent-secondary);
+}
+.text-on-accent {
+  color: var(--button-text);
+}
+
+/* --- Hover variants for text colors --- */
+.hover\:text-default:hover {
+  color: var(--text-primary);
+}
+.hover\:text-secondary:hover {
+  color: var(--text-secondary);
+}
+.hover\:text-accent:hover {
+  color: var(--accent-primary);
+}
+
+/* --- Data state variants for text colors (Radix UI) --- */
+.data-\[state\=active\]\:text-default[data-state='active'] {
+  color: var(--text-primary);
+}
+.data-\[state\=active\]\:text-accent[data-state='active'] {
+  color: var(--accent-primary);
+}
+
+/* --- Border Colors --- */
+.border-default {
+  border-color: var(--border-color);
+}
+.border-accent {
+  border-color: var(--accent-primary);
+}
+
+/* --- Shadows (theme-aware) --- */
+.shadow-theme {
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+.shadow-theme-hover {
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+.shadow-theme-lg {
+  box-shadow: 0 0.5rem 1.5rem var(--shadow-color);
+}
+
+/* --- Gradient Backgrounds --- */
+.gradient-primary {
+  background: linear-gradient(
+    180deg,
+    var(--accent-primary) 0%,
+    color-mix(in srgb, var(--accent-primary) 85%, black) 100%
+  );
+}
+.gradient-primary:hover {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-primary) 90%, white) 0%,
+    var(--accent-primary) 100%
+  );
+}
+
+.gradient-secondary {
+  background: linear-gradient(
+    180deg,
+    var(--accent-secondary) 0%,
+    color-mix(in srgb, var(--accent-secondary) 85%, black) 100%
+  );
+}
+.gradient-secondary:hover {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-secondary) 90%, white) 0%,
+    var(--accent-secondary) 100%
+  );
+}
+
+/* --- Backdrop Blur (for navbar, modals) --- */
+.backdrop-navbar {
+  backdrop-filter: blur(12px);
+  background: var(--navbar-bg);
+}
+
+/* --- Custom Scrollbar (accent themed) --- */
+.scrollbar-accent {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-primary) transparent;
+}
+
+.scrollbar-accent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-accent::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.scrollbar-accent::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: 3px;
+}
+
+.scrollbar-accent::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-secondary);
+}
+
+/* =============================================================================
+   MODAL SUPPORT
+   ============================================================================= */
+
+#root.modal-open {
+  filter: blur(8px);
+  -webkit-filter: blur(8px);
+}
+
+#modal-root {
+  position: relative;
+  z-index: 999;
+}
+
+/* =============================================================================
+   TOAST ANIMATIONS
+   @see https://www.radix-ui.com/primitives/docs/components/toast#animating-swipe-gesture
+   ============================================================================= */
+
+@keyframes toast-enter {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-exit {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* State animations */
+.ToastRoot[data-state='open'] {
+  animation: toast-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ToastRoot[data-state='closed'] {
+  animation: toast-exit 0.3s ease-out forwards;
+}

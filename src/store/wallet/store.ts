@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getContractRegistryStore } from '../contractRegistry';
 import { createBrowserActions } from './actions/browser';
 import { createEmbeddedActions } from './actions/embedded';
 import { createExternalSignerActions } from './actions/externalSigner';
@@ -87,6 +88,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         await cleanup();
       }
     } finally {
+      getContractRegistryStore().reset();
       set({
         account: null,
         walletType: null,
