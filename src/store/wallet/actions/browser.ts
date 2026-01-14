@@ -69,6 +69,7 @@ export const createBrowserActions = (set: SetState, get: GetState) => ({
 export const disconnectBrowserWallet = async (): Promise<void> => {
   if (currentAdapter) {
     await currentAdapter.disconnect();
+    currentAdapter.destroy();
     currentAdapter = null;
     currentAccountWallet = null;
   }

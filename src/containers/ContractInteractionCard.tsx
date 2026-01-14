@@ -113,11 +113,17 @@ export const ContractInteractionCard: React.FC = () => {
       resetFormValues();
 
       requestAnimationFrame(() => {
-        void loadArtifactWithData(
+        loadArtifactWithData(
           result.address ?? '',
           deployable.artifactJson,
           deployedLabel
-        );
+        ).catch((err) => {
+          pushLog({
+            level: 'error',
+            title: 'Failed to load deployed contract',
+            detail: err instanceof Error ? err.message : 'Unknown error',
+          });
+        });
       });
     },
     [
