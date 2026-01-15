@@ -1,7 +1,7 @@
 export * from './types';
 
-import devnetDeployment from './devnet.json';
-import sandboxDeployment from './sandbox.json';
+import devnetDeployment from './devnet.json' with { type: 'json' };
+import sandboxDeployment from './sandbox.json' with { type: 'json' };
 import {
   DeploymentConfig,
   DEFAULT_SANDBOX_DEPLOYMENT,
