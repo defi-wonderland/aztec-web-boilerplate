@@ -58,6 +58,8 @@ const styles = {
   embeddedActions: 'flex flex-col gap-2',
   badgeWrapper: 'self-start',
   divider: 'border-t border-border my-2',
+  connectorWrapper: 'flex flex-col gap-1',
+  connectorError: 'text-xs text-red-400 px-1',
 };
 
 export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
@@ -314,20 +316,26 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                 const isConnected = status.status === 'connected';
 
                 return (
-                  <Button
-                    key={connector.id}
-                    onClick={() => handleBrowserWalletConnect(connector)}
-                    disabled={isConnectorDisabled(connector)}
-                    variant={isConnected ? 'secondary' : 'primary'}
-                    className={styles.actionButton}
-                    isLoading={
-                      isThisConnecting || status.status === 'connecting'
-                    }
-                    icon={<Globe size={iconSize()} />}
-                  >
-                    {isConnected && `${connector.label} Connected`}
-                    {!isConnected && `Connect ${connector.label}`}
-                  </Button>
+                  <div key={connector.id} className={styles.connectorWrapper}>
+                    <Button
+                      onClick={() => handleBrowserWalletConnect(connector)}
+                      disabled={isConnectorDisabled(connector)}
+                      variant={isConnected ? 'secondary' : 'primary'}
+                      className={styles.actionButton}
+                      isLoading={
+                        isThisConnecting || status.status === 'connecting'
+                      }
+                      icon={<Globe size={iconSize()} />}
+                    >
+                      {isConnected && `${connector.label} Connected`}
+                      {!isConnected && `Connect ${connector.label}`}
+                    </Button>
+                    {status.error && !isThisConnecting && (
+                      <span className={styles.connectorError}>
+                        {status.error}
+                      </span>
+                    )}
+                  </div>
                 );
               })}
             </div>

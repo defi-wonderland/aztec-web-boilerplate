@@ -9,6 +9,9 @@ import type {
   OperationResult,
 } from '@azguardwallet/types';
 
+const CONNECTION_TIMEOUT_MS = 60_000;
+const INIT_TIMEOUT_MS = 10_000;
+
 export class AzguardWalletService {
   private client: AzguardClient | null = null;
   private state: AzguardWalletState = {
@@ -30,7 +33,12 @@ export class AzguardWalletService {
       this.updateState({ isInstalled });
 
       if (isInstalled) {
-        this.client = await AzguardClient.create();
+        // Create client with timeout to prevent hang if wallet is locked
+        this.client = await this.withTimeout(
+          AzguardClient.create(),
+          INIT_TIMEOUT_MS,
+          'Wallet initialization timed out. The wallet may be locked.'
+        );
 
         this.setupEventListeners();
 
@@ -58,7 +66,8 @@ export class AzguardWalletService {
   }
 
   /**
-   * Connect to Azguard wallet
+   * Connect to Azguard wallet with timeout protection.
+   * This prevents indefinite hangs when wallet is locked or popup is dismissed.
    */
   async connect(
     dappMetadata: DappMetadata,
@@ -79,16 +88,21 @@ export class AzguardWalletService {
         optionalPermissions
       );
 
-      // Connect to the wallet with required and optional permissions
-      if (optionalPermissions && optionalPermissions.length > 0) {
-        await this.client.connect(
-          dappMetadata,
-          requiredPermissions,
-          optionalPermissions
-        );
-      } else {
-        await this.client.connect(dappMetadata, requiredPermissions);
-      }
+      // Connect with timeout to prevent indefinite hang when wallet is locked
+      const connectPromise =
+        optionalPermissions && optionalPermissions.length > 0
+          ? this.client.connect(
+              dappMetadata,
+              requiredPermissions,
+              optionalPermissions
+            )
+          : this.client.connect(dappMetadata, requiredPermissions);
+
+      await this.withTimeout(
+        connectPromise,
+        CONNECTION_TIMEOUT_MS,
+        'Connection timed out. Please unlock your wallet and try again.'
+      );
 
       // Get connected accounts
       const accounts = this.client.accounts;
@@ -126,6 +140,19 @@ export class AzguardWalletService {
       });
       throw error;
     }
+  }
+
+  private withTimeout<T>(
+    promise: Promise<T>,
+    ms: number,
+    timeoutMessage: string
+  ): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(timeoutMessage)), ms)
+      ),
+    ]);
   }
 
   /**
