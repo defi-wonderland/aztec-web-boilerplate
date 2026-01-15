@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Rocket } from 'lucide-react';
 import { iconSize } from '../../utils';
 import { findConstructor } from '../../utils/deployableContracts';
-import { getPlaceholderForType, getLabelForType } from './helpers';
 import {
   Input,
   Textarea,
@@ -13,6 +12,7 @@ import {
   SelectContent,
   SelectItem,
 } from '../ui';
+import { getPlaceholderForType, getLabelForType } from './helpers';
 import type { DeployContractFormProps } from './types';
 
 /**

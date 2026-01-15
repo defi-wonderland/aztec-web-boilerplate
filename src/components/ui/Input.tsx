@@ -1,6 +1,6 @@
 import React from 'react';
-import { cn } from '../../utils';
 import { inputVariants, type InputVariants } from '../../styles/theme';
+import { cn } from '../../utils';
 
 /**
  * Input component props.
@@ -31,7 +31,8 @@ export interface InputProps
  */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, hasError, error, label, helperText, id, ...props }, ref) => {
-    const inputId = id || React.useId();
+    const generatedId = React.useId();
+    const inputId = id ?? generatedId;
     const showError = hasError || !!error;
 
     return (

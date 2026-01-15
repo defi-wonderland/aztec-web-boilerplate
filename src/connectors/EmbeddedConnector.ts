@@ -5,13 +5,16 @@
  * Keys are stored locally in the browser.
  */
 
+import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import type { Wallet } from '@aztec/aztec.js/wallet';
+import type { PXE } from '@aztec/pxe/server';
+import { SharedPXEService } from '../services/aztec/pxe';
+import { getNetworkStore } from '../store/network';
+import { getWalletStore, clearSavedAccount } from '../store/wallet';
 import { WalletType } from '../types/aztec';
-import type { UseEmbeddedWalletReturn } from '../providers/hooks/useEmbeddedWallet';
 import type {
   EmbeddedWalletConnector,
   ConnectorStatus,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
 } from '../types/walletConnector';
 
 export const EMBEDDED_CONNECTOR_ID = 'embedded' as const;
@@ -21,93 +24,70 @@ export const EMBEDDED_CONNECTOR_ID = 'embedded' as const;
  *
  * This connector uses app-managed PXE with keys stored locally.
  * All signing happens within the app.
+ *
+ * Reads state directly from the Zustand store.
  */
 export class EmbeddedConnector implements EmbeddedWalletConnector {
   readonly id = EMBEDDED_CONNECTOR_ID;
   readonly label = 'Embedded Wallet';
   readonly type = WalletType.EMBEDDED;
 
-  private _embeddedState: UseEmbeddedWalletReturn | null = null;
-
-  /**
-   * Update connector with latest hook state. Called by provider each render.
-   */
-  updateState(state: UseEmbeddedWalletReturn) {
-    this._embeddedState = state;
-  }
-
-  private getEmbeddedState(): UseEmbeddedWalletReturn {
-    if (!this._embeddedState) {
-      throw new Error('Embedded connector has not been initialized');
-    }
-    return this._embeddedState;
-  }
-
   getStatus(): ConnectorStatus {
-    const { state, error } = this.getEmbeddedState();
+    const state = getWalletStore();
+    const isThisConnector = state.walletType === WalletType.EMBEDDED;
 
     return {
       isInstalled: true,
-      status: state.status,
-      error,
+      status: isThisConnector ? state.status : 'disconnected',
+      error: isThisConnector ? state.error : null,
     };
   }
 
   getAccount() {
-    return this.getEmbeddedState().state.embeddedAccount;
+    const state = getWalletStore();
+    return state.walletType === WalletType.EMBEDDED ? state.account : null;
   }
 
   async connect(): Promise<void> {
-    const { state, actions } = this.getEmbeddedState();
-    if (state.embeddedAccount) {
+    const state = getWalletStore();
+    if (state.walletType === WalletType.EMBEDDED && state.account) {
       return;
     }
-    await actions.create();
+    await state.connectEmbedded();
   }
 
-  disconnect(): Promise<void> {
-    this.getEmbeddedState().actions.disconnect();
-    return Promise.resolve();
+  async disconnect(): Promise<void> {
+    await getWalletStore().disconnect(clearSavedAccount);
   }
 
-  async sendTransaction(
-    _request: ConnectorTransactionRequest
-  ): Promise<ConnectorTransactionResult> {
-    throw new Error(
-      'sendTransaction is not supported for the embedded connector'
+  getPXE(): PXE | null {
+    const config = getNetworkStore().currentConfig;
+    const instance = SharedPXEService.getExistingInstance(
+      config.nodeUrl,
+      config.name
     );
+    return instance?.pxe ?? null;
   }
 
-  getPXE() {
-    return this.getEmbeddedState().services.pxe;
+  getWallet(): Wallet | null {
+    const config = getNetworkStore().currentConfig;
+    const instance = SharedPXEService.getExistingInstance(
+      config.nodeUrl,
+      config.name
+    );
+    return instance?.wallet ?? null;
   }
 
-  getWallet() {
-    return this.getEmbeddedState().services.wallet;
-  }
-
-  getSponsoredFeePaymentMethod() {
-    return this.getEmbeddedState().services.getSponsoredFeePaymentMethod();
-  }
-
-  createAccount() {
-    return this.getEmbeddedState().actions.create();
-  }
-
-  connectTestAccount(index: number) {
-    return this.getEmbeddedState().actions.connectTest(index);
-  }
-
-  connectExistingAccount() {
-    return this.getEmbeddedState().actions.connectExisting();
-  }
-
-  hasSavedAccount() {
-    return this.getEmbeddedState().actions.hasSavedAccount();
-  }
-
-  isDeploying() {
-    return this.getEmbeddedState().state.status === 'deploying';
+  async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
+    const config = getNetworkStore().currentConfig;
+    const instance = SharedPXEService.getExistingInstance(
+      config.nodeUrl,
+      config.name
+    );
+    if (!instance) {
+      throw new Error('PXE not initialized');
+    }
+    return instance.getSponsoredFeePaymentMethod();
   }
 }
 

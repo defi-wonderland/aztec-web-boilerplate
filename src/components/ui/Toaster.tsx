@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
+import { useToast, type ToastVariant } from '../../hooks/context/useToast';
 import { iconSize } from '../../utils';
 import {
   Toast,
@@ -10,7 +11,6 @@ import {
   ToastAction,
   ToastClose,
 } from './Toast';
-import { useToast, type ToastVariant } from '../../hooks/context/useToast';
 
 /**
  * Styles for the Toaster component

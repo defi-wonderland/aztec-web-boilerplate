@@ -8,7 +8,13 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
-import { useUniversalWallet, useModal, MODAL_IDS } from '../hooks';
+import { EMBEDDED_CONNECTOR_ID } from '../connectors';
+import { useModal, MODAL_IDS, useUniversalWallet } from '../hooks';
+import {
+  useWalletView,
+  useWalletActions,
+  useWalletConnectors,
+} from '../store/wallet';
 import {
   isEmbeddedConnector,
   isBrowserWalletConnector,
@@ -16,6 +22,9 @@ import {
   type WalletConnector,
   type ExternalSignerWalletConnector,
 } from '../types/walletConnector';
+import { cn, iconSize } from '../utils';
+import { Badge } from './ui/Badge';
+import { Button } from './ui/Button';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +32,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/Dialog';
-import { Button } from './ui/Button';
 import {
   Select,
   SelectTrigger,
@@ -31,8 +39,6 @@ import {
   SelectContent,
   SelectItem,
 } from './ui/Select';
-import { Badge } from './ui/Badge';
-import { cn, iconSize } from '../utils';
 
 interface ConnectWalletModalProps {
   onWalletConnected?: () => void;
@@ -50,6 +56,7 @@ const styles = {
     base: 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm',
     notConnected:
       'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+    idle: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
     initializing: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
     failed: 'bg-red-500/10 text-red-400 border border-red-500/20',
     connected: 'bg-green-500/10 text-green-400 border border-green-500/20',
@@ -69,48 +76,35 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
-  const {
-    connectors,
-    isInitialized,
-    isLoading,
-    error,
-    currentConfig,
-    switchToNetwork,
-    getNetworkOptions,
-  } = useUniversalWallet();
+  const { connectingConnectorId, pxeStatus, isPXEReady } = useWalletView();
+  const { connectEmbedded, connectExistingEmbedded, hasSavedEmbeddedAccount } =
+    useWalletActions();
+  const connectors = useWalletConnectors();
+  const { currentConfig, switchToNetwork, getNetworkOptions } =
+    useUniversalWallet();
 
-  // Get embedded connector
   const embeddedConnector = connectors.find((conn) =>
     isEmbeddedConnector(conn)
   );
 
-  // Check if embedded connector has a saved account
-  const hasSavedEmbeddedAccount =
-    embeddedConnector && isEmbeddedConnector(embeddedConnector)
-      ? embeddedConnector.hasSavedAccount()
-      : false;
+  const hasSavedEmbeddedAccountValue = hasSavedEmbeddedAccount();
 
-  // Get external signer connectors (MetaMask, etc.)
   const externalSignerConnectors = connectors.filter(
     (conn): conn is ExternalSignerWalletConnector =>
       isExternalSignerConnector(conn)
   );
 
-  // Get browser wallet connectors (Azguard, etc.)
   const browserWalletConnectors = connectors.filter((conn) =>
     isBrowserWalletConnector(conn)
   );
 
-  // Disable functionality when no network is selected, network is initializing, or failed
-  const isNetworkSelected = currentConfig?.name && currentConfig.name !== '';
-  const isNetworkInitializing =
-    isNetworkSelected && !isInitialized && isLoading;
-  const isNetworkFailed = isNetworkSelected && error && !isInitialized;
-  const isActionDisabled =
-    !isNetworkSelected ||
-    isNetworkInitializing ||
-    isNetworkFailed ||
-    isConnecting;
+  const isNetworkSelected = !!currentConfig?.name;
+  const isNetworkInitializing = pxeStatus === 'initializing';
+  const isNetworkFailed = pxeStatus === 'error';
+  const isNetworkReady = isPXEReady;
+  const isNetworkIdle = pxeStatus === 'idle' && isNetworkSelected;
+
+  const isActionDisabled = !isNetworkSelected || connectingConnectorId !== null;
 
   // Check if any connector is already connected
   const hasConnectedWallet = connectors.some((connector) => {
@@ -131,31 +125,23 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const isConnectorDisabled = (connector: WalletConnector) => {
     try {
       const status = connector.getStatus();
-      return (
-        !isNetworkSelected ||
-        isNetworkInitializing ||
-        isNetworkFailed ||
-        isConnecting ||
-        status.status === 'connected'
-      );
+      return isActionDisabled || status.status === 'connected';
     } catch {
-      // Connector not initialized yet
       return true;
     }
   };
 
   const handleEmbeddedWalletAction = async (action: 'create' | 'existing') => {
-    if (isConnecting || !isEmbeddedConnector(embeddedConnector)) return;
+    if (connectingConnectorId || !embeddedConnector) return;
     setIsConnecting(true);
     try {
       switch (action) {
         case 'create':
-          await embeddedConnector.createAccount();
+          await connectEmbedded(EMBEDDED_CONNECTOR_ID);
           break;
         case 'existing': {
-          const wallet = await embeddedConnector.connectExistingAccount();
+          const wallet = await connectExistingEmbedded(EMBEDDED_CONNECTOR_ID);
           if (!wallet) {
-            console.warn('No stored account found to connect');
             return;
           }
           break;
@@ -172,15 +158,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
 
   const handleBrowserWalletConnect = async (connector: WalletConnector) => {
     try {
-      const status = connector.getStatus();
-      if (isConnecting || status.status === 'connecting') return;
-    } catch {
-      // Connector not initialized
-      return;
-    }
-
-    setConnectingId(connector.id);
-    try {
       await connector.connect();
       onWalletConnected?.();
       close();
@@ -194,7 +171,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const handleExternalSignerConnect = async (
     connector: ExternalSignerWalletConnector
   ) => {
-    setConnectingId(connector.id);
     try {
       await connector.connect();
       onWalletConnected?.();
@@ -233,7 +209,9 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
     if (!isNetworkSelected) return styles.networkStatus.notConnected;
     if (isNetworkInitializing) return styles.networkStatus.initializing;
     if (isNetworkFailed) return styles.networkStatus.failed;
-    return styles.networkStatus.connected;
+    if (isNetworkReady) return styles.networkStatus.connected;
+    if (isNetworkIdle) return styles.networkStatus.idle;
+    return styles.networkStatus.notConnected;
   };
 
   const networkOptions = getNetworkOptions();
@@ -285,6 +263,12 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                   <span>Network not connected</span>
                 </>
               )}
+              {isNetworkIdle && (
+                <>
+                  <CheckCircle size={iconSize()} />
+                  <span>{currentConfig.displayName} ready to connect</span>
+                </>
+              )}
               {isNetworkInitializing && (
                 <>
                   <Loader2 size={iconSize()} className="animate-spin" />
@@ -297,7 +281,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                   <span>{currentConfig.displayName} connection failed</span>
                 </>
               )}
-              {isNetworkSelected && isInitialized && (
+              {isNetworkSelected && isNetworkReady && (
                 <>
                   <CheckCircle size={iconSize()} />
                   <span>{currentConfig.displayName} connected</span>
@@ -376,7 +360,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
             <div className={styles.embeddedActions}>
               <Button
                 onClick={() => handleEmbeddedWalletAction('existing')}
-                disabled={isActionDisabled || !hasSavedEmbeddedAccount}
+                disabled={isActionDisabled || !hasSavedEmbeddedAccountValue}
                 variant="secondary"
                 className={styles.actionButton}
                 isLoading={isConnecting}
@@ -384,7 +368,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
               >
                 Connect Existing Account
               </Button>
-              {!hasSavedEmbeddedAccount && (
+              {!hasSavedEmbeddedAccountValue && (
                 <Badge variant="warning" className={styles.badgeWrapper}>
                   No saved account found
                 </Badge>

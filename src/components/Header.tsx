@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Hammer } from 'lucide-react';
 import { useUniversalWallet, useModal, MODAL_IDS, useToast } from '../hooks';
 import { WalletType } from '../types/aztec';
+import { isBrowserWalletConnector } from '../types/walletConnector';
 import {
   truncateAddress,
   truncateCaipAddress,
@@ -114,7 +115,9 @@ export const Header: React.FC = () => {
 
   const renderAccountSection = () => {
     const status = connector?.getStatus();
-    const caipAccount = connector?.getCaipAccount?.();
+    const caipAccount = isBrowserWalletConnector(connector)
+      ? connector.getCaipAccount()
+      : null;
     const walletName =
       connector?.label ??
       (walletType === WalletType.EMBEDDED

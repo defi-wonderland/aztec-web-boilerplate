@@ -5,15 +5,9 @@ export {
   createEmbeddedConnector,
 } from './EmbeddedConnector';
 
-export {
-  ExternalSignerConnector,
-  EXTERNAL_SIGNER_CONNECTOR_ID,
-} from './ExternalSignerConnector';
+export { ExternalSignerConnector } from './ExternalSignerConnector';
 
-export {
-  BrowserWalletConnector,
-  BROWSER_WALLET_CONNECTOR_ID,
-} from './BrowserWalletConnector';
+export { BrowserWalletConnector } from './BrowserWalletConnector';
 
 // Registry and factories
 export { createConnectorRegistry } from './registry';

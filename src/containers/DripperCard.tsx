@@ -1,10 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Coins, Copy, Shield, Globe, AlertTriangle } from 'lucide-react';
 import { TokenBalance } from '../components/TokenBalance';
-import { useUniversalWallet, useRequiredContracts } from '../hooks';
-import { useDripper } from '../hooks/mutations/useDripper';
-import { useToast, type LoadingToastResult } from '../hooks';
-import { iconSize } from '../utils';
 import {
   Card,
   CardHeader,
@@ -22,6 +18,10 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '../components/ui';
+import { useUniversalWallet, useRequiredContracts } from '../hooks';
+import { useToast, type LoadingToastResult } from '../hooks';
+import { useDripper } from '../hooks/mutations/useDripper';
+import { iconSize } from '../utils';
 
 const styles = {
   // Header

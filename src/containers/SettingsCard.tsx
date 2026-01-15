@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, Home, Globe } from 'lucide-react';
-import { iconSize } from '../utils';
 import { ConfigDisplay } from '../components/settings';
-import type { AztecNetwork } from '../config/networks/constants';
 import {
   Card,
   CardHeader,
@@ -14,6 +12,8 @@ import {
   TabsTrigger,
   TabsContent,
 } from '../components/ui';
+import { iconSize } from '../utils';
+import type { AztecNetwork } from '../config/networks/constants';
 
 const styles = {
   headerRow: 'flex flex-row items-start gap-3',

@@ -1,10 +1,6 @@
-import { useMemo, useEffect, useCallback, useSyncExternalStore } from 'react';
-import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
-import type {
-  ContractStatus,
-  ContractName,
-  ContractsConfig,
-} from '../../contract-registry';
+import { useMemo, useEffect, useSyncExternalStore } from 'react';
+import { useContractRegistry } from '../context/useContractRegistry';
+import type { ContractStatus, ContractName } from '../../contract-registry';
 
 type ContractStatusMap<T extends readonly ContractName[]> = {
   [K in T[number]]: ContractStatus;
@@ -38,42 +34,39 @@ interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
 export function useRequiredContracts<T extends readonly ContractName[]>(
   contractNames: T
 ): UseRequiredContractsReturn<T> {
-  const { registry, status: registryStatus } =
-    useContractRegistryContext<ContractsConfig>();
-
-  // Subscribe to registry changes
-  const subscribe = useCallback(
-    (onStoreChange: () => void) => {
-      if (!registry) return () => {};
-      return registry.subscribe(onStoreChange);
-    },
-    [registry]
-  );
+  const {
+    subscribe,
+    registerMany,
+    getStatus,
+    status: registryStatus,
+  } = useContractRegistry();
 
   // Get snapshot of current statuses (serialized for comparison)
-  const getSnapshot = useCallback(() => {
-    if (!registry) return '';
-    return contractNames.map((name) => registry.getStatus(name)).join(',');
-  }, [registry, contractNames]);
+  const getSnapshot = (): string => {
+    const statuses = Object.fromEntries(
+      contractNames.map((name) => [name, getStatus(name)])
+    );
+    return JSON.stringify(statuses);
+  };
 
   // React will re-render when snapshot changes
   useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   // Trigger registration when registry is ready
   useEffect(() => {
-    if (registryStatus !== 'ready' || !registry || contractNames.length === 0) {
+    if (registryStatus !== 'ready' || contractNames.length === 0) {
       return;
     }
 
-    registry.registerAll([...contractNames]).catch((err) => {
+    registerMany([...contractNames]).catch((err) => {
       console.error('[useRequiredContracts] Registration failed:', err);
     });
-  }, [contractNames, registry, registryStatus]);
+  }, [contractNames, registerMany, registryStatus]);
 
   // Compute derived state
   return useMemo(() => {
     const statuses = contractNames.reduce((acc, name) => {
-      acc[name as T[number]] = registry?.getStatus(name) ?? 'idle';
+      acc[name as T[number]] = getStatus(name);
       return acc;
     }, {} as ContractStatusMap<T>);
 
@@ -96,5 +89,5 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
       pendingContracts,
       statuses,
     };
-  }, [contractNames, registry]);
+  }, [contractNames, getStatus]);
 }
