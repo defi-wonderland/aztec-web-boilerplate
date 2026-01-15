@@ -1,6 +1,6 @@
 import React from 'react';
-import { cn } from '../../utils';
 import { cardVariants, type CardVariants } from '../../styles/theme';
+import { cn } from '../../utils';
 
 /**
  * Card component props.

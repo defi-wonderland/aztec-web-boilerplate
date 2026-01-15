@@ -6,8 +6,9 @@ import { WalletType, ExternalSignerType } from './aztec';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
 } from './browserWallet';
-import type { ExternalSigner } from '../signers/types';
 import type { CaipAccount } from '@azguardwallet/types';
 
 export type WalletConnectorId = string;
@@ -24,23 +25,7 @@ export interface ConnectorStatus {
   error: string | null;
 }
 
-export interface ConnectorTransactionAction {
-  contract: string;
-  method: string;
-  args: unknown[];
-}
-
-export interface ConnectorTransactionRequest {
-  actions: ConnectorTransactionAction[];
-  metadata?: Record<string, unknown>;
-}
-
-export interface ConnectorTransactionResult {
-  status: 'success' | 'failed';
-  txHash?: string;
-  error?: string;
-  rawResult?: unknown;
-}
+export type { ConnectorTransactionRequest, ConnectorTransactionResult };
 
 export interface WalletConnector {
   readonly id: WalletConnectorId;
@@ -49,14 +34,9 @@ export interface WalletConnector {
 
   getStatus(): ConnectorStatus;
   getAccount(): AccountWithSecretKey | null;
-  getCaipAccount?(): CaipAccount | null;
 
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-
-  sendTransaction(
-    request: ConnectorTransactionRequest
-  ): Promise<ConnectorTransactionResult>;
 }
 
 export interface EmbeddedWalletConnector extends WalletConnector {
@@ -65,17 +45,6 @@ export interface EmbeddedWalletConnector extends WalletConnector {
   getPXE: () => PXE | null;
   getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
-  createAccount: () => Promise<AccountWithSecretKey>;
-  connectTestAccount: (index: number) => Promise<AccountWithSecretKey>;
-  connectExistingAccount: () => Promise<AccountWithSecretKey | null>;
-  hasSavedAccount: () => boolean;
-  isDeploying: () => boolean;
-}
-
-export interface ExternalSignerConnectorCapabilities {
-  signerType: ExternalSignerType;
-  hasPXE: true;
-  hasSponsoredFees: boolean;
 }
 
 export interface ExternalSignerWalletConnector extends WalletConnector {
@@ -85,15 +54,15 @@ export interface ExternalSignerWalletConnector extends WalletConnector {
   getPXE: () => PXE | null;
   getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
-  isDeploying: () => boolean;
-  getEVMAddress: () => string | null;
-  getSigner: () => ExternalSigner | null;
 }
 
 export interface BrowserWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.BROWSER_WALLET;
 
   getCaipAccount: () => CaipAccount | null;
+  sendTransaction: (
+    request: ConnectorTransactionRequest
+  ) => Promise<ConnectorTransactionResult>;
   executeOperation: (
     operation: BrowserWalletOperation
   ) => Promise<BrowserWalletOperationResult>;

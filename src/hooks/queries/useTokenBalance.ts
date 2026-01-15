@@ -91,7 +91,8 @@ export const useTokenBalance = (
       tokenAddress &&
       ownerAddress &&
       (options.enabled ?? true) &&
-      (!isBrowserWallet || Boolean(connector?.getCaipAccount?.()))
+      (!isBrowserWallet ||
+        (isBrowserWalletConnector(connector) && connector.getCaipAccount()))
   );
 
   const query = useQuery({

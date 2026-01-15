@@ -8,7 +8,6 @@ export type {
   RegisteredContract,
   UseContractReturn,
   UseContractRegistryReturn,
-  ContractRegistryContextValue,
   IContractRegistry,
 } from './types';
 

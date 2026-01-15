@@ -9,11 +9,13 @@ import {
   type ContractConfigMap,
   type ContractStatus,
   type UseContractReturn,
-  type ContractsConfig,
   type ContractName,
   type ContractType,
 } from '../../contract-registry';
-import { useContractRegistryContext } from '../../providers/EmbeddedContractProvider';
+import {
+  useContractRegistryStore,
+  useContractRegistryStatus,
+} from '../../store';
 import { WalletType } from '../../types/aztec';
 import { hasAppManagedPXE } from '../../types/walletConnector';
 import { queuePxeCall } from '../../utils';
@@ -50,8 +52,8 @@ export function useContractRegistration<K extends ContractName>(
   name: K
 ): UseContractReturn<ContractType<K>> {
   type TContract = ContractType<K>;
-  const { registry, status: registryStatus } =
-    useContractRegistryContext<ContractsConfig>();
+  const registry = useContractRegistryStore((state) => state.registry);
+  const registryStatus = useContractRegistryStatus();
   const { connector, account, currentConfig, walletType } =
     useUniversalWallet();
 
@@ -152,7 +154,7 @@ export function useContractRegistration<K extends ContractName>(
 
     const unsubscribe = registry.subscribe(updateState);
     return unsubscribe;
-  }, [registry, name, wallet, isBrowserWallet]);
+  }, [registry, name, wallet, isBrowserWallet, getContractDefinition]);
 
   useEffect(() => {
     if (!registry || registryStatus !== 'ready' || isBrowserWallet) {

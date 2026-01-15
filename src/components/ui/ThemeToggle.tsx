@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
+import { useIsLightTheme, useToggleTheme } from '../../store/theme';
 import { iconSize } from '../../utils';
-import { useTheme } from '../../hooks/context/useTheme';
 import { Toggle } from './Toggle';
 import { Tooltip, TooltipTrigger, TooltipContent } from './Tooltip';
 
@@ -18,7 +18,8 @@ const styles = {
  * <ThemeToggle />
  */
 export const ThemeToggle: React.FC = () => {
-  const { isLightTheme, toggleTheme } = useTheme();
+  const isLightTheme = useIsLightTheme();
+  const toggleTheme = useToggleTheme();
 
   return (
     <Tooltip>

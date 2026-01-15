@@ -1,35 +1,33 @@
 import 'dotenv/config';
-import fs from 'fs';
-import path from 'path';
+import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa';
+import {
+  type AccountWithSecretKey,
+  type Account,
+  SignerlessAccount,
+} from '@aztec/aztec.js/account';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import {
   getContractInstanceFromInstantiationParams,
   DeployMethod,
   Contract,
   type DeployOptions,
 } from '@aztec/aztec.js/contracts';
-import { PublicKeys } from '@aztec/aztec.js/keys';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { Fr } from '@aztec/aztec.js/fields';
-import {
-  type AccountWithSecretKey,
-  type Account,
-  SignerlessAccount,
-} from '@aztec/aztec.js/account';
-import { AccountManager, type Wallet } from '@aztec/aztec.js/wallet';
-import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
 import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
-import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
-import type { PXE } from '@aztec/pxe/server';
-import { getPXEConfig } from '@aztec/pxe/config';
-import { createPXE } from '@aztec/pxe/server';
-import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa';
-import { createStore } from '@aztec/kv-store/lmdb';
-import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
+import { Fr } from '@aztec/aztec.js/fields';
+import { PublicKeys } from '@aztec/aztec.js/keys';
+import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
+import { AccountManager, type Wallet } from '@aztec/aztec.js/wallet';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
-import {
-  DripperContractArtifact,
-} from '../src/artifacts/Dripper';
+import { createStore } from '@aztec/kv-store/lmdb';
+import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
+import { getPXEConfig } from '@aztec/pxe/config';
+import type { PXE } from '@aztec/pxe/server';
+import { createPXE } from '@aztec/pxe/server';
+import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
+import fs from 'fs';
+import path from 'path';
+import { DripperContractArtifact } from '../src/artifacts/Dripper';
 import { TokenContractArtifact } from '../src/artifacts/Token';
 import {
   NETWORK_URLS,
@@ -40,14 +38,16 @@ class MinimalWallet extends BaseWallet {
   private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
 
   constructor(pxe: PXE, aztecNode: AztecNode) {
-    super(pxe as unknown as any, aztecNode);
+    super(pxe, aztecNode);
   }
 
   public addAccount(account: AccountWithSecretKey) {
     this.addressToAccount.set(account.getAddress().toString(), account);
   }
 
-  protected async getAccountFromAddress(address: AztecAddress): Promise<Account> {
+  protected async getAccountFromAddress(
+    address: AztecAddress
+  ): Promise<Account> {
     let account: Account | undefined;
     if (address.equals(AztecAddress.ZERO)) {
       const chainInfo = await this.getChainInfo();
@@ -56,12 +56,18 @@ class MinimalWallet extends BaseWallet {
       account = this.addressToAccount.get(address.toString());
     }
 
-    if (!account) throw new Error(`Account not found in wallet for address: ${address.toString()}`);
+    if (!account)
+      throw new Error(
+        `Account not found in wallet for address: ${address.toString()}`
+      );
     return account;
   }
 
   async getAccounts(): Promise<{ alias: string; item: AztecAddress }[]> {
-    return Array.from(this.addressToAccount.values()).map((acc) => ({ alias: '', item: acc.getAddress() }));
+    return Array.from(this.addressToAccount.values()).map((acc) => ({
+      alias: '',
+      item: acc.getAddress(),
+    }));
   }
 }
 
@@ -90,8 +96,6 @@ const { network: NETWORK } = parseArgs();
 
 // Environment variable overrides
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || NETWORK_URLS[NETWORK];
-// const PROVER_ENABLED =
-//   process.env.VITE_PROVER_ENABLED === 'false' ? false : NETWORK === 'devnet';
 const PROVER_ENABLED =
   process.env.VITE_PROVER_ENABLED === 'true' ? true : false;
 
@@ -158,7 +162,10 @@ async function generateCredentials() {
     // If we have a secret phrase, we use it to generate the credentials
     const secretKey = await poseidon2Hash([
       Fr.fromBufferReduce(
-        Buffer.from(process.env.VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE.padEnd(32, '#'), 'utf8')
+        Buffer.from(
+          process.env.VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE.padEnd(32, '#'),
+          'utf8'
+        )
       ),
     ]);
     return {
@@ -166,12 +173,18 @@ async function generateCredentials() {
       salt: Fr.fromString(process.env.VITE_COMMON_SALT || '1337'),
       signingKey: Buffer.from(secretKey.toBuffer().subarray(0, 32)),
     };
-  } else if (process.env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY && process.env.VITE_COMMON_SALT) {
+  } else if (
+    process.env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY &&
+    process.env.VITE_COMMON_SALT
+  ) {
     // If we have a secret key and salt, we use them to generate the credentials
     return {
       salt: Fr.fromString(process.env.VITE_COMMON_SALT),
       secretKey: Fr.fromString(process.env.VITE_EMBEDDED_ACCOUNT_SECRET_KEY),
-      signingKey: Buffer.from(process.env.VITE_EMBEDDED_ACCOUNT_SIGNING_KEY!, 'hex'),
+      signingKey: Buffer.from(
+        process.env.VITE_EMBEDDED_ACCOUNT_SIGNING_KEY!,
+        'hex'
+      ),
     };
   } else {
     console.log('Generating default credentials...');
@@ -245,9 +258,10 @@ async function deployDripperContract(
     PublicKeys.default(),
     deployer,
     DripperContractArtifact,
-    (instance, wallet) => Contract.at(instance.address, DripperContractArtifact, wallet),
+    (instance, wallet) =>
+      Contract.at(instance.address, DripperContractArtifact, wallet),
     [],
-    'constructor',
+    'constructor'
   );
 
   const receipt = await deployMethod
@@ -291,7 +305,8 @@ async function deployTokenContract(
     PublicKeys.default(),
     deployer,
     TokenContractArtifact,
-    (instance, wallet) => Contract.at(instance.address, TokenContractArtifact, wallet),
+    (instance, wallet) =>
+      Contract.at(instance.address, TokenContractArtifact, wallet),
     [
       'Yield Token', // name
       'YT', // symbol
@@ -299,7 +314,7 @@ async function deployTokenContract(
       dripperAddress, // minter (Dripper address)
       AztecAddress.ZERO, // upgrade_authority
     ],
-    'constructor_with_minter',
+    'constructor_with_minter'
   );
 
   const receipt = await deployMethod

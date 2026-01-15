@@ -28,7 +28,6 @@ import {
   ExternalLink,
   BookOpen,
 } from 'lucide-react';
-import { iconSize } from '../utils';
 import {
   Card,
   CardHeader,
@@ -62,6 +61,7 @@ import {
   DialogClose,
 } from '../components/ui';
 import { useToast } from '../hooks';
+import { iconSize } from '../utils';
 
 const styles = {
   headerRow: 'flex flex-row items-start gap-4',

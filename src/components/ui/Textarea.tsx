@@ -1,6 +1,6 @@
 import React from 'react';
-import { cn } from '../../utils';
 import { inputVariants, type InputVariants } from '../../styles/theme';
+import { cn } from '../../utils';
 
 /**
  * Textarea component props.
@@ -31,7 +31,8 @@ export interface TextareaProps
  */
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, hasError, error, label, helperText, id, ...props }, ref) => {
-    const textareaId = id || React.useId();
+    const generatedId = React.useId();
+    const textareaId = id ?? generatedId;
     const showError = hasError || !!error;
 
     return (

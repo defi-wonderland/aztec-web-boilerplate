@@ -9,17 +9,11 @@ import {
 } from '../../types/walletConnector';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
 import { useUniversalWallet } from '../context/useUniversalWallet';
+import type { DeployResult } from '../../components/contract-interaction/types';
 import type {
   DeployableContract,
   ContractConstructor,
 } from '../../utils/deployableContracts';
-
-export interface DeployResult {
-  success: boolean;
-  address?: string;
-  txHash?: string;
-  error?: string;
-}
 
 export interface DeployParams {
   contract: DeployableContract;
@@ -27,19 +21,21 @@ export interface DeployParams {
   args: Record<string, string>;
 }
 
+/**
+ * Hook for deploying contracts to the Aztec network.
+ * Handles artifact loading, argument building, and deployment transactions.
+ *
+ * @returns Object with deploy function, status, and error handling utilities.
+ */
 export const useContractDeployer = () => {
   const { connector, account } = useUniversalWallet();
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Check if the current wallet supports deployment.
-   */
   const canDeploy = useCallback((): boolean => {
     if (!connector || !account) {
       return false;
     }
-    // Only app-managed PXE wallets support deployment (Waiting for Azguard update to new aztec version)
     return hasAppManagedPXE(connector);
   }, [connector, account]);
 

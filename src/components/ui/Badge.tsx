@@ -1,6 +1,6 @@
 import React from 'react';
-import { cn } from '../../utils';
 import { badgeVariants, type BadgeVariants } from '../../styles/theme';
+import { cn } from '../../utils';
 
 /**
  * Badge component props.

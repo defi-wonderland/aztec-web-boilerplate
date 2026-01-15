@@ -1,11 +1,11 @@
 import React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { cn } from '../../utils';
 import {
   dialogOverlayVariants,
   dialogContentVariants,
   type DialogContentVariants,
 } from '../../styles/theme';
+import { cn } from '../../utils';
 
 /**
  * Dialog root component.
