@@ -14,11 +14,3 @@ export {
 
 // Action utilities
 export { clearSavedAccount } from './actions/embedded';
-export { disconnectExternalSigner } from './actions/externalSigner';
-export {
-  disconnectBrowserWallet,
-  getCurrentAdapter,
-  setCurrentAdapter,
-  getCurrentAccountWallet,
-  setCurrentAccountWallet,
-} from './actions/browser';

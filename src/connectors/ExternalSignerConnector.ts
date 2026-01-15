@@ -13,7 +13,7 @@ import { SharedPXEService } from '../services/aztec/pxe';
 import { getEVMWalletService } from '../services/evm';
 import { createEVMSigner } from '../signers';
 import { getNetworkStore } from '../store/network';
-import { getWalletStore, disconnectExternalSigner } from '../store/wallet';
+import { getWalletStore } from '../store/wallet';
 import { WalletType, ExternalSignerType } from '../types/aztec';
 import type { ExternalSigner } from '../signers/types';
 import type {
@@ -117,7 +117,13 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   }
 
   async disconnect(): Promise<void> {
-    await getWalletStore().disconnect(disconnectExternalSigner);
+    const signer = this._signer;
+    await getWalletStore().disconnect(() => {
+      if (signer) {
+        signer.disconnect();
+      }
+      this._signer = null;
+    });
   }
 
   getPXE(): PXE | null {

@@ -6,9 +6,6 @@ import type { ExternalSigner } from '../../../signers/types';
 import type { WalletConnectorId } from '../../../types/walletConnector';
 import type { SetState, GetState } from '../types';
 
-// Track current signer for disconnect
-let currentSigner: ExternalSigner | null = null;
-
 export const createExternalSignerActions = (set: SetState, get: GetState) => ({
   connectExternalSigner: async (
     signer: ExternalSigner,
@@ -30,7 +27,6 @@ export const createExternalSignerActions = (set: SetState, get: GetState) => ({
         set({ status: 'deploying' });
       }
 
-      currentSigner = signer;
       set({
         account: result.account,
         walletType: WalletType.EXTERNAL_SIGNER,
@@ -43,10 +39,3 @@ export const createExternalSignerActions = (set: SetState, get: GetState) => ({
     });
   },
 });
-
-export const disconnectExternalSigner = (): void => {
-  if (currentSigner) {
-    currentSigner.disconnect();
-    currentSigner = null;
-  }
-};

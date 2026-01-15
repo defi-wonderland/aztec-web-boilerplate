@@ -4,10 +4,6 @@ import type { IBrowserWalletAdapter } from '../../../types/browserWallet';
 import type { WalletConnectorId } from '../../../types/walletConnector';
 import type { SetState, GetState, WalletState } from '../types';
 
-// Track current adapter and account wallet for the browser wallet
-let currentAdapter: IBrowserWalletAdapter | null = null;
-let currentAccountWallet: AccountWithSecretKey | null = null;
-
 export const createBrowserActions = (set: SetState, get: GetState) => ({
   connectBrowserWallet: async (
     adapter: IBrowserWalletAdapter,
@@ -26,7 +22,6 @@ export const createBrowserActions = (set: SetState, get: GetState) => ({
       const selectedAccount = accounts.length > 0 ? accounts[0] : null;
       const state = adapter.getState();
 
-      // Get account wallet if we have a selected account
       let accountWallet: AccountWithSecretKey | null = null;
       if (selectedAccount) {
         try {
@@ -35,9 +30,6 @@ export const createBrowserActions = (set: SetState, get: GetState) => ({
           // Ignore - accountWallet stays null
         }
       }
-
-      currentAdapter = adapter;
-      currentAccountWallet = accountWallet;
 
       set({
         account: accountWallet,
@@ -65,30 +57,3 @@ export const createBrowserActions = (set: SetState, get: GetState) => ({
     set(state);
   },
 });
-
-export const disconnectBrowserWallet = async (): Promise<void> => {
-  if (currentAdapter) {
-    await currentAdapter.disconnect();
-    currentAdapter.destroy();
-    currentAdapter = null;
-    currentAccountWallet = null;
-  }
-};
-
-export const getCurrentAdapter = (): IBrowserWalletAdapter | null =>
-  currentAdapter;
-
-export const setCurrentAdapter = (
-  adapter: IBrowserWalletAdapter | null
-): void => {
-  currentAdapter = adapter;
-};
-
-export const getCurrentAccountWallet = (): AccountWithSecretKey | null =>
-  currentAccountWallet;
-
-export const setCurrentAccountWallet = (
-  wallet: AccountWithSecretKey | null
-): void => {
-  currentAccountWallet = wallet;
-};

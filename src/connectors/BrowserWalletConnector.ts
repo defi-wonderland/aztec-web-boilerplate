@@ -8,14 +8,7 @@
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { getNetworkStore } from '../store/network';
-import {
-  getWalletStore,
-  getCurrentAdapter,
-  getCurrentAccountWallet,
-  setCurrentAdapter,
-  setCurrentAccountWallet,
-  disconnectBrowserWallet,
-} from '../store/wallet';
+import { getWalletStore } from '../store/wallet';
 import { WalletType } from '../types/aztec';
 import type {
   IBrowserWalletAdapter,
@@ -125,17 +118,14 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
           if (this.latestAccountChangeMarker !== updateMarker) {
             return;
           }
-          setCurrentAccountWallet(accountWallet);
           getWalletStore().setBrowserWalletState({ account: accountWallet });
         } catch {
           if (this.latestAccountChangeMarker !== updateMarker) {
             return;
           }
-          setCurrentAccountWallet(null);
           getWalletStore().setBrowserWalletState({ account: null });
         }
       } else {
-        setCurrentAccountWallet(null);
         getWalletStore().setBrowserWalletState({ account: null });
       }
     });
@@ -143,9 +133,6 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     adapter.onDisconnected(async () => {
       await getWalletStore().disconnect();
     });
-
-    // Register adapter globally for operations
-    setCurrentAdapter(adapter);
   }
 
   /**
@@ -171,7 +158,6 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
       this._adapter.destroy();
       this._adapter = null;
       this._initPromise = null;
-      setCurrentAdapter(null);
     }
   }
 
@@ -195,7 +181,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   getAccount(): AccountWithSecretKey | null {
     const state = getWalletStore();
     if (state.walletType === WalletType.BROWSER_WALLET) {
-      return getCurrentAccountWallet();
+      return state.account;
     }
     return null;
   }
@@ -217,7 +203,15 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   }
 
   async disconnect(): Promise<void> {
-    await getWalletStore().disconnect(disconnectBrowserWallet);
+    const adapter = this._adapter;
+    await getWalletStore().disconnect(async () => {
+      if (adapter) {
+        await adapter.disconnect();
+        adapter.destroy();
+      }
+      this._adapter = null;
+      this._initPromise = null;
+    });
   }
 
   async sendTransaction(
@@ -263,7 +257,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   async executeOperation(
     operation: BrowserWalletOperation
   ): Promise<BrowserWalletOperationResult> {
-    const adapter = getCurrentAdapter() ?? this.getAdapter();
+    const adapter = this.getAdapter();
     const results = await adapter.executeOperations([operation]);
 
     if (!results.length) {
