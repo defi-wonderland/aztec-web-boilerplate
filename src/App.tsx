@@ -1,5 +1,5 @@
 import React from 'react';
-import { Header } from './components';
+import { AztecWalletHeader } from './components';
 import { Layout } from './containers/Layout';
 import { AppProvider } from './providers';
 
@@ -12,7 +12,7 @@ function App() {
   return (
     <AppProvider>
       <div className={styles.app}>
-        <Header />
+        <AztecWalletHeader />
 
         <main className={styles.main}>
           <Layout />

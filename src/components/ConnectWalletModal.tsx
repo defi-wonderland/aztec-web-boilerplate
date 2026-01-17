@@ -8,13 +8,13 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
-import { EMBEDDED_CONNECTOR_ID } from '../connectors';
-import { useModal, MODAL_IDS, useUniversalWallet } from '../hooks';
+import { EMBEDDED_CONNECTOR_ID } from '../aztec-wallet/connectors';
 import {
   useWalletView,
   useWalletActions,
   useWalletConnectors,
-} from '../store/wallet';
+} from '../aztec-wallet/store/wallet';
+import { useModal, MODAL_IDS, useUniversalWallet } from '../hooks';
 import {
   isEmbeddedConnector,
   isBrowserWalletConnector,

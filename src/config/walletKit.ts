@@ -1,4 +1,4 @@
-import { embedded, evmWallet } from '../connectors';
+import { embedded, evmWallet } from '../aztec-wallet/connectors';
 import { NETWORK_URLS } from './networks';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
 

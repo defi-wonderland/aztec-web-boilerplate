@@ -1,17 +1,24 @@
 import { useCallback, useMemo } from 'react';
-import { getEVMWalletService, type EVMWalletService } from '../../services/evm';
-import { getEVMStore, useEVMAddress, useEVMAvailable } from '../../store/evm';
+import {
+  getEVMWalletService,
+  type EVMWalletService,
+} from '../../aztec-wallet/services/evm';
+import {
+  getEVMStore,
+  useEVMAddress,
+  useEVMAvailable,
+} from '../../aztec-wallet/store/evm';
 import {
   useCurrentNetwork,
   useNetworkActions,
   buildNetworkOptions,
   useNetworkStore,
-} from '../../store/network';
+} from '../../aztec-wallet/store/network';
 import {
   useWalletActions,
   useWalletConnectors,
   useWalletView,
-} from '../../store/wallet';
+} from '../../aztec-wallet/store/wallet';
 import { WalletType } from '../../types/aztec';
 import type { NetworkPreset } from '../../sdk/walletKitConfig';
 import type { Hex } from 'viem';

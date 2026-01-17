@@ -1,6 +1,8 @@
 import React, { ReactNode } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { AztecWalletProvider } from '../aztec-wallet';
 import { TooltipProvider, Toaster } from '../components/ui';
+import { aztecWalletConfig } from '../config/aztecWalletConfig';
 import { walletKitConfig } from '../config/walletKit';
 import { ModalProvider, ToastProvider } from '../hooks';
 import { queryClient } from '../lib/queryClient';
@@ -18,9 +20,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         <ToastProvider>
           <ModalProvider>
             <UniversalWalletProvider config={walletKitConfig}>
-              <ContractRegistryInitializer>
-                {children}
-              </ContractRegistryInitializer>
+              <AztecWalletProvider config={aztecWalletConfig}>
+                <ContractRegistryInitializer>
+                  {children}
+                </ContractRegistryInitializer>
+              </AztecWalletProvider>
             </UniversalWalletProvider>
           </ModalProvider>
           <Toaster />

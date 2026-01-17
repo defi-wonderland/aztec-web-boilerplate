@@ -1,4 +1,5 @@
-export { AztecStorageService } from './aztec';
+// Re-export from aztec-wallet
+export { AztecStorageService } from '../aztec-wallet/services/aztec';
 
 export {
   EVMWalletService,
@@ -6,6 +7,6 @@ export {
   createEVMWalletService,
   type EVMWalletListener,
   type EVMWalletState,
-} from './evm';
+} from '../aztec-wallet/services/evm';
 
-export * from './wallet';
+export * from '../aztec-wallet/services/wallet';

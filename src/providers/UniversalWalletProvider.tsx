@@ -1,16 +1,16 @@
 import React, { type ReactNode, useEffect } from 'react';
-import { setNetworkPresets } from '../hooks/context/useUniversalWallet';
-import { createAztecWalletKit } from '../sdk/walletKit';
 import {
   getNetworkStore,
   useCurrentNetwork,
   useNetworkActions,
-} from '../store/network';
+} from '../aztec-wallet/store/network';
 import {
   useWalletActions,
   setupWalletCrossTabSync,
   getWalletStore,
-} from '../store/wallet';
+} from '../aztec-wallet/store/wallet';
+import { setNetworkPresets } from '../hooks/context/useUniversalWallet';
+import { createAztecWalletKit } from '../sdk/walletKit';
 import { isValidConfig } from '../utils';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
 

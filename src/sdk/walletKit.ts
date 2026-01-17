@@ -1,11 +1,11 @@
 import {
   createConnectorRegistry,
   ConnectorRegistry,
-} from '../connectors/registry';
+} from '../aztec-wallet/connectors/registry';
 import type {
   ConnectorFactory,
   ConnectorRegistryOptions,
-} from '../connectors/registry';
+} from '../aztec-wallet/connectors/registry';
 import type {
   WalletConnector,
   WalletConnectorId,

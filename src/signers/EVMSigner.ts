@@ -10,14 +10,14 @@ import { type Hex, keccak256, toBytes } from 'viem';
 import type { AuthWitnessProvider } from '@aztec/aztec.js/account';
 import type { CompleteAddress } from '@aztec/aztec.js/addresses';
 import { MetaMaskAuthWitnessProvider } from '../accounts/MetaMaskAuthWitnessProvider';
-import { getEIP6963Service } from '../services/evm/EIP6963Service';
+import { getEIP6963Service } from '../aztec-wallet/services/evm/EIP6963Service';
 import { ExternalSignerType } from '../types/aztec';
 import {
   recoverPublicKeyFromSignature,
   getPublicKeyRecoveryMessage,
 } from '../utils/evmPublicKeyRecovery';
 import type { ExternalSigner, ECDSAPublicKey } from './types';
-import type { EVMWalletService } from '../services/evm/EVMWalletService';
+import type { EVMWalletService } from '../aztec-wallet/services/evm/EVMWalletService';
 
 export class EVMSigner implements ExternalSigner {
   readonly type = ExternalSignerType.EVM_WALLET;
