@@ -9,6 +9,7 @@ import {
 } from '../../types/walletConnector';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
 import { useUniversalWallet } from '../context/useUniversalWallet';
+import { useFeePayment } from '../../providers/FeePaymentProvider';
 import type { DeployResult } from '../../components/contract-interaction/types';
 import type {
   DeployableContract,
@@ -29,6 +30,7 @@ export interface DeployParams {
  */
 export const useContractDeployer = () => {
   const { connector, account } = useUniversalWallet();
+  const { getFeePaymentMethod } = useFeePayment();
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,7 +99,9 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
+        const paymentMethod = await getFeePaymentMethod(() =>
+          connector.getSponsoredFeePaymentMethod()
+        );
 
         const receipt = await deployMethod
           .send({
@@ -125,7 +129,7 @@ export const useContractDeployer = () => {
         setIsDeploying(false);
       }
     },
-    [connector, account]
+    [connector, account, getFeePaymentMethod]
   );
 
   const clearError = useCallback(() => {

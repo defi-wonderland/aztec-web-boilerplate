@@ -8,6 +8,7 @@ import {
 } from '../../types/walletConnector';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 import { useUniversalWallet } from '../context/useUniversalWallet';
+import { useFeePayment } from '../../providers/FeePaymentProvider';
 import type {
   MethodsOf,
   ArgsOf,
@@ -73,6 +74,7 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
 export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const { timeout = 900, receiptPolling } = options;
   const { connector, account } = useUniversalWallet();
+  const { getFeePaymentMethod } = useFeePayment();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -155,7 +157,9 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          const paymentMethod = await connector.getSponsoredFeePaymentMethod();
+          const paymentMethod = await getFeePaymentMethod(() =>
+            connector.getSponsoredFeePaymentMethod()
+          );
           const contractAddress = AztecAddress.fromString(address);
 
           // Create contract instance
@@ -205,7 +209,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
         setIsPending(false);
       }
     },
-    [connector, account, timeout, receiptPolling]
+    [connector, account, timeout, getFeePaymentMethod, receiptPolling]
   );
 
   const reset = useCallback(() => {
