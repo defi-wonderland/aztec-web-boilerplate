@@ -2,6 +2,107 @@
 
 > **Note:** This file is intentional. These are the next steps to convert aztec-wallet into a fully standalone, publishable library. Do not delete this file.
 
+---
+
+## Overview: What is aztec-wallet?
+
+**aztec-wallet is the Aztec equivalent of wagmi + RainbowKit for EVM.**
+
+| EVM Ecosystem | Aztec Ecosystem (aztec-wallet) |
+|---------------|-------------------------------|
+| **wagmi** - Core hooks, state management, connectors | **aztec-wallet core** - Stores, connectors, services |
+| **RainbowKit** - UI components (ConnectButton, modals) | **aztec-wallet components** - ConnectButton, ConnectModal, NetworkPicker |
+| **viem** - Low-level client (publicClient, walletClient) | **@aztec/aztec.js** - PXE, AztecNode, Wallet |
+
+### Key Differences from EVM
+
+1. **PXE (Private Execution Environment)** - Unique to Aztec. A "private client" that manages notes, proving, etc. aztec-wallet handles PXE lifecycle.
+
+2. **Three wallet types** (vs EVM's single type):
+   - **Embedded** - App manages everything (keys in localStorage)
+   - **ExternalSigner** - EVM wallet signs, app manages PXE
+   - **BrowserWallet** - Extension manages everything (like Azguard)
+
+3. **Contract registration** - Contracts must be registered with PXE before use (unlike EVM where you just need the ABI).
+
+---
+
+## Responsibilities: aztec-wallet vs App
+
+### aztec-wallet handles:
+- Wallet connection/disconnection
+- Account management
+- PXE lifecycle (for Embedded/ExternalSigner)
+- Network configuration and switching
+- Auto-reconnect on page refresh
+- UI components (ConnectButton, modals)
+- EIP-6963 wallet discovery (for EVM signers)
+- Wallet installation detection
+
+### App handles:
+- Contract configuration (`contractsConfig`)
+- Contract registration with PXE (`ContractRegistry`)
+- Contract interaction hooks (`useContracts`, `useRequiredContracts`)
+- Business logic and UI
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              aztec-wallet                                    │
+│                                                                              │
+│  Providers:           Stores:              Services:                        │
+│  • AztecWalletProvider   • walletStore      • SharedPXEService              │
+│  • AutoReconnect         • networkStore     • NetworkService                │
+│                          • evmStore         • EIP6963Service                │
+│                                                                              │
+│  Components:          Hooks:               Connectors:                      │
+│  • ConnectButton      • useAztecWallet     • EmbeddedConnector              │
+│  • ConnectModal       • useConnectModal    • ExternalSignerConnector        │
+│  • NetworkPicker      • useNetworkModal    • BrowserWalletConnector         │
+│  • AccountModal       • useAccountModal                                     │
+│                                                                              │
+│  Exposes: { pxe, aztecNode, wallet, account, network }                      │
+└──────────────────────────────────────────┬──────────────────────────────────┘
+                                           │
+                                           ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                   APP                                        │
+│                                                                              │
+│  Contract System (app-specific, NOT in aztec-wallet):                       │
+│  • contractsConfig - defines contracts (artifacts, addresses, params)       │
+│  • ContractRegistry - registers contracts with PXE                          │
+│  • useRequiredContracts - checks contract status                            │
+│  • useContracts - returns typed contract instances                          │
+│                                                                              │
+│  Usage: dripper.methods.drip().send().wait()                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Recent Changes (Completed)
+
+### Wallet Icons System
+- Created `assets/icons/` with SVG React components (MetaMaskIcon, RabbyIcon, AzguardIcon)
+- Added `WalletIconWrapper` for consistent sizing
+- Updated `walletPresets.ts` to use icon components instead of emojis
+- Exported icons from library index
+
+### Aztec Wallet Detection
+- Added `checkInstalled` function to `AztecWalletPreset` type
+- Implemented detection for Azguard (`AzguardClient.isAzguardInstalled()`)
+- Created `useAztecWalletsAvailability` hook
+- Updated `AztecWalletsView` to show installation status (green/orange dot)
+
+### Auto-Reconnect
+- Moved auto-reconnect logic from `useAztecWallet` hook to `AztecWalletProvider`
+- Created internal `<AutoReconnect />` component
+- Auto-reconnect now works automatically without requiring specific hook usage
+- Supports all wallet types (Embedded, ExternalSigner, BrowserWallet)
+
+---
+
 ## Current Status
 
 AztecWallet is functional but currently tied to the host application through:

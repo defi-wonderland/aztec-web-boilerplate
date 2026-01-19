@@ -116,3 +116,18 @@ export type {
   ConnectionStatus,
   ConnectionState,
 } from './types';
+
+// Icons
+export {
+  MetaMaskIcon,
+  RabbyIcon,
+  AzguardIcon,
+  WalletIconWrapper,
+  getWalletIconSize,
+  walletIconSizeMap,
+  type WalletIconProps,
+  type WalletIconWrapperProps,
+  type WalletIconSize,
+} from './assets/icons';
+
+export type { WalletIconType } from './config/walletPresets';

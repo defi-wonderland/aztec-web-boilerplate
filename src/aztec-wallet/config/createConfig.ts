@@ -75,6 +75,7 @@ function resolveAztecWallets(ids: string[]): AztecBrowserWalletConfig[] {
         name: preset.name,
         icon: preset.icon,
         adapter: preset.getAdapter,
+        checkInstalled: preset.checkInstalled,
       });
     } else {
       console.warn(

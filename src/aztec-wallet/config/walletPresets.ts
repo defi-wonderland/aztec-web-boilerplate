@@ -5,25 +5,32 @@
  * This simplifies the config - devs just pass ['metamask', 'rabby'] instead of full configs.
  */
 
+import type { ComponentType } from 'react';
+import { MetaMaskIcon, RabbyIcon, AzguardIcon } from '../assets/icons';
 import type { IBrowserWalletAdapter } from '../adapters/types';
 
 // =============================================================================
 // Types
 // =============================================================================
 
+/** Icon type that supports emoji strings, URLs, or React components */
+export type WalletIconType = string | ComponentType<{ className?: string }>;
+
 export interface EVMWalletPreset {
   id: string;
   name: string;
-  icon: string;
+  icon: WalletIconType;
   rdns: string;
 }
 
 export interface AztecWalletPreset {
   id: string;
   name: string;
-  icon: string;
+  icon: WalletIconType;
   /** Lazy adapter factory - only imported when needed */
   getAdapter: () => IBrowserWalletAdapter;
+  /** Check if wallet extension is installed (optional, async) */
+  checkInstalled?: () => Promise<boolean>;
 }
 
 // =============================================================================
@@ -34,13 +41,13 @@ export const EVM_WALLET_PRESETS: Record<string, EVMWalletPreset> = {
   metamask: {
     id: 'metamask',
     name: 'MetaMask',
-    icon: '🦊',
+    icon: MetaMaskIcon,
     rdns: 'io.metamask',
   },
   rabby: {
     id: 'rabby',
     name: 'Rabby',
-    icon: '🐰',
+    icon: RabbyIcon,
     rdns: 'io.rabby',
   },
 };
@@ -53,22 +60,31 @@ export const AZTEC_WALLET_PRESETS: Record<string, AztecWalletPreset> = {
   azguard: {
     id: 'azguard',
     name: 'Azguard',
-    icon: '🛡️',
+    icon: AzguardIcon,
     getAdapter: () => {
       // Lazy import to avoid bundling if not used
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { AzguardAdapter } = require('../../adapters/azguard');
       return new AzguardAdapter();
     },
+    checkInstalled: async () => {
+      // Lazy import to avoid bundling the client if not used
+      const { AzguardClient } = await import('@azguardwallet/client');
+      return AzguardClient.isAzguardInstalled();
+    },
   },
   // Add more Aztec wallets as they become available:
   // obsidian: {
   //   id: 'obsidian',
   //   name: 'Obsidian',
-  //   icon: '🔮',
+  //   icon: ObsidianIcon, // Use icon component
   //   getAdapter: () => {
   //     const { ObsidianAdapter } = require('../../adapters/obsidian');
   //     return new ObsidianAdapter();
+  //   },
+  //   checkInstalled: async () => {
+  //     // Check for window.obsidian or similar
+  //     return typeof window !== 'undefined' && 'obsidian' in window;
   //   },
   // },
 };

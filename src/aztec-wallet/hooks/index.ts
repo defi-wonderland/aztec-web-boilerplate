@@ -7,4 +7,5 @@ export {
   useIsWalletInstalled,
   useDiscoveredWallets,
   useWalletsAvailability,
+  useAztecWalletsAvailability,
 } from './useWalletAvailability';

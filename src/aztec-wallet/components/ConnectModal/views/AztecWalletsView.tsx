@@ -1,4 +1,5 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { useAztecWalletsAvailability } from '../../../hooks';
 import { BackButton, WalletButton } from '../../shared';
 import { useConnectModalContext } from '../context';
 
@@ -11,6 +12,9 @@ const styles = {
 
 /**
  * View showing available Aztec browser wallets
+ *
+ * Uses checkInstalled functions to detect installed wallets.
+ * Wallets that aren't installed are shown as disabled with "Not Installed" text.
  */
 export const AztecWalletsView: React.FC = () => {
   const { config, goBack, setView, setConnectingState, onConnect, isLoading } =
@@ -18,9 +22,23 @@ export const AztecWalletsView: React.FC = () => {
 
   const aztecWallets = config.walletGroups.aztecWallets;
 
+  // Get wallet availability from checkInstalled functions
+  const walletsForAvailability = useMemo(
+    () => (aztecWallets ? aztecWallets.wallets : []),
+    [aztecWallets]
+  );
+  const walletAvailability = useAztecWalletsAvailability(
+    walletsForAvailability
+  );
+
   const handleWalletClick = useCallback(
     async (walletId: string, walletName: string) => {
       if (isLoading) return;
+
+      // Don't allow clicking if wallet is not installed
+      if (walletAvailability[walletId] === false) {
+        return;
+      }
 
       setConnectingState({
         walletId,
@@ -30,7 +48,7 @@ export const AztecWalletsView: React.FC = () => {
       setView('connecting');
       await onConnect(walletId, 'aztec');
     },
-    [setConnectingState, setView, onConnect, isLoading]
+    [setConnectingState, setView, onConnect, isLoading, walletAvailability]
   );
 
   if (!aztecWallets) {
@@ -47,15 +65,20 @@ export const AztecWalletsView: React.FC = () => {
       </p>
 
       <div className={styles.walletList}>
-        {aztecWallets.wallets.map((wallet) => (
-          <WalletButton
-            key={wallet.id}
-            name={wallet.name}
-            icon={wallet.icon}
-            onClick={() => handleWalletClick(wallet.id, wallet.name)}
-            disabled={isLoading}
-          />
-        ))}
+        {aztecWallets.wallets.map((wallet) => {
+          const isInstalled = walletAvailability[wallet.id];
+
+          return (
+            <WalletButton
+              key={wallet.id}
+              name={wallet.name}
+              icon={wallet.icon}
+              isInstalled={isInstalled}
+              onClick={() => handleWalletClick(wallet.id, wallet.name)}
+              disabled={isLoading}
+            />
+          );
+        })}
       </div>
     </div>
   );
