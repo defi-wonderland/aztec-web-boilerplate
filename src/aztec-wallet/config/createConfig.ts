@@ -3,11 +3,21 @@ import {
   DEFAULT_MODAL_CONFIG,
   DEFAULT_EMBEDDED_CONFIG,
 } from './defaults';
-import { getAztecWalletPreset, getEVMWalletPreset } from './walletPresets';
+import {
+  getAztecWalletPreset,
+  getEVMWalletPreset,
+  AZTEC_WALLET_PRESETS,
+} from './walletPresets';
+import { BrowserWalletConnector } from '../connectors/BrowserWalletConnector';
+import { createEmbeddedConnector } from '../connectors/EmbeddedConnector';
+import { ExternalSignerConnector } from '../connectors/ExternalSignerConnector';
+import type { ConnectorFactory } from '../connectors/registry';
+import { ExternalSignerType } from '../types/aztec';
 import type {
   AztecWalletConfig,
   AztecBrowserWalletConfig,
   AztecWalletsGroupConfig,
+  EmbeddedGroupConfig,
   EVMWalletConfig,
   EVMWalletsGroupConfig,
   ResolvedAztecWalletConfig,
@@ -85,6 +95,57 @@ function resolveAztecWallets(ids: string[]): AztecBrowserWalletConfig[] {
   }
 
   return wallets;
+}
+
+/**
+ * Create connector factories from resolved wallet groups.
+ * This is called internally by createAztecWalletConfig.
+ */
+function createConnectorsFromWalletGroups(walletGroups: {
+  embedded: EmbeddedGroupConfig | false;
+  aztecWallets: AztecWalletsGroupConfig | false;
+  evmWallets: EVMWalletsGroupConfig | false;
+}): ConnectorFactory[] {
+  const connectors: ConnectorFactory[] = [];
+
+  // Add embedded connector
+  if (walletGroups.embedded !== false) {
+    connectors.push(createEmbeddedConnector);
+  }
+
+  // Add EVM wallet connectors (external signers)
+  if (walletGroups.evmWallets !== false) {
+    for (const wallet of walletGroups.evmWallets.wallets) {
+      connectors.push(
+        () =>
+          new ExternalSignerConnector({
+            id: wallet.id,
+            label: wallet.name,
+            signerType: ExternalSignerType.EVM_WALLET,
+            rdns: wallet.rdns,
+          })
+      );
+    }
+  }
+
+  // Add Aztec browser wallet connectors
+  if (walletGroups.aztecWallets !== false) {
+    for (const wallet of walletGroups.aztecWallets.wallets) {
+      const preset = AZTEC_WALLET_PRESETS[wallet.id];
+      if (preset) {
+        connectors.push(
+          () =>
+            new BrowserWalletConnector({
+              id: wallet.id,
+              label: wallet.name,
+              adapterFactory: preset.getAdapter,
+            })
+        );
+      }
+    }
+  }
+
+  return connectors;
 }
 
 /**
@@ -184,6 +245,15 @@ export function createAztecWalletConfig(
     resolvedEvmWallets = false;
   }
 
+  const resolvedWalletGroups = {
+    embedded: resolvedEmbedded,
+    aztecWallets: resolvedAztecWallets,
+    evmWallets: resolvedEvmWallets,
+  };
+
+  // Auto-create connectors from wallet groups
+  const connectors = createConnectorsFromWalletGroups(resolvedWalletGroups);
+
   return {
     ...config,
     defaultNetwork: config.defaultNetwork ?? config.networks[0]?.name,
@@ -191,10 +261,7 @@ export function createAztecWalletConfig(
       ...DEFAULT_MODAL_CONFIG,
       ...config.modal,
     },
-    walletGroups: {
-      embedded: resolvedEmbedded,
-      aztecWallets: resolvedAztecWallets,
-      evmWallets: resolvedEvmWallets,
-    },
+    walletGroups: resolvedWalletGroups,
+    connectors,
   };
 }

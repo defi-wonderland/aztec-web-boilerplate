@@ -26,7 +26,7 @@ export const aztecWalletConfig: AztecWalletConfig = {
   ],
   defaultNetwork: 'devnet',
 
-  // Wallet groups - just pass the IDs you want to show
+  // Wallet groups - the single source of truth for which wallets to enable
   walletGroups: {
     embedded: true,
     aztecWallets: ['azguard'],

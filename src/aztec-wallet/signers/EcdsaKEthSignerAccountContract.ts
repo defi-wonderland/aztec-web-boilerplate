@@ -7,7 +7,7 @@ import type {
   ChainInfo,
 } from '@aztec/aztec.js/account';
 import type { CompleteAddress } from '@aztec/aztec.js/addresses';
-import { EcdsaKEthSignerAccountContractArtifact } from '../artifacts/EcdsaKEthSignerAccount';
+import { EcdsaKEthSignerAccountContractArtifact } from '../../artifacts/EcdsaKEthSignerAccount';
 
 /**
  * AccountContract implementation for ECDSA K accounts that use

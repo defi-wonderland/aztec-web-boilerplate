@@ -2,16 +2,33 @@ import { useMemo, useState, useEffect } from 'react';
 import { useEVMStore } from '../store/evm';
 
 /**
- * Hook to check if a specific EVM wallet is installed
+ * Hook to check if a specific EVM wallet is installed.
  *
- * Uses EIP-6963 discovery results to determine wallet availability.
+ * Uses EIP-6963 discovery to determine wallet availability.
+ * This is useful for showing/hiding wallet options or displaying
+ * "Install" links for wallets that aren't detected.
  *
  * @param rdns - The RDNS identifier of the wallet (e.g., 'io.metamask', 'io.rabby')
  * @returns Whether the wallet is installed
  *
- * @example
+ * @example Check if MetaMask is installed
  * ```tsx
  * const isMetaMaskInstalled = useIsWalletInstalled('io.metamask');
+ *
+ * if (!isMetaMaskInstalled) {
+ *   return <a href="https://metamask.io">Install MetaMask</a>;
+ * }
+ * ```
+ *
+ * @example Conditional wallet button
+ * ```tsx
+ * const isRabbyInstalled = useIsWalletInstalled('io.rabby');
+ *
+ * return (
+ *   <button disabled={!isRabbyInstalled}>
+ *     {isRabbyInstalled ? 'Connect Rabby' : 'Rabby Not Installed'}
+ *   </button>
+ * );
  * ```
  */
 export function useIsWalletInstalled(rdns: string | undefined): boolean {

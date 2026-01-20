@@ -1,12 +1,12 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { ExternalSigner } from '../../signers/types';
 import type { ExternalSignerType, WalletType } from '../../types/aztec';
-import type { IBrowserWalletAdapter } from '../../types/browserWallet';
+import type { IBrowserWalletAdapter } from '../../../types/browserWallet';
 import type {
   ConnectionStatus,
   WalletConnector,
   WalletConnectorId,
-} from '../../types/walletConnector';
+} from '../../../types/walletConnector';
 
 export type PXEStatus = 'idle' | 'initializing' | 'ready' | 'error';
 export type NetworkStatus = 'idle' | 'checking' | 'available' | 'error';

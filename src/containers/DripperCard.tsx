@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Coins, Copy, Shield, Globe, AlertTriangle } from 'lucide-react';
+import { useAztecWallet } from '../aztec-wallet';
 import { TokenBalance } from '../components/TokenBalance';
 import {
   Card,
@@ -18,7 +19,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '../components/ui';
-import { useUniversalWallet, useRequiredContracts } from '../hooks';
+import { useRequiredContracts } from '../hooks';
 import { useToast, type LoadingToastResult } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
 import { iconSize } from '../utils';
@@ -56,8 +57,8 @@ const styles = {
 } as const;
 
 export const DripperCard: React.FC = () => {
-  const { account, isInitialized, connectors, connector, currentConfig } =
-    useUniversalWallet();
+  const { account, isPXEInitialized, connectors, connector, currentConfig } =
+    useAztecWallet();
   const { success, loading } = useToast();
 
   const {
@@ -153,7 +154,7 @@ export const DripperCard: React.FC = () => {
   const isAnyWalletConnected =
     Boolean(account) ||
     connectors.some((conn) => conn.getStatus().status === 'connected');
-  const showDripForm = isAnyWalletConnected && isInitialized;
+  const showDripForm = isAnyWalletConnected && isPXEInitialized;
 
   if (!showDripForm) {
     return null;

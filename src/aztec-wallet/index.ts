@@ -1,8 +1,10 @@
 /**
  * AztecWallet - Modular wallet connection library for Aztec
  *
- * Simple usage - just add the provider and ConnectButton!
- * Modals and NetworkPicker are handled automatically.
+ * A wagmi-like wallet connection library that handles the complexity of
+ * connecting to Aztec wallets, managing PXE instances, and network switching.
+ *
+ * ## Quick Start
  *
  * @example
  * ```tsx
@@ -13,121 +15,215 @@
  * } from './aztec-wallet';
  *
  * const config = createAztecWalletConfig({
- *   networks: [{ name: 'devnet', nodeUrl: '...' }],
- *   showNetworkPicker: 'full', // or 'compact', or false to hide
+ *   networks: [{ name: 'devnet', nodeUrl: 'https://devnet.aztec.network' }],
+ *   showNetworkPicker: 'full',
  *   walletGroups: {
- *     embedded: { label: 'Use embedded account' },
- *     evmWallets: {
- *       wallets: [{ id: 'metamask', name: 'MetaMask', rdns: 'io.metamask' }],
- *     },
+ *     embedded: true,
+ *     evmWallets: ['metamask', 'rabby'],
+ *     aztecWallets: ['azguard'],
  *   },
  * });
  *
  * function App() {
  *   return (
  *     <AztecWalletProvider config={config}>
- *       <Header />
+ *       <ConnectButton />
  *     </AztecWalletProvider>
  *   );
  * }
- *
- * function Header() {
- *   return (
- *     <nav>
- *       <ConnectButton />  // That's it! NetworkPicker included automatically
- *     </nav>
- *   );
- * }
  * ```
+ *
+ * ## Wallet Types
+ *
+ * - **Embedded**: App manages PXE + internal signing (keys in localStorage)
+ * - **External Signer**: App manages PXE + external signing (MetaMask, Rabby)
+ * - **Browser Wallet**: Extension manages everything (Azguard)
+ *
+ * ## Deep Imports
+ *
+ * Internal modules (stores, services, connector classes) are available via
+ * deep imports for advanced use cases, but these are not part of the stable
+ * public API and may change without notice:
+ *
+ * ```ts
+ * // ⚠️ Use at your own risk - not part of stable API
+ * import { getWalletStore } from './aztec-wallet/store/wallet';
+ * import { SharedPXEService } from './aztec-wallet/services/aztec/pxe';
+ * ```
+ *
+ * @packageDocumentation
  */
 
-// Provider
+// =============================================================================
+// PROVIDER
+// =============================================================================
+
+/**
+ * Main provider component that wraps your app and provides wallet context.
+ *
+ * @example
+ * ```tsx
+ * <AztecWalletProvider config={config}>
+ *   <App />
+ * </AztecWalletProvider>
+ * ```
+ */
 export {
   AztecWalletProvider,
   type AztecWalletProviderProps,
 } from './providers';
 
-// Config
+// =============================================================================
+// CONFIG
+// =============================================================================
+
+/**
+ * Creates an AztecWallet configuration object.
+ *
+ * @example
+ * ```ts
+ * const config = createAztecWalletConfig({
+ *   networks: [{ name: 'devnet', nodeUrl: 'https://devnet.aztec.network' }],
+ *   walletGroups: {
+ *     embedded: true,
+ *     evmWallets: ['metamask'],
+ *   },
+ * });
+ * ```
+ */
 export { createAztecWalletConfig } from './config';
 
-// Hooks
-export {
-  useAztecWallet,
-  useConnectModal,
-  useNetworkModal,
-  useAccountModal,
-  useIsWalletInstalled,
-  useDiscoveredWallets,
-  useWalletsAvailability,
-} from './hooks';
+// =============================================================================
+// HOOKS
+// =============================================================================
 
-// Components
-export {
-  ConnectModal,
-  ConnectButton,
-  AccountModal,
-  NetworkPicker,
-  NetworkModal,
-  Spinner,
-  AddressDisplay,
-  WalletButton,
-  WalletGroupButton,
-  BackButton,
-  type ConnectModalProps,
-  type ConnectButtonProps,
-  type AccountModalProps,
-  type NetworkPickerProps,
-  type NetworkModalProps,
-  type SpinnerProps,
-  type AddressDisplayProps,
-  type WalletButtonProps,
-  type WalletGroupButtonProps,
-  type BackButtonProps,
-} from './components';
+/**
+ * Main hook for accessing wallet state and actions.
+ * Provides connection status, account data, network info, and wallet actions.
+ */
+export { useAztecWallet } from './hooks';
 
-// Connectors
-export {
-  EmbeddedConnector,
-  EMBEDDED_CONNECTOR_ID,
-  createEmbeddedConnector,
-  ExternalSignerConnector,
-  BrowserWalletConnector,
-  createConnectorRegistry,
-  embedded,
-  azguard,
-  evmWallet,
-  type ConnectorFactory,
-  type ConnectorRegistryOptions,
-} from './connectors';
+/**
+ * Hook to control the connect modal programmatically.
+ * Use when building custom connect UI instead of ConnectButton.
+ */
+export { useConnectModal } from './hooks';
 
-// Types
+/**
+ * Hook to control the account modal programmatically.
+ * Use when building custom account management UI.
+ */
+export { useAccountModal } from './hooks';
+
+/**
+ * Hook to control the network modal programmatically.
+ * Use when building custom network switching UI.
+ */
+export { useNetworkModal } from './hooks';
+
+/**
+ * Hook to check if a specific wallet is installed/available.
+ */
+export { useIsWalletInstalled } from './hooks';
+
+// =============================================================================
+// COMPONENTS
+// =============================================================================
+
+/**
+ * All-in-one connect button that handles connection flow automatically.
+ * Includes network picker when configured via `showNetworkPicker` option.
+ */
+export { ConnectButton, type ConnectButtonProps } from './components';
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+/**
+ * Main configuration type for AztecWallet.
+ */
+export type { AztecWalletConfig } from './types';
+
+/**
+ * Network preset configuration for defining available networks.
+ */
+export type { NetworkPreset } from './types';
+
+/**
+ * Wallet groups configuration for organizing wallet options.
+ */
+export type { WalletGroupsConfig } from './types';
+
+/**
+ * Connection status enum: 'disconnected' | 'connecting' | 'connected' | 'error'
+ */
+export type { ConnectionStatus } from './types';
+
+/**
+ * Wallet type enum for different wallet implementations.
+ */
+export { WalletType, ExternalSignerType } from './types/aztec';
+
+/**
+ * Base interface for wallet connectors.
+ * Use for building custom connectors or advanced type checking.
+ */
 export type {
-  AztecWalletConfig,
-  ResolvedAztecWalletConfig,
-  NetworkPreset,
-  WalletGroupsConfig,
-  EmbeddedGroupConfig,
-  AztecWalletsGroupConfig,
-  AztecBrowserWalletConfig,
-  EVMWalletsGroupConfig,
-  EVMWalletConfig,
-  NetworkPickerVariant,
-  ModalView,
-  ConnectionStatus,
-  ConnectionState,
-} from './types';
+  WalletConnector,
+  WalletConnectorId,
+} from '../types/walletConnector';
 
-// Icons
-export {
-  MetaMaskIcon,
-  RabbyIcon,
-  AzguardIcon,
-  WalletIconWrapper,
-  getWalletIconSize,
-  walletIconSizeMap,
-  type WalletIconProps,
-  type WalletIconWrapperProps,
-  type WalletIconSize,
-} from './assets/icons';
+// =============================================================================
+// TYPE GUARDS
+// =============================================================================
 
-export type { WalletIconType } from './config/walletPresets';
+/**
+ * Type guard to check if a connector is an embedded wallet connector.
+ *
+ * @example
+ * ```ts
+ * if (isEmbeddedConnector(connector)) {
+ *   const pxe = connector.getPXE();
+ * }
+ * ```
+ */
+export { isEmbeddedConnector } from '../types/walletConnector';
+
+/**
+ * Type guard to check if a connector is an external signer connector (EVM wallet).
+ *
+ * @example
+ * ```ts
+ * if (isExternalSignerConnector(connector)) {
+ *   const pxe = connector.getPXE();
+ * }
+ * ```
+ */
+export { isExternalSignerConnector } from '../types/walletConnector';
+
+/**
+ * Type guard to check if a connector is a browser wallet connector (Azguard).
+ *
+ * @example
+ * ```ts
+ * if (isBrowserWalletConnector(connector)) {
+ *   const caipAccount = connector.getCaipAccount();
+ * }
+ * ```
+ */
+export { isBrowserWalletConnector } from '../types/walletConnector';
+
+/**
+ * Type guard to check if a connector has app-managed PXE.
+ * Returns true for embedded and external signer connectors.
+ *
+ * @example
+ * ```ts
+ * if (hasAppManagedPXE(connector)) {
+ *   const pxe = connector.getPXE();
+ *   const wallet = connector.getWallet();
+ * }
+ * ```
+ */
+export { hasAppManagedPXE } from '../types/walletConnector';

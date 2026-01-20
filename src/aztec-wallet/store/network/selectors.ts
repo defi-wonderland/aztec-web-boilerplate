@@ -1,6 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useNetworkStore, buildNetworkOptions } from './store';
-import type { NetworkPreset } from '../../sdk/walletKitConfig';
+import type { StoreNetworkPreset } from '../../types';
 
 /**
  * Network actions
@@ -23,7 +23,7 @@ export const useCurrentNetwork = () =>
 /**
  * Build network options for UI dropdowns
  */
-export const useNetworkOptions = (presets: NetworkPreset[]) => {
+export const useNetworkOptions = (presets: StoreNetworkPreset[]) => {
   const configuredNetworks = useNetworkStore(
     (state) => state.configuredNetworks
   );

@@ -9,13 +9,13 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
-import { createEVMSigner } from '../../signers';
-import { WalletType, ExternalSignerType } from '../../types/aztec';
+import { createEVMSigner } from '../signers';
+import { WalletType, ExternalSignerType } from '../types/aztec';
 import { SharedPXEService } from '../services/aztec/pxe';
 import { getEVMWalletService } from '../services/evm';
 import { getNetworkStore } from '../store/network';
 import { getWalletStore } from '../store/wallet';
-import type { ExternalSigner } from '../../signers/types';
+import type { ExternalSigner } from '../signers/types';
 import type {
   ExternalSignerWalletConnector,
   ConnectorStatus,

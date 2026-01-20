@@ -7,7 +7,7 @@
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { WalletType } from '../../types/aztec';
+import { WalletType } from '../types/aztec';
 import { getNetworkStore } from '../store/network';
 import { getWalletStore } from '../store/wallet';
 import type {

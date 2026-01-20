@@ -8,7 +8,7 @@ import { getContractRegistryStore } from '../../../store/contractRegistry';
 import { isValidConfig } from '../../../utils';
 import { getWalletStore } from '../wallet';
 import type { AztecNetwork } from '../../../config/networks/constants';
-import type { NetworkPreset } from '../../../sdk/walletKitConfig';
+import type { StoreNetworkPreset } from '../../types';
 
 const STORAGE_KEY = 'aztec-wallet-network';
 
@@ -25,7 +25,7 @@ type State = {
 };
 
 type Actions = {
-  initialize: (presets: NetworkPreset[]) => void;
+  initialize: (presets: StoreNetworkPreset[]) => void;
   switchToNetwork: (name: string) => boolean;
   resetToDefault: () => void;
   syncFromStorage: () => void;
@@ -138,7 +138,7 @@ function setupCrossTabSync() {
  */
 export const buildNetworkOptions = (
   configuredNetworks: Record<AztecNetwork, NetworkConfig>,
-  presets: NetworkPreset[]
+  presets: StoreNetworkPreset[]
 ) => {
   return presets.map((preset) => {
     const config = configuredNetworks[preset.aztecNetwork];

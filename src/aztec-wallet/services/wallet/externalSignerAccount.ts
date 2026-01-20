@@ -2,7 +2,7 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { Fr } from '@aztec/aztec.js/fields';
 import { AccountManager } from '@aztec/aztec.js/wallet';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
-import { EcdsaKEthSignerAccountContract } from '../../../accounts/EcdsaKEthSignerAccountContract';
+import { EcdsaKEthSignerAccountContract } from '../../signers/EcdsaKEthSignerAccountContract';
 import { SharedPXEService, type SharedPXEInstance } from '../aztec/pxe';
 import {
   deployAccountIfNotExists,
@@ -14,8 +14,8 @@ import {
   SignerConnectionError,
 } from './errors';
 import type { NetworkConfig } from '../../../config/networks/types';
-import type { ExternalSigner } from '../../../signers/types';
-import type { ExternalSignerType } from '../../../types/aztec';
+import type { ExternalSigner } from '../../signers/types';
+import type { ExternalSignerType } from '../../types/aztec';
 
 // ============================================================================
 // Types

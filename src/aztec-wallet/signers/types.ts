@@ -9,6 +9,9 @@ import type { AuthWitnessProvider } from '@aztec/aztec.js/account';
 import type { CompleteAddress } from '@aztec/aztec.js/addresses';
 import { ExternalSignerType } from '../types/aztec';
 
+// Re-export for convenience
+export { ExternalSignerType };
+
 /**
  * Public key coordinates for secp256k1 ECDSA signers
  */

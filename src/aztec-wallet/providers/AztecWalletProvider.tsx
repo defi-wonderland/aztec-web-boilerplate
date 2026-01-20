@@ -1,14 +1,25 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { WalletType } from '../../types/aztec';
+import { WalletType } from '../types/aztec';
+import { isValidConfig } from '../../utils';
 import { AztecWalletModals } from '../components/AztecWalletModals';
 import { createAztecWalletConfig } from '../config';
+import { createConnectorRegistry } from '../connectors/registry';
 import { useEIP6963Discovery } from '../hooks/useEIP6963Discovery';
 import { getEIP6963Service, getEVMWalletService } from '../services/evm';
-import { useWalletStore, getStoredWalletConnection } from '../store/wallet';
+import { getNetworkStore, useNetworkStore } from '../store/network';
+import {
+  useWalletStore,
+  getStoredWalletConnection,
+  setupWalletCrossTabSync,
+} from '../store/wallet';
 import { AztecWalletContext } from './context';
 import type { ExternalSignerWalletConnector } from '../../types/walletConnector';
-import type { AztecWalletConfig } from '../types';
+import type {
+  AztecWalletConfig,
+  NetworkPreset,
+  StoreNetworkPreset,
+} from '../types';
 
 export interface AztecWalletProviderProps {
   /** AztecWallet configuration */
@@ -166,20 +177,46 @@ const AutoReconnect: React.FC = () => {
 };
 
 /**
+ * Convert AztecWalletConfig networks to StoreNetworkPreset format for the store
+ */
+function toStoreNetworkPresets(
+  networks: NetworkPreset[]
+): StoreNetworkPreset[] {
+  return networks.map((n) => ({
+    aztecNetwork: n.name as 'devnet' | 'sandbox',
+    nodeUrl: n.nodeUrl,
+  }));
+}
+
+/**
  * AztecWallet Provider
  *
- * Lightweight provider that:
+ * Main provider that:
  * 1. Resolves the configuration with defaults
- * 2. Provides configuration context to components
- *
- * NOTE: This provider does NOT initialize connectors.
- * Connectors are initialized by UniversalWalletProvider.
- * This provider only provides the UI configuration for AztecWallet components.
+ * 2. Auto-creates connectors from walletGroups
+ * 3. Initializes network and wallet stores
+ * 4. Sets up cross-tab synchronization
+ * 5. Provides configuration context to components
+ * 6. Renders wallet modals
  */
 export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   config: userConfig,
   children,
 }) => {
+  const { setConnectors, disconnect } = useWalletStore(
+    useShallow((state) => ({
+      setConnectors: state.setConnectors,
+      disconnect: state.disconnect,
+    }))
+  );
+  const { initialize: initializeNetwork, resetToDefault } = useNetworkStore(
+    useShallow((state) => ({
+      initialize: state.initialize,
+      resetToDefault: state.resetToDefault,
+    }))
+  );
+  const currentConfig = useNetworkStore((state) => state.currentConfig);
+
   // Trigger EIP-6963 wallet discovery for EVM wallets
   // This populates the EVM store with discovered wallets
   const evmServiceAvailable = getEVMWalletService().isAvailable();
@@ -191,7 +228,38 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     [userConfig]
   );
 
-  // Check if connectors are already initialized (by UniversalWalletProvider)
+  // Initialize network store
+  useEffect(() => {
+    const networkPresets = toStoreNetworkPresets(userConfig.networks);
+
+    if (!getNetworkStore().isInitialized) {
+      initializeNetwork(networkPresets);
+    }
+
+    setupWalletCrossTabSync();
+  }, [userConfig.networks, initializeNetwork]);
+
+  // Validate network config
+  useEffect(() => {
+    if (!isValidConfig(currentConfig)) {
+      console.warn(
+        `⚠️ Invalid config for ${currentConfig.name}, falling back to default`
+      );
+      resetToDefault();
+    }
+  }, [currentConfig, resetToDefault]);
+
+  // Initialize connectors from resolved config
+  useEffect(() => {
+    const registry = createConnectorRegistry(resolvedConfig.connectors);
+    setConnectors(registry.getConnectors());
+
+    return () => {
+      disconnect();
+    };
+  }, [resolvedConfig.connectors, currentConfig.nodeUrl, setConnectors, disconnect]);
+
+  // Check if connectors are initialized
   const connectors = useWalletStore((state) => state.connectors);
   const isInitialized = connectors.length > 0;
 

@@ -2,15 +2,47 @@ import { useCallback } from 'react';
 import { useModalStore } from '../store/modal';
 
 /**
- * Hook for controlling the network selection modal
+ * Hook for controlling the network selection modal programmatically.
  *
- * @example
+ * Use this hook when building custom UI that needs to open/close
+ * the network modal. The modal shows available networks and allows
+ * users to switch between them. The modal is rendered by AztecWalletProvider.
+ *
+ * Note: Switching networks will disconnect the current wallet and
+ * require reconnection.
+ *
+ * @returns Object containing:
+ * - `isOpen` - Whether the network modal is currently open
+ * - `open` - Function to open the network modal
+ * - `close` - Function to close the network modal
+ * - `onOpenChange` - Callback for controlled open state (for Radix Dialog)
+ *
+ * @example Basic usage
  * ```tsx
- * const { isOpen, open, close } = useNetworkModal();
+ * const { open } = useNetworkModal();
+ *
+ * return <button onClick={open}>Switch Network</button>;
+ * ```
+ *
+ * @example Custom network picker button
+ * ```tsx
+ * const { networkName } = useAztecWallet();
+ * const { open } = useNetworkModal();
  *
  * return (
- *   <button onClick={open}>Select Network</button>
+ *   <button onClick={open}>
+ *     Network: {networkName}
+ *   </button>
  * );
+ * ```
+ *
+ * @example Programmatic network switching (without modal)
+ * ```tsx
+ * // If you want to switch networks programmatically without
+ * // showing the modal, use switchNetwork from useAztecWallet:
+ * const { switchNetwork } = useAztecWallet();
+ *
+ * await switchNetwork('sandbox');
  * ```
  */
 export function useNetworkModal() {

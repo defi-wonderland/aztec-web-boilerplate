@@ -1,5 +1,5 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { WalletType } from '../../../../types/aztec';
+import { WalletType } from '../../../types/aztec';
 import { EMBEDDED_CONNECTOR_ID } from '../../../connectors';
 import {
   createEmbeddedAccount,

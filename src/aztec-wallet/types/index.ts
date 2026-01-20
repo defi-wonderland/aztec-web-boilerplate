@@ -3,6 +3,7 @@ export type {
   AztecWalletConfig,
   ResolvedAztecWalletConfig,
   NetworkPreset,
+  StoreNetworkPreset,
   WalletGroupsConfig,
   EmbeddedGroupConfig,
   AztecWalletsGroupConfig,
@@ -10,6 +11,16 @@ export type {
   EVMWalletsGroupConfig,
   EVMWalletConfig,
 } from './config';
+
+// Aztec wallet types
+export type {
+  AccountData,
+  IAztecStorageService,
+  CreateAccountResult,
+  AccountCredentials,
+  AzguardAccountData,
+} from './aztec';
+export { WalletType, ExternalSignerType } from './aztec';
 
 // Theme types
 export type {

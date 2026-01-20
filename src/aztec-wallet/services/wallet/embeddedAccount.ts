@@ -20,7 +20,7 @@ import {
   PXEInitError,
 } from './errors';
 import type { NetworkConfig } from '../../../config/networks/types';
-import type { AccountCredentials } from '../../../types/aztec';
+import type { AccountCredentials } from '../../types/aztec';
 
 // ============================================================================
 // Types

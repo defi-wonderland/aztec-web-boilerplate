@@ -1,4 +1,5 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { AztecNetwork } from '../../config/networks/constants';
 import type { IBrowserWalletAdapter } from '../adapters/types';
 
 /**
@@ -11,6 +12,17 @@ export interface NetworkPreset {
   displayName?: string;
   /** Icon - emoji string or React component */
   icon?: string | React.ComponentType<{ className?: string; size?: number }>;
+  /** Aztec node URL */
+  nodeUrl: string;
+}
+
+/**
+ * Internal network preset format used by the store.
+ * Includes aztecNetwork for compatibility with network configs.
+ */
+export interface StoreNetworkPreset {
+  /** Aztec network identifier */
+  aztecNetwork: AztecNetwork;
   /** Aztec node URL */
   nodeUrl: string;
 }
@@ -146,6 +158,18 @@ export interface WalletGroupsConfig {
 
 /**
  * Main AztecWallet configuration
+ *
+ * @example Simple config (recommended)
+ * ```ts
+ * const config = createAztecWalletConfig({
+ *   networks: [{ name: 'devnet', nodeUrl: 'https://devnet.aztec.network' }],
+ *   walletGroups: {
+ *     embedded: true,
+ *     evmWallets: ['metamask', 'rabby'],
+ *     aztecWallets: ['azguard'],
+ *   },
+ * });
+ * ```
  */
 export interface AztecWalletConfig {
   /** Available networks */
@@ -154,7 +178,7 @@ export interface AztecWalletConfig {
   /** Default network name (defaults to first network) */
   defaultNetwork?: string;
 
-  /** Wallet groups to display */
+  /** Wallet groups to display - this is the single source of truth for which wallets to enable */
   walletGroups: WalletGroupsConfig;
 
   /**
@@ -190,12 +214,16 @@ export interface AztecWalletConfig {
 }
 
 /**
- * Internal resolved configuration with defaults applied
+ * Internal resolved configuration with defaults applied.
+ * This includes auto-created connectors from walletGroups.
+ * @internal
  */
-export interface ResolvedAztecWalletConfig extends AztecWalletConfig {
+export interface ResolvedAztecWalletConfig extends Omit<AztecWalletConfig, 'walletGroups'> {
   walletGroups: {
     embedded: EmbeddedGroupConfig | false;
     aztecWallets: AztecWalletsGroupConfig | false;
     evmWallets: EVMWalletsGroupConfig | false;
   };
+  /** Auto-created connector factories from walletGroups (internal use only) */
+  connectors: import('../connectors/registry').ConnectorFactory[];
 }

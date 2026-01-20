@@ -1,4 +1,4 @@
-// Connectors
+// Connectors (internal use only - not part of public API)
 export {
   EmbeddedConnector,
   EMBEDDED_CONNECTOR_ID,
@@ -9,7 +9,6 @@ export { ExternalSignerConnector } from './ExternalSignerConnector';
 
 export { BrowserWalletConnector } from './BrowserWalletConnector';
 
-// Registry and factories
+// Registry (internal use only - not part of public API)
 export { createConnectorRegistry } from './registry';
 export type { ConnectorFactory, ConnectorRegistryOptions } from './registry';
-export { embedded, azguard, evmWallet } from './factories';
