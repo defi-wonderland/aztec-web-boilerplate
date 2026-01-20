@@ -3,6 +3,7 @@ import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { Fr } from '@aztec/aztec.js/fields';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { ContractArtifact, FunctionAbi } from '@aztec/stdlib/abi';
+import type { PublicKeys } from '@aztec/stdlib/keys';
 import type { NetworkConfig } from '../config/networks';
 
 /**
@@ -22,6 +23,7 @@ export interface ContractDeployParams {
   deployer: AztecAddress;
   constructorArgs: unknown[];
   constructorArtifact: FunctionAbi | string;
+  publicKeys?: PublicKeys;
 }
 
 /**
@@ -44,8 +46,10 @@ export interface ContractConfigDefinition<
   contract: ContractClass<TContract>;
   /** Function to derive the expected contract address from app config */
   address: (config: TConfig) => string;
-  /** Function to derive deployment parameters from app config */
-  deployParams: (config: TConfig) => ContractDeployParams;
+  /** Function to derive deployment parameters from app config (async to allow WASM init) */
+  deployParams: (
+    config: TConfig
+  ) => ContractDeployParams | Promise<ContractDeployParams>;
   /** If true, contract won't be registered at init (on-demand only). Default: false */
   lazyRegister?: boolean;
 }

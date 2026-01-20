@@ -38,7 +38,7 @@ export const buildRegisterContractOperations = async (
       continue;
     }
 
-    const deployParams = definition.deployParams(config);
+    const deployParams = await definition.deployParams(config);
     const instance = await getContractInstanceFromInstantiationParams(
       definition.artifact,
       {

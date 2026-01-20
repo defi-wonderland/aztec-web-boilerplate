@@ -1,7 +1,9 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Point } from '@aztec/foundation/curves/grumpkin';
+import { PublicKeys } from '@aztec/stdlib/keys';
 import type { ContractConfigMap, ContractConfigDefinition } from './types';
-import type { NetworkConfig } from '../config/networks';
+import type { NetworkConfig, RawPublicKeys } from '../config/networks';
 
 export const createContractConfig = <
   const T extends ContractConfigMap<NetworkConfig>,
@@ -55,6 +57,47 @@ export const getTokenConstructorArgs = (config: NetworkConfig) => {
   return ['Yield Token', 'YT', 18, minterAddress, AztecAddress.ZERO] as const;
 };
 
+/**
+ * Convert raw public key strings to PublicKeys object.
+ * Returns undefined if no raw keys provided (uses default keys).
+ * Async to ensure WASM (Barretenberg) is initialized before Point operations.
+ */
+export const getPublicKeys = async (
+  rawKeys: RawPublicKeys | undefined
+): Promise<PublicKeys | undefined> => {
+  if (!rawKeys) {
+    return undefined;
+  }
+  // Ensure Barretenberg WASM is initialized before Point.fromString
+  const { BarretenbergSync } = await import('@aztec/bb.js');
+  await BarretenbergSync.initSingleton();
+
+  return new PublicKeys(
+    Point.fromString(rawKeys.masterNullifierPublicKey),
+    Point.fromString(rawKeys.masterIncomingViewingPublicKey),
+    Point.fromString(rawKeys.masterOutgoingViewingPublicKey),
+    Point.fromString(rawKeys.masterTaggingPublicKey)
+  );
+};
+
+/**
+ * Get public keys for the dripper contract
+ */
+export const getDripperPublicKeys = (
+  config: NetworkConfig
+): Promise<PublicKeys | undefined> => {
+  return getPublicKeys(config.dripperPublicKeys);
+};
+
+/**
+ * Get public keys for the token contract
+ */
+export const getTokenPublicKeys = (
+  config: NetworkConfig
+): Promise<PublicKeys | undefined> => {
+  return getPublicKeys(config.tokenPublicKeys);
+};
+
 // =============================================================================
 // Network-specific Artifact Overrides
 // =============================================================================
@@ -83,8 +126,14 @@ export const getContractsForConfig = <T extends ContractConfigMap>(
   artifactOverrides?: ArtifactOverrides
 ): T => {
   if (!artifactOverrides || Object.keys(artifactOverrides).length === 0) {
+    console.log('[getContractsForConfig] No overrides, using base contracts');
     return baseContracts;
   }
+
+  console.log(
+    '[getContractsForConfig] Applying artifact overrides:',
+    Object.keys(artifactOverrides)
+  );
 
   const result = { ...baseContracts } as Record<
     string,
@@ -93,10 +142,16 @@ export const getContractsForConfig = <T extends ContractConfigMap>(
 
   for (const [name, artifact] of Object.entries(artifactOverrides)) {
     if (name in result && result[name]) {
+      const originalArtifact = result[name].artifact;
       result[name] = {
         ...result[name],
         artifact,
       };
+      console.log(`[getContractsForConfig] Overriding "${name}":`, {
+        originalName: originalArtifact.name,
+        overrideName: artifact.name,
+        overrideFunctions: artifact.functions?.length,
+      });
     }
   }
 

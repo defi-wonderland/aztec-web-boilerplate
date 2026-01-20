@@ -1,8 +1,8 @@
-import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig, Plugin } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import wasm from 'vite-plugin-wasm';
 
 /**
  * Plugin to shim Node.js built-in modules that shouldn't run in browser.
@@ -13,7 +13,12 @@ const nodeBuiltinsShim = (): Plugin => ({
   enforce: 'pre', // Run before other plugins
   resolveId(source) {
     // Intercept Node.js modules that need shimming
-    if (source === 'fs/promises' || source === 'fs' || source === 'net' || source === 'tty') {
+    if (
+      source === 'fs/promises' ||
+      source === 'fs' ||
+      source === 'net' ||
+      source === 'tty'
+    ) {
       return `\0virtual:${source}`;
     }
     return null;
@@ -63,7 +68,16 @@ export default defineConfig({
     topLevelAwait(),
     nodePolyfills({
       // Include specific polyfills that your Webpack config provided
-      include: ['buffer', 'crypto', 'util', 'assert', 'process', 'stream', 'path', 'events'],
+      include: [
+        'buffer',
+        'crypto',
+        'util',
+        'assert',
+        'process',
+        'stream',
+        'path',
+        'events',
+      ],
       globals: {
         Buffer: true,
         global: true,
@@ -88,11 +102,11 @@ export default defineConfig({
       util: 'util',
       path: 'path-browserify',
       // Use browser-safe pino version
-      'pino': 'pino/browser.js',
+      pino: 'pino/browser.js',
       // Force specific hash.js path for proper CommonJS handling
       'hash.js': 'hash.js/lib/hash.js',
       // Fix sha3 CommonJS exports
-      'sha3': 'sha3/index.js',
+      sha3: 'sha3/index.js',
       // Fix lodash.chunk CommonJS exports
       'lodash.chunk': 'lodash.chunk/index.js',
       // Fix lodash.times CommonJS exports
@@ -102,7 +116,8 @@ export default defineConfig({
       // Fix lodash.pickby CommonJS exports
       'lodash.pickby': 'lodash.pickby/index.js',
       // Fix json-stringify-deterministic CommonJS exports
-      'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
+      'json-stringify-deterministic':
+        'json-stringify-deterministic/lib/index.js',
     },
     // Dedupe critical packages to prevent class identity issues
     dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/curves'],
@@ -116,6 +131,13 @@ export default defineConfig({
     },
     fs: {
       allow: ['..'],
+    },
+    proxy: {
+      '/artifact-registry': {
+        target: 'https://devnet.aztec-registry.xyz',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/artifact-registry/, ''),
+      },
     },
   },
   preview: {

@@ -1,5 +1,8 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
+import {
+  ContractInstanceWithAddress,
+  getContractInstanceFromInstantiationParams,
+} from '@aztec/aztec.js/contracts';
 import { createLogger } from '@aztec/foundation/log';
 import type { PXE } from '@aztec/pxe/server';
 import type {
@@ -112,6 +115,7 @@ export class ContractRegistry<T extends ContractConfigMap>
    * Handles concurrent requests by deduplicating in-flight registrations.
    */
   async register(name: ContractNames<T>): Promise<void> {
+    console.log('registering beforeƒ');
     if (this.isRegistered(name)) {
       logger.info(`📦 Contract "${String(name)}" - MEMORY CACHE HIT`);
       return;
@@ -218,7 +222,7 @@ export class ContractRegistry<T extends ContractConfigMap>
         const isInStorage = await this.isRegisteredInStorage(expectedAddress);
 
         if (isInStorage) {
-          const deployParams = contractConfig.deployParams(this.config);
+          const deployParams = await contractConfig.deployParams(this.config);
           const instance = await getContractInstanceFromInstantiationParams(
             contractConfig.artifact,
             {
@@ -226,6 +230,7 @@ export class ContractRegistry<T extends ContractConfigMap>
               deployer: deployParams.deployer,
               constructorArgs: deployParams.constructorArgs,
               constructorArtifact: deployParams.constructorArtifact,
+              publicKeys: deployParams.publicKeys,
             }
           );
 
@@ -250,6 +255,7 @@ export class ContractRegistry<T extends ContractConfigMap>
    * At this point, we know the contract is NOT in memory cache.
    */
   private async performRegistration(name: ContractNames<T>): Promise<void> {
+    console.log('performRegistration before');
     const contractConfig = this.contracts[name];
     if (!contractConfig) {
       throw new Error(`Unknown contract: "${name}"`);
@@ -261,13 +267,17 @@ export class ContractRegistry<T extends ContractConfigMap>
     });
     this.notifySubscribers();
 
+    console.log('performRegistration after updateCache', contractConfig);
     try {
       const expectedAddress = AztecAddress.fromString(
         contractConfig.address(this.config)
       );
 
+      console.log('performRegistration after expectedAddress', expectedAddress);
+
       const instance = await this.registerInstanceWithPXE(name, contractConfig);
 
+      console.log('performRegistration after instance', instance);
       // Validate address matches expected
       if (!instance.address.equals(expectedAddress)) {
         throw new Error(
@@ -316,11 +326,35 @@ export class ContractRegistry<T extends ContractConfigMap>
     name: ContractNames<T>,
     contractConfig: T[ContractNames<T>]
   ): Promise<ContractInstanceWithAddress> {
-    const deployParams = contractConfig.deployParams(this.config);
+    console.log('registerInstanceWithPXE before');
+    const deployParams = await contractConfig.deployParams(this.config);
 
-    const { getContractInstanceFromInstantiationParams } = await import(
-      '@aztec/aztec.js/contracts'
-    );
+    console.log('registerInstanceWithPXE after deployParams', deployParams);
+    // const { getContractInstanceFromInstantiationParams } = await import(
+    //   '@aztec/aztec.js/contracts'
+    // );
+
+    console.log(`[ContractRegistry] Registering ${String(name)} with:`, {
+      artifactName: contractConfig.artifact.name,
+      artifactFunctions: contractConfig.artifact.functions?.length,
+      salt: deployParams.salt.toString(),
+      deployer: deployParams.deployer.toString(),
+      hasPublicKeys: !!deployParams.publicKeys,
+      publicKeysHash: deployParams.publicKeys?.hash().toString(),
+      constructorArtifact: deployParams.constructorArtifact,
+      constructorArgs: deployParams.constructorArgs,
+    });
+
+    // Log artifact details to help debug classId issues
+    // const { getContractClassFromArtifact } = await import(
+    //   '@aztec/aztec.js/contracts'
+    // );
+    //try {
+    //const contractClass = getContractClassFromArtifact(contractConfig.artifact);
+    //console.log(`[ContractRegistry] Artifact classId: ${contractClass.id.toString()}`);
+    // } catch (e) {
+    //   console.warn(`[ContractRegistry] Could not compute artifact classId:`, e);
+    // }
 
     const instance = await getContractInstanceFromInstantiationParams(
       contractConfig.artifact,
@@ -329,8 +363,25 @@ export class ContractRegistry<T extends ContractConfigMap>
         deployer: deployParams.deployer,
         constructorArgs: deployParams.constructorArgs,
         constructorArtifact: deployParams.constructorArtifact,
+        // publicKeys: deployParams.publicKeys,
       }
     );
+
+    console.log("instance config params:", 
+      {
+        salt: deployParams.salt.toString(),
+        deployer: deployParams.deployer,
+        constructorArgs: deployParams.constructorArgs,
+        constructorArtifact: deployParams.constructorArtifact,
+        publicKeys: deployParams.publicKeys,
+      }
+    );
+
+    console.log(`[ContractRegistry] ${String(name)} instance computed:`, {
+      address: instance.address.toString(),
+      classId: instance.currentContractClassId.toString(),
+      initHash: instance.initializationHash.toString(),
+    });
 
     await this.pxe.registerContract({
       instance,

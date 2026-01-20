@@ -1,10 +1,12 @@
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { DripperContract } from '../artifacts/Dripper.js';
 import { TokenContract } from '../artifacts/Token.js';
 import {
   createContractConfig,
   getDeployerAddress,
-  getTokenConstructorArgs,
+  getDripperPublicKeys,
+  getTokenPublicKeys,
 } from '../contract-registry';
 
 /**
@@ -21,11 +23,12 @@ export const contractsConfig = createContractConfig({
     artifact: DripperContract.artifact,
     contract: DripperContract,
     address: (config) => config.dripperContractAddress,
-    deployParams: (config) => ({
-      salt: Fr.fromString(config.dripperDeploymentSalt),
+    deployParams: async (config) => ({
+      salt: Fr.fromString(String(config.dripperDeploymentSalt)),
       deployer: getDeployerAddress(config),
       constructorArgs: [],
       constructorArtifact: 'constructor',
+      publicKeys: await getDripperPublicKeys(config),
     }),
     lazyRegister: false,
   },
@@ -37,11 +40,18 @@ export const contractsConfig = createContractConfig({
     artifact: TokenContract.artifact,
     contract: TokenContract,
     address: (config) => config.tokenContractAddress,
-    deployParams: (config) => ({
-      salt: Fr.fromString(config.tokenDeploymentSalt),
+    deployParams: async (config) => ({
+      salt: Fr.fromString(String(config.tokenDeploymentSalt)),
       deployer: getDeployerAddress(config),
-      constructorArgs: [...getTokenConstructorArgs(config)],
+      constructorArgs: [
+        config.name === 'devnet' ? 'WETH' : 'Yield Token',
+        config.name === 'devnet' ? 'WETH' : 'YT',
+        18,
+        AztecAddress.fromString(config.dripperContractAddress),
+        AztecAddress.ZERO,
+      ],
       constructorArtifact: 'constructor_with_minter',
+      publicKeys: await getTokenPublicKeys(config),
     }),
     lazyRegister: true,
   },
