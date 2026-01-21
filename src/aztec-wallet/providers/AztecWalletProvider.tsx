@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { WalletType } from '../types/aztec';
 import { isValidConfig } from '../../utils';
 import { AztecWalletModals } from '../components/AztecWalletModals';
 import { createAztecWalletConfig } from '../config';
@@ -10,9 +9,11 @@ import { getEIP6963Service, getEVMWalletService } from '../services/evm';
 import { getNetworkStore, useNetworkStore } from '../store/network';
 import {
   useWalletStore,
+  getWalletStore,
   getStoredWalletConnection,
   setupWalletCrossTabSync,
 } from '../store/wallet';
+import { WalletType } from '../types/aztec';
 import { AztecWalletContext } from './context';
 import type { ExternalSignerWalletConnector } from '../../types/walletConnector';
 import type {
@@ -107,9 +108,7 @@ const AutoReconnect: React.FC = () => {
 
           case WalletType.BROWSER_WALLET:
             // For browser wallets, try to reconnect - if session exists it will be silent
-            console.log(
-              'AztecWallet: Auto-reconnecting to browser wallet...'
-            );
+            console.log('AztecWallet: Auto-reconnecting to browser wallet...');
             await walletActions.connect(connectorId);
             break;
 
@@ -250,6 +249,16 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     }
   }, [currentConfig, resetToDefault]);
 
+  // Check network availability in background when network changes
+  useEffect(() => {
+    if (currentConfig?.nodeUrl) {
+      // Reset status and check in background (non-blocking)
+      const walletStore = getWalletStore();
+      walletStore.setNetworkStatus('idle');
+      void walletStore.checkNetwork();
+    }
+  }, [currentConfig?.nodeUrl]);
+
   // Initialize connectors from resolved config
   useEffect(() => {
     const registry = createConnectorRegistry(resolvedConfig.connectors);
@@ -258,7 +267,12 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     return () => {
       disconnect();
     };
-  }, [resolvedConfig.connectors, currentConfig.nodeUrl, setConnectors, disconnect]);
+  }, [
+    resolvedConfig.connectors,
+    currentConfig.nodeUrl,
+    setConnectors,
+    disconnect,
+  ]);
 
   // Check if connectors are initialized
   const connectors = useWalletStore((state) => state.connectors);

@@ -218,7 +218,8 @@ export interface AztecWalletConfig {
  * This includes auto-created connectors from walletGroups.
  * @internal
  */
-export interface ResolvedAztecWalletConfig extends Omit<AztecWalletConfig, 'walletGroups'> {
+export interface ResolvedAztecWalletConfig
+  extends Omit<AztecWalletConfig, 'walletGroups'> {
   walletGroups: {
     embedded: EmbeddedGroupConfig | false;
     aztecWallets: AztecWalletsGroupConfig | false;

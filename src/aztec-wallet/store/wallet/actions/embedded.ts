@@ -1,5 +1,4 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { WalletType } from '../../../types/aztec';
 import { EMBEDDED_CONNECTOR_ID } from '../../../connectors';
 import {
   createEmbeddedAccount,
@@ -9,6 +8,7 @@ import {
   clearSavedAccount,
   NoSavedAccountError,
 } from '../../../services/wallet';
+import { WalletType } from '../../../types/aztec';
 import { getNetworkStore } from '../../network';
 import type { WalletConnectorId } from '../../../../types/walletConnector';
 import type { SetState, GetState } from '../types';

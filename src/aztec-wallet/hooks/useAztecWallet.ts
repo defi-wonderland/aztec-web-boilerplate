@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { WalletType } from '../types/aztec';
 import { hasAppManagedPXE } from '../../types/walletConnector';
 import { useAztecWalletContext } from '../providers/context';
 import { getEVMWalletService } from '../services/evm/EVMWalletService';
@@ -11,6 +10,7 @@ import {
   useNetworkStore,
 } from '../store/network';
 import { useWalletStore } from '../store/wallet';
+import { WalletType } from '../types/aztec';
 import type { StoreNetworkPreset } from '../types';
 import type { Hex } from 'viem';
 
@@ -62,6 +62,9 @@ import type { Hex } from 'viem';
  * - `network` - Current network configuration
  * - `currentConfig` - Alias for network
  * - `networkName` - Current network name
+ * - `networkStatus` - Network availability status ('idle' | 'checking' | 'available' | 'error')
+ * - `networkError` - Network error message if status is 'error'
+ * - `checkNetwork()` - Manually trigger network availability check
  *
  * **EVM Signer** (for External Signer wallet)
  * - `signer.address` - Connected EVM address
@@ -149,6 +152,8 @@ export function useAztecWallet() {
       connectingConnectorId: state.connectingConnectorId,
       connectors: state.connectors,
       pxeStatus: state.pxeStatus,
+      networkStatus: state.networkStatus,
+      networkError: state.networkError,
     }))
   );
 
@@ -162,6 +167,7 @@ export function useAztecWallet() {
       connectExternalSigner: state.connectExternalSigner,
       connectBrowserWallet: state.connectBrowserWallet,
       disconnect: state.disconnect,
+      checkNetwork: state.checkNetwork,
     }))
   );
 
@@ -394,6 +400,11 @@ export function useAztecWallet() {
     /** @alias network - for convenience */
     currentConfig: networkState.currentConfig,
     networkName: networkState.currentConfig?.name,
+
+    // Network availability (checked in background)
+    networkStatus: walletState.networkStatus,
+    networkError: walletState.networkError,
+    checkNetwork: walletActions.checkNetwork,
 
     // EVM Signer (for External Signer wallet)
     signer,

@@ -1,3 +1,7 @@
+import { BrowserWalletConnector } from '../connectors/BrowserWalletConnector';
+import { createEmbeddedConnector } from '../connectors/EmbeddedConnector';
+import { ExternalSignerConnector } from '../connectors/ExternalSignerConnector';
+import { ExternalSignerType } from '../types/aztec';
 import {
   DEFAULT_LABELS,
   DEFAULT_MODAL_CONFIG,
@@ -8,11 +12,7 @@ import {
   getEVMWalletPreset,
   AZTEC_WALLET_PRESETS,
 } from './walletPresets';
-import { BrowserWalletConnector } from '../connectors/BrowserWalletConnector';
-import { createEmbeddedConnector } from '../connectors/EmbeddedConnector';
-import { ExternalSignerConnector } from '../connectors/ExternalSignerConnector';
 import type { ConnectorFactory } from '../connectors/registry';
-import { ExternalSignerType } from '../types/aztec';
 import type {
   AztecWalletConfig,
   AztecBrowserWalletConfig,

@@ -42,13 +42,13 @@ createAztecWalletConfig({
 
   // Required: Wallet types to enable
   walletGroups: {
-    embedded: true,                      // App-managed wallet (keys in localStorage)
-    evmWallets: ['metamask', 'rabby'],   // EVM wallets as signers
-    aztecWallets: ['azguard'],           // Browser extension wallets
+    embedded: true, // App-managed wallet (keys in localStorage)
+    evmWallets: ['metamask', 'rabby'], // EVM wallets as signers
+    aztecWallets: ['azguard'], // Browser extension wallets
   },
 
   // Optional
-  defaultNetwork: 'devnet',              // First network if not specified
+  defaultNetwork: 'devnet', // First network if not specified
   showNetworkPicker: 'full' | 'compact', // Show network picker in ConnectButton
   modal: { title: '...', subtitle: '...' },
   onConnect: (account) => {},
@@ -59,11 +59,11 @@ createAztecWalletConfig({
 
 ### Wallet Types
 
-| Type | Signing | PXE | Use Case |
-|------|---------|-----|----------|
-| **Embedded** | Internal (localStorage) | App-managed | Development, quick testing |
-| **EVM Wallet** | External (MetaMask, etc.) | App-managed | Users with existing wallets |
-| **Browser Wallet** | Extension (Azguard) | Extension-managed | Production apps |
+| Type               | Signing                   | PXE               | Use Case                    |
+| ------------------ | ------------------------- | ----------------- | --------------------------- |
+| **Embedded**       | Internal (localStorage)   | App-managed       | Development, quick testing  |
+| **EVM Wallet**     | External (MetaMask, etc.) | App-managed       | Users with existing wallets |
+| **Browser Wallet** | Extension (Azguard)       | Extension-managed | Production apps             |
 
 ## Hooks
 
@@ -76,24 +76,24 @@ const {
   // State
   isConnected,
   isConnecting,
-  address,           // string | null
-  walletType,        // 'embedded' | 'external_signer' | 'browser_wallet'
-  network,           // Current network config
+  address, // string | null
+  walletType, // 'embedded' | 'external_signer' | 'browser_wallet'
+  network, // Current network config
 
   // Actions
-  connect,           // (connectorId: string) => Promise<void>
-  disconnect,        // () => Promise<void>
-  switchNetwork,     // (networkName: string) => Promise<void>
+  connect, // (connectorId: string) => Promise<void>
+  disconnect, // () => Promise<void>
+  switchNetwork, // (networkName: string) => Promise<void>
 
   // PXE access (Embedded/EVM wallets only)
-  getPXE,            // () => PXE | null
-  getWallet,         // () => Wallet | null
+  getPXE, // () => PXE | null
+  getWallet, // () => Wallet | null
 
   // EVM Signer (for EVM wallet type)
-  needsSigner,       // true when EVM wallet needs to be connected
+  needsSigner, // true when EVM wallet needs to be connected
   signer: {
-    address,         // EVM address
-    connect,         // (rdns?: string) => Promise<Hex>
+    address, // EVM address
+    connect, // (rdns?: string) => Promise<Hex>
     disconnect,
   },
 } = useAztecWallet();
@@ -104,7 +104,11 @@ const {
 Control modals programmatically for custom UIs:
 
 ```tsx
-import { useConnectModal, useAccountModal, useNetworkModal } from './aztec-wallet';
+import {
+  useConnectModal,
+  useAccountModal,
+  useNetworkModal,
+} from './aztec-wallet';
 
 const { open, close, isOpen } = useConnectModal();
 const { open: openAccount } = useAccountModal();
@@ -146,7 +150,9 @@ function CustomConnectButton() {
   if (isConnected) {
     return (
       <div>
-        <span>{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+        <span>
+          {address?.slice(0, 6)}...{address?.slice(-4)}
+        </span>
         <button onClick={disconnect}>Disconnect</button>
       </div>
     );

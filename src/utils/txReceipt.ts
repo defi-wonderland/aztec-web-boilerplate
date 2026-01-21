@@ -40,14 +40,22 @@ export const waitForBrowserWalletReceipt = async (
       if (result.status === 'failed') {
         const errorMsg =
           'error' in result ? String(result.error) : 'Failed to get receipt';
-        console.log(`[txReceipt] Attempt ${attempt}/${maxAttempts} - Operation failed:`, result);
+        console.log(
+          `[txReceipt] Attempt ${attempt}/${maxAttempts} - Operation failed:`,
+          result
+        );
         return { success: false, error: errorMsg };
       }
 
       if (result.status === 'ok' && result.result) {
         const receipt = result.result as { status?: string };
         const txStatus = receipt.status?.toLowerCase();
-        console.log(`[txReceipt] Attempt ${attempt}/${maxAttempts} - Receipt:`, receipt, 'Status:', txStatus);
+        console.log(
+          `[txReceipt] Attempt ${attempt}/${maxAttempts} - Receipt:`,
+          receipt,
+          'Status:',
+          txStatus
+        );
 
         if (txStatus === 'mined' || txStatus === 'success') {
           return { success: true };
@@ -63,7 +71,10 @@ export const waitForBrowserWalletReceipt = async (
       }
     } catch (err) {
       // Network error - continue polling
-      console.log(`[txReceipt] Attempt ${attempt}/${maxAttempts} - Error:`, err);
+      console.log(
+        `[txReceipt] Attempt ${attempt}/${maxAttempts} - Error:`,
+        err
+      );
     }
 
     if (attempt < maxAttempts) {

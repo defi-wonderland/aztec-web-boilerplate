@@ -8,10 +8,10 @@
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
-import { WalletType } from '../types/aztec';
 import { SharedPXEService } from '../services/aztec/pxe';
 import { getNetworkStore } from '../store/network';
 import { getWalletStore, clearSavedAccount } from '../store/wallet';
+import { WalletType } from '../types/aztec';
 import type {
   EmbeddedWalletConnector,
   ConnectorStatus,

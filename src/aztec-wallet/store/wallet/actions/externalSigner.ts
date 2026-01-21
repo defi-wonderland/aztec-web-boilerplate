@@ -1,9 +1,9 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { WalletType } from '../../../types/aztec';
 import { createExternalSignerAccount } from '../../../services/wallet';
+import { WalletType } from '../../../types/aztec';
 import { getNetworkStore } from '../../network';
-import type { ExternalSigner } from '../../../signers/types';
 import type { WalletConnectorId } from '../../../../types/walletConnector';
+import type { ExternalSigner } from '../../../signers/types';
 import type { SetState, GetState } from '../types';
 
 export const createExternalSignerActions = (set: SetState, get: GetState) => ({
