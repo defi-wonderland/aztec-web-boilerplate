@@ -35,7 +35,7 @@ import type {
 
 /**
  * Add `isInternal: false` to function artifacts if missing.
- * Azguard wallet v0.6.0 requires this field in the schema.
+ * Azguard wallet v0.7.0 requires this field in the schema.
  */
 const addIsInternal = <T extends object>(
   obj: T
@@ -70,11 +70,7 @@ const AZGUARD_METHODS = [
 const buildDappMetadata = () => ({
   name: 'Aztec Web Boilerplate',
   description: 'Privacy-first application built on Aztec Network',
-  url: typeof window !== 'undefined' ? window.location.origin : '',
-  logo:
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/favicon.ico`
-      : '',
+  url: typeof window !== 'undefined' ? window.location.origin : undefined,
 });
 
 export class AzguardAdapter implements IBrowserWalletAdapter {

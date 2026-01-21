@@ -634,15 +634,15 @@
   resolved "https://registry.yarnpkg.com/@aws/lambda-invoke-store/-/lambda-invoke-store-0.2.3.tgz#f1137f56209ccc69c15f826242cbf37f828617dd"
   integrity sha512-oLvsaPMTBejkkmHhjf09xTgk71mOqyr/409NKhRIL08If7AhVfUsJhVsx386uJaqNd42v9kWamQ9lFbkoC2dYw==
 
-"@azguardwallet/client@0.6.0":
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/@azguardwallet/client/-/client-0.6.0.tgz#7b9130445ca0e52a090106e0115e0869bbcdc273"
-  integrity sha512-4A+cbiBCCYMO9wFKJPYQYGyRoFcgimwSikmEGxGXomCGUR/lbBA7GI2F9iKSOMIH687E6GSzQ4jl6MagQBgHOA==
+"@azguardwallet/client@0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@azguardwallet/client/-/client-0.7.0.tgz#120e8501834f405453f5c3c338f4dfc69c7cd193"
+  integrity sha512-AIuVG8IxsWe1KtH/Q5hGAFh2brzbT/YDBjNVd5Cz2lqzkafb29j7bv2CCNBjK9Bi3gVOYJgAp0ZfZXURbsuowg==
 
-"@azguardwallet/types@0.6.0":
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/@azguardwallet/types/-/types-0.6.0.tgz#b14242799f9cf80ff770efbfeeb508dbbebfa433"
-  integrity sha512-055XFwRHq05NHvKm5zAPuOtDZUXCHP+1sZIphmv1xBSlFNWDhZQ3LIZ730Jb/a5v+vQMzgLmi8VYjhUrWL0etw==
+"@azguardwallet/types@0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@azguardwallet/types/-/types-0.7.0.tgz#a47586a6b900916f3e76abdaeef2a239b4b761d7"
+  integrity sha512-b2y6HJB5PQZ3tqKJ26vYnoMNMlWpNnFNTTdjCa1gsxLm0y1gDnr9n2d+eYe/c3sVsLwYUJVOlSgA+1A68octCg==
 
 "@aztec/accounts@3.0.0-devnet.20251212":
   version "3.0.0-devnet.20251212"
@@ -3164,16 +3164,7 @@
   resolved "https://registry.yarnpkg.com/@napi-rs/snappy-win32-x64-msvc/-/snappy-win32-x64-msvc-7.3.3.tgz#b9bbe529c38477744a8dc6b2ee47f5b53dd3b00c"
   integrity sha512-cEnQwcsdJyOU7HSZODWsHpKuQoSYM4jaqw/hn9pOXYbRN1+02WxYppD3fdMuKN6TOA6YG5KA5PHRNeVilNX86Q==
 
-"@napi-rs/wasm-runtime@^1.0.3":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.1.tgz#c3705ab549d176b8dc5172723d6156c3dc426af2"
-  integrity sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==
-  dependencies:
-    "@emnapi/core" "^1.7.1"
-    "@emnapi/runtime" "^1.7.1"
-    "@tybys/wasm-util" "^0.10.1"
-
-"@napi-rs/wasm-runtime@^1.1.0":
+"@napi-rs/wasm-runtime@^1.0.3", "@napi-rs/wasm-runtime@^1.1.0":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.1.tgz#c3705ab549d176b8dc5172723d6156c3dc426af2"
   integrity sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==
@@ -5710,12 +5701,7 @@ callsites@^3.0.0:
   resolved "https://registry.yarnpkg.com/callsites/-/callsites-3.1.0.tgz#b3630abd8943432f54b3f0519238e33cd7df2f73"
   integrity sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==
 
-caniuse-lite@^1.0.30001759:
-  version "1.0.30001763"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001763.tgz#9397446dd110b1aeadb0df249c41b2ece7f90f09"
-  integrity sha512-mh/dGtq56uN98LlNX9qdbKnzINhX0QzhiWBFEkFfsFO4QyCvL8YegrJAazCwXIeqkIob8BlZPGM3xdnY+sgmvQ==
-
-caniuse-lite@^1.0.30001760:
+caniuse-lite@^1.0.30001759, caniuse-lite@^1.0.30001760:
   version "1.0.30001763"
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001763.tgz#9397446dd110b1aeadb0df249c41b2ece7f90f09"
   integrity sha512-mh/dGtq56uN98LlNX9qdbKnzINhX0QzhiWBFEkFfsFO4QyCvL8YegrJAazCwXIeqkIob8BlZPGM3xdnY+sgmvQ==

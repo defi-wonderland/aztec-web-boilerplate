@@ -27,8 +27,8 @@ export interface AztecWalletPreset {
   id: string;
   name: string;
   icon: WalletIconType;
-  /** Lazy adapter factory - only imported when needed */
-  getAdapter: () => IBrowserWalletAdapter;
+  /** Lazy adapter factory - only imported when needed (async for dynamic imports) */
+  getAdapter: () => Promise<IBrowserWalletAdapter>;
   /** Check if wallet extension is installed (optional, async) */
   checkInstalled?: () => Promise<boolean>;
 }
@@ -61,10 +61,9 @@ export const AZTEC_WALLET_PRESETS: Record<string, AztecWalletPreset> = {
     id: 'azguard',
     name: 'Azguard',
     icon: AzguardIcon,
-    getAdapter: () => {
-      // Lazy import to avoid bundling if not used
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { AzguardAdapter } = require('../../adapters/azguard');
+    getAdapter: async () => {
+      // Dynamic import to avoid bundling if not used (ESM-compatible)
+      const { AzguardAdapter } = await import('../adapters/azguard');
       return new AzguardAdapter();
     },
     checkInstalled: async () => {

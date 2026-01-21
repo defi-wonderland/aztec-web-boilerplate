@@ -76,10 +76,11 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
 
   /**
    * Get or create the adapter instance.
+   * Async to support dynamic imports for the adapter factory.
    */
-  getAdapter(): IBrowserWalletAdapter {
+  async getAdapter(): Promise<IBrowserWalletAdapter> {
     if (!this._adapter) {
-      this._adapter = this.adapterFactory();
+      this._adapter = await this.adapterFactory();
     }
     return this._adapter;
   }
@@ -89,7 +90,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
    * Called automatically in constructor (eager init).
    */
   private async initialize(): Promise<void> {
-    const adapter = this.getAdapter();
+    const adapter = await this.getAdapter();
 
     await adapter.initialize();
     const state = adapter.getState();
@@ -197,7 +198,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   async connect(): Promise<void> {
     await this.ensureInitialized();
 
-    const adapter = this.getAdapter();
+    const adapter = await this.getAdapter();
     const config = getNetworkStore().currentConfig;
     await getWalletStore().connectBrowserWallet(adapter, config.name, this.id);
   }
@@ -257,7 +258,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   async executeOperation(
     operation: BrowserWalletOperation
   ): Promise<BrowserWalletOperationResult> {
-    const adapter = this.getAdapter();
+    const adapter = await this.getAdapter();
     const results = await adapter.executeOperations([operation]);
 
     if (!results.length) {

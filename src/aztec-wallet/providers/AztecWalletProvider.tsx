@@ -106,10 +106,11 @@ const AutoReconnect: React.FC = () => {
             break;
 
           case WalletType.BROWSER_WALLET:
-            // Browser wallets need manual reconnection
+            // For browser wallets, try to reconnect - if session exists it will be silent
             console.log(
-              'AztecWallet: Browser wallet was connected, user needs to reconnect manually'
+              'AztecWallet: Auto-reconnecting to browser wallet...'
             );
+            await walletActions.connect(connectorId);
             break;
 
           default:

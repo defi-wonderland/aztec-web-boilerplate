@@ -140,8 +140,9 @@ export interface IBrowserWalletAdapter {
 
 /**
  * Factory function type for creating browser wallet adapters.
+ * Returns a Promise to support async dynamic imports.
  */
-export type BrowserWalletAdapterFactory = () => IBrowserWalletAdapter;
+export type BrowserWalletAdapterFactory = () => Promise<IBrowserWalletAdapter>;
 
 /**
  * Default state for browser wallets.

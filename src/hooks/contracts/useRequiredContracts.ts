@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useSyncExternalStore } from 'react';
+import { useAztecWallet, WalletType } from '../../aztec-wallet';
 import { useContractRegistry } from '../context/useContractRegistry';
 import type { ContractStatus, ContractName } from '../../contract-registry';
 
@@ -34,6 +35,9 @@ interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
 export function useRequiredContracts<T extends readonly ContractName[]>(
   contractNames: T
 ): UseRequiredContractsReturn<T> {
+  const { walletType, isConnected } = useAztecWallet();
+  const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
+
   const {
     subscribe,
     registerMany,
@@ -65,6 +69,24 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
 
   // Compute derived state
   return useMemo(() => {
+    // For browser wallets, contracts are always "ready" since useContractRegistration
+    // handles them with proxies - no PXE registration needed on app side
+    if (isBrowserWallet && isConnected) {
+      const statuses = contractNames.reduce((acc, name) => {
+        acc[name as T[number]] = 'ready';
+        return acc;
+      }, {} as ContractStatusMap<T>);
+
+      return {
+        isReady: true,
+        isLoading: false,
+        hasError: false,
+        failedContracts: [] as T[number][],
+        pendingContracts: [] as T[number][],
+        statuses,
+      };
+    }
+
     const statuses = contractNames.reduce((acc, name) => {
       acc[name as T[number]] = getStatus(name);
       return acc;
@@ -89,5 +111,5 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
       pendingContracts,
       statuses,
     };
-  }, [contractNames, getStatus]);
+  }, [contractNames, getStatus, isBrowserWallet, isConnected]);
 }

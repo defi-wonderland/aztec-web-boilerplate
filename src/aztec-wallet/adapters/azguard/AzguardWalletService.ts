@@ -9,6 +9,10 @@ import type {
   OperationResult,
 } from '@azguardwallet/types';
 
+// Timeout constants to prevent indefinite hangs when wallet is locked
+const CONNECTION_TIMEOUT_MS = 60_000; // 60 seconds for user to unlock and approve
+const INIT_TIMEOUT_MS = 10_000; // 10 seconds for initialization
+
 export class AzguardWalletService {
   private client: AzguardClient | null = null;
   private state: AzguardWalletState = {
@@ -24,13 +28,33 @@ export class AzguardWalletService {
   private accountsChangedHandler?: (accounts: CaipAccount[]) => void;
   private disconnectedHandler?: () => void;
 
+  /**
+   * Helper to wrap a promise with a timeout to prevent indefinite hangs
+   */
+  private withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    errorMessage: string
+  ): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+      ),
+    ]);
+  }
+
   async initialize(): Promise<void> {
     try {
       const isInstalled = await AzguardClient.isAzguardInstalled();
       this.updateState({ isInstalled });
 
       if (isInstalled) {
-        this.client = await AzguardClient.create();
+        this.client = await this.withTimeout(
+          AzguardClient.create(),
+          INIT_TIMEOUT_MS,
+          'Azguard wallet initialization timed out. The wallet may be locked - please unlock it and try again.'
+        );
 
         this.setupEventListeners();
 
@@ -80,15 +104,21 @@ export class AzguardWalletService {
       );
 
       // Connect to the wallet with required and optional permissions
-      if (optionalPermissions && optionalPermissions.length > 0) {
-        await this.client.connect(
-          dappMetadata,
-          requiredPermissions,
-          optionalPermissions
-        );
-      } else {
-        await this.client.connect(dappMetadata, requiredPermissions);
-      }
+      // Wrap with timeout to handle locked wallet scenario
+      const connectPromise =
+        optionalPermissions && optionalPermissions.length > 0
+          ? this.client.connect(
+              dappMetadata,
+              requiredPermissions,
+              optionalPermissions
+            )
+          : this.client.connect(dappMetadata, requiredPermissions);
+
+      await this.withTimeout(
+        connectPromise,
+        CONNECTION_TIMEOUT_MS,
+        'Connection timed out. The wallet may be locked - please unlock it and try again.'
+      );
 
       // Get connected accounts
       const accounts = this.client.accounts;
