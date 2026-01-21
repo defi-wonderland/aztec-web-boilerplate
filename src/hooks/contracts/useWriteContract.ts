@@ -2,13 +2,13 @@ import { useState, useCallback } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
+import { useFeePayment } from '../../providers/FeePaymentProvider';
 import {
   isBrowserWalletConnector,
   hasAppManagedPXE,
 } from '../../types/walletConnector';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 import { useUniversalWallet } from '../context/useUniversalWallet';
-import { useFeePayment } from '../../providers/FeePaymentProvider';
 import type {
   MethodsOf,
   ArgsOf,

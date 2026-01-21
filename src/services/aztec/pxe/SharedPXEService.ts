@@ -9,8 +9,10 @@ import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/Sponsored
 import { createPXE } from '@aztec/pxe/client/bundle';
 import { getPXEConfig } from '@aztec/pxe/config';
 import type { PXE } from '@aztec/pxe/server';
+import { AVAILABLE_NETWORKS } from '../../../config/networks';
 import { MinimalWallet } from '../../../utils/MinimalWallet';
 import { getEnv } from '../../../utils/env';
+import { FeePaymentRegister } from '../feePayment/FeePaymentRegister';
 import { NetworkService } from '../network';
 import { AztecStorageService } from '../storage';
 
@@ -141,6 +143,13 @@ class SharedPXEServiceClass {
     return `${networkName}`;
   }
 
+  private getFeePaymentConfig(networkName: string) {
+    const networkConfig = AVAILABLE_NETWORKS.find(
+      (n) => n.name === networkName
+    );
+    return networkConfig?.feePaymentContracts;
+  }
+
   private normalizeNodeUrl(nodeUrl: string): string {
     if (!nodeUrl) {
       return nodeUrl;
@@ -175,12 +184,10 @@ class SharedPXEServiceClass {
 
     const wallet = new MinimalWallet(pxe, aztecNode);
 
-    // Register SponsoredFPC contract
-    const sponsoredPFCInstance = await this.getSponsoredPFCContract(pxe);
-    await pxe.registerContract({
-      instance: sponsoredPFCInstance,
-      artifact: SponsoredFPCContractArtifact,
-    });
+    // Register fee payment contracts (look up config by network name)
+    const feePaymentConfig = this.getFeePaymentConfig(networkName);
+    const feePaymentRegister = new FeePaymentRegister();
+    await feePaymentRegister.registerAll(pxe, feePaymentConfig);
 
     // Initialize storage service
     const storageService = new AztecStorageService();

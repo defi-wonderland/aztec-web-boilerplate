@@ -3,13 +3,13 @@ import { loadContractArtifact } from '@aztec/aztec.js/abi';
 import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
+import { useFeePayment } from '../../providers/FeePaymentProvider';
 import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../../types/walletConnector';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
 import { useUniversalWallet } from '../context/useUniversalWallet';
-import { useFeePayment } from '../../providers/FeePaymentProvider';
 import type { DeployResult } from '../../components/contract-interaction/types';
 import type {
   DeployableContract,
