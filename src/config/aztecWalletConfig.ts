@@ -7,8 +7,8 @@
  *   - Aztec: 'azguard'
  */
 
+import { createAztecWalletConfig } from '../aztec-wallet';
 import { NETWORK_URLS } from './networks';
-import type { AztecWalletConfig } from '../aztec-wallet';
 
 /**
  * Main AztecWallet configuration
@@ -18,7 +18,7 @@ import type { AztecWalletConfig } from '../aztec-wallet';
  * - evmWallets: ['metamask', 'rabby', ...]
  * - aztecWallets: ['azguard', ...]
  */
-export const aztecWalletConfig: AztecWalletConfig = {
+export const aztecWalletConfig = createAztecWalletConfig({
   // Networks
   networks: [
     { name: 'devnet', displayName: 'Devnet', nodeUrl: NETWORK_URLS.devnet },
@@ -40,4 +40,4 @@ export const aztecWalletConfig: AztecWalletConfig = {
   modal: {
     title: 'Connect Wallet',
   },
-};
+});
