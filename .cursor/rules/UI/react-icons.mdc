@@ -1,0 +1,89 @@
+---
+description: Icon usage guidelines with Lucide React
+globs: **/*.tsx
+version: 1.0.0
+---
+
+# Icon Guidelines
+
+## Icon Library
+
+This project uses **Lucide React** for all icons. Browse available icons at: https://lucide.dev/icons/
+
+## Usage
+
+Use the `iconSize()` utility with Lucide's `size` prop for consistent sizing:
+
+```tsx
+import { Home, Settings, AlertTriangle } from 'lucide-react';
+import { iconSize } from '../utils';
+
+// Usage - size prop with iconSize(), className for colors/styles
+<Home size={iconSize()} />              // sm (16px) - default
+<Settings size={iconSize('md')} />      // md (20px)
+<AlertTriangle size={iconSize('lg')} className="text-amber-500" />
+```
+
+## Standard Sizes
+
+- `iconSize('xs')` - 12px - Very small inline elements
+- `iconSize()` - 16px (sm) - **Default**, inline text, buttons
+- `iconSize('md')` - 20px - Slightly larger, tab icons
+- `iconSize('lg')` - 24px - Headers
+- `iconSize('xl')` - 32px - Card headers, hero sections
+- `iconSize('2xl')` - 48px - Large illustrations, error states
+
+## Styling Icons
+
+Use `size` prop for dimensions, `className` for colors and other styles:
+
+```tsx
+const styles = {
+  headerIcon: 'text-accent',
+  warningIcon: 'text-amber-500',
+} as const;
+
+<Coins size={iconSize('xl')} className={styles.headerIcon} />
+<AlertTriangle size={iconSize('md')} className={styles.warningIcon} />
+```
+
+## Icons in Buttons
+
+Use the `icon` prop on the Button component:
+
+```tsx
+import { Rocket } from 'lucide-react';
+import { iconSize } from '../utils';
+import { Button } from '../components/ui';
+
+<Button icon={<Rocket size={iconSize()} />}>Deploy</Button>;
+```
+
+## Icon-Only Buttons
+
+Use Button with `variant="icon"` and `size="icon"`:
+
+```tsx
+import { Copy } from 'lucide-react';
+import { iconSize } from '../utils';
+import { Button } from '../components/ui';
+
+<Button variant="icon" size="icon">
+  <Copy size={iconSize()} />
+</Button>;
+```
+
+## Common Icons by Purpose
+
+- **Actions**: `Copy`, `Download`, `Upload`, `Edit`, `Trash2`, `Plus`, `Minus`
+- **Navigation**: `Home`, `Settings`, `Menu`, `ChevronLeft`, `ChevronRight`, `ExternalLink`
+- **Status**: `Check`, `X`, `AlertTriangle`, `Info`, `XCircle`, `CheckCircle`
+- **Objects**: `User`, `Mail`, `Calendar`, `File`, `Folder`, `Image`
+- **Crypto/Blockchain**: `Coins`, `Wallet`, `Shield`, `Globe`, `Lock`, `Key`
+
+## Do NOT Use
+
+- Emojis for icons (❌ 🚀 ✅) - use Lucide icons instead
+- Inline SVGs - import from Lucide
+- Other icon libraries - maintain consistency with Lucide
+- Hardcoded `h-X w-X` classes for icon sizing - use `iconSize()` instead

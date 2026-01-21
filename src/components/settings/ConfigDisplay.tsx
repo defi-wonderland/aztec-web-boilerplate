@@ -27,6 +27,15 @@ const CONFIG_FIELDS: ConfigField[] = [
   },
 ];
 
+const styles = {
+  container: 'space-y-4',
+  grid: 'space-y-3',
+  row: 'flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4',
+  label: 'text-sm font-semibold text-default sm:w-40 shrink-0',
+  value:
+    'flex-1 px-3 py-2 rounded-lg bg-surface-secondary border border-default text-sm text-secondary font-mono break-all',
+} as const;
+
 export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({
   networkName,
 }) => {
@@ -39,9 +48,8 @@ export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({
   }
 
   return (
-    <div className="config-display">
-      <h4>{config.displayName} Configuration</h4>
-      <div className="config-grid">
+    <div className={styles.container}>
+      <div className={styles.grid}>
         {CONFIG_FIELDS.map(({ key, label, formatter }) => {
           const value = config[key];
           const displayValue = formatter
@@ -49,9 +57,9 @@ export const ConfigDisplay: React.FC<ConfigDisplayProps> = ({
             : value || 'Not configured';
 
           return (
-            <div key={key} className="config-row">
-              <span className="config-label">{label}</span>
-              <span className="config-value">{displayValue}</span>
+            <div key={key} className={styles.row}>
+              <span className={styles.label}>{label}</span>
+              <span className={styles.value}>{displayValue}</span>
             </div>
           );
         })}

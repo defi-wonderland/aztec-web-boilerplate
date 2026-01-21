@@ -65,7 +65,7 @@ const extractConstructorsFromArtifact = (
   }
 };
 
-export const createDeployableContract = (
+const createDeployableContract = (
   config: DeployableContractConfig
 ): DeployableContract => {
   const artifactJson = JSON.stringify(config.artifact);

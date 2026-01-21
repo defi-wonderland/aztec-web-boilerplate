@@ -1,40 +1,45 @@
+import { CachedContract } from '../../utils/contractCache';
+import type { PreconfiguredContract } from '../../config/preconfiguredContracts';
+import type { FormValues } from '../../store/form';
 import type { ParsedFunction } from '../../utils/contractInteraction';
 import type { DeployableContract } from '../../utils/deployableContracts';
 
-export type LogLevel = 'info' | 'error' | 'success';
+export type LogLevel = 'info' | 'error' | 'success' | 'warning';
 
+export interface DeployResult {
+  success: boolean;
+  address?: string;
+  txHash?: string;
+  error?: string;
+}
+
+/**
+ * Log entry for operation history.
+ */
 export interface LogEntry {
   id: string;
-  level: LogLevel;
+  level: 'info' | 'error' | 'success';
   title: string;
   detail?: string;
 }
 
+/**
+ * Function group for categorizing contract functions.
+ */
 export interface FunctionGroup {
   id: string;
   label: string;
   items: ParsedFunction[];
 }
 
-export type CachedContract = {
-  address: string;
-  artifact?: string;
-  artifactKey?: string;
-  label?: string;
-  savedAt?: number;
-};
-
-export type PreconfiguredContractOption = {
-  id: string;
-  label: string;
-  address: string;
-  artifactJson: string;
-};
-
 /**
  * Mode for the artifact loader - either use existing or deploy new.
  */
 export type ArtifactLoaderMode = 'existing' | 'deploy';
+
+// =============================================================================
+// Component Props
+// =============================================================================
 
 /**
  * State for deployment form values.
@@ -45,7 +50,7 @@ export type DeploymentFormValues = Record<string, string>;
  * Props for PreconfiguredSelector component.
  */
 export interface PreconfiguredSelectorProps {
-  preconfigured: PreconfiguredContractOption[];
+  preconfigured: PreconfiguredContract[];
   selectedId: string | null;
   onSelect: (contractId: string | null) => void;
   isLoading?: boolean;
@@ -131,7 +136,7 @@ export interface SavedContractsConfig {
  * Grouped config for preconfigured contracts selector.
  */
 export interface PreconfiguredConfig {
-  options: PreconfiguredContractOption[];
+  options: PreconfiguredContract[];
   selectedId: string | null;
   onSelect: (contractId: string | null) => void;
   isLoading?: boolean;
@@ -165,13 +170,15 @@ export interface DeployConfig {
  */
 export interface ArtifactLoaderProps {
   mode?: ArtifactLoaderMode;
-  onModeChange?: (mode: ArtifactLoaderMode) => void;
   existing: ExistingContractConfig;
   saved: SavedContractsConfig;
   preconfigured?: PreconfiguredConfig;
   deploy?: DeployConfig;
 }
 
+/**
+ * Props for FunctionList component.
+ */
 export interface FunctionListProps {
   groups: FunctionGroup[];
   selected: string | null;
@@ -182,9 +189,12 @@ export interface FunctionListProps {
   hasContract: boolean;
 }
 
+/**
+ * Props for FunctionForm component.
+ */
 export interface FunctionFormProps {
   fn: ParsedFunction;
-  values: Record<string, string>;
+  values: FormValues;
   onChange: (path: string, value: string) => void;
   disabled: boolean;
 }

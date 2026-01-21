@@ -42,5 +42,5 @@ export async function recoverPublicKeyFromSignature(
  * @returns The message to sign
  */
 export function getPublicKeyRecoveryMessage(evmAddress: Hex): string {
-  return `Sign to create your Aztec account linked to ${evmAddress}`;
+  return `Sign to allow creation and inspection state of your Aztec account linked to ${evmAddress}`;
 }

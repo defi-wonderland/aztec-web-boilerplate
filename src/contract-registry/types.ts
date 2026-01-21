@@ -104,18 +104,11 @@ export interface UseContractRegistryReturn<T extends ContractConfigMap> {
   registerMany: (names: ContractNames<T>[]) => Promise<void>;
   /** Get all registered contract names */
   getRegisteredNames: () => ContractNames<T>[];
+  /** Subscribe to registry state changes */
+  subscribe: (callback: () => void) => () => void;
   /** Overall registry status */
   status: 'initializing' | 'ready' | 'error';
   /** Error if registry initialization failed */
-  error?: Error;
-}
-
-/**
- * Context value for the contract registry
- */
-export interface ContractRegistryContextValue<T extends ContractConfigMap> {
-  registry: IContractRegistry<T> | null;
-  status: 'initializing' | 'ready' | 'error';
   error?: Error;
 }
 

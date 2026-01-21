@@ -57,7 +57,7 @@ interface ReadContractParams<
  * ```
  */
 export const useReadContract = () => {
-  const { connector, account, currentConfig } = useUniversalWallet();
+  const { connector, account } = useUniversalWallet();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,7 +160,7 @@ export const useReadContract = () => {
         setIsPending(false);
       }
     },
-    [connector, account, currentConfig]
+    [connector, account]
   );
 
   const reset = useCallback(() => {

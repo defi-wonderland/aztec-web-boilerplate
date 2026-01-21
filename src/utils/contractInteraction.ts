@@ -363,27 +363,6 @@ export const isValidAztecAddress = (value: string): boolean => {
   }
 };
 
-export const isValidEthAddress = (value: string): boolean => {
-  if (!value) return false;
-  try {
-    EthAddress.fromString(value);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-export const isValidFunctionSelector = (value: string): boolean => {
-  if (!value) return false;
-  const normalized = value.startsWith('0x') ? value : `0x${value}`;
-  try {
-    const num = parseInt(normalized, 16);
-    return !isNaN(num) && num >= 0 && num <= 0xffffffff;
-  } catch {
-    return false;
-  }
-};
-
 export type FunctionCapabilities = {
   isPrivate: boolean;
   isPublic: boolean;
@@ -519,4 +498,52 @@ export const loadAndPrepareArtifact = (
       err instanceof Error ? err.message : 'Failed to parse artifact';
     return { success: false, error };
   }
+};
+
+/**
+ * Format contract call result data for display.
+ * Handles BigInt conversion, compressed strings, and nested objects.
+ */
+export const formatResultData = (
+  value: unknown,
+  readCompressedString?: (field: { value: bigint }) => string
+): unknown => {
+  if (value === null || value === undefined) return value;
+
+  if (Array.isArray(value)) {
+    return value.map((v) => formatResultData(v, readCompressedString));
+  }
+
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+
+    // Check for compressed string pattern: { value: bigint | string }
+    if (
+      readCompressedString &&
+      entries.length === 1 &&
+      entries[0][0] === 'value' &&
+      (typeof entries[0][1] === 'string' || typeof entries[0][1] === 'bigint')
+    ) {
+      const fieldValue = entries[0][1];
+      try {
+        return readCompressedString({
+          value: BigInt(fieldValue as string),
+        });
+      } catch {
+        return fieldValue;
+      }
+    }
+
+    const normalized: Record<string, unknown> = {};
+    for (const [k, v] of entries) {
+      normalized[k] = formatResultData(v, readCompressedString);
+    }
+    return normalized;
+  }
+
+  return value;
 };

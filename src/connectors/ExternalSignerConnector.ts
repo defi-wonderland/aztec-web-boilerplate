@@ -2,23 +2,24 @@
  * ExternalSignerConnector - Connector for External Signer wallets
  *
  * Uses app-managed PXE with external signing (MetaMask, WalletConnect, etc.)
+ * Self-contained: creates and manages its own signer internally.
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
+import { SharedPXEService } from '../services/aztec/pxe';
+import { getEVMWalletService } from '../services/evm';
+import { createEVMSigner } from '../signers';
+import { getNetworkStore } from '../store/network';
+import { getWalletStore } from '../store/wallet';
 import { WalletType, ExternalSignerType } from '../types/aztec';
-import type { UseExternalSignerWalletReturn } from '../providers/hooks/useExternalSignerWallet';
 import type { ExternalSigner } from '../signers/types';
 import type {
   ExternalSignerWalletConnector,
   ConnectorStatus,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
 } from '../types/walletConnector';
-
-export const EXTERNAL_SIGNER_CONNECTOR_ID = 'external-signer' as const;
 
 interface ExternalSignerConnectorConfig {
   id?: string;
@@ -32,6 +33,8 @@ interface ExternalSignerConnectorConfig {
  *
  * This connector uses app-managed PXE with external signing.
  * The external wallet only signs transactions - all Aztec logic runs in the app.
+ *
+ * Creates its own signer internally using EVMWalletService singleton.
  */
 export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   readonly id: string;
@@ -40,8 +43,8 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   readonly signerType: ExternalSignerType;
   readonly rdns?: string;
 
-  private _signerState: UseExternalSignerWalletReturn | null = null;
-  private signer: ExternalSigner | null = null;
+  // Signer created lazily on first access
+  private _signer: ExternalSigner | null = null;
 
   constructor(config: ExternalSignerConnectorConfig) {
     this.signerType = config.signerType;
@@ -60,87 +63,96 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
   }
 
   /**
-   * Update connector with latest hook state. Called by provider each render.
+   * Get or create the signer for this connector.
+   * Creates lazily using the EVMWalletService singleton.
    */
-  updateState(
-    state: UseExternalSignerWalletReturn,
-    signer: ExternalSigner | null
-  ) {
-    this._signerState = state;
-    this.signer = signer;
-  }
-
-  private getSignerState(): UseExternalSignerWalletReturn {
-    if (!this._signerState) {
-      throw new Error('External Signer connector has not been initialized');
+  private getSigner(): ExternalSigner {
+    if (!this._signer) {
+      if (this.signerType !== ExternalSignerType.EVM_WALLET) {
+        throw new Error(`Unknown signer type: ${this.signerType}`);
+      }
+      const evmService = getEVMWalletService();
+      this._signer = createEVMSigner(evmService, this.rdns);
     }
-    return this._signerState;
+    return this._signer;
   }
 
   getStatus(): ConnectorStatus {
-    const { state, error } = this.getSignerState();
-
+    const state = getWalletStore();
+    const isExternalSigner = state.walletType === WalletType.EXTERNAL_SIGNER;
     const isThisConnectorConnected =
-      state.status === 'connected' && state.connectedRdns === this.rdns;
+      isExternalSigner && state.connectedRdns === this.rdns;
 
     const status =
-      state.status === 'connected' && !isThisConnectorConnected
+      isExternalSigner && !isThisConnectorConnected
         ? 'disconnected'
-        : state.status;
+        : isExternalSigner
+          ? state.status
+          : 'disconnected';
+
+    const signer = this.getSigner();
 
     return {
-      isInstalled: this.signer?.isAvailable() ?? false,
+      isInstalled: signer.isAvailable(),
       status,
-      error: isThisConnectorConnected ? error : null,
+      error: isThisConnectorConnected ? state.error : null,
     };
   }
 
   getAccount(): AccountWithSecretKey | null {
-    const { state } = this.getSignerState();
+    const state = getWalletStore();
     // Only return account if this connector's rdns matches the connected one
-    return state.connectedRdns === this.rdns ? state.aztecAccount : null;
+    if (
+      state.walletType === WalletType.EXTERNAL_SIGNER &&
+      state.connectedRdns === this.rdns
+    ) {
+      return state.account;
+    }
+    return null;
   }
 
   async connect(): Promise<void> {
-    if (!this.signer) {
-      throw new Error('No signer configured for this connector');
-    }
-    await this.getSignerState().actions.connect(this.signer);
+    const signer = this.getSigner();
+    await getWalletStore().connectExternalSigner(signer, this.id);
   }
 
   async disconnect(): Promise<void> {
-    this.getSignerState().actions.disconnect();
-  }
-
-  async sendTransaction(
-    _request: ConnectorTransactionRequest
-  ): Promise<ConnectorTransactionResult> {
-    throw new Error(
-      'sendTransaction is not directly supported - use Aztec SDK with the account'
-    );
+    const signer = this._signer;
+    await getWalletStore().disconnect(() => {
+      if (signer) {
+        signer.disconnect();
+      }
+      this._signer = null;
+    });
   }
 
   getPXE(): PXE | null {
-    return this.getSignerState().services.pxe;
+    const config = getNetworkStore().currentConfig;
+    const instance = SharedPXEService.getExistingInstance(
+      config.nodeUrl,
+      config.name
+    );
+    return instance?.pxe ?? null;
   }
 
   getWallet(): Wallet | null {
-    return this.getSignerState().services.wallet;
+    const config = getNetworkStore().currentConfig;
+    const instance = SharedPXEService.getExistingInstance(
+      config.nodeUrl,
+      config.name
+    );
+    return instance?.wallet ?? null;
   }
 
-  getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
-    return this.getSignerState().services.getSponsoredFeePaymentMethod();
-  }
-
-  isDeploying(): boolean {
-    return this.getSignerState().state.status === 'deploying';
-  }
-
-  getEVMAddress(): string | null {
-    return this.signer?.getEVMAddress() ?? null;
-  }
-
-  getSigner(): ExternalSigner | null {
-    return this.signer;
+  async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
+    const config = getNetworkStore().currentConfig;
+    const instance = SharedPXEService.getExistingInstance(
+      config.nodeUrl,
+      config.name
+    );
+    if (!instance) {
+      throw new Error('PXE not initialized');
+    }
+    return instance.getSponsoredFeePaymentMethod();
   }
 }

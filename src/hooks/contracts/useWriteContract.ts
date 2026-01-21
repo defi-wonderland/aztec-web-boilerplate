@@ -229,7 +229,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
         setIsPending(false);
       }
     },
-    [connector, account, timeout]
+    [connector, account, timeout, receiptPolling]
   );
 
   const reset = useCallback(() => {
