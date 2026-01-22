@@ -261,12 +261,18 @@ async function deployDripperContract(
       salt,
       constructorArgs: [],
       deployer: AztecAddress.ZERO, // universalDeploy uses ZERO deployer
+      publicKeys: PublicKeys.default(),
     }
   );
 
   // Check if contract is already deployed
   const metadata = await deployer.getContractMetadata(expectedInstance.address);
   if (metadata.isContractInitialized) {
+    // Register the contract with PXE so it's available for the app
+    await pxe.registerContract({
+      instance: expectedInstance,
+      artifact: DripperContractArtifact,
+    });
     console.log(
       `   ✅ Dripper already deployed at: ${expectedInstance.address.toString()}`
     );
@@ -316,6 +322,11 @@ async function deployDripperContract(
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes('Existing nullifier')) {
       // Contract already deployed but metadata check didn't detect it
+      // Register the contract with PXE so it's available for the app
+      await pxe.registerContract({
+        instance: expectedInstance,
+        artifact: DripperContractArtifact,
+      });
       console.log(
         `   ✅ Dripper already deployed at: ${expectedInstance.address.toString()}`
       );
@@ -354,6 +365,7 @@ async function deployTokenContract(
       salt,
       constructorArgs,
       deployer: AztecAddress.ZERO, // universalDeploy uses ZERO deployer
+      publicKeys: PublicKeys.default(),
       initializationFunctionName: 'constructor_with_minter',
     }
   );
@@ -361,6 +373,11 @@ async function deployTokenContract(
   // Check if contract is already deployed
   const metadata = await deployer.getContractMetadata(expectedInstance.address);
   if (metadata.isContractInitialized) {
+    // Register the contract with PXE so it's available for the app
+    await pxe.registerContract({
+      instance: expectedInstance,
+      artifact: TokenContractArtifact,
+    });
     console.log(
       `   ✅ Token already deployed at: ${expectedInstance.address.toString()}`
     );
@@ -411,6 +428,11 @@ async function deployTokenContract(
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes('Existing nullifier')) {
       // Contract already deployed but metadata check didn't detect it
+      // Register the contract with PXE so it's available for the app
+      await pxe.registerContract({
+        instance: expectedInstance,
+        artifact: TokenContractArtifact,
+      });
       console.log(
         `   ✅ Token already deployed at: ${expectedInstance.address.toString()}`
       );
