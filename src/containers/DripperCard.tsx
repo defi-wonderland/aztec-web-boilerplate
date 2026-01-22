@@ -192,7 +192,7 @@ export const DripperCard: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className={styles.formSection}>
+          <div className={styles.formSection} data-testid="dripper-form">
             {/* Token Address - First, so user knows which token */}
             <div className={styles.formGroup}>
               <label htmlFor="token-address" className={styles.label}>
@@ -292,6 +292,7 @@ export const DripperCard: React.FC = () => {
                   <Globe size={iconSize()} />
                 )
               }
+              data-testid="drip-button"
             >
               {isWalletBusy
                 ? 'Wallet Busy...'

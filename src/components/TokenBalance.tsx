@@ -71,7 +71,7 @@ const calculateBalanceMetrics = (
 };
 
 const LoadingState: React.FC = () => (
-  <div className={styles.loadingContainer}>
+  <div className={styles.loadingContainer} data-testid="balance-loading">
     <div className={styles.loadingSpinner} />
     <span>Loading balance...</span>
   </div>
@@ -86,19 +86,23 @@ const BalanceContent: React.FC<BalanceMetrics> = ({
 }) => (
   <>
     <div className={styles.balanceItems}>
-      <div className={styles.balanceItem}>
+      <div className={styles.balanceItem} data-testid="balance-item-private">
         <div className={styles.balanceLabel}>
           <Shield size={iconSize()} />
           <span>Private:</span>
         </div>
-        <span className={styles.balanceValue}>{privateBalance.toString()}</span>
+        <span className={styles.balanceValue} data-testid="balance-value-private">
+          {privateBalance.toString()}
+        </span>
       </div>
-      <div className={styles.balanceItem}>
+      <div className={styles.balanceItem} data-testid="balance-item-public">
         <div className={styles.balanceLabel}>
           <Globe size={iconSize()} />
           <span>Public:</span>
         </div>
-        <span className={styles.balanceValue}>{publicBalance.toString()}</span>
+        <span className={styles.balanceValue} data-testid="balance-value-public">
+          {publicBalance.toString()}
+        </span>
       </div>
 
       {totalBalance > 0n && (
@@ -141,14 +145,14 @@ export const TokenBalance: React.FC = () => {
   const metrics = calculateBalanceMetrics(formattedBalances);
 
   return (
-    <Card padding="sm" className={styles.cardWrapper}>
+    <Card padding="sm" className={styles.cardWrapper} data-testid="token-balance-card">
       <div className={styles.cardHeader}>
         <CardTitle className={styles.cardTitle}>
           <Coins size={iconSize('md')} className={styles.cardTitleIcon} />
           Your Balance
         </CardTitle>
         {isFetching && !isLoading && (
-          <Badge variant="info" className={styles.syncBadge}>
+          <Badge variant="info" className={styles.syncBadge} data-testid="balance-syncing">
             Syncing
           </Badge>
         )}

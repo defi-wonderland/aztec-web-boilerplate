@@ -216,7 +216,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={styles.content}>
+      <DialogContent className={styles.content} data-testid="connect-wallet-modal">
         <DialogHeader>
           <DialogTitle className={styles.dialogTitle}>
             <Wallet size={iconSize('md')} className={styles.iconAccent} />
@@ -235,7 +235,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
               value={currentConfig?.name || ''}
               onValueChange={handleNetworkChange}
             >
-              <SelectTrigger>
+              <SelectTrigger data-testid="network-selector">
                 <SelectValue placeholder="Select network" />
               </SelectTrigger>
               <SelectContent>
@@ -254,6 +254,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
             {/* Network Status */}
             <div
               className={cn(styles.networkStatus.base, getNetworkStatusStyle())}
+              data-testid="network-status"
             >
               {!isNetworkSelected && (
                 <>
