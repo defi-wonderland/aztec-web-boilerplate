@@ -1,9 +1,7 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { Point } from '@aztec/foundation/curves/grumpkin';
-import { PublicKeys } from '@aztec/stdlib/keys';
 import type { ContractConfigMap, ContractConfigDefinition } from './types';
-import type { NetworkConfig, RawPublicKeys } from '../config/networks';
+import type { NetworkConfig } from '../config/networks';
 
 export const createContractConfig = <
   const T extends ContractConfigMap<NetworkConfig>,
@@ -55,47 +53,6 @@ export const getTokenConstructorArgs = (config: NetworkConfig) => {
     return ['WETH', 'WETH', 18, minterAddress, AztecAddress.ZERO] as const;
   }
   return ['Yield Token', 'YT', 18, minterAddress, AztecAddress.ZERO] as const;
-};
-
-/**
- * Convert raw public key strings to PublicKeys object.
- * Returns undefined if no raw keys provided (uses default keys).
- * Async to ensure WASM (Barretenberg) is initialized before Point operations.
- */
-export const getPublicKeys = async (
-  rawKeys: RawPublicKeys | undefined
-): Promise<PublicKeys | undefined> => {
-  if (!rawKeys) {
-    return undefined;
-  }
-  // Ensure Barretenberg WASM is initialized before Point.fromString
-  const { BarretenbergSync } = await import('@aztec/bb.js');
-  await BarretenbergSync.initSingleton();
-
-  return new PublicKeys(
-    Point.fromString(rawKeys.masterNullifierPublicKey),
-    Point.fromString(rawKeys.masterIncomingViewingPublicKey),
-    Point.fromString(rawKeys.masterOutgoingViewingPublicKey),
-    Point.fromString(rawKeys.masterTaggingPublicKey)
-  );
-};
-
-/**
- * Get public keys for the dripper contract
- */
-export const getDripperPublicKeys = (
-  config: NetworkConfig
-): Promise<PublicKeys | undefined> => {
-  return getPublicKeys(config.dripperPublicKeys);
-};
-
-/**
- * Get public keys for the token contract
- */
-export const getTokenPublicKeys = (
-  config: NetworkConfig
-): Promise<PublicKeys | undefined> => {
-  return getPublicKeys(config.tokenPublicKeys);
 };
 
 // =============================================================================

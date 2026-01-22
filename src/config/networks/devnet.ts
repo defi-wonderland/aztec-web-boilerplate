@@ -21,28 +21,8 @@ export const DEVNET_CONFIG: NetworkConfig = {
   nodeUrl: 'https://next.devnet.aztec-labs.com/',
   dripperContractAddress:
     '0x02bc708c7f88a6bacefb7133eaf97a55d28980717c72bbd63d36d516536d9c21',
-  dripperPublicKeys: {
-    masterNullifierPublicKey:
-      '0x01498945581e0eb9f8427ad6021184c700ef091d570892c437d12c7d90364bbd170ae506787c5c43d6ca9255d571c10fa9ffa9d141666e290c347c5c9ab7e344',
-    masterIncomingViewingPublicKey:
-      '0x00c044b05b6ca83b9c2dbae79cc1135155956a64e136819136e9947fe5e5866c1c1f0ca244c7cd46b682552bff8ae77dea40b966a71de076ec3b7678f2bdb151',
-    masterOutgoingViewingPublicKey:
-      '0x1b00316144359e9a3ec8e49c1cdb7eeb0cedd190dfd9dc90eea5115aa779e287080ffc74d7a8b0bccb88ac11f45874172f3847eb8b92654aaa58a3d2b8dc7833',
-    masterTaggingPublicKey:
-      '0x019c111f36ad3fc1d9b7a7a14344314d2864b94f030594cd67f753ef774a1efb2039907fe37f08d10739255141bb066c506a12f7d1e8dfec21abc58494705b6f',
-  },
   tokenContractAddress:
     '0x1d64b9cf07d536e6b218c14256c4965abb568f02648d5ce1da6d58caea6c3639',
-  tokenPublicKeys: {
-    masterNullifierPublicKey:
-      '0x01498945581e0eb9f8427ad6021184c700ef091d570892c437d12c7d90364bbd170ae506787c5c43d6ca9255d571c10fa9ffa9d141666e290c347c5c9ab7e344',
-    masterIncomingViewingPublicKey:
-      '0x00c044b05b6ca83b9c2dbae79cc1135155956a64e136819136e9947fe5e5866c1c1f0ca244c7cd46b682552bff8ae77dea40b966a71de076ec3b7678f2bdb151',
-    masterOutgoingViewingPublicKey:
-      '0x1b00316144359e9a3ec8e49c1cdb7eeb0cedd190dfd9dc90eea5115aa779e287080ffc74d7a8b0bccb88ac11f45874172f3847eb8b92654aaa58a3d2b8dc7833',
-    masterTaggingPublicKey:
-      '0x019c111f36ad3fc1d9b7a7a14344314d2864b94f030594cd67f753ef774a1efb2039907fe37f08d10739255141bb066c506a12f7d1e8dfec21abc58494705b6f',
-  },
   deployerAddress: AztecAddress.ZERO.toString(),
   dripperDeploymentSalt: 1337,
   tokenDeploymentSalt: 1337,

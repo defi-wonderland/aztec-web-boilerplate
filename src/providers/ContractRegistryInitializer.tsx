@@ -201,7 +201,6 @@ export function ContractRegistryInitializer<
             deployerAddress: currentConfig.deployerAddress,
             dripperSalt: currentConfig.dripperDeploymentSalt,
             tokenSalt: currentConfig.tokenDeploymentSalt,
-            publicKeys: currentConfig.dripperPublicKeys,
           }
         );
 

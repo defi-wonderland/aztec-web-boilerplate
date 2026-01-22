@@ -1,8 +1,27 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-// TODO: Re-enable when classId validation is fixed
-// import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
+import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
 
 const DB_NAME = 'aztec-artifact-registry';
+
+/**
+ * Restores bytecode from base64 strings to Buffer.
+ * Registry artifacts store bytecode as base64 strings, but the Aztec SDK
+ * expects Buffer objects for correct classId computation.
+ */
+function restoreBytecodeBuffers(artifact: ContractArtifact): ContractArtifact {
+  const restored = { ...artifact };
+  if (restored.functions) {
+    restored.functions = restored.functions.map((fn) => ({
+      ...fn,
+      bytecode:
+        typeof fn.bytecode === 'string'
+          ? Buffer.from(fn.bytecode, 'base64')
+          : fn.bytecode,
+    }));
+  }
+  return restored;
+}
+
 const DB_VERSION = 1;
 const STORE_NAME = 'artifacts';
 
@@ -52,12 +71,13 @@ export class ArtifactRegistryService {
     if (storedArtifact) {
       console.log(`[ArtifactRegistry] Found in IndexedDB, validating...`);
       try {
-        this.validateArtifact(storedArtifact, classId);
+        const restoredArtifact = restoreBytecodeBuffers(storedArtifact);
+        await this.validateArtifact(restoredArtifact, classId);
         console.log(
           `[ArtifactRegistry] IndexedDB artifact valid for ${classId}`
         );
-        this.memoryCache.set(classId, storedArtifact);
-        return storedArtifact;
+        this.memoryCache.set(classId, restoredArtifact);
+        return restoredArtifact;
       } catch (err) {
         console.warn(
           `[ArtifactRegistry] Cached artifact for ${classId} is invalid, refetching:`,
@@ -78,10 +98,8 @@ export class ArtifactRegistryService {
 
   private async fetchFromRegistry(classId: string): Promise<ContractArtifact> {
     const url = `${this.baseUrl}/api/artifacts/${classId}`;
-    console.log(`[ArtifactRegistry] Fetching from ${url}`);
 
     const response = await fetch(url);
-    console.log(`[ArtifactRegistry] Response status: ${response.status}`);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -92,47 +110,31 @@ export class ArtifactRegistryService {
       );
     }
 
-    console.log(`[ArtifactRegistry] Parsing JSON response...`);
-    const artifact = (await response.json()) as ContractArtifact;
-    console.log(
-      `[ArtifactRegistry] Artifact parsed, name: ${artifact.name}, functions: ${artifact.functions?.length}`
-    );
-
-    console.log(`[ArtifactRegistry] Validating artifact classId...`);
-    this.validateArtifact(artifact, classId);
-    console.log(`[ArtifactRegistry] Artifact validated successfully`);
+    const rawArtifact = (await response.json()) as ContractArtifact;
+    const artifact = restoreBytecodeBuffers(rawArtifact);
+    await this.validateArtifact(artifact, classId);
     return artifact;
   }
 
-  private validateArtifact(
+  private async validateArtifact(
     artifact: ContractArtifact,
     expectedClassId: string
-  ): void {
-    console.log(`[ArtifactRegistry] Validating artifact structure...`);
+  ): Promise<void> {
     if (!artifact.name || !Array.isArray(artifact.functions)) {
       throw new Error(
         `Invalid artifact structure for classId: ${expectedClassId}`
       );
     }
 
-    // TODO: Re-enable classId validation once we fix the hanging issue
-    // The getContractClassFromArtifact() call hangs, possibly waiting for WASM init
-    // For now, skip validation and let contract registration catch mismatches
-    console.log(
-      `[ArtifactRegistry] Skipping classId validation (temporarily disabled)`
-    );
+    const contractClass = await getContractClassFromArtifact(artifact);
+    const computedClassId = contractClass.id.toString();
 
-    // console.log(`[ArtifactRegistry] Computing classId from artifact...`);
-    // const contractClass = getContractClassFromArtifact(artifact);
-    // const computedClassId = contractClass.id.toString();
-    // console.log(`[ArtifactRegistry] Computed classId: ${computedClassId}`);
-
-    // if (computedClassId !== expectedClassId) {
-    //   throw new Error(
-    //     `Artifact classId mismatch: expected ${expectedClassId}, got ${computedClassId}. ` +
-    //       `Registry artifact does not match deployed contract.`
-    //   );
-    // }
+    if (computedClassId !== expectedClassId) {
+      throw new Error(
+        `Artifact classId mismatch: expected ${expectedClassId}, got ${computedClassId}. ` +
+          `Registry artifact does not match deployed contract.`
+      );
+    }
   }
 
   private async getDB(): Promise<IDBDatabase> {

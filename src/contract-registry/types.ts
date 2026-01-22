@@ -3,7 +3,6 @@ import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { Fr } from '@aztec/aztec.js/fields';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { ContractArtifact, FunctionAbi } from '@aztec/stdlib/abi';
-import type { PublicKeys } from '@aztec/stdlib/keys';
 import type { NetworkConfig } from '../config/networks';
 
 /**
@@ -23,7 +22,6 @@ export interface ContractDeployParams {
   deployer: AztecAddress;
   constructorArgs: unknown[];
   constructorArtifact: FunctionAbi | string;
-  publicKeys?: PublicKeys;
 }
 
 /**

@@ -46,8 +46,6 @@ function getDevnetRegistryService(): ArtifactRegistryService {
 }
 
 async function getDevnetArtifacts(): Promise<NetworkArtifactOverrides> {
-  console.log('[NetworkArtifacts] getDevnetArtifacts called');
-
   if (!DEVNET_CONFIG.useExternalArtifactRegistry) {
     throw new Error(
       '[NetworkArtifacts] External artifact registry is disabled but no local artifacts available'
@@ -55,32 +53,23 @@ async function getDevnetArtifacts(): Promise<NetworkArtifactOverrides> {
   }
 
   const classIds = DEVNET_CONFIG.classIds;
-  if (!classIds) {
+  if (!classIds || Object.keys(classIds).length === 0) {
     throw new Error('[NetworkArtifacts] Devnet classIds not configured');
   }
 
-  console.log('[NetworkArtifacts] Fetching artifacts for classIds:', classIds);
-
   const service = getDevnetRegistryService();
+  const entries = Object.entries(classIds);
 
-  console.log('[NetworkArtifacts] Calling registry service...');
-  const [dripper, token] = await Promise.all([
-    service.getArtifact(classIds.dripper),
-    service.getArtifact(classIds.token),
-  ]);
+  const artifacts = await Promise.all(
+    entries.map(([, classId]) => service.getArtifact(classId))
+  );
 
-  console.log('[NetworkArtifacts] Successfully loaded artifacts from registry');
-  console.log('[NetworkArtifacts] Dripper artifact:', {
-    name: dripper.name,
-    functions: dripper.functions?.length,
-    expectedClassId: classIds.dripper,
+  const result: NetworkArtifactOverrides = {};
+  entries.forEach(([contractName], index) => {
+    result[contractName] = artifacts[index];
   });
-  console.log('[NetworkArtifacts] Token artifact:', {
-    name: token.name,
-    functions: token.functions?.length,
-    expectedClassId: classIds.token,
-  });
-  return { dripper, token };
+
+  return result;
 }
 
 export async function getNetworkArtifacts(

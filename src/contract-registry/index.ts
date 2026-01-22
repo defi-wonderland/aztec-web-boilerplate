@@ -21,10 +21,7 @@ export type {
 export {
   createContractConfig,
   getDeployerAddress,
-  getDripperPublicKeys,
-  getPublicKeys,
   getTokenConstructorArgs,
-  getTokenPublicKeys,
   getContractsForConfig,
   type ArtifactOverrides,
 } from './helpers';

@@ -2,12 +2,7 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { DripperContract } from '../artifacts/Dripper.js';
 import { TokenContract } from '../artifacts/Token.js';
-import {
-  createContractConfig,
-  getDeployerAddress,
-  getDripperPublicKeys,
-  getTokenPublicKeys,
-} from '../contract-registry';
+import { createContractConfig, getDeployerAddress } from '../contract-registry';
 
 /**
  * Edit this file to add/remove contracts for your application.
@@ -23,12 +18,11 @@ export const contractsConfig = createContractConfig({
     artifact: DripperContract.artifact,
     contract: DripperContract,
     address: (config) => config.dripperContractAddress,
-    deployParams: async (config) => ({
+    deployParams: (config) => ({
       salt: Fr.fromString(String(config.dripperDeploymentSalt)),
       deployer: getDeployerAddress(config),
       constructorArgs: [],
       constructorArtifact: 'constructor',
-      publicKeys: await getDripperPublicKeys(config),
     }),
     lazyRegister: false,
   },
@@ -40,7 +34,7 @@ export const contractsConfig = createContractConfig({
     artifact: TokenContract.artifact,
     contract: TokenContract,
     address: (config) => config.tokenContractAddress,
-    deployParams: async (config) => ({
+    deployParams: (config) => ({
       salt: Fr.fromString(String(config.tokenDeploymentSalt)),
       deployer: getDeployerAddress(config),
       constructorArgs: [
@@ -51,7 +45,6 @@ export const contractsConfig = createContractConfig({
         AztecAddress.ZERO,
       ],
       constructorArtifact: 'constructor_with_minter',
-      publicKeys: await getTokenPublicKeys(config),
     }),
     lazyRegister: true,
   },
