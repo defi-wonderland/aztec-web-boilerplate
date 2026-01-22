@@ -254,6 +254,29 @@ async function deployDripperContract(
 
   const salt = Fr.fromString(process.env.VITE_COMMON_SALT || '1337');
 
+  // Compute the expected address first
+  const expectedInstance = await getContractInstanceFromInstantiationParams(
+    DripperContractArtifact,
+    {
+      salt,
+      constructorArgs: [],
+      deployer: AztecAddress.ZERO, // universalDeploy uses ZERO deployer
+    }
+  );
+
+  // Check if contract is already deployed
+  const metadata = await deployer.getContractMetadata(expectedInstance.address);
+  if (metadata.isContractInitialized) {
+    console.log(
+      `   ✅ Dripper already deployed at: ${expectedInstance.address.toString()}`
+    );
+    return {
+      instance: null,
+      address: expectedInstance.address.toString(),
+      salt: salt.toString(),
+    };
+  }
+
   const deployMethod = new DeployMethod(
     PublicKeys.default(),
     deployer,
@@ -264,30 +287,46 @@ async function deployDripperContract(
     'constructor'
   );
 
-  const receipt = await deployMethod
-    .send({
-      ...options,
-      contractAddressSalt: salt,
-      fee: {
-        paymentMethod: await getSponsoredFeePaymentMethod(),
-      },
-      universalDeploy: true,
-      skipInitialization: false,
-    })
-    .wait({ timeout: DEPLOY_TIMEOUT });
+  try {
+    const receipt = await deployMethod
+      .send({
+        ...options,
+        contractAddressSalt: salt,
+        fee: {
+          paymentMethod: await getSponsoredFeePaymentMethod(),
+        },
+        universalDeploy: true,
+        skipInitialization: false,
+      })
+      .wait({ timeout: DEPLOY_TIMEOUT });
 
-  console.log(`   Mined at block: ${receipt.blockNumber}`);
-  console.log(`   Tx hash: ${receipt.txHash}`);
+    console.log(`   Mined at block: ${receipt.blockNumber}`);
+    console.log(`   Tx hash: ${receipt.txHash}`);
 
-  const contract = receipt.contract;
-  console.log(`   ✅ Dripper deployed at: ${contract.address.toString()}`);
+    const contract = receipt.contract;
+    console.log(`   ✅ Dripper deployed at: ${contract.address.toString()}`);
 
-  // Contract is already registered during deployment via DeployMethod
-  return {
-    instance: null,
-    address: contract.address.toString(),
-    salt: salt.toString(),
-  };
+    // Contract is already registered during deployment via DeployMethod
+    return {
+      instance: null,
+      address: contract.address.toString(),
+      salt: salt.toString(),
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Existing nullifier')) {
+      // Contract already deployed but metadata check didn't detect it
+      console.log(
+        `   ✅ Dripper already deployed at: ${expectedInstance.address.toString()}`
+      );
+      return {
+        instance: null,
+        address: expectedInstance.address.toString(),
+        salt: salt.toString(),
+      };
+    }
+    throw error;
+  }
 }
 
 async function deployTokenContract(
@@ -300,6 +339,38 @@ async function deployTokenContract(
 
   const salt = Fr.fromString(process.env.VITE_COMMON_SALT || '1337');
 
+  const constructorArgs = [
+    'Yield Token', // name
+    'YT', // symbol
+    18, // decimals
+    dripperAddress, // minter (Dripper address)
+    AztecAddress.ZERO, // upgrade_authority
+  ];
+
+  // Compute the expected address first
+  const expectedInstance = await getContractInstanceFromInstantiationParams(
+    TokenContractArtifact,
+    {
+      salt,
+      constructorArgs,
+      deployer: AztecAddress.ZERO, // universalDeploy uses ZERO deployer
+      initializationFunctionName: 'constructor_with_minter',
+    }
+  );
+
+  // Check if contract is already deployed
+  const metadata = await deployer.getContractMetadata(expectedInstance.address);
+  if (metadata.isContractInitialized) {
+    console.log(
+      `   ✅ Token already deployed at: ${expectedInstance.address.toString()}`
+    );
+    return {
+      instance: null,
+      address: expectedInstance.address.toString(),
+      salt: salt.toString(),
+    };
+  }
+
   // Use constructor_with_minter: name, symbol, decimals, minter, upgrade_authority
   const deployMethod = new DeployMethod(
     PublicKeys.default(),
@@ -307,40 +378,50 @@ async function deployTokenContract(
     TokenContractArtifact,
     (instance, wallet) =>
       Contract.at(instance.address, TokenContractArtifact, wallet),
-    [
-      'Yield Token', // name
-      'YT', // symbol
-      18, // decimals
-      dripperAddress, // minter (Dripper address)
-      AztecAddress.ZERO, // upgrade_authority
-    ],
+    constructorArgs,
     'constructor_with_minter'
   );
 
-  const receipt = await deployMethod
-    .send({
-      ...options,
-      contractAddressSalt: salt,
-      fee: {
-        paymentMethod: await getSponsoredFeePaymentMethod(),
-      },
-      universalDeploy: true,
-      skipInitialization: false,
-    })
-    .wait({ timeout: DEPLOY_TIMEOUT });
+  try {
+    const receipt = await deployMethod
+      .send({
+        ...options,
+        contractAddressSalt: salt,
+        fee: {
+          paymentMethod: await getSponsoredFeePaymentMethod(),
+        },
+        universalDeploy: true,
+        skipInitialization: false,
+      })
+      .wait({ timeout: DEPLOY_TIMEOUT });
 
-  console.log(`   Mined at block: ${receipt.blockNumber}`);
-  console.log(`   Tx hash: ${receipt.txHash}`);
+    console.log(`   Mined at block: ${receipt.blockNumber}`);
+    console.log(`   Tx hash: ${receipt.txHash}`);
 
-  const contract = receipt.contract;
-  console.log(`   ✅ Token deployed at: ${contract.address.toString()}`);
+    const contract = receipt.contract;
+    console.log(`   ✅ Token deployed at: ${contract.address.toString()}`);
 
-  // Contract is already registered during deployment via DeployMethod
-  return {
-    instance: null,
-    address: contract.address.toString(),
-    salt: salt.toString(),
-  };
+    // Contract is already registered during deployment via DeployMethod
+    return {
+      instance: null,
+      address: contract.address.toString(),
+      salt: salt.toString(),
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Existing nullifier')) {
+      // Contract already deployed but metadata check didn't detect it
+      console.log(
+        `   ✅ Token already deployed at: ${expectedInstance.address.toString()}`
+      );
+      return {
+        instance: null,
+        address: expectedInstance.address.toString(),
+        salt: salt.toString(),
+      };
+    }
+    throw error;
+  }
 }
 
 interface DeploymentInfo {
