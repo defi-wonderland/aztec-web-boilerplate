@@ -35,21 +35,23 @@ async function clearBrowserStorage(page: import('@playwright/test').Page) {
  */
 async function connectToSandbox(page: import('@playwright/test').Page) {
   // Click "Connect Wallet" to open modal
-  const connectBtn = page.locator('.wallet-connect-button');
+  const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
   await expect(connectBtn).toBeVisible({ timeout: 30000 });
   await connectBtn.click();
 
   // Wait for modal
-  const modal = page.locator('.modal-content');
+  const modal = page.locator('[data-testid="connect-wallet-modal"]');
   await expect(modal).toBeVisible({ timeout: 5000 });
 
-  // Select sandbox network
-  const networkSelect = page.locator('#modal-network-selector');
-  await networkSelect.selectOption('sandbox');
+  // Select sandbox network using Radix Select
+  const networkTrigger = modal.locator('[data-testid="network-selector"]');
+  await networkTrigger.click();
+  const sandboxOption = page.locator('[role="option"]').filter({ hasText: 'Sandbox' });
+  await sandboxOption.click();
 
-  // Wait for network connection
-  const networkStatus = page.locator('.network-status');
-  await expect(networkStatus).toContainText('connected', {
+  // Wait for network to be ready (idle or connected state)
+  const networkStatus = modal.locator('[data-testid="network-status"]');
+  await expect(networkStatus).toContainText(/ready to connect|connected/, {
     timeout: SANDBOX_CONNECTION_TIMEOUT,
   });
 
@@ -63,21 +65,17 @@ async function getPublicBalance(
   page: import('@playwright/test').Page
 ): Promise<bigint> {
   // Wait for balance card to be visible
-  const balanceCard = page.locator('.token-balance-card');
+  const balanceCard = page.locator('[data-testid="token-balance-card"]');
   await expect(balanceCard).toBeVisible({ timeout: 30000 });
 
   // Wait for loading to complete
-  const loadingSpinner = page.locator('.balance-loading');
+  const loadingSpinner = page.locator('[data-testid="balance-loading"]');
   if (await loadingSpinner.isVisible()) {
     await expect(loadingSpinner).not.toBeVisible({ timeout: 60000 });
   }
 
   // Get the public balance value
-  const publicBalanceItem = page.locator('.balance-item').filter({
-    has: page.locator('.balance-label:has-text("Public")'),
-  });
-
-  const balanceValue = publicBalanceItem.locator('.balance-value');
+  const balanceValue = page.locator('[data-testid="balance-value-public"]');
   await expect(balanceValue).toBeVisible({ timeout: 10000 });
 
   const balanceText = await balanceValue.textContent();
@@ -103,7 +101,7 @@ async function waitForBalanceSync(
     await page.waitForTimeout(2000);
 
     // Check if there's a refetch happening
-    const refetchBadge = page.locator('.balance-refetch-badge');
+    const refetchBadge = page.locator('[data-testid="balance-syncing"]');
     if (await refetchBadge.isVisible()) {
       await expect(refetchBadge).not.toBeVisible({ timeout: 30000 });
     }
@@ -122,7 +120,7 @@ async function mintToPublic(
   amount: string
 ) {
   // Wait for dripper form to be visible
-  const dripperContent = page.locator('.dripper-content');
+  const dripperContent = page.locator('[data-testid="dripper-form"]');
   await expect(dripperContent).toBeVisible({ timeout: 60000 });
 
   // Wait for contracts to load (loading spinner should disappear)
@@ -137,15 +135,15 @@ async function mintToPublic(
   await expect(amountInput).toBeEnabled({ timeout: 10000 });
   await amountInput.fill(amount);
 
-  // Select public drip type
-  const dripTypeSelect = page.locator('#drip-type');
-  await expect(dripTypeSelect).toBeEnabled({ timeout: 10000 });
-  await dripTypeSelect.selectOption('public');
+  // Select public drip type using Radix Select
+  const dripTypeTrigger = page.locator('#drip-type');
+  await expect(dripTypeTrigger).toBeEnabled({ timeout: 10000 });
+  await dripTypeTrigger.click();
+  const publicOption = page.locator('[role="option"]').filter({ hasText: 'Public' });
+  await publicOption.click();
 
-  // Find the drip button - look for button with btn-primary class containing "Drip"
-  const dripButton = page.locator('button.btn-primary').filter({
-    hasText: /Drip to public/i,
-  });
+  // Find the drip button
+  const dripButton = page.locator('[data-testid="drip-button"]');
   await expect(dripButton).toBeVisible({ timeout: 10000 });
   await expect(dripButton).toBeEnabled({ timeout: 30000 });
 
@@ -201,7 +199,7 @@ test.describe('Mint to Public - Walletless (MetaMask)', () => {
     console.log('Wallet connected');
 
     // Wait for account section to be visible
-    const accountSection = page.locator('.connected-account-section');
+    const accountSection = page.locator('[data-testid="connected-account"]');
     await expect(accountSection).toBeVisible({
       timeout: WALLET_OPERATION_TIMEOUT,
     });
@@ -262,7 +260,7 @@ baseTest.describe('Mint to Public - Embedded Wallet (Create New Account)', () =>
       console.log('Account created and connected');
 
       // Wait for account section to be visible
-      const accountSection = page.locator('.connected-account-section');
+      const accountSection = page.locator('[data-testid="connected-account"]');
       await expect(accountSection).toBeVisible({
         timeout: WALLET_OPERATION_TIMEOUT,
       });
