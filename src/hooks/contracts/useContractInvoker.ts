@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { readFieldCompressedString } from '@aztec/aztec.js/utils';
-import { PRECONFIGURED_CONTRACTS } from '../../config/preconfiguredContracts';
+import {
+  PRECONFIGURED_CONTRACTS,
+  type PreconfiguredContract,
+} from '../../config/preconfiguredContracts';
 import {
   useContractTargetAddress,
   useContractActions,
   useFormValues,
   useFormActions,
-  // New artifact selectors from Zustand
   useArtifactInput,
   useParsedArtifact,
   useParseError,
@@ -36,6 +38,7 @@ import {
 } from '../../utils/contractInteraction';
 import { safeStringify } from '../../utils/string';
 import { useFunctionGroups } from '../useFunctionGroups';
+import { resolvePreconfiguredArtifact } from '../useInteractionContracts';
 import { useDynamicContractCaller } from './useDynamicContractCaller';
 import type {
   FunctionGroup,
@@ -230,14 +233,16 @@ export const useContractInvoker = (
   );
 
   const handleSelectPreconfigured = useCallback(
-    (contractId: string | null) => {
+    async (contractId: string | null) => {
       if (!contractId) {
         setPreconfiguredId(null);
         clearContractState();
         return;
       }
 
-      const contract = PRECONFIGURED_CONTRACTS.find((c) => c.id === contractId);
+      const contract = PRECONFIGURED_CONTRACTS.find(
+        (c): c is PreconfiguredContract => c.id === contractId
+      );
       if (!contract) return;
 
       setPreconfiguredId(contractId);
@@ -246,12 +251,21 @@ export const useContractInvoker = (
       setParseError(null);
       resetFormValues();
 
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          setArtifactInput(contract.artifactJson);
+      try {
+        const artifactJson = await resolvePreconfiguredArtifact(contract);
+        if (!artifactJson) {
+          setParseError('Artifact not available');
           setIsLoadingPreconfigured(false);
-        }, 50);
-      });
+          return;
+        }
+        setArtifactInput(artifactJson);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to load artifact';
+        setParseError(message);
+      } finally {
+        setIsLoadingPreconfigured(false);
+      }
     },
     [
       setPreconfiguredId,

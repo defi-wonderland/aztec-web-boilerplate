@@ -1,7 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import {
-  findPreconfiguredContract,
-  findDeployableById,
+  useFindPreconfiguredContract,
+  useFindDeployableById,
   findConstructorByName,
 } from '../../hooks/useInteractionContracts';
 import { useContractInteractionStore } from './store';
@@ -26,24 +26,22 @@ export const useSelectedPreconfigured = (networkName?: AztecNetwork) => {
   const preconfiguredId = useContractInteractionStore(
     (state) => state.preconfiguredId
   );
-  return findPreconfiguredContract(preconfiguredId, networkName);
+  return useFindPreconfiguredContract(preconfiguredId, networkName);
 };
 
 export const useSelectedDeployable = (networkName?: AztecNetwork) => {
   const deployableId = useContractInteractionStore(
     (state) => state.deployableId
   );
-  return findDeployableById(deployableId, networkName);
+  return useFindDeployableById(deployableId, networkName);
 };
 
 export const useSelectedConstructor = (networkName?: AztecNetwork) => {
-  const deployableId = useContractInteractionStore(
-    (state) => state.deployableId
-  );
   const constructorName = useContractInteractionStore(
     (state) => state.constructorName
   );
-  return findConstructorByName(deployableId, constructorName, networkName);
+  const deployable = useSelectedDeployable(networkName);
+  return findConstructorByName(deployable, constructorName);
 };
 
 export const useContractActions = () =>

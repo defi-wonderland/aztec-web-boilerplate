@@ -5,29 +5,12 @@ import {
 } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { EthAddress } from '@aztec/aztec.js/addresses';
-
-type RawParamType = {
-  kind: string;
-  sign?: 'unsigned' | 'signed';
-  width?: number;
-  length?: number;
-  path?: string;
-  type?: RawParamType;
-  fields?: Array<{ name: string; type: RawParamType }>;
-};
-
-type RawParameter = {
-  name: string;
-  type: RawParamType;
-  visibility?: string;
-};
-
-type RawFunction = {
-  name: string;
-  abi?: { parameters?: RawParameter[] };
-  custom_attributes?: string[];
-  is_unconstrained?: boolean;
-};
+import {
+  normalizeFunction,
+  hasProcessedFunctions,
+  type RawParamType,
+  type RawParameter,
+} from './artifactNormalizer';
 
 export type ParsedType =
   | { kind: 'field' }
@@ -147,20 +130,30 @@ const flattenFields = (
   return flat;
 };
 
-const parseFunction = (fn: RawFunction): ParsedFunction => {
-  const isSystemContextParam = (param: RawParameter): boolean => {
-    const path = (param.type.path ?? '').toLowerCase();
-    return (
-      param.name === 'inputs' &&
-      (path.includes('private_context_inputs') ||
-        path.includes('public_context_inputs'))
-    );
-  };
+/**
+ * Checks if a parameter is a system context input that should be filtered out.
+ */
+const isSystemContextParam = (param: RawParameter): boolean => {
+  const path = (param.type.path ?? '').toLowerCase();
+  return (
+    param.name === 'inputs' &&
+    (path.includes('private_context_inputs') ||
+      path.includes('public_context_inputs'))
+  );
+};
 
-  const rawParams = (fn.abi?.parameters ?? []).filter(
+/**
+ * Parses a function from any supported artifact format into ParsedFunction.
+ * Handles both raw NoirCompiledContract and processed ContractArtifact formats.
+ */
+const parseFunction = (fn: unknown): ParsedFunction => {
+  const normalized = normalizeFunction(fn);
+
+  const filteredParams = normalized.parameters.filter(
     (param) => !isSystemContextParam(param)
   );
-  const inputs = rawParams.map<ParsedField>((param) => ({
+
+  const inputs = filteredParams.map<ParsedField>((param) => ({
     path: param.name,
     label: param.name,
     type: normalizeType(param.type),
@@ -168,37 +161,81 @@ const parseFunction = (fn: RawFunction): ParsedFunction => {
   }));
 
   return {
-    name: fn.name,
+    name: normalized.name,
     inputs: flattenFields(inputs),
-    attributes: fn.custom_attributes ?? [],
-    isUnconstrained: Boolean(fn.is_unconstrained),
+    attributes: normalized.attributes,
+    isUnconstrained: normalized.isUnconstrained,
   };
 };
 
+/**
+ * Extracts all functions from an artifact, handling both formats.
+ * ContractArtifact splits functions into `functions` and `nonDispatchPublicFunctions`,
+ * while NoirCompiledContract has all functions in a single `functions` array.
+ */
+const extractAllFunctions = (
+  artifact: Record<string, unknown>,
+  isProcessedFormat: boolean
+): unknown[] => {
+  const mainFunctions = Array.isArray(artifact.functions)
+    ? artifact.functions
+    : [];
+
+  if (!isProcessedFormat) {
+    return mainFunctions;
+  }
+
+  // ContractArtifact format: merge functions and nonDispatchPublicFunctions
+  const publicFunctions = Array.isArray(artifact.nonDispatchPublicFunctions)
+    ? artifact.nonDispatchPublicFunctions
+    : [];
+
+  return [...mainFunctions, ...publicFunctions];
+};
+
+/**
+ * Parses artifact JSON source into a structured ParsedArtifact.
+ * Supports both artifact formats:
+ * - NoirCompiledContract (raw from compiler/local builds)
+ * - ContractArtifact (processed from registry)
+ */
 export const parseArtifactSource = (source: string): ParsedArtifact => {
-  const parsed = JSON.parse(source) as NoirCompiledContract & {
-    address?: string;
-  };
+  const parsed = JSON.parse(source) as Record<string, unknown>;
 
   if (!parsed || typeof parsed !== 'object') {
     throw new Error('Invalid artifact: expected JSON object');
   }
 
-  if (!Array.isArray((parsed as { functions?: RawFunction[] }).functions)) {
+  if (!Array.isArray(parsed.functions)) {
     throw new Error('Invalid artifact: missing functions');
   }
 
-  const compiled = parsed;
+  const isProcessedFormat = hasProcessedFunctions(parsed);
+  const allFunctions = extractAllFunctions(parsed, isProcessedFormat);
+  const functions = allFunctions.map(parseFunction);
+
+  if (isProcessedFormat) {
+    // ContractArtifact format (from registry) - already processed
+    const artifact = parsed as unknown as ContractArtifact;
+    return {
+      // Cast to NoirCompiledContract for type compatibility
+      // The structure is similar enough for downstream usage (name, address extraction)
+      compiled: parsed as unknown as NoirCompiledContract,
+      artifact,
+      functions,
+      discoveredAddress: parsed.address as string | undefined,
+    };
+  }
+
+  // NoirCompiledContract format (raw from compiler) - needs processing
+  const compiled = parsed as unknown as NoirCompiledContract;
   const artifact = loadContractArtifact(compiled);
-  const functions = (compiled as { functions: RawFunction[] }).functions.map(
-    parseFunction
-  );
 
   return {
     compiled,
     artifact,
     functions,
-    discoveredAddress: parsed.address,
+    discoveredAddress: parsed.address as string | undefined,
   };
 };
 
@@ -244,7 +281,7 @@ const buildValue = (
         return { ok: false, error: `Missing address for ${path}` };
       }
       try {
-        return { ok: true, value: AztecAddress.fromString(value).toString() };
+        return { ok: true, value: AztecAddress.fromString(value) };
       } catch {
         return { ok: false, error: `Invalid Aztec address for ${path}` };
       }
@@ -254,7 +291,7 @@ const buildValue = (
         return { ok: false, error: `Missing ETH address for ${path}` };
       }
       try {
-        return { ok: true, value: EthAddress.fromString(value).toString() };
+        return { ok: true, value: EthAddress.fromString(value) };
       } catch {
         return { ok: false, error: `Invalid ETH address for ${path}` };
       }

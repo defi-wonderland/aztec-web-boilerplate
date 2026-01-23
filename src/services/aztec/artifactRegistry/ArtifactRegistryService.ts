@@ -54,7 +54,7 @@ function restoreBytecode(bytecode: unknown): Buffer {
  * - Uint8Array or other typed arrays
  * - Actual Buffer instances (pass through)
  */
-function restoreBytecodeBuffers(
+export function restoreBytecodeBuffers(
   artifact: SerializedArtifact
 ): ContractArtifact {
   return {
@@ -65,6 +65,8 @@ function restoreBytecodeBuffers(
     })),
   } as ContractArtifact;
 }
+
+export type { SerializedArtifact };
 
 /**
  * Serialized artifact for IndexedDB storage.

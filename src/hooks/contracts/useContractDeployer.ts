@@ -1,8 +1,15 @@
 import { useCallback, useState } from 'react';
-import { loadContractArtifact } from '@aztec/aztec.js/abi';
+import {
+  loadContractArtifact,
+  type ContractArtifact,
+} from '@aztec/aztec.js/abi';
 import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
+import {
+  restoreBytecodeBuffers,
+  type SerializedArtifact,
+} from '../../services/aztec/artifactRegistry';
 import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
@@ -14,6 +21,21 @@ import type {
   DeployableContract,
   ContractConstructor,
 } from '../../utils/deployableContracts';
+
+/**
+ * Detect if parsed JSON is already a ContractArtifact (from registry)
+ * vs a NoirCompiledContract (from local build).
+ * ContractArtifact has functions with `isInitializer` boolean.
+ * NoirCompiledContract has functions with `custom_attributes` array.
+ */
+const isRegistryArtifact = (
+  parsed: unknown
+): parsed is SerializedArtifact => {
+  if (!parsed || typeof parsed !== 'object') return false;
+  const obj = parsed as { functions?: Array<{ isInitializer?: boolean }> };
+  const firstFn = obj.functions?.[0];
+  return firstFn !== undefined && typeof firstFn.isInitializer === 'boolean';
+};
 
 export interface DeployParams {
   contract: DeployableContract;
@@ -77,8 +99,12 @@ export const useContractDeployer = () => {
           throw new Error('Wallet instance not available');
         }
 
-        const compiled = JSON.parse(contract.artifactJson);
-        const artifact = loadContractArtifact(compiled);
+        const parsed = JSON.parse(contract.artifactJson!);
+        // Registry artifacts are already ContractArtifact format but need bytecode restoration,
+        // local artifacts need conversion via loadContractArtifact
+        const artifact: ContractArtifact = isRegistryArtifact(parsed)
+          ? restoreBytecodeBuffers(parsed)
+          : loadContractArtifact(parsed);
 
         const { args, errors } = buildArgsFromInputs(ctor.inputs, formValues);
         if (errors.length > 0) {
