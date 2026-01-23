@@ -1,8 +1,6 @@
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
 import { NetworkConfig } from './types';
 
-const isDev = import.meta.env.DEV;
-
 /**
  * Devnet configuration for public development network.
  *
@@ -11,8 +9,6 @@ const isDev = import.meta.env.DEV;
  *
  * Artifacts are fetched from the external registry using classIds.
  * Update classIds when contracts are redeployed with new class IDs.
- *
- * In development, requests are proxied through Vite to avoid CORS issues.
  */
 export const DEVNET_CONFIG: NetworkConfig = {
   name: 'devnet',
@@ -29,9 +25,7 @@ export const DEVNET_CONFIG: NetworkConfig = {
   proverEnabled: true,
   isTestnet: true,
   artifactSource: 'registry',
-  artifactRegistryUrl: isDev
-    ? '/artifact-registry'
-    : 'https://devnet.aztec-registry.xyz',
+  artifactRegistryUrl: import.meta.env.VITE_ARTIFACT_REGISTRY_URL,
   classIds: {
     dripper:
       '0x1d1014602e766124a9a52429708ed416708b39e3e6ad88fcbf7757af093062e5',
