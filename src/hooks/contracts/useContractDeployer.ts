@@ -28,9 +28,7 @@ import type {
  * ContractArtifact has functions with `isInitializer` boolean.
  * NoirCompiledContract has functions with `custom_attributes` array.
  */
-const isRegistryArtifact = (
-  parsed: unknown
-): parsed is SerializedArtifact => {
+const isRegistryArtifact = (parsed: unknown): parsed is SerializedArtifact => {
   if (!parsed || typeof parsed !== 'object') return false;
   const obj = parsed as { functions?: Array<{ isInitializer?: boolean }> };
   const firstFn = obj.functions?.[0];
