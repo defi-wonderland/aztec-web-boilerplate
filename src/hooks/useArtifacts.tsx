@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { CloudDownload } from 'lucide-react';
-import { ArtifactService } from '../services/aztec/artifact';
+import { CloudDownload, Database, Zap } from 'lucide-react';
+import { ArtifactService, type LoadSource } from '../services/aztec/artifact';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { iconSize } from '../utils';
 import { useToast } from './context/useToast';
@@ -8,6 +8,34 @@ import { useUniversalWallet } from './context/useUniversalWallet';
 
 interface UseArtifactsOptions {
   showToast?: boolean;
+}
+
+function getSourceToastConfig(source: LoadSource): {
+  description: string;
+  icon: React.ReactNode;
+} {
+  switch (source) {
+    case 'memory':
+      return {
+        description: 'Loaded from memory cache',
+        icon: <Zap size={iconSize('md')} />,
+      };
+    case 'indexeddb':
+      return {
+        description: 'Loaded from browser cache',
+        icon: <Database size={iconSize('md')} />,
+      };
+    case 'network':
+      return {
+        description: 'Fetched from external registry',
+        icon: <CloudDownload size={iconSize('md')} />,
+      };
+    default:
+      return {
+        description: 'Artifacts loaded',
+        icon: <CloudDownload size={iconSize('md')} />,
+      };
+  }
 }
 
 /**
@@ -47,12 +75,13 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
         setArtifacts(result.artifacts);
         setArtifactStatus('ready');
 
-        if (showToast && result.source === 'registry') {
+        if (showToast && result.source !== 'local') {
+          const toastConfig = getSourceToastConfig(result.source);
           addToast({
             title: `Artifacts loaded in ${result.elapsedMs.toFixed(0)}ms`,
-            description: 'Fetched from external registry',
+            description: toastConfig.description,
             variant: 'info',
-            icon: <CloudDownload size={iconSize('md')} />,
+            icon: toastConfig.icon,
             duration: 5000,
           });
         }

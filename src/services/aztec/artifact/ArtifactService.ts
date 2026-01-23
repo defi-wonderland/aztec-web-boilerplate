@@ -1,13 +1,18 @@
 import { type ArtifactOverrides } from '../../../contract-registry/helpers';
-import { ArtifactRegistryService } from '../artifactRegistry';
+import {
+  ArtifactRegistryService,
+  type ArtifactSource,
+} from '../artifactRegistry';
 import type { NetworkConfig } from '../../../config/networks/types';
 
-export type { ArtifactOverrides };
+export type { ArtifactOverrides, ArtifactSource };
+
+export type LoadSource = 'local' | ArtifactSource;
 
 export interface LoadArtifactsResult {
   artifacts: ArtifactOverrides | null;
   elapsedMs: number;
-  source: 'local' | 'registry';
+  source: LoadSource;
 }
 
 /**
@@ -50,17 +55,17 @@ export class ArtifactService {
       };
     }
 
-    const artifacts = await this.fetchFromRegistry(config);
+    const { artifacts, source } = await this.fetchFromRegistry(config);
     return {
       artifacts,
       elapsedMs: performance.now() - start,
-      source: 'registry',
+      source,
     };
   }
 
   private async fetchFromRegistry(
     config: NetworkConfig
-  ): Promise<ArtifactOverrides> {
+  ): Promise<{ artifacts: ArtifactOverrides; source: ArtifactSource }> {
     const registryUrl = config.artifactRegistryUrl;
     if (!registryUrl) {
       throw new Error(
@@ -78,26 +83,25 @@ export class ArtifactService {
     const registryService = ArtifactRegistryService.getInstance(registryUrl);
     const entries = Object.entries(classIds);
 
-    const artifacts = await Promise.all(
+    const results = await Promise.all(
       entries.map(([, classId]) => registryService.getArtifact(classId))
     );
 
-    const result: ArtifactOverrides = {};
+    const artifacts: ArtifactOverrides = {};
     entries.forEach(([contractName], index) => {
-      result[contractName] = artifacts[index];
+      artifacts[contractName] = results[index].artifact;
     });
 
-    return result;
-  }
+    const sourcePriority: Record<ArtifactSource, number> = {
+      memory: 0,
+      indexeddb: 1,
+      network: 2,
+    };
+    const sources = results.map((r) => r.source);
+    const aggregatedSource = sources.reduce((worst, current) =>
+      sourcePriority[current] > sourcePriority[worst] ? current : worst
+    );
 
-  /**
-   * Clear all cached artifacts (memory and storage).
-   * Useful when switching networks.
-   */
-  async clearCache(registryUrl?: string): Promise<void> {
-    if (registryUrl) {
-      const service = ArtifactRegistryService.getInstance(registryUrl);
-      await service.clearStorage();
-    }
+    return { artifacts, source: aggregatedSource };
   }
 }

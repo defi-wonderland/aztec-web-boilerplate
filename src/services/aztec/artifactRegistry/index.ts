@@ -1,1 +1,5 @@
-export { ArtifactRegistryService } from './ArtifactRegistryService';
+export {
+  ArtifactRegistryService,
+  type ArtifactSource,
+  type ArtifactResult,
+} from './ArtifactRegistryService';
