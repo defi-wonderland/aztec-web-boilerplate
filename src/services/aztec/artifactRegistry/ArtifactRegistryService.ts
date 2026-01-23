@@ -3,20 +3,47 @@ import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
 
 const DB_NAME = 'aztec-artifact-registry';
 
+interface SerializedBuffer {
+  type: 'Buffer';
+  data: number[];
+}
+
+function isSerializedBuffer(value: unknown): value is SerializedBuffer {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'type' in value &&
+    (value as SerializedBuffer).type === 'Buffer' &&
+    'data' in value &&
+    Array.isArray((value as SerializedBuffer).data)
+  );
+}
+
+function restoreBytecode(bytecode: unknown): Buffer {
+  if (Buffer.isBuffer(bytecode)) {
+    return bytecode;
+  }
+  if (typeof bytecode === 'string') {
+    return Buffer.from(bytecode, 'base64');
+  }
+  if (isSerializedBuffer(bytecode)) {
+    return Buffer.from(bytecode.data);
+  }
+  throw new Error('Invalid bytecode format');
+}
+
 /**
- * Restores bytecode from base64 strings to Buffer.
- * Registry artifacts store bytecode as base64 strings, but the Aztec SDK
- * expects Buffer objects for correct classId computation.
+ * Restores bytecode to Buffer from various formats:
+ * - Base64 strings (from registry API)
+ * - Serialized Buffer objects (from IndexedDB: {type: "Buffer", data: [...]})
+ * - Actual Buffer instances (pass through)
  */
 function restoreBytecodeBuffers(artifact: ContractArtifact): ContractArtifact {
   const restored = { ...artifact };
   if (restored.functions) {
     restored.functions = restored.functions.map((fn) => ({
       ...fn,
-      bytecode:
-        typeof fn.bytecode === 'string'
-          ? Buffer.from(fn.bytecode, 'base64')
-          : fn.bytecode,
+      bytecode: restoreBytecode(fn.bytecode),
     }));
   }
   return restored;

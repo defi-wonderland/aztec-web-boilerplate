@@ -221,7 +221,7 @@ export class ContractRegistry<T extends ContractConfigMap>
         const isInStorage = await this.isRegisteredInStorage(expectedAddress);
 
         if (isInStorage) {
-          const deployParams = await contractConfig.deployParams(this.config);
+          const deployParams = contractConfig.deployParams(this.config);
           const instance = await getContractInstanceFromInstantiationParams(
             contractConfig.artifact,
             {
@@ -319,7 +319,7 @@ export class ContractRegistry<T extends ContractConfigMap>
     name: ContractNames<T>,
     contractConfig: T[ContractNames<T>]
   ): Promise<ContractInstanceWithAddress> {
-    const deployParams = await contractConfig.deployParams(this.config);
+    const deployParams = contractConfig.deployParams(this.config);
 
     const instance = await getContractInstanceFromInstantiationParams(
       contractConfig.artifact,

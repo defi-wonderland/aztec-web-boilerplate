@@ -44,10 +44,8 @@ export interface ContractConfigDefinition<
   contract: ContractClass<TContract>;
   /** Function to derive the expected contract address from app config */
   address: (config: TConfig) => string;
-  /** Function to derive deployment parameters from app config (async to allow WASM init) */
-  deployParams: (
-    config: TConfig
-  ) => ContractDeployParams | Promise<ContractDeployParams>;
+  /** Function to derive deployment parameters from app config */
+  deployParams: (config: TConfig) => ContractDeployParams;
   /** If true, contract won't be registered at init (on-demand only). Default: false */
   lazyRegister?: boolean;
 }

@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CloudDownload } from 'lucide-react';
 import { ArtifactService } from '../services/aztec/artifact';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { iconSize } from '../utils';
 import { useToast } from './context/useToast';
 import { useUniversalWallet } from './context/useUniversalWallet';
-import type { NetworkConfig } from '../config/networks';
 
 interface UseArtifactsOptions {
   showToast?: boolean;
@@ -33,22 +32,16 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
     setArtifactError,
   } = useContractRegistryStore();
 
-  const artifactService = useMemo(() => ArtifactService.getInstance(), []);
-  const loadingRef = useRef(false);
-  const configRef = useRef<NetworkConfig | null>(null);
+  const loadingConfigRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (loadingRef.current && configRef.current === currentConfig) {
-      return;
-    }
-
-    loadingRef.current = true;
-    configRef.current = currentConfig;
+    if (loadingConfigRef.current === currentConfig.name) return;
+    loadingConfigRef.current = currentConfig.name;
 
     setArtifactStatus('loading');
     setArtifactError(null);
 
-    artifactService
+    ArtifactService.getInstance()
       .loadArtifacts(currentConfig)
       .then((result) => {
         setArtifacts(result.artifacts);
@@ -68,6 +61,7 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
         const error = err instanceof Error ? err : new Error(String(err));
         setArtifactStatus('error');
         setArtifactError(error);
+        loadingConfigRef.current = null;
 
         addToast({
           title: 'Failed to load contract artifacts',
@@ -75,19 +69,9 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
           variant: 'error',
           duration: 10000,
         });
-      })
-      .finally(() => {
-        loadingRef.current = false;
       });
-  }, [
-    currentConfig,
-    artifactService,
-    showToast,
-    addToast,
-    setArtifacts,
-    setArtifactStatus,
-    setArtifactError,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentConfig]);
 
   return {
     artifacts,

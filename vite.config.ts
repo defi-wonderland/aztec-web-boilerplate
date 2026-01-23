@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig, Plugin } from 'vite';
+import { defineConfig, loadEnv, Plugin } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import wasm from 'vite-plugin-wasm';
@@ -60,8 +60,12 @@ const nodeBuiltinsShim = (): Plugin => ({
   },
 });
 
-export default defineConfig({
-  plugins: [
+export default defineConfig(({ command, mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const artifactRegistryUrl = env.VITE_ARTIFACT_REGISTRY_URL;
+
+  return {
+    plugins: [
     nodeBuiltinsShim(), // Must be first to intercept before nodePolyfills
     react(),
     wasm(),
@@ -90,6 +94,10 @@ export default defineConfig({
   assetsInclude: ['**/*.wasm'],
   define: {
     global: 'globalThis',
+    // In dev: use proxy path. In prod: use real URL from env
+    'import.meta.env.VITE_ARTIFACT_REGISTRY_URL': JSON.stringify(
+      command === 'serve' ? '/artifact-registry' : artifactRegistryUrl
+    ),
   },
   worker: {
     format: 'es',
@@ -132,13 +140,15 @@ export default defineConfig({
     fs: {
       allow: ['..'],
     },
-    proxy: {
-      '/artifact-registry': {
-        target: 'https://devnet.aztec-registry.xyz',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/artifact-registry/, ''),
-      },
-    },
+    proxy: artifactRegistryUrl
+      ? {
+          '/artifact-registry': {
+            target: artifactRegistryUrl,
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/artifact-registry/, ''),
+          },
+        }
+      : undefined,
   },
   preview: {
     port: 3000,
@@ -206,4 +216,5 @@ export default defineConfig({
       },
     },
   },
+};
 });

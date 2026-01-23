@@ -87,11 +87,6 @@ export const getContractsForConfig = <T extends ContractConfigMap>(
     return baseContracts;
   }
 
-  console.log(
-    '[getContractsForConfig] Applying artifact overrides:',
-    Object.keys(artifactOverrides)
-  );
-
   const result = { ...baseContracts } as Record<
     string,
     ContractConfigDefinition<NetworkConfig>
@@ -99,16 +94,10 @@ export const getContractsForConfig = <T extends ContractConfigMap>(
 
   for (const [name, artifact] of Object.entries(artifactOverrides)) {
     if (name in result && result[name]) {
-      const originalArtifact = result[name].artifact;
       result[name] = {
         ...result[name],
         artifact,
       };
-      console.log(`[getContractsForConfig] Overriding "${name}":`, {
-        originalName: originalArtifact.name,
-        overrideName: artifact.name,
-        overrideFunctions: artifact.functions?.length,
-      });
     }
   }
 

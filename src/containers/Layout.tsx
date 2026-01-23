@@ -8,6 +8,7 @@ const styles = {
 
 export const Layout: React.FC = () => {
   // Load artifacts first, then setup contract registry
+  // This is maybe not the best place for this, but the other approach is to create a Provider wrapper that really doesnt have sense
   useArtifacts();
   useContractSetup();
 
