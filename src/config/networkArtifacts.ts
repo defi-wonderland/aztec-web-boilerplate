@@ -5,9 +5,6 @@ import {
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import dripperSandboxJson from '../artifacts/sandbox/dripper-Dripper.json' with { type: 'json' };
 import tokenSandboxJson from '../artifacts/sandbox/token_contract-Token.json' with { type: 'json' };
-// TODO: Remove local devnet artifacts once registry has correct artifacts
-// import dripperDevnetJson from '../artifacts/devnet/dripper-Dripper.json' with { type: 'json' };
-// import tokenDevnetJson from '../artifacts/devnet/token_contract-Token.json' with { type: 'json' };
 import { ArtifactRegistryService } from '../services/aztec/artifactRegistry';
 import { DEVNET_CONFIG } from './networks/devnet';
 
@@ -26,29 +23,17 @@ export const SANDBOX_ARTIFACTS: NetworkArtifactOverrides = {
   token: loadContractArtifact(tokenSandboxJson as NoirCompiledContract),
 };
 
-// TODO: Remove local devnet artifacts once registry has correct artifacts
-// export const DEVNET_LOCAL_ARTIFACTS: NetworkArtifactOverrides = {
-//   dripper: loadContractArtifact(dripperDevnetJson as NoirCompiledContract),
-//   token: loadContractArtifact(tokenDevnetJson as NoirCompiledContract),
-// };
-
-let devnetRegistryService: ArtifactRegistryService | null = null;
-
-function getDevnetRegistryService(): ArtifactRegistryService {
-  if (!devnetRegistryService) {
-    const registryUrl = DEVNET_CONFIG.artifactRegistryUrl;
-    if (!registryUrl) {
-      throw new Error('Devnet artifact registry URL not configured');
-    }
-    devnetRegistryService = new ArtifactRegistryService(registryUrl);
-  }
-  return devnetRegistryService;
-}
-
 async function getDevnetArtifacts(): Promise<NetworkArtifactOverrides> {
   if (!DEVNET_CONFIG.useExternalArtifactRegistry) {
     throw new Error(
       '[NetworkArtifacts] External artifact registry is disabled but no local artifacts available'
+    );
+  }
+
+  const registryUrl = DEVNET_CONFIG.artifactRegistryUrl;
+  if (!registryUrl) {
+    throw new Error(
+      '[NetworkArtifacts] Devnet artifact registry URL not configured'
     );
   }
 
@@ -57,7 +42,7 @@ async function getDevnetArtifacts(): Promise<NetworkArtifactOverrides> {
     throw new Error('[NetworkArtifacts] Devnet classIds not configured');
   }
 
-  const service = getDevnetRegistryService();
+  const service = ArtifactRegistryService.getInstance(registryUrl);
   const entries = Object.entries(classIds);
 
   const artifacts = await Promise.all(

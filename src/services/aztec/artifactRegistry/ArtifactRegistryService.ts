@@ -32,11 +32,23 @@ interface CachedArtifact {
 }
 
 export class ArtifactRegistryService {
+  private static instances = new Map<string, ArtifactRegistryService>();
+
   private memoryCache = new Map<string, ContractArtifact>();
   private pendingRequests = new Map<string, Promise<ContractArtifact>>();
   private db: IDBDatabase | null = null;
 
-  constructor(private baseUrl: string) {}
+  private constructor(private baseUrl: string) {}
+
+  static getInstance(baseUrl: string): ArtifactRegistryService {
+    const existing = this.instances.get(baseUrl);
+    if (existing) {
+      return existing;
+    }
+    const instance = new ArtifactRegistryService(baseUrl);
+    this.instances.set(baseUrl, instance);
+    return instance;
+  }
 
   async getArtifact(classId: string): Promise<ContractArtifact> {
     console.log(`[ArtifactRegistry] getArtifact called for ${classId}`);
