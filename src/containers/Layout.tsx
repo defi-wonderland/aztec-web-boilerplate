@@ -1,5 +1,5 @@
 import React from 'react';
-import { useArtifacts, useContractSetup, useUniversalWallet } from '../hooks';
+import { useUniversalWallet } from '../hooks';
 import { MainContent } from './MainContent';
 
 const styles = {
@@ -7,11 +7,6 @@ const styles = {
 } as const;
 
 export const Layout: React.FC = () => {
-  // Load artifacts first, then setup contract registry
-  // This is maybe not the best place for this, but the other approach is to create a Provider wrapper that really doesnt have sense
-  useArtifacts();
-  useContractSetup();
-
   const { isInitialized, isConnected } = useUniversalWallet();
 
   const showLayout = isConnected && isInitialized;

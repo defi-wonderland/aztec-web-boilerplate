@@ -83,7 +83,6 @@ export const getContractsForConfig = <T extends ContractConfigMap>(
   artifactOverrides?: ArtifactOverrides
 ): T => {
   if (!artifactOverrides || Object.keys(artifactOverrides).length === 0) {
-    console.log('[getContractsForConfig] No overrides, using base contracts');
     return baseContracts;
   }
 

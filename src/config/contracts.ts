@@ -19,7 +19,7 @@ export const contractsConfig = createContractConfig({
     contract: DripperContract,
     address: (config) => config.dripperContractAddress,
     deployParams: (config) => ({
-      salt: Fr.fromString(String(config.dripperDeploymentSalt)),
+      salt: Fr.fromString(config.dripperDeploymentSalt),
       deployer: getDeployerAddress(config),
       constructorArgs: [],
       constructorArtifact: 'constructor',
@@ -35,7 +35,7 @@ export const contractsConfig = createContractConfig({
     contract: TokenContract,
     address: (config) => config.tokenContractAddress,
     deployParams: (config) => ({
-      salt: Fr.fromString(String(config.tokenDeploymentSalt)),
+      salt: Fr.fromString(config.tokenDeploymentSalt),
       deployer: getDeployerAddress(config),
       constructorArgs: [
         config.name === 'devnet' ? 'WETH' : 'Yield Token',

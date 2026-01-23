@@ -20,8 +20,8 @@ export const DEVNET_CONFIG: NetworkConfig = {
   tokenContractAddress:
     '0x1d64b9cf07d536e6b218c14256c4965abb568f02648d5ce1da6d58caea6c3639',
   deployerAddress: AztecAddress.ZERO.toString(),
-  dripperDeploymentSalt: 1337,
-  tokenDeploymentSalt: 1337,
+  dripperDeploymentSalt: '1337',
+  tokenDeploymentSalt: '1337',
   proverEnabled: true,
   isTestnet: true,
   artifactSource: 'registry',

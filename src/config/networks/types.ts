@@ -9,9 +9,9 @@ export interface NetworkConfig {
   nodeUrl: string;
   deployerAddress: string;
   dripperContractAddress: string;
-  dripperDeploymentSalt: number;
+  dripperDeploymentSalt: string;
   tokenContractAddress: string;
-  tokenDeploymentSalt: number;
+  tokenDeploymentSalt: string;
   proverEnabled: boolean;
   isTestnet: boolean;
   artifactSource: ArtifactSource;

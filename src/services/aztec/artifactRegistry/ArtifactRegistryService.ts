@@ -54,28 +54,37 @@ function restoreBytecode(bytecode: unknown): Buffer {
  * - Uint8Array or other typed arrays
  * - Actual Buffer instances (pass through)
  */
-function restoreBytecodeBuffers(artifact: StoredArtifact): ContractArtifact {
-  const source = artifact as ContractArtifact;
+function restoreBytecodeBuffers(
+  artifact: SerializedArtifact
+): ContractArtifact {
   return {
-    ...source,
-    functions: source.functions.map((fn) => ({
+    ...artifact,
+    functions: artifact.functions.map((fn) => ({
       ...fn,
       bytecode: restoreBytecode(fn.bytecode),
     })),
-  };
+  } as ContractArtifact;
 }
 
 /**
- * Artifact stored in IndexedDB with bytecode as base64 strings.
- * This is separate from ContractArtifact to avoid type conflicts.
+ * Serialized artifact for IndexedDB storage.
+ * Uses Omit to derive from ContractArtifact, replacing Buffer bytecode with string.
  */
-type StoredArtifact = unknown;
+type SerializedArtifact = Omit<ContractArtifact, 'functions'> & {
+  functions: Array<
+    Omit<ContractArtifact['functions'][number], 'bytecode'> & {
+      bytecode: string;
+    }
+  >;
+};
 
 /**
  * Converts bytecode to base64 strings for consistent IndexedDB storage.
  * This avoids serialization issues with Buffer objects across browsers.
  */
-function prepareArtifactForStorage(artifact: ContractArtifact): StoredArtifact {
+function prepareArtifactForStorage(
+  artifact: ContractArtifact
+): SerializedArtifact {
   return {
     ...artifact,
     functions: artifact.functions.map((fn) => ({
@@ -92,7 +101,7 @@ const STORE_NAME = 'artifacts';
 
 interface CachedArtifact {
   classId: string;
-  artifact: StoredArtifact;
+  artifact: SerializedArtifact;
   cachedAt: number;
 }
 
@@ -123,22 +132,17 @@ export class ArtifactRegistryService {
   }
 
   async getArtifact(classId: string): Promise<ArtifactResult> {
-    console.log(`[ArtifactRegistry] getArtifact called for ${classId}`);
-
     const memoryCached = this.memoryCache.get(classId);
     if (memoryCached) {
-      console.log(`[ArtifactRegistry] Memory cache hit for ${classId}`);
       return { artifact: memoryCached, source: 'memory' };
     }
 
     const pending = this.pendingRequests.get(classId);
     if (pending) {
-      console.log(`[ArtifactRegistry] Awaiting pending request for ${classId}`);
       const result = await pending;
       return { artifact: result.artifact, source: result.source };
     }
 
-    console.log(`[ArtifactRegistry] Loading artifact for ${classId}`);
     const request = this.loadArtifact(classId);
     this.pendingRequests.set(classId, request);
 
@@ -151,23 +155,11 @@ export class ArtifactRegistryService {
   }
 
   private async loadArtifact(classId: string): Promise<ArtifactResult> {
-    console.log(`[ArtifactRegistry] Checking IndexedDB for ${classId}`);
     const storedArtifact = await this.getFromStorage(classId);
     if (storedArtifact) {
-      const stored = storedArtifact as ContractArtifact;
-      const firstBytecode = stored.functions?.[0]?.bytecode;
-      console.log(`[ArtifactRegistry] Found in IndexedDB, bytecode type:`, {
-        type: typeof firstBytecode,
-        isBuffer: Buffer.isBuffer(firstBytecode),
-        isUint8Array: firstBytecode instanceof Uint8Array,
-        constructor: (firstBytecode as object)?.constructor?.name,
-      });
       try {
         const restoredArtifact = restoreBytecodeBuffers(storedArtifact);
         await this.validateArtifact(restoredArtifact, classId);
-        console.log(
-          `[ArtifactRegistry] IndexedDB artifact valid for ${classId}`
-        );
         this.memoryCache.set(classId, restoredArtifact);
         return { artifact: restoredArtifact, source: 'indexeddb' };
       } catch (err) {
@@ -176,13 +168,8 @@ export class ArtifactRegistryService {
           err instanceof Error ? err.message : err
         );
       }
-    } else {
-      console.log(
-        `[ArtifactRegistry] Not in IndexedDB, fetching from registry`
-      );
     }
 
-    console.log(`[ArtifactRegistry] Fetching ${classId} from network...`);
     const artifact = await this.fetchFromRegistry(classId);
     this.memoryCache.set(classId, artifact);
     await this.saveToStorage(classId, artifact);
@@ -203,7 +190,7 @@ export class ArtifactRegistryService {
       );
     }
 
-    const rawArtifact = (await response.json()) as ContractArtifact;
+    const rawArtifact = (await response.json()) as SerializedArtifact;
     const artifact = restoreBytecodeBuffers(rawArtifact);
     await this.validateArtifact(artifact, classId);
     return artifact;
@@ -258,7 +245,7 @@ export class ArtifactRegistryService {
 
   private async getFromStorage(
     classId: string
-  ): Promise<StoredArtifact | null> {
+  ): Promise<SerializedArtifact | null> {
     try {
       const db = await this.getDB();
       return new Promise((resolve, reject) => {
@@ -305,8 +292,11 @@ export class ArtifactRegistryService {
           resolve();
         };
       });
-    } catch {
-      // Silent fail for storage - not critical
+    } catch (err) {
+      console.warn(
+        `[ArtifactRegistry] Failed to save artifact ${classId} to IndexedDB:`,
+        err instanceof Error ? err.message : err
+      );
     }
   }
 }

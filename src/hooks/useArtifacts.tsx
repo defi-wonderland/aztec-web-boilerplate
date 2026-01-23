@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { CloudDownload, Database, Zap } from 'lucide-react';
 import { ArtifactService, type LoadSource } from '../services/aztec/artifact';
 import { useContractRegistryStore } from '../store/contractRegistry';
@@ -60,11 +60,8 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
     setArtifactError,
   } = useContractRegistryStore();
 
-  const loadingConfigRef = useRef<string | null>(null);
-
   useEffect(() => {
-    if (loadingConfigRef.current === currentConfig.name) return;
-    loadingConfigRef.current = currentConfig.name;
+    const abortController = new AbortController();
 
     setArtifactStatus('loading');
     setArtifactError(null);
@@ -72,6 +69,8 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
     ArtifactService.getInstance()
       .loadArtifacts(currentConfig)
       .then((result) => {
+        if (abortController.signal.aborted) return;
+
         setArtifacts(result.artifacts);
         setArtifactStatus('ready');
 
@@ -87,10 +86,11 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
         }
       })
       .catch((err) => {
+        if (abortController.signal.aborted) return;
+
         const error = err instanceof Error ? err : new Error(String(err));
         setArtifactStatus('error');
         setArtifactError(error);
-        loadingConfigRef.current = null;
 
         addToast({
           title: 'Failed to load contract artifacts',
@@ -99,8 +99,18 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
           duration: 10000,
         });
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentConfig]);
+
+    return () => {
+      abortController.abort();
+    };
+  }, [
+    currentConfig,
+    showToast,
+    addToast,
+    setArtifacts,
+    setArtifactStatus,
+    setArtifactError,
+  ]);
 
   return {
     artifacts,
