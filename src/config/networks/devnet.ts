@@ -28,7 +28,7 @@ export const DEVNET_CONFIG: NetworkConfig = {
   tokenDeploymentSalt: 1337,
   proverEnabled: true,
   isTestnet: true,
-  useExternalArtifactRegistry: true,
+  artifactSource: 'registry',
   artifactRegistryUrl: isDev
     ? '/artifact-registry'
     : 'https://devnet.aztec-registry.xyz',

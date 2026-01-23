@@ -28,9 +28,9 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   dripperContractAddress: deployment.dripperContract.address,
   tokenContractAddress: deployment.tokenContract.address,
   deployerAddress: deployment.deployer,
-  dripperDeploymentSalt: deployment.dripperContract.salt,
-  tokenDeploymentSalt: deployment.tokenContract.salt,
+  dripperDeploymentSalt: Number(deployment.dripperContract.salt),
+  tokenDeploymentSalt: Number(deployment.tokenContract.salt),
   proverEnabled: env.proverEnabled,
   isTestnet: false,
-  useExternalArtifactRegistry: false,
+  artifactSource: 'local',
 };

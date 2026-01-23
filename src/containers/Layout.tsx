@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUniversalWallet } from '../hooks';
+import { useArtifacts, useContractSetup, useUniversalWallet } from '../hooks';
 import { MainContent } from './MainContent';
 
 const styles = {
@@ -7,6 +7,10 @@ const styles = {
 } as const;
 
 export const Layout: React.FC = () => {
+  // Load artifacts first, then setup contract registry
+  useArtifacts();
+  useContractSetup();
+
   const { isInitialized, isConnected } = useUniversalWallet();
 
   const showLayout = isConnected && isInitialized;

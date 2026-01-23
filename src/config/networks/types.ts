@@ -1,9 +1,6 @@
 import type { AztecNetwork } from './constants';
 
-/**
- * Raw public keys as hex strings (for JSON serialization).
- * Each key is a 64-byte hex string representing a Point (x, y coordinates).
- */
+export type ArtifactSource = 'local' | 'registry';
 
 export interface NetworkConfig {
   name: AztecNetwork;
@@ -17,7 +14,7 @@ export interface NetworkConfig {
   tokenDeploymentSalt: number;
   proverEnabled: boolean;
   isTestnet: boolean;
-  useExternalArtifactRegistry?: boolean;
+  artifactSource: ArtifactSource;
   artifactRegistryUrl?: string;
   classIds?: Record<string, string>;
 }

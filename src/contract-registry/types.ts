@@ -75,7 +75,7 @@ export interface RegisteredContract {
 }
 
 /**
- * Return type for useContractRegistration hook
+ * Return type for useContract hook
  */
 export interface UseContractReturn<TContract = unknown> {
   /** The callable contract instance if registered and ready */

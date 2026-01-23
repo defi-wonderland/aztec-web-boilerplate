@@ -3,7 +3,6 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { contractsConfig } from '../../config/contracts';
-import { getNetworkArtifacts } from '../../config/networkArtifacts';
 import {
   getContractsForConfig,
   type ContractConfigMap,
@@ -28,10 +27,10 @@ interface ExternalWalletContractProxy {
 }
 
 /**
- * Hook for registering a contract with PXE and getting a callable contract instance.
+ * Hook for getting a callable contract instance by name.
  *
  * This hook handles:
- * 1. Contract registration with PXE (lazy loading)
+ * 1. Contract registration with PXE (lazy loading if needed)
  * 2. Creating a callable contract instance using the wallet
  * 3. Status tracking and error handling
  *
@@ -39,8 +38,7 @@ interface ExternalWalletContractProxy {
  *
  * @example
  * ```typescript
- * // Get a callable contract instance - type is inferred
- * const { contract, isReady } = useContractRegistration('dripper');
+ * const { contract, isReady } = useContract('dripper');
  *
  * if (isReady) {
  *   // contract is typed as DripperContract
@@ -48,11 +46,12 @@ interface ExternalWalletContractProxy {
  * }
  * ```
  */
-export function useContractRegistration<K extends ContractName>(
+export function useContract<K extends ContractName>(
   name: K
 ): UseContractReturn<ContractType<K>> {
   type TContract = ContractType<K>;
   const registry = useContractRegistryStore((state) => state.registry);
+  const artifacts = useContractRegistryStore((state) => state.artifacts);
   const registryStatus = useContractRegistryStatus();
   const { connector, account, currentConfig, walletType } =
     useUniversalWallet();
@@ -64,16 +63,17 @@ export function useContractRegistration<K extends ContractName>(
   const [contract, setContract] = useState<TContract | null>(null);
   const [status, setStatus] = useState<ContractStatus>('idle');
   const [error, setError] = useState<Error | null>(null);
+
   const getContractDefinition = useCallback(() => {
     const contracts = getContractsForConfig(
       contractsConfig,
-      getNetworkArtifacts(currentConfig.name)
+      artifacts ?? undefined
     );
     return (
       (contracts as ContractConfigMap)[name as keyof typeof contractsConfig] ??
       null
     );
-  }, [currentConfig, name]);
+  }, [artifacts, name]);
 
   /**
    * For external wallets, we create a proxy marker instead of a real contract instance.
@@ -133,12 +133,12 @@ export function useContractRegistration<K extends ContractName>(
               Contract.at(instance.address, definition.artifact, wallet)
             );
             console.log(
-              `[useContractRegistration:${String(name)}] ✅ Callable contract created`
+              `[useContract:${String(name)}] ✅ Callable contract created`
             );
             setContract(callableContract as TContract);
           } catch (err) {
             console.error(
-              `[useContractRegistration:${String(name)}] ❌ Failed to create callable contract:`,
+              `[useContract:${String(name)}] ❌ Failed to create callable contract:`,
               err
             );
             hasCreatedContract.current = false;
@@ -175,7 +175,6 @@ export function useContractRegistration<K extends ContractName>(
       return;
     }
 
-    // Cancellation flag to prevent stale microtask updates when dependencies change
     let cancelled = false;
 
     queueMicrotask(() => {

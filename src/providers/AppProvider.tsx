@@ -4,7 +4,6 @@ import { TooltipProvider, Toaster } from '../components/ui';
 import { walletKitConfig } from '../config/walletKit';
 import { ModalProvider, ToastProvider } from '../hooks';
 import { queryClient } from '../lib/queryClient';
-import { ContractRegistryInitializer } from './ContractRegistryInitializer';
 import { UniversalWalletProvider } from './UniversalWalletProvider';
 
 interface AppProviderProps {
@@ -18,9 +17,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         <ToastProvider>
           <ModalProvider>
             <UniversalWalletProvider config={walletKitConfig}>
-              <ContractRegistryInitializer>
-                {children}
-              </ContractRegistryInitializer>
+              {children}
             </UniversalWalletProvider>
           </ModalProvider>
           <Toaster />

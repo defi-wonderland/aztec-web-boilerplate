@@ -1,25 +1,21 @@
-import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Zap, RefreshCw } from 'lucide-react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
 import { contractsConfig } from '../config/contracts';
-import { getNetworkArtifacts } from '../config/networkArtifacts';
 import {
   ContractRegistry,
   getContractsForConfig,
   type ContractConfigMap,
   type ContractNames,
 } from '../contract-registry';
-import { useToast } from '../hooks';
-import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { hasAppManagedPXE } from '../types/walletConnector';
 import { iconSize } from '../utils';
+import { useToast } from './context/useToast';
+import { useUniversalWallet } from './context/useUniversalWallet';
 import type { NetworkConfig } from '../config/networks';
 
-/**
- * Get contracts to load at initialization (lazyRegister !== true)
- */
 const getInitialContracts = <T extends ContractConfigMap>(
   contracts: T
 ): ContractNames<T>[] => {
@@ -28,50 +24,57 @@ const getInitialContracts = <T extends ContractConfigMap>(
     .map(([name]) => name);
 };
 
-interface EmbeddedContractProviderProps {
-  showTimingToast?: boolean;
-  children: ReactNode;
-}
-
 const createRegistry = <T extends ContractConfigMap>(
   pxe: PXE,
   contracts: T,
   config: NetworkConfig
-) => {
-  return new ContractRegistry(pxe, contracts, config);
-};
+) => new ContractRegistry(pxe, contracts, config);
 
-export function EmbeddedContractProvider<
+interface UseContractSetupOptions {
+  showToast?: boolean;
+}
+
+/**
+ * Hook for setting up the contract registry and registering initial contracts.
+ *
+ * Responsibilities:
+ * - Creates ContractRegistry instance when artifacts are ready
+ * - Registers initial (non-lazy) contracts with PXE
+ * - Stores registry in Zustand state
+ * - Shows toast notifications on completion
+ *
+ * Prerequisites:
+ * - Artifacts must be loaded (via useArtifacts)
+ * - Wallet must be connected
+ * - PXE must be available
+ */
+export function useContractSetup<
   T extends ContractConfigMap = ContractConfigMap,
->({
-  showTimingToast = true,
-  children,
-}: EmbeddedContractProviderProps): React.ReactElement {
+>({ showToast = true }: UseContractSetupOptions = {}) {
   const { connector, isInitialized, isConnected, currentConfig } =
     useUniversalWallet();
   const { addToast } = useToast();
 
-  // Get PXE from the active connector (embedded or external signer)
   const pxe = hasAppManagedPXE(connector) ? connector.getPXE() : null;
 
-  // Only register contracts when wallet is connected and PXE is ready
-  const isReady = isConnected && isInitialized && pxe !== null;
+  const { artifacts, artifactStatus, setStatus, setError, setRegistry } =
+    useContractRegistryStore();
 
-  const contracts = useMemo(
-    () =>
-      getContractsForConfig(
-        contractsConfig,
-        getNetworkArtifacts(currentConfig.name)
-      ) as unknown as T,
-    [currentConfig]
-  );
+  const artifactsReady = artifactStatus === 'ready';
+  const isReady =
+    isConnected && isInitialized && pxe !== null && artifactsReady;
+
+  const contracts = useMemo(() => {
+    if (!artifactsReady) return null;
+    return (artifacts
+      ? getContractsForConfig(contractsConfig, artifacts)
+      : contractsConfig) as unknown as T;
+  }, [artifacts, artifactsReady]);
 
   const initialContracts = useMemo(
-    () => getInitialContracts(contracts),
+    () => (contracts ? getInitialContracts(contracts) : []),
     [contracts]
   );
-
-  const { setStatus, setError, setRegistry } = useContractRegistryStore();
 
   const registryRef = useRef<ContractRegistry<T> | null>(null);
   const initializingRef = useRef(false);
@@ -81,12 +84,13 @@ export function EmbeddedContractProvider<
       async (
         pxeInstance: PXE,
         contractsList: ContractNames<T>[],
-        networkConfig: NetworkConfig
+        networkConfig: NetworkConfig,
+        contractsMap: T
       ): Promise<boolean> => {
         if (contractsList.length === 0) return true;
         const results = await Promise.all(
           contractsList.map(async (name) => {
-            const contractConfig = contracts[name];
+            const contractConfig = contractsMap[name];
             if (!contractConfig) return false;
             const expectedAddress = AztecAddress.fromString(
               contractConfig.address(networkConfig)
@@ -98,11 +102,11 @@ export function EmbeddedContractProvider<
         );
         return results.every(Boolean);
       },
-    [contracts]
+    []
   );
 
   useEffect(() => {
-    if (!isReady || initializingRef.current) {
+    if (!isReady || !contracts || !pxe || initializingRef.current) {
       return;
     }
 
@@ -117,13 +121,14 @@ export function EmbeddedContractProvider<
         const allCached = await checkContractsCached(
           pxe,
           initialContracts,
-          currentConfig
+          currentConfig,
+          contracts
         );
         const start = performance.now();
         await registry.registerAll(initialContracts);
         const elapsedMs = performance.now() - start;
 
-        if (showTimingToast && initialContracts.length > 0) {
+        if (showToast && initialContracts.length > 0) {
           const labelSuffix = initialContracts.length === 1 ? '' : 's';
           const sourceText = allCached ? 'Cached in PXE' : 'Fresh registration';
           const icon = allCached ? (
@@ -162,12 +167,10 @@ export function EmbeddedContractProvider<
     initialContracts,
     isReady,
     pxe,
-    showTimingToast,
+    showToast,
     checkContractsCached,
     setStatus,
     setError,
     setRegistry,
   ]);
-
-  return <>{children}</>;
 }
