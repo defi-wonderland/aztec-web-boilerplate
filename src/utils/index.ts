@@ -9,6 +9,7 @@ import {
 import { isBrowserWalletConnector } from '../types/walletConnector';
 import type { WalletConnector } from '../types/walletConnector';
 export { cn } from './cn';
+export { downloadJson } from './downloadArtifact';
 export { iconSize, type IconSize } from './iconSize';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';

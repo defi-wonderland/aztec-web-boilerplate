@@ -29,13 +29,20 @@ import {
   resolveCachedArtifact,
 } from '../../utils/contractCache';
 import {
+  createArtifactSummary,
   formatFunctionSignature,
   formatResultData,
   loadAndPrepareArtifact,
   parseArtifactSource,
   validateAndBuildCallArgs,
+  type ArtifactSummary,
   type ParsedFunction,
 } from '../../utils/contractInteraction';
+import {
+  ArtifactParseError,
+  ArtifactFetchError,
+  getErrorMessage,
+} from '../../utils/errors';
 import { safeStringify } from '../../utils/string';
 import { useFunctionGroups } from '../useFunctionGroups';
 import { resolvePreconfiguredArtifact } from '../useInteractionContracts';
@@ -71,6 +78,7 @@ export interface UseContractInvokerReturn {
   groups: FunctionGroup[];
   status: InvokeStatus;
   error: string | null;
+  artifactSummary: ArtifactSummary | null;
   onLoad: () => Promise<void>;
   onSimulate: (functionName: string) => Promise<void>;
   onExecute: (functionName: string) => Promise<void>;
@@ -146,6 +154,10 @@ export const useContractInvoker = (
     )?.label;
   }, [parsed, savedContracts, address]);
 
+  const artifactSummary = parsed?.functions?.length
+    ? createArtifactSummary(parsed)
+    : null;
+
   const status: InvokeStatus = isSimulating
     ? 'simulating'
     : isExecuting
@@ -171,11 +183,11 @@ export const useContractInvoker = (
       );
 
       if (!result.success) {
-        setParseError(result.error ?? 'Parse failed');
+        setParseError(result.error);
         pushLog({
           level: 'error',
           title: 'Artifact parse failed',
-          detail: result.error ?? 'Unknown error',
+          detail: getErrorMessage(result.error),
         });
         return;
       }
@@ -191,6 +203,7 @@ export const useContractInvoker = (
       setAddress(resolvedAddress);
       setPreconfiguredId(null);
       setParseError(null);
+      resetFormValues();
       pushLog({
         level: 'success',
         title: 'Artifact loaded',
@@ -223,6 +236,7 @@ export const useContractInvoker = (
       setParsedArtifact,
       setParseError,
       setSavedContracts,
+      resetFormValues,
       pushLog,
     ]
   );
@@ -254,15 +268,24 @@ export const useContractInvoker = (
       try {
         const artifactJson = await resolvePreconfiguredArtifact(contract);
         if (!artifactJson) {
-          setParseError('Artifact not available');
+          setParseError(
+            new ArtifactFetchError('Artifact not available for this contract')
+          );
           setIsLoadingPreconfigured(false);
           return;
         }
         setArtifactInput(artifactJson);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to load artifact';
-        setParseError(message);
+        const error =
+          err instanceof ArtifactFetchError
+            ? err
+            : new ArtifactFetchError(
+                err instanceof Error ? err.message : 'Failed to load artifact',
+                undefined,
+                undefined,
+                err
+              );
+        setParseError(error);
       } finally {
         setIsLoadingPreconfigured(false);
       }
@@ -300,22 +323,27 @@ export const useContractInvoker = (
       try {
         const parsedArtifact = parseArtifactSource(resolved.artifact);
         setParsedArtifact(parsedArtifact);
+        setArtifactInput(resolved.artifact);
         pushLog({
           level: 'success',
           title: 'Saved contract loaded',
           detail: `Loaded ${parsedArtifact.functions.length} functions from cache`,
         });
       } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.message
-            : 'Failed to parse cached artifact';
+        const error =
+          err instanceof ArtifactParseError
+            ? err
+            : ArtifactParseError.invalidStructure(
+                err instanceof Error
+                  ? err.message
+                  : 'Failed to parse cached artifact'
+              );
         setParsedArtifact(null);
-        setParseError(message);
+        setParseError(error);
         pushLog({
           level: 'error',
           title: 'Cached artifact parse failed',
-          detail: message,
+          detail: getErrorMessage(error),
         });
       }
     },
@@ -480,7 +508,7 @@ export const useContractInvoker = (
   return {
     savedContracts,
     artifactInput,
-    parseError,
+    parseError: parseError ? getErrorMessage(parseError) : null,
     isLoadingPreconfigured,
     hasContract,
     hasCache,
@@ -488,6 +516,7 @@ export const useContractInvoker = (
     groups: grouped,
     status,
     error: callerError,
+    artifactSummary,
     onLoad: handleLoadArtifact,
     onSimulate: handleSimulate,
     onExecute: handleExecute,

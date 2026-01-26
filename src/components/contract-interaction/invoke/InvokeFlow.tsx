@@ -57,6 +57,7 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
     groups,
     status,
     error,
+    artifactSummary,
     onLoad,
     onSimulate,
     onExecute,
@@ -143,6 +144,12 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
     setSelectedFnName(name);
   }, []);
 
+  const handleLoad = useCallback(async () => {
+    setSelectedFnName(null);
+    setFilter('');
+    await onLoad();
+  }, [onLoad]);
+
   const handleFilterChange = useCallback((value: string) => {
     setFilter(value);
   }, []);
@@ -176,12 +183,13 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
             artifactInput={artifactInput}
             onAddressChange={handleAddressChange}
             onArtifactChange={onArtifactChange}
-            onLoad={onLoad}
+            onLoad={handleLoad}
             error={parseError}
             isValidAddress={!address || isValidAztecAddress(address)}
             isPreconfiguredMode={isPreconfiguredMode}
             isLoadingPreconfigured={isLoadingPreconfigured}
             canLoad={canLoadExisting}
+            artifactSummary={artifactSummary}
           />
 
           <SavedContractsList

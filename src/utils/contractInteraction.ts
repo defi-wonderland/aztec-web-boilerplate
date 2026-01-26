@@ -11,6 +11,9 @@ import {
   type RawParamType,
   type RawParameter,
 } from './artifactNormalizer';
+import { ArtifactParseError } from './errors';
+import { getKnownStructKind } from './knownStructTypes';
+import type { ArtifactError } from './errors';
 
 export type ParsedType =
   | { kind: 'field' }
@@ -45,22 +48,21 @@ export interface ParsedArtifact {
   discoveredAddress?: string;
 }
 
-/**
- * Known Aztec struct paths normalized to primitive types.
- * See docs/contract-ui.md for detailed documentation.
- */
-const KNOWN_STRUCT_PATHS: Record<string, ParsedType['kind']> = {
-  'aztec::protocol_types::address::aztec_address::AztecAddress': 'address',
-  'aztec::protocol_types::address::eth_address::EthAddress': 'eth_address',
-  'aztec::protocol_types::abis::function_selector::FunctionSelector':
-    'selector',
-  'compressed_string::field_compressed_string::FieldCompressedString':
-    'compressed_string',
-};
+export interface ArtifactSummary {
+  name: string;
+  functionCount: number;
+}
+
+export const createArtifactSummary = (
+  parsed: ParsedArtifact
+): ArtifactSummary => ({
+  name: (parsed.compiled as { name?: string })?.name ?? 'Contract',
+  functionCount: parsed.functions.length,
+});
 
 const normalizeType = (type: RawParamType): ParsedType => {
   if (type.kind === 'struct' && type.path) {
-    const knownKind = KNOWN_STRUCT_PATHS[type.path];
+    const knownKind = getKnownStructKind(type.path);
     if (knownKind) {
       return { kind: knownKind, path: type.path } as ParsedType;
     }
@@ -198,16 +200,22 @@ const extractAllFunctions = (
  * Supports both artifact formats:
  * - NoirCompiledContract (raw from compiler/local builds)
  * - ContractArtifact (processed from registry)
+ * @throws {ArtifactParseError} When JSON is invalid or artifact structure is malformed
  */
 export const parseArtifactSource = (source: string): ParsedArtifact => {
-  const parsed = JSON.parse(source) as Record<string, unknown>;
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(source) as Record<string, unknown>;
+  } catch (err) {
+    throw ArtifactParseError.invalidJson(err);
+  }
 
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error('Invalid artifact: expected JSON object');
+    throw ArtifactParseError.invalidStructure();
   }
 
   if (!Array.isArray(parsed.functions)) {
-    throw new Error('Invalid artifact: missing functions');
+    throw ArtifactParseError.missingFunctions();
   }
 
   const isProcessedFormat = hasProcessedFunctions(parsed);
@@ -491,7 +499,7 @@ export type LoadArtifactResult =
     }
   | {
       success: false;
-      error: string;
+      error: ArtifactError;
     };
 
 /**
@@ -532,7 +540,11 @@ export const loadAndPrepareArtifact = (
     };
   } catch (err) {
     const error =
-      err instanceof Error ? err.message : 'Failed to parse artifact';
+      err instanceof ArtifactParseError
+        ? err
+        : ArtifactParseError.invalidStructure(
+            err instanceof Error ? err.message : 'Failed to parse artifact'
+          );
     return { success: false, error };
   }
 };

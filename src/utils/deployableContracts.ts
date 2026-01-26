@@ -2,6 +2,7 @@ import {
   parseArtifactSource,
   type ParsedFunction,
 } from './contractInteraction';
+import { isKnownStructPath, getKnownStructKind } from './knownStructTypes';
 import { toTitleCase } from './string';
 import type { AztecNetwork } from '../config/networks/constants';
 
@@ -71,19 +72,6 @@ type RegistryFunction = {
 type FlattenedInput = ParsedFunction['inputs'][number];
 
 /**
- * Known struct paths that should be converted to primitive types.
- * These are not flattened - they're treated as single input fields.
- */
-const KNOWN_STRUCT_KINDS: Record<string, string> = {
-  'aztec::protocol_types::address::aztec_address::AztecAddress': 'address',
-  'aztec::protocol_types::address::eth_address::EthAddress': 'eth_address',
-  'aztec::protocol_types::abis::function_selector::FunctionSelector':
-    'selector',
-  'compressed_string::field_compressed_string::FieldCompressedString':
-    'compressed_string',
-};
-
-/**
  * Normalize a registry parameter type, converting known structs to primitive kinds.
  */
 const normalizeRegistryType = (
@@ -91,7 +79,7 @@ const normalizeRegistryType = (
 ): FlattenedInput['type'] => {
   // Check for known struct types (like AztecAddress)
   if (type.kind === 'struct' && type.path) {
-    const knownKind = KNOWN_STRUCT_KINDS[type.path];
+    const knownKind = getKnownStructKind(type.path);
     if (knownKind) {
       return { kind: knownKind, path: type.path } as FlattenedInput['type'];
     }
@@ -116,11 +104,7 @@ const normalizeRegistryType = (
  * Check if a struct type is a known type that shouldn't be flattened.
  */
 const isKnownStructType = (type: RegistryParameter['type']): boolean => {
-  return (
-    type.kind === 'struct' &&
-    typeof type.path === 'string' &&
-    type.path in KNOWN_STRUCT_KINDS
-  );
+  return type.kind === 'struct' && isKnownStructPath(type.path);
 };
 
 /**
@@ -229,7 +213,11 @@ const extractConstructorsFromArtifact = (
     }
 
     return extractFromCompiledContract(artifactJson);
-  } catch {
+  } catch (err) {
+    console.warn(
+      '[deployableContracts] Failed to extract constructors from artifact:',
+      err instanceof Error ? err.message : err
+    );
     return [];
   }
 };

@@ -1,5 +1,9 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
+import {
+  ArtifactFetchError,
+  ArtifactValidationError,
+} from '../../../utils/errors';
 
 const DB_NAME = 'aztec-artifact-registry';
 
@@ -114,10 +118,15 @@ export interface ArtifactResult {
   source: ArtifactSource;
 }
 
+export interface GetArtifactOptions {
+  skipValidation?: boolean;
+}
+
 export class ArtifactRegistryService {
   private static instances = new Map<string, ArtifactRegistryService>();
 
   private memoryCache = new Map<string, ContractArtifact>();
+  private stringCache = new Map<string, string>();
   private pendingRequests = new Map<string, Promise<ArtifactResult>>();
   private db: IDBDatabase | null = null;
 
@@ -133,7 +142,10 @@ export class ArtifactRegistryService {
     return instance;
   }
 
-  async getArtifact(classId: string): Promise<ArtifactResult> {
+  async getArtifact(
+    classId: string,
+    options: GetArtifactOptions = {}
+  ): Promise<ArtifactResult> {
     const memoryCached = this.memoryCache.get(classId);
     if (memoryCached) {
       return { artifact: memoryCached, source: 'memory' };
@@ -145,7 +157,7 @@ export class ArtifactRegistryService {
       return { artifact: result.artifact, source: result.source };
     }
 
-    const request = this.loadArtifact(classId);
+    const request = this.loadArtifact(classId, options);
     this.pendingRequests.set(classId, request);
 
     try {
@@ -156,13 +168,24 @@ export class ArtifactRegistryService {
     }
   }
 
-  private async loadArtifact(classId: string): Promise<ArtifactResult> {
+  getStringifiedArtifact(classId: string): string | null {
+    return this.stringCache.get(classId) ?? null;
+  }
+
+  private async loadArtifact(
+    classId: string,
+    options: GetArtifactOptions = {}
+  ): Promise<ArtifactResult> {
+    const { skipValidation = false } = options;
+
     const storedArtifact = await this.getFromStorage(classId);
     if (storedArtifact) {
       try {
         const restoredArtifact = restoreBytecodeBuffers(storedArtifact);
-        await this.validateArtifact(restoredArtifact, classId);
-        this.memoryCache.set(classId, restoredArtifact);
+        if (!skipValidation) {
+          await this.validateArtifact(restoredArtifact, classId);
+        }
+        this.cacheArtifact(classId, restoredArtifact);
         return { artifact: restoredArtifact, source: 'indexeddb' };
       } catch (err) {
         console.warn(
@@ -172,29 +195,41 @@ export class ArtifactRegistryService {
       }
     }
 
-    const artifact = await this.fetchFromRegistry(classId);
-    this.memoryCache.set(classId, artifact);
+    const artifact = await this.fetchFromRegistry(classId, options);
+    this.cacheArtifact(classId, artifact);
     await this.saveToStorage(classId, artifact);
     return { artifact, source: 'network' };
   }
 
-  private async fetchFromRegistry(classId: string): Promise<ContractArtifact> {
+  private cacheArtifact(classId: string, artifact: ContractArtifact): void {
+    this.memoryCache.set(classId, artifact);
+    this.stringCache.set(classId, JSON.stringify(artifact));
+  }
+
+  private async fetchFromRegistry(
+    classId: string,
+    options: GetArtifactOptions = {}
+  ): Promise<ContractArtifact> {
+    const { skipValidation = false } = options;
     const url = `${this.baseUrl}/api/artifacts/${classId}`;
 
     const response = await fetch(url);
 
     if (!response.ok) {
       if (response.status === 404) {
-        throw new Error(`Artifact not found for classId: ${classId}`);
+        throw ArtifactFetchError.notFound(classId);
       }
-      throw new Error(
-        `Failed to fetch artifact from registry: ${response.status} ${response.statusText}`
+      throw ArtifactFetchError.fetchFailed(
+        response.status,
+        response.statusText
       );
     }
 
     const rawArtifact = (await response.json()) as SerializedArtifact;
     const artifact = restoreBytecodeBuffers(rawArtifact);
-    await this.validateArtifact(artifact, classId);
+    if (!skipValidation) {
+      await this.validateArtifact(artifact, classId);
+    }
     return artifact;
   }
 
@@ -203,7 +238,7 @@ export class ArtifactRegistryService {
     expectedClassId: string
   ): Promise<void> {
     if (!artifact.name || !Array.isArray(artifact.functions)) {
-      throw new Error(
+      throw new ArtifactValidationError(
         `Invalid artifact structure for classId: ${expectedClassId}`
       );
     }
@@ -212,9 +247,9 @@ export class ArtifactRegistryService {
     const computedClassId = contractClass.id.toString();
 
     if (computedClassId !== expectedClassId) {
-      throw new Error(
-        `Artifact classId mismatch: expected ${expectedClassId}, got ${computedClassId}. ` +
-          `Registry artifact does not match deployed contract.`
+      throw ArtifactValidationError.classIdMismatch(
+        expectedClassId,
+        computedClassId
       );
     }
   }
@@ -264,7 +299,11 @@ export class ArtifactRegistryService {
           resolve(result?.artifact ?? null);
         };
       });
-    } catch {
+    } catch (err) {
+      console.warn(
+        `[ArtifactRegistry] Failed to read artifact ${classId} from IndexedDB:`,
+        err instanceof Error ? err.message : err
+      );
       return null;
     }
   }

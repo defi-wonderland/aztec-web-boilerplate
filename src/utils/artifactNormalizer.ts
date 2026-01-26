@@ -244,11 +244,6 @@ const normalizeProcessedFunction = (
 // =============================================================================
 
 /**
- * Union type for any supported function format.
- */
-export type AnyFunction = RawFunction | ProcessedFunction;
-
-/**
  * Normalizes a function from any supported format to the internal representation.
  * Automatically detects the format and applies the appropriate transformation.
  *

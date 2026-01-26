@@ -1,7 +1,10 @@
 import { CachedContract } from '../../utils/contractCache';
 import type { PreconfiguredContract } from '../../config/preconfiguredContracts';
 import type { FormValues } from '../../store/form';
-import type { ParsedFunction } from '../../utils/contractInteraction';
+import type {
+  ParsedFunction,
+  ArtifactSummary,
+} from '../../utils/contractInteraction';
 import type { DeployableContract } from '../../utils/deployableContracts';
 
 export type LogLevel = 'info' | 'error' | 'success' | 'warning';
@@ -44,11 +47,6 @@ export type ArtifactLoaderMode = 'existing' | 'deploy';
 // =============================================================================
 
 /**
- * State for deployment form values.
- */
-export type DeploymentFormValues = Record<string, string>;
-
-/**
  * Props for PreconfiguredSelector component.
  */
 export interface PreconfiguredSelectorProps {
@@ -58,6 +56,9 @@ export interface PreconfiguredSelectorProps {
   isLoading?: boolean;
   disabled?: boolean;
 }
+
+// Re-export from contractInteraction
+export type { ArtifactSummary };
 
 /**
  * Props for ExistingContractForm component.
@@ -73,6 +74,7 @@ export interface ExistingContractFormProps {
   isPreconfiguredMode: boolean;
   isLoadingPreconfigured?: boolean;
   canLoad: boolean;
+  artifactSummary?: ArtifactSummary | null;
 }
 
 /**
@@ -98,7 +100,7 @@ export interface DeployContractFormProps {
   customDeployable: DeployableContract | null;
   selectedConstructorName: string | null;
   onSelectConstructor: (constructorName: string) => void;
-  formValues: DeploymentFormValues;
+  formValues: Record<string, string>;
   onFormValueChange: (paramName: string, value: string) => void;
   onDeploy: () => void;
   isDeploying: boolean;
@@ -107,75 +109,6 @@ export interface DeployContractFormProps {
   customArtifactInput: string;
   onCustomArtifactChange: (value: string) => void;
   customArtifactError?: string | null;
-}
-
-/**
- * Grouped config for existing contract form.
- */
-export interface ExistingContractConfig {
-  address: string;
-  artifactInput: string;
-  onAddressChange: (value: string) => void;
-  onArtifactChange: (value: string) => void;
-  onLoad: () => void;
-  error?: string | null;
-  isValidAddress: boolean;
-}
-
-/**
- * Grouped config for saved contracts management.
- */
-export interface SavedContractsConfig {
-  contracts: CachedContract[];
-  activeAddress: string;
-  onApply: (contract: CachedContract) => void;
-  onDelete: (address: string) => void;
-  onClearAll: () => void;
-  hasCache: boolean;
-}
-
-/**
- * Grouped config for preconfigured contracts selector.
- */
-export interface PreconfiguredConfig {
-  options: PreconfiguredContract[];
-  selectedId: string | null;
-  onSelect: (contractId: string | null) => void;
-  isLoading?: boolean;
-}
-
-/**
- * Grouped config for contract deployment.
- */
-export interface DeployConfig {
-  contracts: DeployableContract[];
-  selectedContractId: string | null;
-  onSelectContract: (contractId: string | null) => void;
-  isCustomSelected: boolean;
-  customDeployable: DeployableContract | null;
-  selectedConstructorName: string | null;
-  onSelectConstructor: (constructorName: string) => void;
-  formValues: DeploymentFormValues;
-  onFormValueChange: (paramName: string, value: string) => void;
-  onDeploy: () => void;
-  isDeploying: boolean;
-  error?: string | null;
-  canDeploy: boolean;
-  customArtifactInput: string;
-  onCustomArtifactChange: (value: string) => void;
-  customArtifactError?: string | null;
-}
-
-/**
- * Props for ArtifactLoader orchestrator component.
- * Uses grouped configs for cleaner API.
- */
-export interface ArtifactLoaderProps {
-  mode?: ArtifactLoaderMode;
-  existing: ExistingContractConfig;
-  saved: SavedContractsConfig;
-  preconfigured?: PreconfiguredConfig;
-  deploy?: DeployConfig;
 }
 
 /**

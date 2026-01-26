@@ -7,6 +7,7 @@ import type {
 } from '../../components/contract-interaction/types';
 import type { CachedContract } from '../../utils/contractCache';
 import type { ParsedArtifact } from '../../utils/contractInteraction';
+import type { ArtifactError } from '../../utils/errors';
 
 type State = {
   mode: ArtifactLoaderMode;
@@ -18,7 +19,7 @@ type State = {
   // Artifact state (moved from useContractInvoker local state)
   artifactInput: string;
   parsedArtifact: ParsedArtifact | null;
-  parseError: string | null;
+  parseError: ArtifactError | null;
   savedContracts: CachedContract[];
   isLoadingPreconfigured: boolean;
 };
@@ -35,7 +36,7 @@ type Actions = {
   // Artifact actions
   setArtifactInput: (input: string) => void;
   setParsedArtifact: (artifact: ParsedArtifact | null) => void;
-  setParseError: (error: string | null) => void;
+  setParseError: (error: ArtifactError | null) => void;
   setSavedContracts: (contracts: CachedContract[]) => void;
   setIsLoadingPreconfigured: (loading: boolean) => void;
   refreshSavedContracts: (networkName?: string) => void;

@@ -69,6 +69,7 @@ export const findConstructorByName = (
 /**
  * Resolve artifact for a preconfigured contract.
  * Returns artifactJson string, fetching from registry if needed.
+ * Preconfigured contracts by default are trusted, so validation is skipped for performance.
  */
 export const resolvePreconfiguredArtifact = async (
   contract: PreconfiguredContract
@@ -79,8 +80,12 @@ export const resolvePreconfiguredArtifact = async (
 
   if ('classId' in contract && contract.classId && REGISTRY_URL) {
     const service = ArtifactRegistryService.getInstance(REGISTRY_URL);
-    const { artifact } = await service.getArtifact(contract.classId);
-    return JSON.stringify(artifact);
+    const cachedString = service.getStringifiedArtifact(contract.classId);
+    if (cachedString) {
+      return cachedString;
+    }
+    await service.getArtifact(contract.classId, { skipValidation: true });
+    return service.getStringifiedArtifact(contract.classId);
   }
 
   return null;
