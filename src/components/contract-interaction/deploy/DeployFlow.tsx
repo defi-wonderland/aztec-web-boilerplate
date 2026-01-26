@@ -92,7 +92,7 @@ const buildCustomDeployableContract = (
       constants.MAX_CACHE_CHARS
     );
     if (!result.success) {
-      return { contract: null, error: result.error ?? 'Invalid artifact' };
+      return { contract: null, error: result.error.message };
     }
 
     const parsedArtifact = result.parsed;
@@ -196,7 +196,6 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
     };
   }, [needsAsyncResolution, selectedDeployable]);
 
-  // Compute effective deployable: custom, async-resolved, or direct
   const effectiveDeployable = useMemo(() => {
     if (isCustomSelected) return customDeployable.contract;
     if (!selectedDeployable) return null;

@@ -23,7 +23,6 @@ function extractSummaryFromJson(json: string): ArtifactSummary | null {
     const nameMatch = startSection.match(/"name"\s*:\s*"([^"]+)"/);
     const name = nameMatch?.[1] ?? 'Contract';
 
-    // Count function entries by matching function_type occurrences
     const functionTypeMatches = json.match(/"function_type"\s*:/g);
     const functionCount = functionTypeMatches?.length ?? 0;
 
