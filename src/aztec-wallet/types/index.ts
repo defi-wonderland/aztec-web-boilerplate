@@ -19,8 +19,10 @@ export type {
   CreateAccountResult,
   AccountCredentials,
   AzguardAccountData,
+  ModalWalletType,
 } from './aztec';
 export { WalletType, ExternalSignerType } from './aztec';
+import type { ModalWalletType } from './aztec';
 
 // Theme types
 export type {
@@ -55,5 +57,5 @@ export interface ConnectionState {
   status: ConnectionStatus;
   error: string | null;
   walletId: string | null;
-  walletType: 'embedded' | 'aztec' | 'evm' | null;
+  walletType: ModalWalletType | null;
 }

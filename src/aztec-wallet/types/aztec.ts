@@ -70,6 +70,16 @@ export enum ExternalSignerType {
   // WALLET_CONNECT = 'walletconnect',
 }
 
+/**
+ * Wallet type for connect modal UI
+ *
+ * Used in the connect modal to categorize wallet options:
+ * - 'embedded': Built-in wallet with keys stored in the app
+ * - 'aztec': Native Aztec browser wallets (e.g., Azguard)
+ * - 'evm': External signers using EVM wallets (e.g., MetaMask)
+ */
+export type ModalWalletType = 'embedded' | 'aztec' | 'evm';
+
 // ============================================================================
 // AZGUARD WALLET INTERFACES
 // ============================================================================

@@ -7,6 +7,7 @@ import { useWalletStore } from '../../store/wallet';
 import { AccountModal } from '../AccountModal';
 import { ConnectModal } from '../ConnectModal';
 import { NetworkModal } from '../NetworkModal';
+import type { ModalWalletType } from '../../types';
 
 /**
  * Internal component that renders all AztecWallet modals
@@ -72,7 +73,7 @@ export const AztecWalletModals: React.FC = () => {
 
   // Handle wallet connection from modal
   const handleConnect = useCallback(
-    async (walletId: string, walletType: 'embedded' | 'aztec' | 'evm') => {
+    async (walletId: string, walletType: ModalWalletType) => {
       // Use the appropriate connection method based on wallet type
       if (walletType === 'embedded') {
         if (walletState.hasSavedEmbeddedAccount()) {
