@@ -6,3 +6,4 @@ export {
   type WalletGroupButtonProps,
 } from './WalletGroupButton';
 export { BackButton, type BackButtonProps } from './BackButton';
+export { NetworkIcon, type NetworkIconProps } from './NetworkIcon';

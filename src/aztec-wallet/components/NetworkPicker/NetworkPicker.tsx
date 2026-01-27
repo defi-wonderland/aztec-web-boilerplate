@@ -8,6 +8,7 @@ import {
 import { useNetworkModal } from '../../hooks/useNetworkModal';
 import { useAztecWalletContext } from '../../providers/context';
 import { useNetworkStore } from '../../store/network';
+import { NetworkIcon } from '../shared';
 import type { NetworkPickerVariant } from '../../types';
 
 const styles = {
@@ -81,19 +82,7 @@ export const NetworkPicker: React.FC<NetworkPickerProps> = ({
     currentNetwork?.displayName ?? currentConfig.displayName
   );
   const icon = getNetworkIcon(currentConfig.name, currentNetwork?.icon);
-
-  const renderIcon = () => {
-    if (typeof icon === 'string') {
-      return <span className={styles.icon}>{icon}</span>;
-    }
-    const IconComponent = icon;
-    return (
-      <IconComponent
-        size={iconSize(variant === 'compact' ? 'md' : undefined)}
-        className={styles.icon}
-      />
-    );
-  };
+  const iconSizeVariant = variant === 'compact' ? 'md' : 'sm';
 
   if (variant === 'compact') {
     return (
@@ -103,7 +92,13 @@ export const NetworkPicker: React.FC<NetworkPickerProps> = ({
         className={cn(styles.buttonCompact, className)}
         title={displayName}
       >
-        <div className={styles.iconContainer}>{renderIcon()}</div>
+        <div className={styles.iconContainer}>
+          <NetworkIcon
+            icon={icon}
+            size={iconSizeVariant}
+            className={styles.icon}
+          />
+        </div>
       </button>
     );
   }
@@ -114,7 +109,13 @@ export const NetworkPicker: React.FC<NetworkPickerProps> = ({
       onClick={open}
       className={cn(styles.buttonFull, className)}
     >
-      <div className={styles.iconContainer}>{renderIcon()}</div>
+      <div className={styles.iconContainer}>
+        <NetworkIcon
+          icon={icon}
+          size={iconSizeVariant}
+          className={styles.icon}
+        />
+      </div>
       <span className={styles.networkName}>{displayName}</span>
       <ChevronDown size={iconSize()} className={styles.chevron} />
     </button>

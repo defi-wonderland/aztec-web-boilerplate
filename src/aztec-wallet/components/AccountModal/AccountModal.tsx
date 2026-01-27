@@ -14,6 +14,7 @@ import {
   getNetworkDisplayName,
 } from '../../config/networkPresets';
 import { getAddressEmoji } from '../ConnectButton/ConnectButton';
+import { NetworkIcon } from '../shared';
 
 const styles = {
   content: 'sm:max-w-sm',
@@ -89,20 +90,14 @@ const NetworkSection: React.FC<{ networkName: string }> = ({ networkName }) => {
     [networkName]
   );
 
-  const renderIcon = () => {
-    if (typeof icon === 'string') {
-      return <span className={styles.networkIconText}>{icon}</span>;
-    }
-    const IconComponent = icon;
-    return <IconComponent size={iconSize()} />;
-  };
-
   return (
     <div className={styles.section}>
       <span className={styles.label}>Network</span>
       <div className={styles.networkContainer}>
         <div className={styles.networkInfo}>
-          <div className={styles.networkIconContainer}>{renderIcon()}</div>
+          <div className={styles.networkIconContainer}>
+            <NetworkIcon icon={icon} className={styles.networkIconText} />
+          </div>
           <span className={styles.networkName}>{displayName}</span>
         </div>
         <span className={styles.networkBadge}>Active</span>
