@@ -13,7 +13,7 @@ import { useEVMStore } from '../store/evm';
  *
  * @example Check if MetaMask is installed
  * ```tsx
- * const isMetaMaskInstalled = useIsWalletInstalled('io.metamask');
+ * const isMetaMaskInstalled = useIsEvmWalletInstalled('io.metamask');
  *
  * if (!isMetaMaskInstalled) {
  *   return <a href="https://metamask.io">Install MetaMask</a>;
@@ -22,7 +22,7 @@ import { useEVMStore } from '../store/evm';
  *
  * @example Conditional wallet button
  * ```tsx
- * const isRabbyInstalled = useIsWalletInstalled('io.rabby');
+ * const isRabbyInstalled = useIsEvmWalletInstalled('io.rabby');
  *
  * return (
  *   <button disabled={!isRabbyInstalled}>
@@ -31,7 +31,7 @@ import { useEVMStore } from '../store/evm';
  * );
  * ```
  */
-export function useIsWalletInstalled(rdns: string | undefined): boolean {
+export function useIsEvmWalletInstalled(rdns: string | undefined): boolean {
   const discoveredWallets = useEVMStore((state) => state.discoveredWallets);
 
   return useMemo(() => {
@@ -50,21 +50,21 @@ export function useDiscoveredWallets() {
 }
 
 /**
- * Hook to get availability info for multiple wallets
+ * Hook to get availability info for multiple EVM wallets
  *
  * @param wallets - Array of wallet configs with rdns
  * @returns Map of rdns to installation status
  *
  * @example
  * ```tsx
- * const availability = useWalletsAvailability([
+ * const availability = useEvmWalletsAvailability([
  *   { id: 'metamask', rdns: 'io.metamask' },
  *   { id: 'rabby', rdns: 'io.rabby' },
  * ]);
  * // availability = { 'io.metamask': true, 'io.rabby': false }
  * ```
  */
-export function useWalletsAvailability(
+export function useEvmWalletsAvailability(
   wallets: Array<{ rdns?: string }>
 ): Record<string, boolean> {
   const discoveredWallets = useEVMStore((state) => state.discoveredWallets);
