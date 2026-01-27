@@ -16,6 +16,7 @@ import {
 import { WalletType } from '../types/aztec';
 import { AztecWalletContext } from './context';
 import type { ExternalSignerWalletConnector } from '../../types/walletConnector';
+import type { AztecNetwork } from '../../config/networks/constants';
 import type {
   AztecWalletConfig,
   NetworkPreset,
@@ -183,7 +184,7 @@ function toStoreNetworkPresets(
   networks: NetworkPreset[]
 ): StoreNetworkPreset[] {
   return networks.map((n) => ({
-    aztecNetwork: n.name as 'devnet' | 'sandbox',
+    aztecNetwork: n.name as AztecNetwork,
     nodeUrl: n.nodeUrl,
   }));
 }
