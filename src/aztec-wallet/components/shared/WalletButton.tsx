@@ -128,11 +128,12 @@ export const WalletButton: React.FC<WalletButtonProps> = ({
       </div>
 
       <div className={styles.status}>
-        {isConnecting ? (
+        {isConnecting && (
           <div className={styles.spinnerContainer}>
             <Spinner size="sm" />
           </div>
-        ) : isInstalled !== undefined ? (
+        )}
+        {!isConnecting && isInstalled !== undefined && (
           <span
             className={cn(
               styles.statusDot,
@@ -141,7 +142,7 @@ export const WalletButton: React.FC<WalletButtonProps> = ({
                 : styles.statusDotNotInstalled
             )}
           />
-        ) : null}
+        )}
       </div>
     </button>
   );
