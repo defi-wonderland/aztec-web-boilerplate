@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '../../../utils';
 import { Spinner } from './Spinner';
+import type { IconType } from '../../types';
 
 const styles = {
   button: [
@@ -41,7 +42,7 @@ export interface WalletButtonProps {
   /** Wallet name */
   name: string;
   /** Wallet icon - emoji, URL, or React component */
-  icon?: string | React.ComponentType<{ className?: string }>;
+  icon?: IconType;
   /** Whether wallet is installed/available */
   isInstalled?: boolean;
   /** Whether this wallet is currently connecting */

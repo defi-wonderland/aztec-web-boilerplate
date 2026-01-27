@@ -1,5 +1,6 @@
 // Config types
 export type {
+  IconType,
   AztecWalletConfig,
   ResolvedAztecWalletConfig,
   NetworkPreset,
