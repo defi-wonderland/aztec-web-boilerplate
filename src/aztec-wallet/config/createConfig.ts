@@ -2,6 +2,7 @@ import { BrowserWalletConnector } from '../connectors/BrowserWalletConnector';
 import { createEmbeddedConnector } from '../connectors/EmbeddedConnector';
 import { ExternalSignerConnector } from '../connectors/ExternalSignerConnector';
 import { ExternalSignerType } from '../types/aztec';
+import { isStringArray } from '../../utils';
 import {
   DEFAULT_LABELS,
   DEFAULT_MODAL_CONFIG,
@@ -22,15 +23,6 @@ import type {
   EVMWalletsGroupConfig,
   ResolvedAztecWalletConfig,
 } from '../types';
-
-/**
- * Check if value is an array of strings (simple config)
- */
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === 'string')
-  );
-}
 
 /**
  * Check if value is a full group config (has 'wallets' property)
