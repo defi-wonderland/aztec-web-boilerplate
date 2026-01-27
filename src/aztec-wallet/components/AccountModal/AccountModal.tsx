@@ -8,7 +8,7 @@ import {
   Button,
   VisuallyHidden,
 } from '../../../components/ui';
-import { cn, iconSize } from '../../../utils';
+import { cn, iconSize, truncateAddress } from '../../../utils';
 import {
   getNetworkIcon,
   getNetworkDisplayName,
@@ -78,14 +78,6 @@ const styles = {
     'border border-red-500/20 hover:border-red-500/40',
   ].join(' '),
 } as const;
-
-/**
- * Truncate an address for display (longer version for modal)
- */
-function truncateAddress(address: string): string {
-  if (address.length <= 20) return address;
-  return `${address.slice(0, 10)}...${address.slice(-8)}`;
-}
 
 /**
  * Network section component
@@ -195,7 +187,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               )}
             >
               <span className={styles.addressText} title={address}>
-                {truncateAddress(address)}
+                {truncateAddress(address, 10, 8)}
               </span>
               <button
                 onClick={handleCopy}

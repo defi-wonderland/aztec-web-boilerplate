@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { Wallet, ChevronDown } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { Button } from '../../../components/ui';
-import { cn, iconSize } from '../../../utils';
+import { cn, iconSize, truncateAddress } from '../../../utils';
 import { useAztecWalletContext } from '../../providers/context';
 import { useModalStore } from '../../store/modal';
 import { useWalletStore } from '../../store/wallet';
@@ -95,14 +95,6 @@ const styles = {
     'group-hover:text-default',
   ].join(' '),
 } as const;
-
-/**
- * Truncate an address for display
- */
-function truncateAddress(address: string): string {
-  if (address.length <= 13) return address;
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
 
 export interface ConnectButtonProps {
   /** Label for disconnected state (default: "Connect Wallet") */
