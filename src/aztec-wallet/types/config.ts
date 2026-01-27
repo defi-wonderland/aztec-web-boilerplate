@@ -48,8 +48,8 @@ export interface AztecBrowserWalletConfig {
   name: string;
   /** Icon - URL string or React component */
   icon?: string | React.ComponentType<{ className?: string }>;
-  /** Factory function to create the adapter */
-  adapter: () => IBrowserWalletAdapter;
+  /** Factory function to create the adapter (async for lazy loading) */
+  adapter: () => Promise<IBrowserWalletAdapter>;
   /** Check if wallet extension is installed (optional, async) */
   checkInstalled?: () => Promise<boolean>;
 }

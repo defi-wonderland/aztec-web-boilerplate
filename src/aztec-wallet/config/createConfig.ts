@@ -80,8 +80,9 @@ function resolveAztecWallets(ids: string[]): AztecBrowserWalletConfig[] {
         checkInstalled: preset.checkInstalled,
       });
     } else {
+      const available = Object.keys(AZTEC_WALLET_PRESETS).join(', ');
       console.warn(
-        `AztecWallet: Unknown Aztec wallet "${id}". Available: azguard`
+        `AztecWallet: Unknown Aztec wallet "${id}". Available: ${available}`
       );
     }
   }
@@ -237,7 +238,7 @@ export function createAztecWalletConfig(
     resolvedEvmWallets = false;
   }
 
-  const resolvedWalletGroups = {
+  const resolvedWalletGroups: ResolvedAztecWalletConfig['walletGroups'] = {
     embedded: resolvedEmbedded,
     aztecWallets: resolvedAztecWallets,
     evmWallets: resolvedEvmWallets,
