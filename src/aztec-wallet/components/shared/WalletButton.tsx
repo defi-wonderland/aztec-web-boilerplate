@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../../utils';
+import { IconRenderer } from './IconRenderer';
 import { Spinner } from './Spinner';
 import type { IconType } from '../../types';
 
@@ -25,7 +26,6 @@ const styles = {
   iconContainerEnabled: 'group-hover:bg-accent/10',
   iconContainerActive: 'bg-accent/10',
   iconContainerDisabled: 'grayscale',
-  icon: 'text-lg',
   iconImage: 'w-6 h-6 rounded-lg object-contain',
   content: 'flex-1 flex flex-col items-start gap-0.5',
   name: 'text-sm font-semibold text-default',
@@ -67,28 +67,6 @@ export const WalletButton: React.FC<WalletButtonProps> = ({
   onClick,
   className,
 }) => {
-  const renderIcon = () => {
-    if (!icon) return null;
-
-    // React component
-    if (typeof icon === 'function') {
-      const IconComponent = icon;
-      return <IconComponent className={styles.iconImage} />;
-    }
-
-    // URL (image)
-    if (
-      icon.startsWith('http') ||
-      icon.startsWith('/') ||
-      icon.startsWith('data:')
-    ) {
-      return <img src={icon} alt={name} className={styles.iconImage} />;
-    }
-
-    // Emoji or text
-    return <span className={styles.icon}>{icon}</span>;
-  };
-
   // Disable button if wallet is explicitly not installed
   const isNotInstalled = isInstalled === false;
   const isDisabled = disabled || isConnecting || isNotInstalled;
@@ -114,7 +92,7 @@ export const WalletButton: React.FC<WalletButtonProps> = ({
             : styles.iconContainerEnabled
         )}
       >
-        {renderIcon()}
+        <IconRenderer icon={icon} className={styles.iconImage} alt={name} />
       </div>
 
       <div className={styles.content}>

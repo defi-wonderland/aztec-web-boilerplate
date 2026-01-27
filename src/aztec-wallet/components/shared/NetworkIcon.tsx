@@ -1,9 +1,11 @@
-import React, { type ComponentType } from 'react';
-import { iconSize, type IconSize } from '../../../utils';
+import React from 'react';
+import { IconRenderer } from './IconRenderer';
+import type { IconSize } from '../../../utils';
+import type { IconType } from '../../types';
 
 export interface NetworkIconProps {
   /** The icon - either an emoji string or a Lucide-style component */
-  icon: string | ComponentType<{ size?: number; className?: string }>;
+  icon: IconType;
   /** Size variant for component icons (default: 'sm') */
   size?: IconSize;
   /** Additional CSS classes */
@@ -13,9 +15,7 @@ export interface NetworkIconProps {
 /**
  * Network icon component that handles both emoji strings and Lucide components
  *
- * Centralizes the logic for rendering network icons, which can be either:
- * - A string (emoji like "🌐")
- * - A Lucide-style component (Globe, FlaskConical, etc.)
+ * This is a convenience wrapper around IconRenderer for network-specific icons.
  *
  * @example
  * ```tsx
@@ -31,10 +31,5 @@ export const NetworkIcon: React.FC<NetworkIconProps> = ({
   size = 'sm',
   className,
 }) => {
-  if (typeof icon === 'string') {
-    return <span className={className}>{icon}</span>;
-  }
-
-  const IconComponent = icon;
-  return <IconComponent size={iconSize(size)} className={className} />;
+  return <IconRenderer icon={icon} size={size} className={className} />;
 };
