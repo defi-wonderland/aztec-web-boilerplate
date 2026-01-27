@@ -1,4 +1,5 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { AztecNetwork } from '../../../config/networks/constants';
 import type { IBrowserWalletAdapter } from '../../../types/browserWallet';
 import type {
   ConnectionStatus,
@@ -94,7 +95,7 @@ export type WalletActions = {
   // Browser Wallet
   connectBrowserWallet: (
     adapter: IBrowserWalletAdapter,
-    networkName: string,
+    networkName: AztecNetwork,
     connectorId: WalletConnectorId
   ) => Promise<void>;
   setBrowserWalletState: (

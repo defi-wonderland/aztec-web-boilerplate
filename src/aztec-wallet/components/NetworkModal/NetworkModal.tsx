@@ -8,6 +8,7 @@ import {
 } from '../../config/networkPresets';
 import { useNetworkStore } from '../../store/network';
 import { NetworkIcon } from '../shared';
+import type { AztecNetwork } from '../../../config/networks/constants';
 import type { NetworkPreset } from '../../types';
 
 const styles = {
@@ -98,7 +99,7 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
   const switchToNetwork = useNetworkStore((state) => state.switchToNetwork);
 
   const handleNetworkSelect = useCallback(
-    (networkName: string) => {
+    (networkName: AztecNetwork) => {
       switchToNetwork(networkName);
       onOpenChange(false);
     },

@@ -13,6 +13,7 @@ import { MinimalWallet } from '../../../../utils/MinimalWallet';
 import { getEnv } from '../../../../utils/env';
 import { NetworkService } from '../network';
 import { AztecStorageService } from '../storage';
+import type { AztecNetwork } from '../../../../config/networks/constants';
 
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
@@ -29,7 +30,7 @@ export interface SharedPXEInstance {
 interface PXEInstanceEntry {
   instance: SharedPXEInstance;
   nodeUrl: string;
-  networkName: string;
+  networkName: AztecNetwork;
 }
 
 /**
@@ -54,7 +55,7 @@ class SharedPXEServiceClass {
    */
   async getInstance(
     nodeUrl: string,
-    networkName: string
+    networkName: AztecNetwork
   ): Promise<SharedPXEInstance> {
     const normalizedNodeUrl = this.normalizeNodeUrl(nodeUrl);
     const key = this.getInstanceKey(networkName);
@@ -94,7 +95,7 @@ class SharedPXEServiceClass {
   /**
    * Check if a PXE instance is initialized for a network
    */
-  isInitialized(nodeUrl: string, networkName: string): boolean {
+  isInitialized(nodeUrl: string, networkName: AztecNetwork): boolean {
     const key = this.getInstanceKey(networkName);
     return this.instances.has(key);
   }
@@ -102,7 +103,7 @@ class SharedPXEServiceClass {
   /**
    * Check if initialization is in progress for a network
    */
-  isInitializing(nodeUrl: string, networkName: string): boolean {
+  isInitializing(nodeUrl: string, networkName: AztecNetwork): boolean {
     const key = this.getInstanceKey(networkName);
     return this.initPromises.has(key);
   }
@@ -112,7 +113,7 @@ class SharedPXEServiceClass {
    */
   getExistingInstance(
     nodeUrl: string,
-    networkName: string
+    networkName: AztecNetwork
   ): SharedPXEInstance | null {
     const key = this.getInstanceKey(networkName);
     return this.instances.get(key)?.instance ?? null;
@@ -121,7 +122,7 @@ class SharedPXEServiceClass {
   /**
    * Clear a specific PXE instance (useful for network switching)
    */
-  clearInstance(nodeUrl: string, networkName: string): void {
+  clearInstance(nodeUrl: string, networkName: AztecNetwork): void {
     const key = this.getInstanceKey(networkName);
     this.instances.delete(key);
     this.cachedPaymentMethods.delete(key);
@@ -137,7 +138,7 @@ class SharedPXEServiceClass {
     logger.info('Cleared all PXE instances');
   }
 
-  private getInstanceKey(networkName: string): string {
+  private getInstanceKey(networkName: AztecNetwork): string {
     return `${networkName}`;
   }
 
@@ -150,7 +151,7 @@ class SharedPXEServiceClass {
 
   private async initializeInstance(
     nodeUrl: string,
-    networkName: string,
+    networkName: AztecNetwork,
     key: string
   ): Promise<SharedPXEInstance> {
     logger.info(`Initializing PXE for network: ${networkName}`);
@@ -210,7 +211,7 @@ class SharedPXEServiceClass {
   }
 
   private async getOrCreateStore(
-    networkName: string,
+    networkName: AztecNetwork,
     storeName: string
   ): Promise<Awaited<ReturnType<typeof createStore>>> {
     const existingPromise = this.storePromises.get(networkName);

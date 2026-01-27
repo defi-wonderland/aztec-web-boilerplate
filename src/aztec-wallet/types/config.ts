@@ -1,13 +1,13 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { AztecNetwork } from '../../config/networks/constants';
-import type { IBrowserWalletAdapter } from '../adapters/types';
+import type { IBrowserWalletAdapter } from '../../types/browserWallet';
 
 /**
  * Network preset for AztecWallet configuration
  */
 export interface NetworkPreset {
   /** Network identifier (e.g., 'devnet', 'sandbox') */
-  name: string;
+  name: AztecNetwork;
   /** Display name for UI */
   displayName?: string;
   /** Icon - emoji string or React component */

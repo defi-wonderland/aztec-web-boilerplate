@@ -15,6 +15,7 @@ import {
 } from '../../config/networkPresets';
 import { getAddressEmoji } from '../ConnectButton/ConnectButton';
 import { NetworkIcon } from '../shared';
+import type { AztecNetwork } from '../../../config/networks/constants';
 
 const styles = {
   content: 'sm:max-w-sm',
@@ -83,7 +84,9 @@ const styles = {
 /**
  * Network section component
  */
-const NetworkSection: React.FC<{ networkName: string }> = ({ networkName }) => {
+const NetworkSection: React.FC<{ networkName: AztecNetwork }> = ({
+  networkName,
+}) => {
   const icon = useMemo(() => getNetworkIcon(networkName), [networkName]);
   const displayName = useMemo(
     () => getNetworkDisplayName(networkName),
@@ -114,7 +117,7 @@ export interface AccountModalProps {
   /** Connected account address */
   address: string;
   /** Current network name */
-  networkName?: string;
+  networkName?: AztecNetwork;
   /** Whether to show network section (default: false) */
   showNetwork?: boolean;
   /** Callback when disconnect is clicked */

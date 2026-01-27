@@ -10,6 +10,7 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import {
   getChainId,
   type AztecChainId,
+  type AztecNetwork,
 } from '../../../config/networks/constants';
 import { parseAddressFromCaip } from '../../../utils/azguard';
 import { AzguardWalletService } from './AzguardWalletService';
@@ -95,7 +96,7 @@ export class AzguardAdapter implements IBrowserWalletAdapter {
     return this.service.getState();
   }
 
-  async connect(networkName: string): Promise<string[]> {
+  async connect(networkName: AztecNetwork): Promise<string[]> {
     const chain: AztecChainId = getChainId(networkName);
     const dappMetadata = buildDappMetadata();
     const requiredPermissions = [

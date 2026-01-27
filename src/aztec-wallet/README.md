@@ -83,7 +83,7 @@ const {
   // Actions
   connect, // (connectorId: string) => Promise<void>
   disconnect, // () => Promise<void>
-  switchNetwork, // (networkName: string) => Promise<void>
+  switchNetwork, // (networkName: AztecNetwork) => Promise<void>
 
   // PXE access (Embedded/EVM wallets only)
   getPXE, // () => PXE | null

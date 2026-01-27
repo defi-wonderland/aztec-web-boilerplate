@@ -11,6 +11,7 @@ import {
 } from '../store/network';
 import { useWalletStore } from '../store/wallet';
 import { WalletType } from '../types/aztec';
+import type { AztecNetwork } from '../../config/networks/constants';
 import type { StoreNetworkPreset } from '../types';
 import type { Hex } from 'viem';
 
@@ -282,7 +283,7 @@ export function useAztecWallet() {
   }, [walletActions]);
 
   // Switch network
-  const switchNetwork = useCallback(async (networkName: string) => {
+  const switchNetwork = useCallback(async (networkName: AztecNetwork) => {
     const networkStore = getNetworkStore();
     networkStore.switchToNetwork(networkName);
   }, []);

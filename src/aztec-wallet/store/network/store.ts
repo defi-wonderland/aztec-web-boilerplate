@@ -26,7 +26,7 @@ type State = {
 
 type Actions = {
   initialize: (presets: StoreNetworkPreset[]) => void;
-  switchToNetwork: (name: string) => boolean;
+  switchToNetwork: (name: AztecNetwork) => boolean;
   resetToDefault: () => void;
   syncFromStorage: () => void;
 };
