@@ -11,9 +11,16 @@ export const queryKeys = {
     balance: (tokenAddress: string, ownerAddress: string) =>
       [...queryKeys.token.balances(), tokenAddress, ownerAddress] as const,
   },
+  feeJuice: {
+    all: ['feeJuice'] as const,
+    balances: () => [...queryKeys.feeJuice.all, 'balance'] as const,
+    balance: (feePayerAddress: string) =>
+      [...queryKeys.feeJuice.balances(), feePayerAddress] as const,
+  },
 } as const;
 
 /**
  * Type helpers for query keys
  */
 export type TokenBalanceKey = ReturnType<typeof queryKeys.token.balance>;
+export type FeeJuiceBalanceKey = ReturnType<typeof queryKeys.feeJuice.balance>;

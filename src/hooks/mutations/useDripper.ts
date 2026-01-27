@@ -5,6 +5,7 @@ import { contractsConfig } from '../../config/contracts';
 import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useWriteContract } from '../contracts/useWriteContract';
 import { queryKeys } from '../queries/queryKeys';
+import { useFeeJuiceBalanceInvalidation } from '../queries/useFeeJuiceBalance';
 
 interface DripParams {
   amount: bigint;
@@ -21,6 +22,8 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const { account, currentConfig } = useUniversalWallet();
   const { writeContract } = useWriteContract();
   const queryClient = useQueryClient();
+  const { invalidateAll: invalidateFeeJuiceBalances } =
+    useFeeJuiceBalanceInvalidation();
 
   const dripperAddress = contractsConfig.dripper.address(currentConfig);
   const tokenAddress = contractsConfig.token.address(currentConfig);
@@ -33,6 +36,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       account.getAddress().toString()
     );
     queryClient.invalidateQueries({ queryKey });
+  };
+
+  const invalidateAllBalances = () => {
+    invalidateBalance();
+    invalidateFeeJuiceBalances();
   };
 
   const dripToPrivate = useMutation({
@@ -56,7 +64,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error(result.error ?? 'drip_to_private failed');
       }
 
-      invalidateBalance();
+      invalidateAllBalances();
     },
     onSuccess: () => options.onDripToPrivateSuccess?.(),
     onError: (error: Error) => options.onDripToPrivateError?.(error),
@@ -83,7 +91,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error(result.error ?? 'drip_to_public failed');
       }
 
-      invalidateBalance();
+      invalidateAllBalances();
     },
     onSuccess: () => options.onDripToPublicSuccess?.(),
     onError: (error: Error) => options.onDripToPublicError?.(error),

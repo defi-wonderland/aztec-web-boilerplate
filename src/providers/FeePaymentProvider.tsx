@@ -12,6 +12,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
+import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
 import {
   FeePaymentMethodType,
@@ -35,6 +36,10 @@ export interface FeePaymentContextType {
   getFeePaymentMethod: (
     getSponsoredFeePaymentMethod: () => Promise<FeePaymentMethod>
   ) => Promise<FeePaymentMethod>;
+  /** Get the fee payer address for the selected method */
+  getSelectedFeePayerAddress: (
+    getSponsoredFeePaymentMethod: () => Promise<FeePaymentMethod>
+  ) => Promise<AztecAddress>;
 }
 
 const FeePaymentContext = createContext<FeePaymentContextType | undefined>(
@@ -87,14 +92,33 @@ export const FeePaymentProvider: React.FC<FeePaymentProviderProps> = ({
     [selectedMethod, feePaymentConfig]
   );
 
+  const getSelectedFeePayerAddress = useCallback(
+    async (
+      getSponsoredFeePaymentMethod: () => Promise<FeePaymentMethod>
+    ): Promise<AztecAddress> => {
+      const method = await createFeePaymentMethod(selectedMethod, {
+        config: feePaymentConfig ?? {},
+        getSponsoredFeePaymentMethod,
+      });
+      return method.getFeePayer();
+    },
+    [selectedMethod, feePaymentConfig]
+  );
+
   const contextValue: FeePaymentContextType = useMemo(
     () => ({
       selectedMethod,
       setSelectedMethod,
       availableMethods,
       getFeePaymentMethod,
+      getSelectedFeePayerAddress,
     }),
-    [selectedMethod, availableMethods, getFeePaymentMethod]
+    [
+      selectedMethod,
+      availableMethods,
+      getFeePaymentMethod,
+      getSelectedFeePayerAddress,
+    ]
   );
 
   return (
