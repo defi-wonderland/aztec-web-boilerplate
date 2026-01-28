@@ -1,17 +1,23 @@
+import type { ComponentType } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { AztecNetwork } from '../../config/networks/constants';
-import type { IBrowserWalletAdapter } from '../adapters/types';
+import type { IBrowserWalletAdapter } from '../../types/browserWallet';
+
+/**
+ * Icon type that supports emoji strings, URLs, or React components
+ */
+export type IconType = string | ComponentType<{ className?: string; size?: number }>;
 
 /**
  * Network preset for AztecWallet configuration
  */
 export interface NetworkPreset {
   /** Network identifier (e.g., 'devnet', 'sandbox') */
-  name: string;
+  name: AztecNetwork;
   /** Display name for UI */
   displayName?: string;
-  /** Icon - emoji string or React component */
-  icon?: string | React.ComponentType<{ className?: string; size?: number }>;
+  /** Icon - emoji string, URL, or React component */
+  icon?: IconType;
   /** Aztec node URL */
   nodeUrl: string;
 }
@@ -46,10 +52,10 @@ export interface AztecBrowserWalletConfig {
   id: string;
   /** Display name */
   name: string;
-  /** Icon - URL string or React component */
-  icon?: string | React.ComponentType<{ className?: string }>;
-  /** Factory function to create the adapter */
-  adapter: () => IBrowserWalletAdapter;
+  /** Icon - emoji string, URL, or React component */
+  icon?: IconType;
+  /** Factory function to create the adapter (async for lazy loading) */
+  adapter: () => Promise<IBrowserWalletAdapter>;
   /** Check if wallet extension is installed (optional, async) */
   checkInstalled?: () => Promise<boolean>;
 }
@@ -73,8 +79,8 @@ export interface EVMWalletConfig {
   id: string;
   /** Display name */
   name: string;
-  /** Icon - URL string or React component */
-  icon?: string | React.ComponentType<{ className?: string }>;
+  /** Icon - emoji string, URL, or React component */
+  icon?: IconType;
   /** EIP-6963 reverse domain name (e.g., 'io.metamask') */
   rdns: string;
 }

@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useModalStore } from '../store/modal';
 
 /**
@@ -46,9 +47,13 @@ import { useModalStore } from '../store/modal';
  * ```
  */
 export function useNetworkModal() {
-  const openModal = useModalStore((state) => state.openModal);
-  const openNetworkModal = useModalStore((state) => state.openNetworkModal);
-  const closeModal = useModalStore((state) => state.closeModal);
+  const { openModal, openNetworkModal, closeModal } = useModalStore(
+    useShallow((state) => ({
+      openModal: state.openModal,
+      openNetworkModal: state.openNetworkModal,
+      closeModal: state.closeModal,
+    }))
+  );
 
   const isOpen = openModal === 'network';
 

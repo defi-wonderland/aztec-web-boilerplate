@@ -6,12 +6,16 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import type { ResolvedAztecWalletConfig, ModalView } from '../../types';
+import type {
+  ResolvedAztecWalletConfig,
+  ModalView,
+  ModalWalletType,
+} from '../../types';
 
 interface ConnectingState {
   walletId: string;
   walletName: string;
-  walletType: 'embedded' | 'aztec' | 'evm';
+  walletType: ModalWalletType;
 }
 
 interface SuccessState {
@@ -44,10 +48,7 @@ interface ConnectModalContextValue {
 
   // Actions
   onClose: () => void;
-  onConnect: (
-    walletId: string,
-    walletType: 'embedded' | 'aztec' | 'evm'
-  ) => Promise<void>;
+  onConnect: (walletId: string, walletType: ModalWalletType) => Promise<void>;
   reset: () => void;
 }
 
@@ -58,10 +59,7 @@ const ConnectModalContext = createContext<ConnectModalContextValue | null>(
 export interface ConnectModalProviderProps {
   config: ResolvedAztecWalletConfig;
   onClose: () => void;
-  onConnect: (
-    walletId: string,
-    walletType: 'embedded' | 'aztec' | 'evm'
-  ) => Promise<void>;
+  onConnect: (walletId: string, walletType: ModalWalletType) => Promise<void>;
   children: React.ReactNode;
 }
 
@@ -97,7 +95,7 @@ export const ConnectModalProvider: React.FC<ConnectModalProviderProps> = ({
   }, []);
 
   const handleConnect = useCallback(
-    async (walletId: string, walletType: 'embedded' | 'aztec' | 'evm') => {
+    async (walletId: string, walletType: ModalWalletType) => {
       // Prevent duplicate connection attempts
       if (connectingRef.current || isLoading) {
         console.warn('Modal: Connection already in progress');

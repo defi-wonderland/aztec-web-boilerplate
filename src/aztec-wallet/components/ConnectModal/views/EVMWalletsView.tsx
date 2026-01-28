@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { useWalletsAvailability } from '../../../hooks';
+import { useEvmWalletsAvailability } from '../../../hooks';
 import { BackButton, WalletButton } from '../../shared';
 import { useConnectModalContext } from '../context';
 
@@ -27,7 +27,7 @@ export const EVMWalletsView: React.FC = () => {
     () => (evmWallets ? evmWallets.wallets : []),
     [evmWallets]
   );
-  const walletAvailability = useWalletsAvailability(walletsForAvailability);
+  const walletAvailability = useEvmWalletsAvailability(walletsForAvailability);
 
   const handleWalletClick = useCallback(
     async (walletId: string, walletName: string, rdns?: string) => {

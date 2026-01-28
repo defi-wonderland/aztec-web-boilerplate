@@ -5,28 +5,25 @@
  * This simplifies the config - devs just pass ['metamask', 'rabby'] instead of full configs.
  */
 
-import type { ComponentType } from 'react';
 import { MetaMaskIcon, RabbyIcon, AzguardIcon } from '../assets/icons';
-import type { IBrowserWalletAdapter } from '../adapters/types';
+import type { IBrowserWalletAdapter } from '../../types/browserWallet';
+import type { IconType } from '../types';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-/** Icon type that supports emoji strings, URLs, or React components */
-export type WalletIconType = string | ComponentType<{ className?: string }>;
-
 export interface EVMWalletPreset {
   id: string;
   name: string;
-  icon: WalletIconType;
+  icon: IconType;
   rdns: string;
 }
 
 export interface AztecWalletPreset {
   id: string;
   name: string;
-  icon: WalletIconType;
+  icon: IconType;
   /** Lazy adapter factory - only imported when needed (async for dynamic imports) */
   getAdapter: () => Promise<IBrowserWalletAdapter>;
   /** Check if wallet extension is installed (optional, async) */

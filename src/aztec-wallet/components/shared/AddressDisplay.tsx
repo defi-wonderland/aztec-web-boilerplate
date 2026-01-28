@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Copy, Check } from 'lucide-react';
-import { cn, iconSize } from '../../../utils';
+import { cn, iconSize, truncateAddress } from '../../../utils';
 
 const styles = {
   container: 'flex items-center gap-2',
@@ -23,20 +23,6 @@ export interface AddressDisplayProps {
   showCopy?: boolean;
   /** Additional class names */
   className?: string;
-}
-
-/**
- * Truncate an address for display
- */
-function truncateAddress(
-  address: string,
-  startChars = 6,
-  endChars = 4
-): string {
-  if (address.length <= startChars + endChars + 3) {
-    return address;
-  }
-  return `${address.slice(0, startChars)}....${address.slice(-endChars)}`;
 }
 
 /**

@@ -15,7 +15,7 @@ import {
   ConnectingView,
   SuccessView,
 } from './views';
-import type { ResolvedAztecWalletConfig } from '../../types';
+import type { ResolvedAztecWalletConfig, ModalWalletType } from '../../types';
 
 const styles = {
   content: 'sm:max-w-md',
@@ -112,10 +112,7 @@ export interface ConnectModalProps {
   /** Resolved AztecWallet configuration */
   config: ResolvedAztecWalletConfig;
   /** Callback to handle wallet connection */
-  onConnect: (
-    walletId: string,
-    walletType: 'embedded' | 'aztec' | 'evm'
-  ) => Promise<void>;
+  onConnect: (walletId: string, walletType: ModalWalletType) => Promise<void>;
 }
 
 /**

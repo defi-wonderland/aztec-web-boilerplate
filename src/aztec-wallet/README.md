@@ -83,7 +83,7 @@ const {
   // Actions
   connect, // (connectorId: string) => Promise<void>
   disconnect, // () => Promise<void>
-  switchNetwork, // (networkName: string) => Promise<void>
+  switchNetwork, // (networkName: AztecNetwork) => Promise<void>
 
   // PXE access (Embedded/EVM wallets only)
   getPXE, // () => PXE | null
@@ -115,12 +115,12 @@ const { open: openAccount } = useAccountModal();
 const { open: openNetwork } = useNetworkModal();
 ```
 
-### useIsWalletInstalled
+### useIsEvmWalletInstalled
 
-Check if a wallet extension is installed:
+Check if an EVM wallet extension is installed:
 
 ```tsx
-const isMetaMaskInstalled = useIsWalletInstalled('io.metamask');
+const isMetaMaskInstalled = useIsEvmWalletInstalled('io.metamask');
 ```
 
 ## Type Guards

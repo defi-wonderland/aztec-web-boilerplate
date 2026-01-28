@@ -1,5 +1,6 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { WalletType } from '../../../types/aztec';
+import type { AztecNetwork } from '../../../../config/networks/constants';
 import type { IBrowserWalletAdapter } from '../../../../types/browserWallet';
 import type { WalletConnectorId } from '../../../../types/walletConnector';
 import type { SetState, GetState, WalletState } from '../types';
@@ -7,7 +8,7 @@ import type { SetState, GetState, WalletState } from '../types';
 export const createBrowserActions = (set: SetState, get: GetState) => ({
   connectBrowserWallet: async (
     adapter: IBrowserWalletAdapter,
-    networkName: string,
+    networkName: AztecNetwork,
     connectorId: WalletConnectorId
   ): Promise<void> => {
     const connectWith = get()._connectWith;

@@ -2,6 +2,7 @@ import { BrowserWalletConnector } from '../connectors/BrowserWalletConnector';
 import { createEmbeddedConnector } from '../connectors/EmbeddedConnector';
 import { ExternalSignerConnector } from '../connectors/ExternalSignerConnector';
 import { ExternalSignerType } from '../types/aztec';
+import { isStringArray } from '../../utils';
 import {
   DEFAULT_LABELS,
   DEFAULT_MODAL_CONFIG,
@@ -22,15 +23,6 @@ import type {
   EVMWalletsGroupConfig,
   ResolvedAztecWalletConfig,
 } from '../types';
-
-/**
- * Check if value is an array of strings (simple config)
- */
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === 'string')
-  );
-}
 
 /**
  * Check if value is a full group config (has 'wallets' property)
@@ -88,8 +80,9 @@ function resolveAztecWallets(ids: string[]): AztecBrowserWalletConfig[] {
         checkInstalled: preset.checkInstalled,
       });
     } else {
+      const available = Object.keys(AZTEC_WALLET_PRESETS).join(', ');
       console.warn(
-        `AztecWallet: Unknown Aztec wallet "${id}". Available: azguard`
+        `AztecWallet: Unknown Aztec wallet "${id}". Available: ${available}`
       );
     }
   }
@@ -245,7 +238,7 @@ export function createAztecWalletConfig(
     resolvedEvmWallets = false;
   }
 
-  const resolvedWalletGroups = {
+  const resolvedWalletGroups: ResolvedAztecWalletConfig['walletGroups'] = {
     embedded: resolvedEmbedded,
     aztecWallets: resolvedAztecWallets,
     evmWallets: resolvedEvmWallets,

@@ -8,12 +8,14 @@ import {
   Button,
   VisuallyHidden,
 } from '../../../components/ui';
-import { cn, iconSize } from '../../../utils';
+import { cn, iconSize, truncateAddress } from '../../../utils';
 import {
   getNetworkIcon,
   getNetworkDisplayName,
 } from '../../config/networkPresets';
 import { getAddressEmoji } from '../ConnectButton/ConnectButton';
+import { NetworkIcon } from '../shared';
+import type { AztecNetwork } from '../../../config/networks/constants';
 
 const styles = {
   content: 'sm:max-w-sm',
@@ -80,37 +82,25 @@ const styles = {
 } as const;
 
 /**
- * Truncate an address for display (longer version for modal)
- */
-function truncateAddress(address: string): string {
-  if (address.length <= 20) return address;
-  return `${address.slice(0, 10)}...${address.slice(-8)}`;
-}
-
-/**
  * Network section component
  */
-const NetworkSection: React.FC<{ networkName: string }> = ({ networkName }) => {
+const NetworkSection: React.FC<{ networkName: AztecNetwork }> = ({
+  networkName,
+}) => {
   const icon = useMemo(() => getNetworkIcon(networkName), [networkName]);
   const displayName = useMemo(
     () => getNetworkDisplayName(networkName),
     [networkName]
   );
 
-  const renderIcon = () => {
-    if (typeof icon === 'string') {
-      return <span className={styles.networkIconText}>{icon}</span>;
-    }
-    const IconComponent = icon;
-    return <IconComponent size={iconSize()} />;
-  };
-
   return (
     <div className={styles.section}>
       <span className={styles.label}>Network</span>
       <div className={styles.networkContainer}>
         <div className={styles.networkInfo}>
-          <div className={styles.networkIconContainer}>{renderIcon()}</div>
+          <div className={styles.networkIconContainer}>
+            <NetworkIcon icon={icon} className={styles.networkIconText} />
+          </div>
           <span className={styles.networkName}>{displayName}</span>
         </div>
         <span className={styles.networkBadge}>Active</span>
@@ -127,7 +117,7 @@ export interface AccountModalProps {
   /** Connected account address */
   address: string;
   /** Current network name */
-  networkName?: string;
+  networkName?: AztecNetwork;
   /** Whether to show network section (default: false) */
   showNetwork?: boolean;
   /** Callback when disconnect is clicked */
@@ -195,7 +185,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               )}
             >
               <span className={styles.addressText} title={address}>
-                {truncateAddress(address)}
+                {truncateAddress(address, 10, 8)}
               </span>
               <button
                 onClick={handleCopy}

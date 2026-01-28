@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useModalStore } from '../store/modal';
 
 /**
@@ -49,9 +50,13 @@ import { useModalStore } from '../store/modal';
  * ```
  */
 export function useAccountModal() {
-  const openModal = useModalStore((state) => state.openModal);
-  const openAccountModal = useModalStore((state) => state.openAccountModal);
-  const closeModal = useModalStore((state) => state.closeModal);
+  const { openModal, openAccountModal, closeModal } = useModalStore(
+    useShallow((state) => ({
+      openModal: state.openModal,
+      openAccountModal: state.openAccountModal,
+      closeModal: state.closeModal,
+    }))
+  );
 
   const isOpen = openModal === 'account';
 

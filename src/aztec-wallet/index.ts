@@ -122,9 +122,9 @@ export { useAccountModal } from './hooks';
 export { useNetworkModal } from './hooks';
 
 /**
- * Hook to check if a specific wallet is installed/available.
+ * Hook to check if a specific EVM wallet is installed/available.
  */
-export { useIsWalletInstalled } from './hooks';
+export { useIsEvmWalletInstalled } from './hooks';
 
 // =============================================================================
 // COMPONENTS

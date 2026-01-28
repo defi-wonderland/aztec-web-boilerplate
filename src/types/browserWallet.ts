@@ -1,5 +1,6 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { ConnectionStatus } from './walletConnector';
+import type { AztecNetwork } from '../config/networks/constants';
 
 /**
  * Generic state for any browser wallet extension.
@@ -126,7 +127,7 @@ export interface IBrowserWalletAdapter {
 
   getState(): BrowserWalletState;
 
-  connect(networkName: string): Promise<string[]>;
+  connect(networkName: AztecNetwork): Promise<string[]>;
   disconnect(): Promise<void>;
 
   executeOperations(

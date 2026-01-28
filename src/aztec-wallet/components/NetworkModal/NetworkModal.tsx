@@ -7,6 +7,8 @@ import {
   getNetworkDisplayName,
 } from '../../config/networkPresets';
 import { useNetworkStore } from '../../store/network';
+import { NetworkIcon } from '../shared';
+import type { AztecNetwork } from '../../../config/networks/constants';
 import type { NetworkPreset } from '../../types';
 
 const styles = {
@@ -63,16 +65,6 @@ const NetworkButton: React.FC<NetworkButtonProps> = ({
   const icon = getNetworkIcon(network.name, network.icon);
   const displayName = getNetworkDisplayName(network.name, network.displayName);
 
-  const renderIcon = () => {
-    if (typeof icon === 'string') {
-      return <span className={styles.networkIcon}>{icon}</span>;
-    }
-    const IconComponent = icon;
-    return (
-      <IconComponent size={iconSize('md')} className={styles.networkIcon} />
-    );
-  };
-
   return (
     <button
       type="button"
@@ -82,7 +74,9 @@ const NetworkButton: React.FC<NetworkButtonProps> = ({
         isActive && styles.networkButtonActive
       )}
     >
-      <div className={styles.iconContainer}>{renderIcon()}</div>
+      <div className={styles.iconContainer}>
+        <NetworkIcon icon={icon} size="md" className={styles.networkIcon} />
+      </div>
       <span className={styles.networkName}>{displayName}</span>
       <span className={styles.spacer} />
       {isActive && <Check size={iconSize()} className={styles.checkIcon} />}
@@ -105,7 +99,7 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
   const switchToNetwork = useNetworkStore((state) => state.switchToNetwork);
 
   const handleNetworkSelect = useCallback(
-    (networkName: string) => {
+    (networkName: AztecNetwork) => {
       switchToNetwork(networkName);
       onOpenChange(false);
     },

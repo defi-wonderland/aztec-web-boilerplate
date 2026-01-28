@@ -4,8 +4,8 @@ export { useNetworkModal } from './useNetworkModal';
 export { useAccountModal } from './useAccountModal';
 export { useEIP6963Discovery } from './useEIP6963Discovery';
 export {
-  useIsWalletInstalled,
+  useIsEvmWalletInstalled,
   useDiscoveredWallets,
-  useWalletsAvailability,
+  useEvmWalletsAvailability,
   useAztecWalletsAvailability,
 } from './useWalletAvailability';
