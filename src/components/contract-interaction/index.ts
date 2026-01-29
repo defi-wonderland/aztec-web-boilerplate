@@ -1,3 +1,13 @@
+// Layout components (new V2 UI)
+export {
+  ContractLayout,
+  ContractSidebar,
+  ContractSetupPanel,
+  ContractExplorerPanel,
+  ContractSourceCard,
+} from './layout';
+export type { SidebarContract } from './layout';
+
 // Flow components
 export { DeployFlow } from './deploy';
 export type { DeployFlowProps } from './deploy';

@@ -27,11 +27,11 @@ const styles = {
   grid: 'grid gap-6 lg:grid-cols-2',
   loaderCard:
     'flex flex-col gap-4 rounded-lg border border-default bg-surface-secondary p-4',
-  hint: 'text-sm text-muted p-3 rounded-lg bg-blue-500/10 border border-blue-500/20',
+  hint: 'text-sm text-muted p-3 rounded-lg bg-info-soft border border-info',
   hintError:
-    'text-sm text-red-500 p-3 rounded-lg bg-red-500/10 border border-red-500/20',
+    'text-sm text-error p-3 rounded-lg bg-error-soft border border-error',
   actionRow: 'flex flex-wrap items-center gap-3 pt-4',
-  errorInline: 'text-sm text-red-500',
+  errorInline: 'text-sm text-error',
 } as const;
 
 export interface InvokeFlowProps {

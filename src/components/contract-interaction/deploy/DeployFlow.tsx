@@ -46,8 +46,8 @@ const styles = {
   constructorParams: 'flex flex-col gap-3 pt-4 border-t border-default',
   sectionTitle: 'text-sm font-semibold text-default',
   hint: 'text-sm text-muted',
-  hintError: 'text-sm text-red-500',
-  hintWarning: 'text-sm text-amber-500',
+  hintError: 'text-sm text-error',
+  hintWarning: 'text-sm text-warning',
   actionRow: 'flex gap-2 pt-4',
 } as const;
 

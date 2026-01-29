@@ -208,6 +208,54 @@ body {
   border-color: var(--accent-primary);
 }
 
+/* --- Semantic Colors (success, error, warning, info) --- */
+.bg-success-soft {
+  background-color: color-mix(in srgb, var(--success) 10%, transparent);
+}
+.bg-error-soft {
+  background-color: color-mix(in srgb, var(--error) 10%, transparent);
+}
+.bg-warning-soft {
+  background-color: color-mix(in srgb, var(--warning) 10%, transparent);
+}
+.bg-info-soft {
+  background-color: color-mix(in srgb, var(--info) 10%, transparent);
+}
+
+.text-success {
+  color: var(--success);
+}
+.text-error {
+  color: var(--error);
+}
+.text-warning {
+  color: var(--warning);
+}
+.text-info {
+  color: var(--info);
+}
+
+.border-success {
+  border-color: var(--success);
+}
+.border-error {
+  border-color: var(--error);
+}
+.border-warning {
+  border-color: var(--warning);
+}
+.border-info {
+  border-color: var(--info);
+}
+
+/* Semantic backgrounds for cards/containers */
+.bg-success-container {
+  background-color: color-mix(in srgb, var(--success) 5%, var(--bg-primary));
+}
+.border-success-soft {
+  border-color: color-mix(in srgb, var(--success) 20%, transparent);
+}
+
 /* --- Shadows (theme-aware) --- */
 .shadow-theme {
   box-shadow: 0 2px 8px var(--shadow-color);

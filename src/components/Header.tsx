@@ -3,6 +3,7 @@ import { Coins, Wrench, Settings, Layers } from 'lucide-react';
 import { ConnectButton } from '../aztec-wallet';
 import { useAppNavigation } from '../hooks';
 import { cn, iconSize } from '../utils';
+import { ThemeToggle } from './ui';
 import type { TabType } from '../types';
 
 interface NavTab {
@@ -23,19 +24,21 @@ const NAV_TABS: NavTab[] = [
 ];
 
 const styles = {
-  navbar: 'sticky top-0 z-40 w-full bg-white border-b border-[#E5E7EB]',
+  navbar: 'sticky top-0 z-40 w-full bg-surface border-b border-default',
   navContainer: 'flex items-center gap-6 h-[72px] px-10',
   logoGroup: 'flex items-center gap-3',
-  logoIcon:
-    'w-9 h-9 rounded-[10px] bg-[#8B5CF6] flex items-center justify-center',
+  logoIcon: 'w-9 h-9 rounded-[10px] bg-accent flex items-center justify-center',
   logoIconInner: 'w-5 h-5 bg-white/30 rounded',
-  logoText: 'text-[22px] font-bold text-[#1A1A1A]',
+  logoText: 'text-[22px] font-bold text-default',
   navTabs: 'flex items-center gap-2',
-  navTab:
-    'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors cursor-pointer',
-  navTabActive: 'bg-[#8B5CF6]/10 text-[#8B5CF6] font-semibold',
+  navTab: cn(
+    'flex items-center gap-2 px-4 py-2.5 rounded-lg',
+    'text-sm font-medium text-muted',
+    'hover:bg-surface-tertiary transition-colors cursor-pointer'
+  ),
+  navTabActive: 'bg-accent/10 text-accent font-semibold',
   spacer: 'flex-1',
-  connectWrapper: 'flex items-center',
+  rightSection: 'flex items-center gap-3',
 } as const;
 
 export const Header: React.FC = () => {
@@ -71,7 +74,8 @@ export const Header: React.FC = () => {
 
         <div className={styles.spacer} />
 
-        <div className={styles.connectWrapper}>
+        <div className={styles.rightSection}>
+          <ThemeToggle />
           <ConnectButton />
         </div>
       </div>

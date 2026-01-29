@@ -2,7 +2,7 @@ export {
   useContractInteractionStore,
   getContractInteractionStore,
 } from './store';
-export type { ContractInteractionStore } from './store';
+export type { ContractInteractionStore, SimulationResult } from './store';
 
 export {
   useContractMode,
@@ -23,4 +23,15 @@ export {
   useSavedContracts,
   useIsLoadingPreconfigured,
   useArtifactActions,
+  // UI Layout selectors
+  useViewMode,
+  useSidebarSelectedId,
+  useIsSetupMode,
+  useIsExplorerMode,
+  useLayoutActions,
+  // Explorer selectors
+  useSelectedFunctionName,
+  useFunctionFilter,
+  useSimulationResult,
+  useExplorerActions,
 } from './selectors';

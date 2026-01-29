@@ -32,7 +32,7 @@ const styles = {
   functionMeta: 'text-xs text-muted',
   // Empty state
   emptyState: 'py-8 text-center text-sm text-muted',
-  emptyIcon: 'mx-auto mb-2 text-amber-500',
+  emptyIcon: 'mx-auto mb-2 text-warning',
 } as const;
 
 const FunctionList = ({

@@ -10,7 +10,7 @@ const styles = {
   loadingOverlay:
     'absolute inset-0 flex items-center justify-center gap-2 bg-surface/80 rounded-lg text-muted',
   hint: 'text-sm text-muted',
-  hintError: 'text-sm text-red-500',
+  hintError: 'text-sm text-error',
   actionRow: 'flex gap-2 pt-2',
 } as const;
 

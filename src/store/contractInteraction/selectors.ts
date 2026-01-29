@@ -103,3 +103,43 @@ export const useArtifactActions = () =>
       clearArtifactState: state.clearArtifactState,
     }))
   );
+
+// UI Layout selectors
+export const useViewMode = () =>
+  useContractInteractionStore((state) => state.viewMode);
+
+export const useSidebarSelectedId = () =>
+  useContractInteractionStore((state) => state.sidebarSelectedId);
+
+export const useIsSetupMode = () =>
+  useContractInteractionStore((state) => state.viewMode === 'setup');
+
+export const useIsExplorerMode = () =>
+  useContractInteractionStore((state) => state.viewMode === 'explorer');
+
+export const useLayoutActions = () =>
+  useContractInteractionStore(
+    useShallow((state) => ({
+      setViewMode: state.setViewMode,
+      setSidebarSelectedId: state.setSidebarSelectedId,
+    }))
+  );
+
+// Explorer selectors
+export const useSelectedFunctionName = () =>
+  useContractInteractionStore((state) => state.selectedFunctionName);
+
+export const useFunctionFilter = () =>
+  useContractInteractionStore((state) => state.functionFilter);
+
+export const useSimulationResult = () =>
+  useContractInteractionStore((state) => state.simulationResult);
+
+export const useExplorerActions = () =>
+  useContractInteractionStore(
+    useShallow((state) => ({
+      setSelectedFunctionName: state.setSelectedFunctionName,
+      setFunctionFilter: state.setFunctionFilter,
+      setSimulationResult: state.setSimulationResult,
+    }))
+  );

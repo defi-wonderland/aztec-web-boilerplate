@@ -8,6 +8,18 @@ import type {
 import type { CachedContract } from '../../utils/contractCache';
 import type { ParsedArtifact } from '../../utils/contractInteraction';
 
+type ViewMode = 'setup' | 'explorer';
+
+/**
+ * Simulation result to display in the UI
+ */
+export interface SimulationResult {
+  value: string;
+  type: string;
+  timestamp: Date;
+  functionName: string;
+}
+
 type State = {
   mode: ArtifactLoaderMode;
   preconfiguredId: string | null;
@@ -21,6 +33,13 @@ type State = {
   parseError: string | null;
   savedContracts: CachedContract[];
   isLoadingPreconfigured: boolean;
+  // UI layout state
+  viewMode: ViewMode;
+  sidebarSelectedId: string | null;
+  // Explorer state
+  selectedFunctionName: string | null;
+  functionFilter: string;
+  simulationResult: SimulationResult | null;
 };
 
 type Actions = {
@@ -40,6 +59,13 @@ type Actions = {
   setIsLoadingPreconfigured: (loading: boolean) => void;
   refreshSavedContracts: (networkName?: string) => void;
   clearArtifactState: () => void;
+  // UI layout actions
+  setViewMode: (mode: ViewMode) => void;
+  setSidebarSelectedId: (id: string | null) => void;
+  // Explorer actions
+  setSelectedFunctionName: (name: string | null) => void;
+  setFunctionFilter: (filter: string) => void;
+  setSimulationResult: (result: SimulationResult | null) => void;
 };
 
 export type ContractInteractionStore = State & Actions;
@@ -57,6 +83,13 @@ const INITIAL_STATE: State = {
   parseError: null,
   savedContracts: [],
   isLoadingPreconfigured: false,
+  // UI layout initial state
+  viewMode: 'setup',
+  sidebarSelectedId: null,
+  // Explorer initial state
+  selectedFunctionName: null,
+  functionFilter: '',
+  simulationResult: null,
 };
 
 const ARTIFACT_INITIAL_STATE = {
@@ -136,6 +169,21 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
         preconfiguredId: null,
       });
     },
+
+    // UI layout actions
+    setViewMode: (viewMode) => set({ viewMode }),
+
+    setSidebarSelectedId: (sidebarSelectedId) => set({ sidebarSelectedId }),
+
+    // Explorer actions
+    setSelectedFunctionName: (selectedFunctionName) => {
+      getFormStore().reset();
+      set({ selectedFunctionName });
+    },
+
+    setFunctionFilter: (functionFilter) => set({ functionFilter }),
+
+    setSimulationResult: (simulationResult) => set({ simulationResult }),
   })
 );
 

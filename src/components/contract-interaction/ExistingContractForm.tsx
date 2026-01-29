@@ -11,7 +11,7 @@ const styles = {
   formGroup: 'space-y-1.5',
   label: 'block text-sm font-semibold text-default',
   hint: 'text-xs text-muted mt-1',
-  hintError: 'text-xs text-red-500 mt-1',
+  hintError: 'text-xs text-error mt-1',
   textareaWrapper: 'relative',
   loadingOverlay: cn(
     'absolute inset-0 flex items-center justify-center gap-2',

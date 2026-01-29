@@ -14,7 +14,7 @@ const styles = {
   section: 'flex flex-col gap-2',
   label: 'text-sm font-semibold text-default',
   hint: 'text-sm text-muted',
-  hintSuccess: 'text-sm text-green-600',
+  hintSuccess: 'text-sm text-success',
   hintLoading: 'flex items-center gap-2 text-sm text-muted',
 } as const;
 

@@ -15,8 +15,8 @@ const styles = {
   formGroup: 'space-y-1.5',
   label: 'block text-sm font-semibold text-default',
   hint: 'text-xs text-muted mt-1',
-  hintSuccess: 'text-xs text-green-500 mt-1',
-  hintLoading: 'text-xs text-blue-500 mt-1',
+  hintSuccess: 'text-xs text-success mt-1',
+  hintLoading: 'text-xs text-info mt-1',
 } as const;
 
 /**

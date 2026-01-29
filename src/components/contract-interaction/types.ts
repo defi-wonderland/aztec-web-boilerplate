@@ -37,6 +37,11 @@ export interface FunctionGroup {
  */
 export type ArtifactLoaderMode = 'existing' | 'deploy';
 
+/**
+ * Status for invoke operations.
+ */
+export type InvokeStatus = 'idle' | 'simulating' | 'executing';
+
 // =============================================================================
 // Component Props
 // =============================================================================
