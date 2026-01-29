@@ -1,3 +1,5 @@
+import type { AztecNetwork } from '../../config/networks/constants';
+
 /**
  * Centralized query key factory for React Query.
  * Using a factory pattern ensures type-safe, consistent query keys across the app.
@@ -14,8 +16,8 @@ export const queryKeys = {
   feeJuice: {
     all: ['feeJuice'] as const,
     balances: () => [...queryKeys.feeJuice.all, 'balance'] as const,
-    balance: (feePayerAddress: string) =>
-      [...queryKeys.feeJuice.balances(), feePayerAddress] as const,
+    balance: (networkName: AztecNetwork, feePayerAddress: string) =>
+      [...queryKeys.feeJuice.balances(), networkName, feePayerAddress] as const,
   },
 } as const;
 

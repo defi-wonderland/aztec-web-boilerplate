@@ -5,3 +5,4 @@ export * from './network';
 export * from './evm';
 export * from './contractRegistry';
 export * from './theme';
+export * from './feePayment';

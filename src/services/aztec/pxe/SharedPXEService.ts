@@ -15,6 +15,7 @@ import { getEnv } from '../../../utils/env';
 import { FeePaymentRegister } from '../feePayment/FeePaymentRegister';
 import { NetworkService } from '../network';
 import { AztecStorageService } from '../storage';
+import type { AztecNetwork } from '../../../config/networks/constants';
 
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
@@ -43,6 +44,7 @@ class SharedPXEServiceClass {
   private initPromises: Map<string, Promise<SharedPXEInstance>> = new Map();
   private cachedPaymentMethods: Map<string, SponsoredFeePaymentMethod> =
     new Map();
+  private cachedFeePayerAddresses: Map<string, AztecAddress> = new Map();
   private storePromises: Map<
     string,
     Promise<Awaited<ReturnType<typeof createStore>>>
@@ -96,7 +98,7 @@ class SharedPXEServiceClass {
   /**
    * Check if a PXE instance is initialized for a network
    */
-  isInitialized(nodeUrl: string, networkName: string): boolean {
+  isInitialized(networkName: AztecNetwork): boolean {
     const key = this.getInstanceKey(networkName);
     return this.instances.has(key);
   }
@@ -104,7 +106,7 @@ class SharedPXEServiceClass {
   /**
    * Check if initialization is in progress for a network
    */
-  isInitializing(nodeUrl: string, networkName: string): boolean {
+  isInitializing(networkName: AztecNetwork): boolean {
     const key = this.getInstanceKey(networkName);
     return this.initPromises.has(key);
   }
@@ -127,6 +129,7 @@ class SharedPXEServiceClass {
     const key = this.getInstanceKey(networkName);
     this.instances.delete(key);
     this.cachedPaymentMethods.delete(key);
+    this.cachedFeePayerAddresses.delete(key);
     logger.info(`Cleared PXE instance for ${networkName}`);
   }
 
@@ -136,10 +139,20 @@ class SharedPXEServiceClass {
   clearAll(): void {
     this.instances.clear();
     this.cachedPaymentMethods.clear();
+    this.cachedFeePayerAddresses.clear();
     logger.info('Cleared all PXE instances');
   }
 
-  private getInstanceKey(networkName: string): string {
+  /**
+   * Get the sponsored FPC address synchronously from cache.
+   * Returns null if PXE not initialized for this network.
+   */
+  getSponsoredFPCAddress(networkName: AztecNetwork): AztecAddress | null {
+    const key = this.getInstanceKey(networkName);
+    return this.cachedFeePayerAddresses.get(key) ?? null;
+  }
+
+  private getInstanceKey(networkName: AztecNetwork | string): string {
     return `${networkName}`;
   }
 
@@ -284,10 +297,11 @@ class SharedPXEServiceClass {
     }
 
     const sponsoredPFCContract = await this.getSponsoredPFCContract(pxe);
-    const paymentMethod = new SponsoredFeePaymentMethod(
-      sponsoredPFCContract.address
-    );
+    const feePayerAddress = sponsoredPFCContract.address;
+    const paymentMethod = new SponsoredFeePaymentMethod(feePayerAddress);
+
     this.cachedPaymentMethods.set(key, paymentMethod);
+    this.cachedFeePayerAddresses.set(key, feePayerAddress);
 
     return paymentMethod;
   }

@@ -2,13 +2,13 @@ import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
-import { useFeePayment } from '../../providers/FeePaymentProvider';
 import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../../types/walletConnector';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 import { useUniversalWallet } from '../context/useUniversalWallet';
+import { useFeePaymentConfig } from '../useFeePaymentConfig';
 import { getContractMethod } from './utils';
 import type { SimulateViewsOp } from '../../types';
 
@@ -29,7 +29,7 @@ export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
   const { connector, account } = useUniversalWallet();
-  const { getFeePaymentMethod } = useFeePayment();
+  const { createPaymentMethod } = useFeePaymentConfig();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -203,9 +203,7 @@ export const useDynamicContractCaller = (
             };
           }
 
-          const paymentMethod = await getFeePaymentMethod(() =>
-            connector.getSponsoredFeePaymentMethod()
-          );
+          const paymentMethod = await createPaymentMethod('sponsored');
           const tx = method(...args);
           const sentTx = tx.send({
             from: account.getAddress(),
@@ -225,7 +223,7 @@ export const useDynamicContractCaller = (
         setIsExecuting(false);
       }
     },
-    [account, artifact, connector, getFeePaymentMethod]
+    [account, artifact, connector, createPaymentMethod]
   );
 
   return {

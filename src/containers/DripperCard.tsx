@@ -22,6 +22,7 @@ import {
 import { useUniversalWallet, useRequiredContracts } from '../hooks';
 import { useToast, type LoadingToastResult } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
+import { useFeePaymentType } from '../store';
 import { iconSize } from '../utils';
 
 const styles = {
@@ -71,6 +72,7 @@ export const DripperCard: React.FC = () => {
 
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
+  const { feePaymentType, setFeePaymentType } = useFeePaymentType('dripper');
   const loadingToastRef = useRef<LoadingToastResult | null>(null);
 
   const { dripToPrivate, dripToPublic, isReady } = useDripper({
@@ -125,9 +127,15 @@ export const DripperCard: React.FC = () => {
     const amountBigInt = BigInt(amount);
 
     if (dripType === 'private') {
-      dripToPrivate.mutate({ amount: amountBigInt });
+      dripToPrivate.mutate({
+        amount: amountBigInt,
+        feePaymentMethod: feePaymentType,
+      });
     } else {
-      dripToPublic.mutate({ amount: amountBigInt });
+      dripToPublic.mutate({
+        amount: amountBigInt,
+        feePaymentMethod: feePaymentType,
+      });
     }
   };
 
@@ -272,8 +280,12 @@ export const DripperCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Fee Payment Method */}
-            <FeePaymentSelector disabled={isProcessing || !isReady} />
+            {/* Fee Payment Type */}
+            <FeePaymentSelector
+              value={feePaymentType}
+              onChange={setFeePaymentType}
+              disabled={isProcessing || !isReady}
+            />
 
             {/* Submit Button */}
             <Button

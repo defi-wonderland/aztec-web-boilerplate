@@ -155,4 +155,9 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
     }
     return instance.getSponsoredFeePaymentMethod();
   }
+
+  getSponsoredFPCAddress() {
+    const config = getNetworkStore().currentConfig;
+    return SharedPXEService.getSponsoredFPCAddress(config.name);
+  }
 }

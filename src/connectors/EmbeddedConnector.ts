@@ -89,6 +89,11 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
     }
     return instance.getSponsoredFeePaymentMethod();
   }
+
+  getSponsoredFPCAddress() {
+    const config = getNetworkStore().currentConfig;
+    return SharedPXEService.getSponsoredFPCAddress(config.name);
+  }
 }
 
 /**

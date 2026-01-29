@@ -1,17 +1,17 @@
 /**
  * FeePaymentSelector Component
  *
- * Dropdown for selecting fee payment method.
+ * Controlled dropdown for selecting fee payment method.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Fuel, Loader2 } from 'lucide-react';
-import type { AztecAddress } from '@aztec/aztec.js/addresses';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useUniversalWallet } from '../hooks';
 import { useFeeJuiceBalance } from '../hooks/queries/useFeeJuiceBalance';
-import { useFeePayment } from '../providers/FeePaymentProvider';
+import { useFeePaymentConfig } from '../hooks/useFeePaymentConfig';
 import { hasAppManagedPXE } from '../types/walletConnector';
-import { iconSize, cn } from '../utils';
+import { iconSize, cn, formatFeeJuiceBalance } from '../utils';
 import {
   Select,
   SelectContent,
@@ -37,81 +37,59 @@ const styles = {
 } as const;
 
 interface FeePaymentSelectorProps {
+  /** Currently selected fee payment method */
+  value: FeePaymentMethodType;
+  /** Callback when selection changes */
+  onChange: (method: FeePaymentMethodType) => void;
+  /** Disable the selector */
   disabled?: boolean;
+  /** Additional class names */
   className?: string;
 }
 
-/**
- * Formats Fee Juice balance for display.
- * Fee Juice uses 18 decimals.
- */
-const formatFeeJuiceBalance = (balance: bigint): string => {
-  const decimals = 18n;
-  const divisor = 10n ** decimals;
-  const whole = balance / divisor;
-  const fractional = balance % divisor;
-
-  if (fractional === 0n) {
-    return whole.toLocaleString();
-  }
-
-  // Show up to 4 decimal places
-  const fractionalStr = fractional.toString().padStart(Number(decimals), '0');
-  const trimmedFractional = fractionalStr.slice(0, 4).replace(/0+$/, '');
-
-  if (trimmedFractional === '') {
-    return whole.toLocaleString();
-  }
-
-  return `${whole.toLocaleString()}.${trimmedFractional}`;
-};
-
 export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
+  value,
+  onChange,
   disabled = false,
-  className = '',
+  className,
 }) => {
-  const {
-    selectedMethod,
-    setSelectedMethod,
-    availableMethods,
-    getSelectedFeePayerAddress,
-  } = useFeePayment();
-  const { connector, currentConfig, isConnected, isInitialized } =
-    useUniversalWallet();
+  const { connector, currentConfig } = useUniversalWallet();
+  const { availableMethods, isSupported } = useFeePaymentConfig();
 
-  const [feePayerAddress, setFeePayerAddress] = useState<AztecAddress | null>(
-    null
-  );
+  // Derive fee payer address synchronously based on selected method
+  const feePayerAddress = useMemo(() => {
+    if (!connector || !hasAppManagedPXE(connector)) return null;
 
-  const isReady = isConnected && isInitialized && hasAppManagedPXE(connector);
+    switch (value) {
+      case 'sponsored':
+        return connector.getSponsoredFPCAddress();
 
-  // Fetch fee payer address when method changes
-  useEffect(() => {
-    if (!isReady || !hasAppManagedPXE(connector)) return;
+      case 'metered':
+      case 'meteredExact': {
+        const addr = currentConfig?.feePaymentContracts?.metered;
+        return addr ? AztecAddress.fromString(addr) : null;
+      }
 
-    const fetchFeePayerAddress = async () => {
-      const address = await getSelectedFeePayerAddress(
-        connector.getSponsoredFeePaymentMethod
-      );
-      setFeePayerAddress(address);
-    };
-    fetchFeePayerAddress();
-  }, [getSelectedFeePayerAddress, connector, isReady]);
+      default:
+        return null;
+    }
+  }, [value, connector, currentConfig?.feePaymentContracts?.metered]);
 
-  // Use React Query hook for Fee Juice balance
+  // Fetch balance for the fee payer
   const { balance: feeJuiceBalance, isLoading: isLoadingBalance } =
     useFeeJuiceBalance({
       feePayerAddress,
       nodeUrl: currentConfig?.nodeUrl,
-      enabled: isReady,
+      networkName: currentConfig?.name,
+      enabled: isSupported && !!feePayerAddress,
     });
 
-  // Don't render if only one method available
-  if (availableMethods.length <= 1) {
+  // Don't render if not supported or only one method available
+  if (!isSupported || availableMethods.length <= 1) {
     return null;
   }
 
-  const selectedInfo = availableMethods.find((m) => m.type === selectedMethod);
+  const selectedInfo = availableMethods.find((m) => m.type === value);
 
   return (
     <div className={cn(styles.container, className)}>
@@ -120,13 +98,7 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
           <Fuel size={iconSize()} className={styles.labelIcon} />
           <span>Fee Payment</span>
         </div>
-        <Select
-          value={selectedMethod}
-          onValueChange={(value) =>
-            setSelectedMethod(value as FeePaymentMethodType)
-          }
-          disabled={disabled}
-        >
+        <Select value={value} onValueChange={onChange} disabled={disabled}>
           <SelectTrigger className={styles.trigger}>
             <SelectValue placeholder="Select method" />
           </SelectTrigger>
@@ -139,22 +111,26 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
           </SelectContent>
         </Select>
       </div>
+
       {selectedInfo && (
         <p className={styles.description}>{selectedInfo.description}</p>
       )}
+
       {feePayerAddress && (
         <div className={styles.balanceContainer}>
           <span className={styles.balanceLabel}>FPC Fee Juice Balance:</span>
-          {isLoadingBalance ? (
+          {isLoadingBalance && (
             <span className={styles.balanceLoading}>
               <Loader2 size={iconSize('xs')} className={styles.loadingIcon} />
               Loading...
             </span>
-          ) : feeJuiceBalance !== null ? (
+          )}
+          {!isLoadingBalance && feeJuiceBalance !== null && (
             <Badge variant="info">
               {formatFeeJuiceBalance(feeJuiceBalance)} FJ
             </Badge>
-          ) : (
+          )}
+          {!isLoadingBalance && feeJuiceBalance === null && (
             <span className={styles.balanceValue}>--</span>
           )}
         </div>
@@ -162,5 +138,3 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
     </div>
   );
 };
-
-export default FeePaymentSelector;
