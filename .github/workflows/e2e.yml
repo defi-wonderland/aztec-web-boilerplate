@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [dev]
 jobs:
   test:
     timeout-minutes: 120
@@ -39,8 +39,14 @@ jobs:
       working-directory: ./
       run: yarn playwright install --with-deps
 
-    - name: Build
-      run: yarn build
+    - name: Build contracts
+      run: yarn build-contracts
 
-    - name: Run tests
-      run: yarn test
+    - name: Deploy contracts
+      run: yarn deploy-contracts
+
+    - name: Build app
+      run: yarn build-app:ci
+
+    - name: Run Playwright E2E tests
+      run: yarn playwright test --project=chromium
