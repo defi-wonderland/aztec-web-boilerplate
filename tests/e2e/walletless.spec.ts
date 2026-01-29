@@ -33,22 +33,24 @@ test.describe('Wallet Connection E2E', () => {
     await page.waitForLoadState('networkidle');
 
     // Click "Connect Wallet"
-    const connectBtn = page.locator('.wallet-connect-button');
+    const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
     await expect(connectBtn).toBeVisible({ timeout: 30000 });
     await connectBtn.click();
 
     // Wait for modal
-    const modal = page.locator('.modal-content');
+    const modal = page.locator('[data-testid="connect-wallet-modal"]');
     await expect(modal).toBeVisible({ timeout: 5000 });
 
-    // Select sandbox network
-    const networkSelect = page.locator('#modal-network-selector');
-    await networkSelect.selectOption('sandbox');
+    // Select sandbox network using Radix Select
+    const networkTrigger = modal.locator('[data-testid="network-selector"]');
+    await networkTrigger.click();
+    const sandboxOption = page.locator('[role="option"]').filter({ hasText: 'Sandbox' });
+    await sandboxOption.click();
 
-    // Wait for network connection
-    const networkStatus = page.locator('.network-status');
-    await expect(networkStatus).toContainText('connected', { timeout: 120000 });
-    console.log('Sandbox connected');
+    // Wait for network to be ready (idle or connected state)
+    const networkStatus = modal.locator('[data-testid="network-status"]');
+    await expect(networkStatus).toContainText(/ready to connect|connected/, { timeout: 120000 });
+    console.log('Sandbox network ready');
 
     // Click MetaMask connect button
     const metamaskBtn = modal.locator('button:has-text("MetaMask")');
@@ -60,10 +62,10 @@ test.describe('Wallet Connection E2E', () => {
     await expect(modal).not.toBeVisible({ timeout: 120000 });
 
     // Verify connected account is displayed
-    const accountSection = page.locator('.connected-account-section');
+    const accountSection = page.locator('[data-testid="connected-account"]');
     await expect(accountSection).toBeVisible({ timeout: 120000 });
 
-    const accountAddress = page.locator('.account-address');
+    const accountAddress = page.locator('[data-testid="account-address"]');
     const displayedAddress = await accountAddress.textContent();
     console.log('Connected:', displayedAddress);
 

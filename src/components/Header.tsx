@@ -66,7 +66,7 @@ const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
   };
 
   return (
-    <div className={styles.accountSection}>
+    <div className={styles.accountSection} data-testid="connected-account">
       <Badge variant="primary" className={styles.walletBadge}>
         {walletName}
       </Badge>
@@ -78,6 +78,7 @@ const ConnectedAccount: React.FC<ConnectedAccountProps> = ({
             onClick={handleCopy}
             aria-label="Copy connected address"
             className={styles.addressButton}
+            data-testid="account-address"
           >
             {displayAddress}
           </Button>
@@ -138,7 +139,12 @@ export const Header: React.FC = () => {
     }
 
     return (
-      <Button variant="secondary" size="sm" onClick={openWalletModal}>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={openWalletModal}
+        data-testid="connect-wallet-button"
+      >
         Connect Wallet
       </Button>
     );
