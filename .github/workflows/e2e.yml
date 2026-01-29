@@ -35,7 +35,7 @@ jobs:
       run: echo "/home/runner/.aztec/bin" >> $GITHUB_PATH
 
     - name: Start sandbox
-      run: aztec start --sandbox &
+      run: aztec start --local-network &
 
     - name: Install dependencies
       working-directory: ./
