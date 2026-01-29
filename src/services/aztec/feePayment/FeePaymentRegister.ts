@@ -54,8 +54,10 @@ export class FeePaymentRegister {
       fpcsToRegister.push({
         name: 'metered',
         artifact: MeteredContractArtifact,
-        salt: new Fr(1337n),
-        deployer: AztecAddress.ZERO,
+        salt: Fr.fromString(feePaymentConfig.meteredSalt ?? '1337'),
+        deployer: feePaymentConfig.meteredDeployer
+          ? AztecAddress.fromString(feePaymentConfig.meteredDeployer)
+          : AztecAddress.ZERO,
         expectedAddress: feePaymentConfig.metered,
       });
     }

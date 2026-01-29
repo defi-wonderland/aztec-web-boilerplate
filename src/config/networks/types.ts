@@ -6,6 +6,10 @@ import type { AztecNetwork } from './constants';
 export interface FeePaymentContractsConfig {
   /** Metered FPC address - tracks internal balances, deducts max gas cost */
   metered?: string;
+  /** Metered FPC deployment salt */
+  meteredSalt?: string;
+  /** Metered FPC deployer address */
+  meteredDeployer?: string;
 }
 
 export interface NetworkConfig {
