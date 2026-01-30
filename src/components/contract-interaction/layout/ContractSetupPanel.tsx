@@ -5,7 +5,16 @@ import React, {
   useRef,
   useEffect,
 } from 'react';
-import { Download, Rocket, Coins, FileEdit, Loader2 } from 'lucide-react';
+import {
+  Download,
+  Rocket,
+  Coins,
+  FileEdit,
+  Loader2,
+  Upload,
+  ClipboardPaste,
+  ArrowLeft,
+} from 'lucide-react';
 import { useContractDeployer, useLoadArtifact } from '../../../hooks/contracts';
 import { useDeployableContracts } from '../../../hooks/useInteractionContracts';
 import {
@@ -27,7 +36,6 @@ import { buildDeploymentLabel } from '../../../utils/deployableContracts';
 import {
   Button,
   Input,
-  Textarea,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -37,6 +45,7 @@ import {
   SelectContent,
   SelectItem,
 } from '../../ui';
+import ArtifactInput from '../ArtifactInput';
 import ParameterInputs from '../ParameterInputs';
 import ContractSourceCard from './ContractSourceCard';
 import type { AztecNetwork } from '../../../config/networks/constants';
@@ -56,10 +65,10 @@ const styles = {
     'text-[13px] font-medium gap-1.5 px-4 py-2 rounded-lg',
     'data-[state=active]:bg-surface data-[state=active]:shadow-sm'
   ),
-  section: 'flex flex-col gap-3',
-  sectionLabel: 'text-sm font-semibold text-default',
-  cardsGrid: 'flex gap-4 flex-wrap',
-  card: 'w-[200px]',
+  section: 'flex flex-col gap-5',
+  sectionLabel: 'text-sm font-bold text-default uppercase tracking-wide',
+  cardsGrid: 'flex gap-3 flex-wrap',
+  card: 'w-[220px]',
   divider: 'flex items-center gap-4 text-muted',
   dividerLine: 'flex-1 h-px bg-default',
   formSection: 'flex flex-col gap-4',
@@ -85,7 +94,40 @@ const styles = {
   hint: 'text-sm text-muted',
   hintError: 'text-sm text-error',
   hintWarning: 'text-sm text-warning',
+  // Contract details card
+  detailsCard: cn(
+    'rounded-2xl border border-default bg-surface',
+    'overflow-hidden'
+  ),
+  detailsHeader: cn(
+    'flex items-center justify-between',
+    'px-5 py-3.5 border-b border-default'
+  ),
+  detailsTitle: 'text-sm font-semibold text-default',
+  detailsBackBtn: cn(
+    'flex items-center gap-1 text-xs font-medium text-accent',
+    'cursor-pointer hover:text-accent/80 transition-colors'
+  ),
+  detailsContent: 'flex flex-col gap-4 p-5',
+  // Artifact method selection
+  artifactMethodGrid: 'flex gap-3',
+  artifactMethodCard: cn(
+    'flex-1 flex flex-col items-center gap-2',
+    'px-4 py-5 rounded-xl border border-dashed',
+    'cursor-pointer transition-all duration-150'
+  ),
+  artifactMethodCardDefault: cn(
+    'border-zinc-300 bg-surface-tertiary/30',
+    'hover:border-accent hover:bg-accent/5'
+  ),
+  artifactMethodCardSelected: 'border-accent bg-accent/10',
+  artifactMethodIcon: 'text-muted',
+  artifactMethodIconSelected: 'text-accent',
+  artifactMethodTitle: 'text-sm font-semibold text-default',
+  artifactMethodDesc: 'text-xs text-muted text-center',
 } as const;
+
+type ArtifactInputMethod = 'file' | 'paste' | null;
 
 type SetupTab = 'load' | 'deploy';
 
@@ -157,6 +199,7 @@ const buildCustomDeployableContract = (
 interface ContractSetupPanelProps {
   networkName?: AztecNetwork;
   preconfiguredContracts: PreconfiguredContract[];
+  savedContracts: Array<{ address: string; label?: string }>;
   artifactInput: string;
   parseError: string | null;
   isLoadingPreconfigured: boolean;
@@ -164,11 +207,13 @@ interface ContractSetupPanelProps {
   onArtifactChange: (value: string) => void;
   onSelectPreconfigured: (id: string | null) => void;
   onContractLoaded: (contractId: string) => void;
+  onSelectExisting: (contractId: string) => void;
 }
 
 export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
   networkName,
   preconfiguredContracts,
+  savedContracts,
   artifactInput,
   parseError,
   isLoadingPreconfigured,
@@ -176,11 +221,16 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
   onArtifactChange,
   onSelectPreconfigured,
   onContractLoaded,
+  onSelectExisting,
 }) => {
   const [activeTab, setActiveTab] = useState<SetupTab>('load');
   const [loadSource, setLoadSource] = useState<ContractSource>('custom');
   const [deploySource, setDeploySource] = useState<ContractSource>('custom');
   const [customDeployArtifact, setCustomDeployArtifact] = useState('');
+  const [artifactMethod, setArtifactMethod] =
+    useState<ArtifactInputMethod>(null);
+  const [deployArtifactMethod, setDeployArtifactMethod] =
+    useState<ArtifactInputMethod>(null);
 
   const address = useContractTargetAddress();
   const { preconfiguredId } = useInvokeFlowState();
@@ -216,6 +266,21 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
     () => preconfiguredContracts.find((c) => c.id === preconfiguredId) ?? null,
     [preconfiguredContracts, preconfiguredId]
   );
+
+  // Build preloaded file for preconfigured contracts
+  const preloadedArtifactFile = useMemo(() => {
+    if (loadSource !== 'preconfigured' || !selectedPreconfigured) return null;
+    const artifactJson = selectedPreconfigured.artifactJson;
+    const content =
+      typeof artifactJson === 'string'
+        ? artifactJson
+        : JSON.stringify(artifactJson, null, 2);
+    return {
+      name: `${selectedPreconfigured.label.replace(/\s+/g, '-').toLowerCase()}.json`,
+      size: new Blob([content]).size,
+      content,
+    };
+  }, [loadSource, selectedPreconfigured]);
 
   // Get the selected deployable contract (preconfigured)
   const selectedPreconfiguredDeployable = useMemo(
@@ -331,34 +396,57 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
   );
 
   const handleArtifactChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      onArtifactChange(e.target.value);
+    (value: string) => {
+      onArtifactChange(value);
     },
     [onArtifactChange]
   );
 
-  const handleCustomDeployArtifactChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setCustomDeployArtifact(e.target.value);
-    },
-    []
-  );
+  const handleCustomDeployArtifactChange = useCallback((value: string) => {
+    setCustomDeployArtifact(value);
+  }, []);
 
   const handleLoadSourceChange = useCallback(
     (source: ContractSource) => {
       setLoadSource(source);
+      setArtifactMethod(null);
       if (source === 'custom') {
         onSelectPreconfigured(null);
+        setAddress('');
+        onArtifactChange('');
       } else if (preconfiguredContracts.length > 0) {
         onSelectPreconfigured(preconfiguredContracts[0].id);
       }
     },
-    [onSelectPreconfigured, preconfiguredContracts]
+    [
+      onSelectPreconfigured,
+      preconfiguredContracts,
+      setAddress,
+      onArtifactChange,
+    ]
+  );
+
+  const handleArtifactMethodChange = useCallback(
+    (method: ArtifactInputMethod) => {
+      setArtifactMethod(method);
+      // Clear artifact when switching methods
+      onArtifactChange('');
+    },
+    [onArtifactChange]
+  );
+
+  const handleDeployArtifactMethodChange = useCallback(
+    (method: ArtifactInputMethod) => {
+      setDeployArtifactMethod(method);
+      setCustomDeployArtifact('');
+    },
+    []
   );
 
   const handleDeploySourceChange = useCallback(
     (source: ContractSource) => {
       setDeploySource(source);
+      setDeployArtifactMethod(null);
       resetFormValues();
       setSelectedConstructor(null);
       if (source === 'preconfigured' && deployableContracts.length > 0) {
@@ -408,14 +496,34 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
   );
 
   const handleLoad = useCallback(() => {
+    // Check if contract already exists in saved contracts
+    const normalizedAddress = address.toLowerCase();
+
+    const existingSaved = savedContracts.find(
+      (c) => c.address.toLowerCase() === normalizedAddress
+    );
+    if (existingSaved) {
+      onSelectExisting(`saved-${existingSaved.address}`);
+      pushLog({
+        level: 'info',
+        title: 'Contract already loaded',
+        detail: `Showing existing contract: ${existingSaved.label ?? 'Custom Contract'}`,
+      });
+      return;
+    }
+
+    // Contract doesn't exist, load it (this saves to cache)
     onLoad();
-    // Generate a unique ID for the loaded contract
-    const contractId =
-      loadSource === 'preconfigured' && selectedPreconfigured
-        ? selectedPreconfigured.id
-        : `custom-${address}`;
-    onContractLoaded(contractId);
-  }, [onLoad, loadSource, selectedPreconfigured, address, onContractLoaded]);
+    // All loaded contracts use saved-${address} format
+    onContractLoaded(`saved-${address}`);
+  }, [
+    address,
+    savedContracts,
+    onSelectExisting,
+    pushLog,
+    onLoad,
+    onContractLoaded,
+  ]);
 
   const handleDeploy = useCallback(async () => {
     if (!effectiveDeployable || !effectiveConstructor) return;
@@ -533,48 +641,117 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
             )}
           </div>
 
-          <div className={styles.divider}>
-            <div className={styles.dividerLine} />
-          </div>
-
-          <div className={styles.formSection}>
-            <span className={styles.sectionLabel}>Contract Details</span>
-
-            <Input
-              id="contract-address"
-              label="Contract Address"
-              value={address}
-              onChange={handleAddressChange}
-              placeholder="0x1d64b9cf07d536e6b218c14256c4965a..."
-              error={addressError}
-              disabled={loadSource === 'preconfigured'}
-            />
-
-            <div className={styles.textareaWrapper}>
-              <Textarea
-                id="artifact-json"
-                label="Contract Artifact (JSON)"
-                value={isLoadingPreconfigured ? '' : artifactInput}
-                onChange={handleArtifactChange}
-                placeholder={
-                  isLoadingPreconfigured
-                    ? 'Loading artifact...'
-                    : 'Paste contract artifact JSON here...'
-                }
-                disabled={
-                  loadSource === 'preconfigured' || isLoadingPreconfigured
-                }
-                rows={12}
-              />
-              {isLoadingPreconfigured && (
-                <div className={styles.loadingOverlay}>
-                  <Loader2 size={iconSize()} className="animate-spin" />
-                  <span>Loading artifact...</span>
-                </div>
+          {/* Contract Details Card */}
+          <div className={styles.detailsCard}>
+            <div className={styles.detailsHeader}>
+              <span className={styles.detailsTitle}>Contract Details</span>
+              {loadSource === 'custom' && artifactMethod && (
+                <button
+                  type="button"
+                  className={styles.detailsBackBtn}
+                  onClick={() => handleArtifactMethodChange(null)}
+                >
+                  <ArrowLeft size={12} />
+                  Change method
+                </button>
               )}
             </div>
+            <div className={styles.detailsContent}>
+              <Input
+                id="contract-address"
+                label="Contract Address"
+                value={address}
+                onChange={handleAddressChange}
+                placeholder="0x1d64b9cf07d536e6b218c14256c4965a..."
+                error={addressError}
+                disabled={loadSource === 'preconfigured'}
+              />
 
-            {parseError && <p className={styles.hintError}>{parseError}</p>}
+              {/* Preconfigured: Show preloaded file */}
+              {loadSource === 'preconfigured' && (
+                <div className={styles.textareaWrapper}>
+                  <ArtifactInput
+                    id="artifact-json"
+                    value={isLoadingPreconfigured ? '' : artifactInput}
+                    onChange={handleArtifactChange}
+                    placeholder="Loading artifact..."
+                    disabled={isLoadingPreconfigured}
+                    rows={8}
+                    preloadedFile={preloadedArtifactFile ?? undefined}
+                  />
+                  {isLoadingPreconfigured && (
+                    <div className={styles.loadingOverlay}>
+                      <Loader2 size={iconSize()} className="animate-spin" />
+                      <span>Loading artifact...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Custom: Show method selection or selected input */}
+              {loadSource === 'custom' && !artifactMethod && (
+                <>
+                  <span className={styles.formLabel}>
+                    How would you like to provide the artifact?
+                  </span>
+                  <div className={styles.artifactMethodGrid}>
+                    <button
+                      type="button"
+                      className={cn(
+                        styles.artifactMethodCard,
+                        styles.artifactMethodCardDefault
+                      )}
+                      onClick={() => handleArtifactMethodChange('file')}
+                    >
+                      <Upload
+                        size={iconSize('lg')}
+                        className={styles.artifactMethodIcon}
+                      />
+                      <span className={styles.artifactMethodTitle}>
+                        Upload File
+                      </span>
+                      <span className={styles.artifactMethodDesc}>
+                        Drop or browse for JSON
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        styles.artifactMethodCard,
+                        styles.artifactMethodCardDefault
+                      )}
+                      onClick={() => handleArtifactMethodChange('paste')}
+                    >
+                      <ClipboardPaste
+                        size={iconSize('lg')}
+                        className={styles.artifactMethodIcon}
+                      />
+                      <span className={styles.artifactMethodTitle}>
+                        Paste JSON
+                      </span>
+                      <span className={styles.artifactMethodDesc}>
+                        Enter artifact manually
+                      </span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Custom with method selected: Show the appropriate input */}
+              {loadSource === 'custom' && artifactMethod && (
+                <ArtifactInput
+                  id="artifact-json"
+                  value={artifactInput}
+                  onChange={handleArtifactChange}
+                  placeholder="Paste contract artifact JSON here..."
+                  disabled={false}
+                  rows={12}
+                  inputMethod={artifactMethod}
+                />
+              )}
+
+              {parseError && <p className={styles.hintError}>{parseError}</p>}
+            </div>
           </div>
 
           <div className={styles.actionsRow}>
@@ -620,24 +797,91 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
 
           {/* Custom artifact input for deployment */}
           {isCustomDeploySelected && (
-            <div className={styles.formSection}>
-              <Textarea
-                id="custom-deploy-artifact"
-                label="Contract Artifact (JSON)"
-                value={customDeployArtifact}
-                onChange={handleCustomDeployArtifactChange}
-                placeholder="Paste the compiled contract artifact JSON here"
-                disabled={isDeploying}
-                rows={12}
-                error={customDeployable.error ?? undefined}
-                helperText={
-                  customDeployArtifact &&
-                  !effectiveDeployable &&
-                  !customDeployable.error
-                    ? 'Provide a valid artifact to load constructors.'
-                    : undefined
-                }
-              />
+            <div className={styles.detailsCard}>
+              <div className={styles.detailsHeader}>
+                <span className={styles.detailsTitle}>Contract Artifact</span>
+                {deployArtifactMethod && (
+                  <button
+                    type="button"
+                    className={styles.detailsBackBtn}
+                    onClick={() => handleDeployArtifactMethodChange(null)}
+                  >
+                    <ArrowLeft size={12} />
+                    Change method
+                  </button>
+                )}
+              </div>
+              <div className={styles.detailsContent}>
+                {!deployArtifactMethod && (
+                  <>
+                    <span className={styles.formLabel}>
+                      How would you like to provide the artifact?
+                    </span>
+                    <div className={styles.artifactMethodGrid}>
+                      <button
+                        type="button"
+                        className={cn(
+                          styles.artifactMethodCard,
+                          styles.artifactMethodCardDefault
+                        )}
+                        onClick={() => handleDeployArtifactMethodChange('file')}
+                      >
+                        <Upload
+                          size={iconSize('lg')}
+                          className={styles.artifactMethodIcon}
+                        />
+                        <span className={styles.artifactMethodTitle}>
+                          Upload File
+                        </span>
+                        <span className={styles.artifactMethodDesc}>
+                          Drop or browse for JSON
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={cn(
+                          styles.artifactMethodCard,
+                          styles.artifactMethodCardDefault
+                        )}
+                        onClick={() =>
+                          handleDeployArtifactMethodChange('paste')
+                        }
+                      >
+                        <ClipboardPaste
+                          size={iconSize('lg')}
+                          className={styles.artifactMethodIcon}
+                        />
+                        <span className={styles.artifactMethodTitle}>
+                          Paste JSON
+                        </span>
+                        <span className={styles.artifactMethodDesc}>
+                          Enter artifact manually
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {deployArtifactMethod && (
+                  <ArtifactInput
+                    id="custom-deploy-artifact"
+                    value={customDeployArtifact}
+                    onChange={handleCustomDeployArtifactChange}
+                    placeholder="Paste the compiled contract artifact JSON here"
+                    disabled={isDeploying}
+                    rows={12}
+                    inputMethod={deployArtifactMethod}
+                    error={customDeployable.error ?? undefined}
+                    helperText={
+                      customDeployArtifact &&
+                      !effectiveDeployable &&
+                      !customDeployable.error
+                        ? 'Provide a valid artifact to load constructors.'
+                        : undefined
+                    }
+                  />
+                )}
+              </div>
             </div>
           )}
 

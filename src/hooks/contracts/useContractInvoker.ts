@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 import { PRECONFIGURED_CONTRACTS } from '../../config/preconfiguredContracts';
 import {
@@ -110,8 +110,6 @@ export const useContractInvoker = (
     refreshSavedContracts,
     clearArtifactState,
   } = useArtifactActions();
-
-  const hasAutoLoadedRef = useRef(false);
 
   const {
     simulate,
@@ -433,35 +431,23 @@ export const useContractInvoker = (
   );
 
   // Initialize saved contracts on mount or network change
+  // Note: We don't auto-set address/artifactInput here - let the UI handle it
+  // Users can click on contracts in the sidebar to load them explicitly
   useEffect(() => {
-    hasAutoLoadedRef.current = false;
     refreshSavedContracts(networkName);
-    const cachedList = getContractInteractionStore().savedContracts;
-    const latest = cachedList[0];
 
     // Reset specific state (not full store to preserve logs)
+    // Don't auto-set address/artifactInput - let setup panel control initial state
     setPreconfiguredId(null);
-    setAddress(latest?.address ?? '');
-    setArtifactInput(latest?.artifact ?? '');
     setParsedArtifact(null);
     resetFormValues();
   }, [
     networkName,
     refreshSavedContracts,
-    setAddress,
-    setArtifactInput,
     setParsedArtifact,
     setPreconfiguredId,
     resetFormValues,
   ]);
-
-  // Auto-load the first saved contract
-  useEffect(() => {
-    if (hasAutoLoadedRef.current || parsed || savedContracts.length === 0)
-      return;
-    hasAutoLoadedRef.current = true;
-    void handleApplySaved(savedContracts[0]);
-  }, [parsed, savedContracts, handleApplySaved]);
 
   return {
     savedContracts,

@@ -208,6 +208,18 @@ body {
   border-color: var(--accent-primary);
 }
 
+/* --- Input Focus States --- */
+.focus-accent-soft:focus {
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-color));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 12%, transparent);
+}
+
+/* --- Placeholder Color --- */
+.placeholder-muted::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 /* --- Semantic Colors (success, error, warning, info) --- */
 .bg-success-soft {
   background-color: color-mix(in srgb, var(--success) 10%, transparent);

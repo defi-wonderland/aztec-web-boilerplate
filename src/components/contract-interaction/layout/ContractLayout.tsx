@@ -8,6 +8,7 @@ import {
   useLayoutActions,
   useContractCallLogs,
   useSavedContracts,
+  useParsedArtifact,
   useArtifactInput,
   useParseError,
   useIsLoadingPreconfigured,
@@ -21,6 +22,7 @@ import {
 } from '../../../store';
 import { cn } from '../../../utils';
 import { resolveCachedArtifact } from '../../../utils/contractCache';
+import { formatParsedType } from '../../../utils/contractInteraction';
 import ContractExplorerPanel from './ContractExplorerPanel';
 import ContractSetupPanel from './ContractSetupPanel';
 import ContractSidebar from './ContractSidebar';
@@ -39,11 +41,12 @@ export const ContractLayout: React.FC = () => {
   const { setViewMode, setSidebarSelectedId } = useLayoutActions();
   const logs = useContractCallLogs();
   const savedContracts = useSavedContracts();
+  const parsedArtifact = useParsedArtifact();
   const artifactInput = useArtifactInput();
   const parseError = useParseError();
   const isLoadingPreconfigured = useIsLoadingPreconfigured();
-  const { refreshSavedContracts } = useArtifactActions();
-  const { clearLogs } = useContractActions();
+  const { refreshSavedContracts, deleteSavedContract } = useArtifactActions();
+  const { clearLogs, pushLog } = useContractActions();
 
   // Explorer state
   const selectedFunctionName = useSelectedFunctionName();
@@ -77,38 +80,88 @@ export const ContractLayout: React.FC = () => {
     refreshSavedContracts(currentConfig?.name);
   }, [currentConfig?.name, refreshSavedContracts]);
 
-  // Build sidebar contracts list
-  const sidebarContracts: SidebarContract[] = useMemo(() => {
-    const contracts: SidebarContract[] = [];
+  // Auto-load artifact when we have a selected contract but no parsed artifact
+  // This handles the case when page is refreshed or state is restored without artifact
+  useEffect(() => {
+    let cancelled = false;
 
-    // Add preconfigured contracts
-    preconfiguredContracts.forEach((contract) => {
-      contracts.push({
-        id: contract.id,
-        name: contract.label,
-        address: contract.address,
-        type: 'preconfigured',
-      });
-    });
-
-    // Add saved contracts
-    savedContracts.forEach((contract) => {
-      // Skip if already in preconfigured
-      const isPreconfigured = preconfiguredContracts.some(
-        (p) => p.address.toLowerCase() === contract.address.toLowerCase()
-      );
-      if (!isPreconfigured) {
-        contracts.push({
-          id: `saved-${contract.address}`,
-          name: contract.label ?? 'Custom Contract',
-          address: contract.address,
-          type: 'saved',
-        });
+    const autoLoadArtifact = async () => {
+      // Only auto-load if we're in explorer mode with a selected contract but no artifact
+      if (
+        viewMode !== 'explorer' ||
+        !sidebarSelectedId ||
+        parsedArtifact !== null ||
+        savedContracts.length === 0
+      ) {
+        return;
       }
-    });
 
-    return contracts;
-  }, [preconfiguredContracts, savedContracts]);
+      // Extract address from sidebar ID (format: saved-${address})
+      if (!sidebarSelectedId.startsWith('saved-')) return;
+
+      const address = sidebarSelectedId.replace('saved-', '');
+      const savedContract = savedContracts.find(
+        (c) => c.address.toLowerCase() === address.toLowerCase()
+      );
+
+      if (!savedContract) {
+        // Contract not found in saved list, go back to setup
+        setViewMode('setup');
+        setSidebarSelectedId(null);
+        return;
+      }
+
+      // Load artifact from cache
+      const result = await resolveCachedArtifact(savedContract);
+
+      // Check if cancelled during async operation
+      if (cancelled) return;
+
+      if (result.found) {
+        await loadArtifactWithData(
+          savedContract.address,
+          result.artifact,
+          savedContract.label
+        );
+      } else {
+        // Artifact not found in cache, go back to setup
+        // User will need to re-load the artifact
+        pushLog({
+          level: 'info',
+          title: 'Artifact not cached',
+          detail: `Artifact for ${savedContract.label ?? savedContract.address} was not found in cache. Please reload it.`,
+        });
+        setViewMode('setup');
+        setSidebarSelectedId(null);
+      }
+    };
+
+    autoLoadArtifact();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    viewMode,
+    sidebarSelectedId,
+    parsedArtifact,
+    savedContracts,
+    loadArtifactWithData,
+    setViewMode,
+    setSidebarSelectedId,
+    pushLog,
+  ]);
+
+  // Build sidebar contracts list - only saved contracts, not preconfigured
+  // Preconfigured contracts are available in "Select Contract Source" options
+  const sidebarContracts: SidebarContract[] = useMemo(() => {
+    return savedContracts.map((contract) => ({
+      id: `saved-${contract.address}`,
+      name: contract.label ?? 'Custom Contract',
+      address: contract.address,
+      type: 'saved' as const,
+    }));
+  }, [savedContracts]);
 
   // Get currently selected contract
   const selectedContract = useMemo(() => {
@@ -123,18 +176,7 @@ export const ContractLayout: React.FC = () => {
       setViewMode('explorer');
       setSelectedFunctionName(null);
 
-      // If it's a preconfigured contract, load it directly with artifact
-      const preconfigured = preconfiguredContracts.find((c) => c.id === id);
-      if (preconfigured) {
-        await loadArtifactWithData(
-          preconfigured.address,
-          preconfigured.artifactJson,
-          preconfigured.label
-        );
-        return;
-      }
-
-      // If it's a saved contract, load it from cache
+      // All sidebar contracts are saved contracts (format: saved-${address})
       if (id.startsWith('saved-')) {
         const address = id.replace('saved-', '');
         const savedContract = savedContracts.find(
@@ -156,7 +198,6 @@ export const ContractLayout: React.FC = () => {
       setSidebarSelectedId,
       setViewMode,
       setSelectedFunctionName,
-      preconfiguredContracts,
       loadArtifactWithData,
       savedContracts,
     ]
@@ -197,6 +238,32 @@ export const ContractLayout: React.FC = () => {
     [setFunctionFilter]
   );
 
+  const handleDeleteContract = useCallback(
+    async (contract: SidebarContract) => {
+      await deleteSavedContract(contract.address, currentConfig?.name);
+
+      pushLog({
+        level: 'success',
+        title: 'Contract removed',
+        detail: `${contract.name} has been removed from your saved contracts.`,
+      });
+
+      // If the deleted contract was selected, go back to setup
+      if (sidebarSelectedId === contract.id) {
+        setSidebarSelectedId(null);
+        setViewMode('setup');
+      }
+    },
+    [
+      deleteSavedContract,
+      currentConfig?.name,
+      sidebarSelectedId,
+      setSidebarSelectedId,
+      setViewMode,
+      pushLog,
+    ]
+  );
+
   // Wrap simulate to capture result
   const handleSimulate = useCallback(
     async (functionName: string) => {
@@ -211,16 +278,24 @@ export const ContractLayout: React.FC = () => {
           (log) => log.level === 'success' && log.title.includes('Simulation')
         );
         if (successLog?.detail) {
+          // Find the function to get its return type
+          const selectedFn = groups
+            .flatMap((g) => g.items)
+            .find((fn) => fn.name === functionName);
+          const returnType = selectedFn?.output
+            ? formatParsedType(selectedFn.output)
+            : 'void';
+
           setSimulationResult({
             value: successLog.detail,
-            type: 'unknown',
+            type: returnType,
             timestamp: new Date(),
             functionName,
           });
         }
       }, 100);
     },
-    [invokerSimulate, setSimulationResult]
+    [invokerSimulate, setSimulationResult, groups]
   );
 
   const handleExecute = useCallback(
@@ -257,12 +332,14 @@ export const ContractLayout: React.FC = () => {
         onSelectContract={handleSelectContract}
         onSelectFunction={handleSelectFunction}
         onFilterChange={handleFilterChange}
+        onDeleteContract={handleDeleteContract}
       />
 
       {viewMode === 'setup' && (
         <ContractSetupPanel
           networkName={currentConfig?.name}
           preconfiguredContracts={preconfiguredContracts}
+          savedContracts={savedContracts}
           artifactInput={artifactInput}
           parseError={parseError}
           isLoadingPreconfigured={isLoadingPreconfigured}
@@ -270,6 +347,7 @@ export const ContractLayout: React.FC = () => {
           onArtifactChange={onArtifactChange}
           onSelectPreconfigured={onSelectPreconfigured}
           onContractLoaded={handleContractLoaded}
+          onSelectExisting={handleSelectContract}
         />
       )}
 

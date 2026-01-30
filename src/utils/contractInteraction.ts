@@ -24,7 +24,10 @@ type RawParameter = {
 
 type RawFunction = {
   name: string;
-  abi?: { parameters?: RawParameter[] };
+  abi?: {
+    parameters?: RawParameter[];
+    return_type?: { abi_type?: RawParamType };
+  };
   custom_attributes?: string[];
   is_unconstrained?: boolean;
 };
@@ -51,6 +54,7 @@ export interface ParsedField {
 export interface ParsedFunction {
   name: string;
   inputs: ParsedField[];
+  output: ParsedType | null;
   attributes: string[];
   isUnconstrained: boolean;
 }
@@ -117,6 +121,36 @@ const normalizeType = (type: RawParamType): ParsedType => {
   }
 };
 
+/**
+ * Format a ParsedType to a human-readable string
+ */
+export const formatParsedType = (type: ParsedType): string => {
+  switch (type.kind) {
+    case 'field':
+      return 'Field';
+    case 'integer':
+      return `${type.sign === 'unsigned' ? 'U' : 'I'}${type.width}`;
+    case 'boolean':
+      return 'Boolean';
+    case 'string':
+      return 'String';
+    case 'address':
+      return 'AztecAddress';
+    case 'eth_address':
+      return 'EthAddress';
+    case 'selector':
+      return 'Selector';
+    case 'compressed_string':
+      return 'CompressedString';
+    case 'array':
+      return `Array<${formatParsedType(type.type)}>${type.length ? `[${type.length}]` : ''}`;
+    case 'struct':
+      return type.path?.split('::').pop() ?? 'Struct';
+    default:
+      return 'Unknown';
+  }
+};
+
 const flattenFields = (
   fields: ParsedField[],
   parentPath?: string
@@ -167,9 +201,14 @@ const parseFunction = (fn: RawFunction): ParsedFunction => {
     visibility: param.visibility,
   }));
 
+  // Parse return type if available
+  const rawReturnType = fn.abi?.return_type?.abi_type;
+  const output = rawReturnType ? normalizeType(rawReturnType) : null;
+
   return {
     name: fn.name,
     inputs: flattenFields(inputs),
+    output,
     attributes: fn.custom_attributes ?? [],
     isUnconstrained: Boolean(fn.is_unconstrained),
   };
@@ -501,8 +540,111 @@ export const loadAndPrepareArtifact = (
 };
 
 /**
+ * Check if an object represents a Buffer-like structure (numeric keys).
+ * Aztec often returns buffers as { 0: byte, 1: byte, ... } objects.
+ */
+const isBufferLike = (obj: Record<string, unknown>): boolean => {
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return false;
+
+  // Check if all keys are numeric and sequential from 0
+  return keys.every((key, idx) => {
+    const num = parseInt(key, 10);
+    return !isNaN(num) && num === idx && typeof obj[key] === 'number';
+  });
+};
+
+/**
+ * Convert a Buffer-like object to a hex string.
+ */
+const bufferToHex = (obj: Record<string, unknown>): string => {
+  const bytes = Object.values(obj) as number[];
+  return '0x' + bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+/**
+ * Format transaction fee from string to human-readable format.
+ * Aztec fees are in smallest units, convert to more readable format.
+ */
+const formatTransactionFee = (fee: string): string => {
+  const feeNum = BigInt(fee);
+  // Format with thousands separators for readability
+  return feeNum.toLocaleString?.() ?? fee;
+};
+
+/**
+ * Check if this looks like an Aztec transaction receipt.
+ */
+const isTransactionReceipt = (obj: Record<string, unknown>): boolean => {
+  return (
+    'txHash' in obj &&
+    'status' in obj &&
+    ('blockNumber' in obj || 'transactionFee' in obj)
+  );
+};
+
+/**
+ * Format an Aztec transaction receipt for human-readable display.
+ */
+const formatTransactionReceipt = (
+  receipt: Record<string, unknown>
+): Record<string, unknown> => {
+  const formatted: Record<string, unknown> = {};
+
+  // Status first - most important
+  if ('status' in receipt) {
+    formatted.status = receipt.status;
+  }
+
+  // Block info
+  if ('blockNumber' in receipt) {
+    formatted.blockNumber = receipt.blockNumber;
+  }
+
+  // Transaction hash - extract from nested structure
+  if ('txHash' in receipt && typeof receipt.txHash === 'object') {
+    const txHash = receipt.txHash as Record<string, unknown>;
+    if ('hash' in txHash && typeof txHash.hash === 'object') {
+      const hash = txHash.hash as Record<string, unknown>;
+      if ('asBuffer' in hash && typeof hash.asBuffer === 'object') {
+        const buffer = hash.asBuffer as Record<string, unknown>;
+        if (isBufferLike(buffer)) {
+          formatted.txHash = bufferToHex(buffer);
+        }
+      }
+    }
+  }
+
+  // Block hash - extract from nested structure
+  if ('blockHash' in receipt && typeof receipt.blockHash === 'object') {
+    const blockHash = receipt.blockHash as Record<string, unknown>;
+    if ('buffer' in blockHash && typeof blockHash.buffer === 'object') {
+      const buffer = blockHash.buffer as Record<string, unknown>;
+      if (isBufferLike(buffer)) {
+        formatted.blockHash = bufferToHex(buffer);
+      }
+    }
+  }
+
+  // Transaction fee
+  if (
+    'transactionFee' in receipt &&
+    typeof receipt.transactionFee === 'string'
+  ) {
+    formatted.transactionFee = formatTransactionFee(receipt.transactionFee);
+  }
+
+  // Error if present
+  if ('error' in receipt && receipt.error) {
+    formatted.error = receipt.error;
+  }
+
+  return formatted;
+};
+
+/**
  * Format contract call result data for display.
- * Handles BigInt conversion, compressed strings, and nested objects.
+ * Handles BigInt conversion, compressed strings, Buffer objects, and nested objects.
  */
 export const formatResultData = (
   value: unknown,
@@ -519,7 +661,37 @@ export const formatResultData = (
   }
 
   if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>);
+    const obj = value as Record<string, unknown>;
+    const entries = Object.entries(obj);
+
+    // Check for transaction receipt pattern first
+    if (isTransactionReceipt(obj)) {
+      return formatTransactionReceipt(obj);
+    }
+
+    // Check for Buffer-like pattern (numeric keys representing bytes)
+    if (isBufferLike(obj)) {
+      return bufferToHex(obj);
+    }
+
+    // Check for nested buffer patterns: { asBuffer: {...} } or { buffer: {...} }
+    if (
+      entries.length === 1 &&
+      (entries[0][0] === 'asBuffer' || entries[0][0] === 'buffer') &&
+      typeof entries[0][1] === 'object' &&
+      entries[0][1] !== null
+    ) {
+      const nested = entries[0][1] as Record<string, unknown>;
+      if (isBufferLike(nested)) {
+        return bufferToHex(nested);
+      }
+    }
+
+    // Check for hash wrapper: { hash: { asBuffer: {...} } }
+    if (entries.length === 1 && entries[0][0] === 'hash') {
+      const formatted = formatResultData(entries[0][1], readCompressedString);
+      return formatted;
+    }
 
     // Check for compressed string pattern: { value: bigint | string }
     if (

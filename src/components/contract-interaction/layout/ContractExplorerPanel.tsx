@@ -1,46 +1,67 @@
 import React, { useCallback, useMemo } from 'react';
-import { Play, Zap, Copy, Clock, Circle } from 'lucide-react';
+import {
+  Play,
+  Zap,
+  Copy,
+  Clock,
+  Circle,
+  ChevronDown,
+  ChevronRight,
+  Maximize2,
+  Check,
+} from 'lucide-react';
 import {
   useFormValues,
   useFormActions,
   type SimulationResult,
 } from '../../../store';
-import { cn, iconSize } from '../../../utils';
+import { cn, iconSize, toTitleCase } from '../../../utils';
 import {
   analyzeFunctionCapabilities,
-  type ParsedType,
+  formatParsedType,
 } from '../../../utils/contractInteraction';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../../ui/Dialog';
 import type { AztecNetwork } from '../../../config/networks/constants';
 import type { ParsedFunction } from '../../../utils/contractInteraction';
 import type { LogEntry, FunctionGroup } from '../types';
 
 /**
- * Format a ParsedType to a human-readable string
+ * Attempt to prettify a JSON string with indentation.
+ * Returns the original string if parsing fails.
  */
-const formatType = (type: ParsedType): string => {
-  switch (type.kind) {
-    case 'field':
-      return 'Field';
-    case 'integer':
-      return `${type.sign === 'unsigned' ? 'U' : 'I'}${type.width}`;
-    case 'boolean':
-      return 'Boolean';
-    case 'string':
-      return 'String';
-    case 'address':
-      return 'AztecAddress';
-    case 'eth_address':
-      return 'EthAddress';
-    case 'selector':
-      return 'Selector';
-    case 'compressed_string':
-      return 'CompressedString';
-    case 'array':
-      return `Array<${formatType(type.type)}>${type.length ? `[${type.length}]` : ''}`;
-    case 'struct':
-      return type.path?.split('::').pop() ?? 'Struct';
-    default:
-      return 'Unknown';
+const prettifyJson = (str: string): string => {
+  try {
+    const parsed = JSON.parse(str);
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return str;
+  }
+};
+
+/**
+ * Format a simulation result value for display.
+ * Parses JSON and returns the actual value without extra quotes for primitives.
+ */
+const formatDisplayValue = (value: string): string => {
+  try {
+    const parsed = JSON.parse(value);
+    // For primitives (string, number, boolean), return the value directly
+    if (
+      typeof parsed === 'string' ||
+      typeof parsed === 'number' ||
+      typeof parsed === 'boolean'
+    ) {
+      return String(parsed);
+    }
+    // For objects/arrays, return pretty-printed JSON
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return value;
   }
 };
 
@@ -129,7 +150,6 @@ const styles = {
     'focus:outline-none focus:border-accent focus:border-2',
     'transition-colors'
   ),
-  paramInputValid: 'border-success border-2',
   paramInputError: 'border-error border-2 bg-error-soft',
   paramHelper: cn(
     'flex items-center gap-1.5',
@@ -156,8 +176,8 @@ const styles = {
     'flex items-center justify-center gap-2.5',
     'w-[340px] h-[54px] rounded-[14px]',
     'bg-accent text-white',
-    'text-[15px] font-bold',
-    'hover:bg-accent/90 transition-colors',
+    'text-[15px] font-bold cursor-pointer',
+    'hover:brightness-110 hover:shadow-lg transition-all',
     'disabled:opacity-50 disabled:cursor-not-allowed'
   ),
 
@@ -235,7 +255,7 @@ const styles = {
   ),
   historyEntrySuccess: 'bg-success-soft',
   historyEntryError: 'bg-transparent',
-  entryLeft: 'flex flex-col gap-1 w-[100px] flex-shrink-0',
+  entryLeft: 'flex flex-col gap-1 w-[72px] flex-shrink-0',
   entryTime: 'text-[11px] font-semibold text-muted font-mono',
   entryDate: 'text-[10px] text-muted',
   entryContent: 'flex flex-col gap-1.5 flex-1 min-w-0',
@@ -249,6 +269,47 @@ const styles = {
   entryResultSuccess: 'text-success',
   entryResultError: 'text-error',
   entryResultNeutral: 'text-muted',
+
+  // Expandable entry styles
+  entryExpandable: '',
+  entryExpandRow: 'flex items-center gap-1 cursor-pointer',
+  entryExpandIcon: 'flex-shrink-0 text-muted',
+  entryExpandText: 'text-xs font-mono truncate flex-1',
+  entryExpandActions: 'flex items-center gap-1',
+  entryExpandBtn: cn(
+    'p-1 rounded',
+    'text-muted hover:text-accent',
+    'hover:bg-surface-tertiary',
+    'transition-colors'
+  ),
+  entryExpandedContent: cn(
+    'mt-2 p-3 rounded-lg',
+    'bg-surface-tertiary',
+    'text-xs font-mono text-default',
+    'whitespace-pre-wrap break-all',
+    'max-h-[200px] overflow-y-auto',
+    'scrollbar-accent'
+  ),
+
+  // Log detail modal styles
+  logModalContent: cn(
+    'p-4 rounded-lg',
+    'bg-surface-tertiary',
+    'text-sm font-mono text-default',
+    'whitespace-pre-wrap break-all',
+    'max-h-[60vh] overflow-y-auto',
+    'scrollbar-accent'
+  ),
+  logModalHeader: 'flex items-center justify-between mb-4 mt-4',
+  logModalCopyBtn: cn(
+    'flex items-center gap-2',
+    'px-3 py-1.5 rounded-lg',
+    'bg-surface border border-default',
+    'text-sm font-medium text-default',
+    'hover:bg-surface-secondary hover:border-accent',
+    'transition-colors'
+  ),
+  logModalCopySuccess: 'text-success border-success',
 } as const;
 
 interface ContractExplorerPanelProps {
@@ -266,6 +327,9 @@ interface ContractExplorerPanelProps {
   onClearLogs: () => void;
 }
 
+// Threshold for showing expand toggle (characters)
+const DETAIL_TRUNCATE_THRESHOLD = 120;
+
 export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
   connectedAddress,
   contractName,
@@ -281,6 +345,51 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
 }) => {
   const formValues = useFormValues();
   const { setValue: setFormValue } = useFormActions();
+
+  // Track expanded log entries
+  const [expandedLogs, setExpandedLogs] = React.useState<Set<string>>(
+    new Set()
+  );
+
+  // Modal state for full log view
+  const [modalLog, setModalLog] = React.useState<LogEntry | null>(null);
+  const [copySuccess, setCopySuccess] = React.useState(false);
+
+  // Track simulation result copy success
+  const [resultCopied, setResultCopied] = React.useState(false);
+
+  const toggleLogExpanded = useCallback((logId: string) => {
+    setExpandedLogs((prev) => {
+      const next = new Set(prev);
+      if (next.has(logId)) {
+        next.delete(logId);
+      } else {
+        next.add(logId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleOpenModal = useCallback((log: LogEntry) => {
+    setModalLog(log);
+    setCopySuccess(false);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setModalLog(null);
+    setCopySuccess(false);
+  }, []);
+
+  const handleCopyLogDetail = useCallback(async () => {
+    if (!modalLog?.detail) return;
+    try {
+      await navigator.clipboard.writeText(prettifyJson(modalLog.detail));
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch {
+      // Clipboard API failed silently
+    }
+  }, [modalLog]);
 
   // Find the selected function
   const selectedFn = useMemo((): ParsedFunction | null => {
@@ -329,9 +438,16 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
     }
   }, [selectedFunctionName, onExecute]);
 
-  const handleCopyResult = useCallback(() => {
-    if (simulationResult?.value) {
-      navigator.clipboard.writeText(simulationResult.value);
+  const handleCopyResult = useCallback(async () => {
+    if (!simulationResult?.value) return;
+    try {
+      await navigator.clipboard.writeText(
+        formatDisplayValue(simulationResult.value)
+      );
+      setResultCopied(true);
+      setTimeout(() => setResultCopied(false), 2000);
+    } catch {
+      // Clipboard API failed silently
     }
   }, [simulationResult]);
 
@@ -390,7 +506,9 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
 
         {/* Title Row */}
         <div className={styles.titleRow}>
-          <h1 className={styles.functionTitle}>{selectedFn.name}</h1>
+          <h1 className={styles.functionTitle}>
+            {toTitleCase(selectedFn.name)}
+          </h1>
           <div
             className={cn(
               styles.badge,
@@ -428,55 +546,60 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
           </div>
         </div>
         <div className={styles.accordionContent}>
-          {selectedFn.inputs.map((input) => {
-            const value = formValues[input.path] ?? '';
-            const isRequired = !input.path.includes('?');
-            const hasValue = value.trim().length > 0;
+          {selectedFn.inputs.length === 0 ? (
+            <p className="text-sm text-muted">
+              This function has no parameters. Click Simulate or Execute to run
+              it.
+            </p>
+          ) : (
+            selectedFn.inputs.map((input) => {
+              const value = formValues[input.path] ?? '';
+              const isRequired = !input.path.includes('?');
 
-            return (
-              <div key={input.path} className={styles.paramGroup}>
-                <div className={styles.paramHeader}>
-                  <div className={styles.paramLeft}>
-                    <span className={styles.paramLabel}>
-                      {input.path}
-                      {isRequired && (
-                        <span className={styles.paramRequired}> *</span>
-                      )}
+              return (
+                <div key={input.path} className={styles.paramGroup}>
+                  <div className={styles.paramHeader}>
+                    <div className={styles.paramLeft}>
+                      <span className={styles.paramLabel}>
+                        {toTitleCase(input.path)}
+                        {isRequired && (
+                          <span className={styles.paramRequired}> *</span>
+                        )}
+                      </span>
+                    </div>
+                    <span className={styles.paramType}>
+                      {formatParsedType(input.type)}
                     </span>
                   </div>
-                  <span className={styles.paramType}>
-                    {formatType(input.type)}
-                  </span>
-                </div>
-                <div className={styles.paramInputWrapper}>
-                  <input
-                    type="text"
-                    className={cn(
-                      styles.paramInput,
-                      hasValue && styles.paramInputValid
-                    )}
-                    value={value}
-                    onChange={(e) =>
-                      handleFormValueChange(input.path, e.target.value)
-                    }
-                    placeholder={`Enter ${input.path} value...`}
-                    disabled={isBusy}
-                  />
-                  {input.path === 'from' && connectedAddress && (
-                    <button
-                      type="button"
-                      className={styles.paramHelper}
-                      onClick={() =>
-                        handleFormValueChange(input.path, connectedAddress)
+                  <div className={styles.paramInputWrapper}>
+                    <input
+                      type="text"
+                      className={styles.paramInput}
+                      value={value}
+                      onChange={(e) =>
+                        handleFormValueChange(input.path, e.target.value)
                       }
-                    >
-                      <span className={styles.paramHelperText}>Use wallet</span>
-                    </button>
-                  )}
+                      placeholder={`Enter ${toTitleCase(input.path)} value...`}
+                      disabled={isBusy}
+                    />
+                    {input.path === 'from' && connectedAddress && (
+                      <button
+                        type="button"
+                        className={styles.paramHelper}
+                        onClick={() =>
+                          handleFormValueChange(input.path, connectedAddress)
+                        }
+                      >
+                        <span className={styles.paramHelperText}>
+                          Use wallet
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -502,42 +625,50 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
         </button>
       </div>
 
-      {/* Simulation Result Card */}
-      {simulationResult && (
-        <div className={styles.resultCard}>
-          <div className={styles.resultHeader}>
-            <div className={styles.resultHeaderLeft}>
-              <div className={styles.resultDot} />
-              <span className={styles.resultTitle}>Simulation Result</span>
-            </div>
-            <span className={styles.resultTimestamp}>
-              {formatRelativeTime(simulationResult.timestamp)}
-            </span>
-          </div>
-          <div className={styles.resultValueBox}>
-            <span className={styles.resultValueLabel}>Return Value</span>
-            <div className={styles.resultValueRow}>
-              <span className={styles.resultValue}>
-                {simulationResult.value}
-              </span>
-              <button
-                type="button"
-                className={styles.resultCopyBtn}
-                onClick={handleCopyResult}
-                aria-label="Copy value"
-              >
-                <Copy size={iconSize()} className={styles.resultCopyIcon} />
-              </button>
-            </div>
-            <div className={styles.resultType}>
-              <span className={styles.resultTypeLabel}>Type:</span>
-              <span className={styles.resultTypeBadge}>
-                {simulationResult.type}
+      {/* Simulation Result Card - only show for the function that was simulated */}
+      {simulationResult &&
+        simulationResult.functionName === selectedFunctionName && (
+          <div className={styles.resultCard}>
+            <div className={styles.resultHeader}>
+              <div className={styles.resultHeaderLeft}>
+                <div className={styles.resultDot} />
+                <span className={styles.resultTitle}>Simulation Result</span>
+              </div>
+              <span className={styles.resultTimestamp}>
+                {formatRelativeTime(simulationResult.timestamp)}
               </span>
             </div>
+            <div className={styles.resultValueBox}>
+              <span className={styles.resultValueLabel}>Return Value</span>
+              <div className={styles.resultValueRow}>
+                <span className={styles.resultValue}>
+                  {formatDisplayValue(simulationResult.value)}
+                </span>
+                <button
+                  type="button"
+                  className={cn(
+                    styles.resultCopyBtn,
+                    resultCopied && 'text-success'
+                  )}
+                  onClick={handleCopyResult}
+                  aria-label="Copy value"
+                >
+                  {resultCopied ? (
+                    <Check size={iconSize()} />
+                  ) : (
+                    <Copy size={iconSize()} className={styles.resultCopyIcon} />
+                  )}
+                </button>
+              </div>
+              <div className={styles.resultType}>
+                <span className={styles.resultTypeLabel}>Type:</span>
+                <span className={styles.resultTypeBadge}>
+                  {simulationResult.type}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Execution History Card */}
       <div className={styles.historyCard}>
@@ -564,6 +695,10 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
             const isSuccess = log.level === 'success';
             const isError = log.level === 'error';
             const timestamp = new Date(parseInt(log.id.split('-')[0]));
+            const isLongDetail =
+              log.detail && log.detail.length > DETAIL_TRUNCATE_THRESHOLD;
+            const isExpanded = expandedLogs.has(log.id);
+            const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
 
             return (
               <div
@@ -594,16 +729,64 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
                     <span className={styles.entryFn}>{log.title}</span>
                   </div>
                   {log.detail && (
-                    <span
-                      className={cn(
-                        styles.entryResult,
-                        isSuccess && styles.entryResultSuccess,
-                        isError && styles.entryResultError,
-                        !isSuccess && !isError && styles.entryResultNeutral
+                    <>
+                      {isLongDetail ? (
+                        <div className={styles.entryExpandable}>
+                          <div className={styles.entryExpandActions}>
+                            <button
+                              type="button"
+                              className={styles.entryExpandRow}
+                              onClick={() => toggleLogExpanded(log.id)}
+                              aria-expanded={isExpanded}
+                            >
+                              <ChevronIcon
+                                size={iconSize('xs')}
+                                className={styles.entryExpandIcon}
+                              />
+                              <span
+                                className={cn(
+                                  styles.entryExpandText,
+                                  isSuccess && styles.entryResultSuccess,
+                                  isError && styles.entryResultError,
+                                  !isSuccess &&
+                                    !isError &&
+                                    styles.entryResultNeutral
+                                )}
+                              >
+                                {isExpanded
+                                  ? '→ Collapse'
+                                  : `→ ${log.detail.slice(0, DETAIL_TRUNCATE_THRESHOLD)}...`}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.entryExpandBtn}
+                              onClick={() => handleOpenModal(log)}
+                              aria-label="Open full view"
+                              title="Open full view"
+                            >
+                              <Maximize2 size={iconSize('xs')} />
+                            </button>
+                          </div>
+                          {isExpanded && (
+                            <div className={styles.entryExpandedContent}>
+                              {prettifyJson(log.detail)}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span
+                          className={cn(
+                            styles.entryResult,
+                            isSuccess && styles.entryResultSuccess,
+                            isError && styles.entryResultError,
+                            !isSuccess && !isError && styles.entryResultNeutral
+                          )}
+                        >
+                          → {log.detail}
+                        </span>
                       )}
-                    >
-                      → {log.detail}
-                    </span>
+                    </>
                   )}
                 </div>
               </div>
@@ -616,6 +799,43 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
           )}
         </div>
       </div>
+
+      {/* Log Detail Modal */}
+      <Dialog
+        open={!!modalLog}
+        onOpenChange={(open) => !open && handleCloseModal()}
+      >
+        <DialogContent size="lg">
+          <DialogHeader>
+            <div className={styles.logModalHeader}>
+              <DialogTitle>{modalLog?.title ?? 'Log Detail'}</DialogTitle>
+              <button
+                type="button"
+                className={cn(
+                  styles.logModalCopyBtn,
+                  copySuccess && styles.logModalCopySuccess
+                )}
+                onClick={handleCopyLogDetail}
+              >
+                {copySuccess ? (
+                  <>
+                    <Check size={iconSize()} />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy size={iconSize()} />
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+          </DialogHeader>
+          <div className={styles.logModalContent}>
+            {modalLog?.detail ? prettifyJson(modalLog.detail) : ''}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

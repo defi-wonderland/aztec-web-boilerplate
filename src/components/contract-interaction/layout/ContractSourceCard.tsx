@@ -18,7 +18,7 @@ const styles = {
   iconWrapperUnselected: 'bg-surface-tertiary',
   iconSelected: 'text-white',
   iconUnselected: 'text-muted',
-  content: 'flex flex-col gap-0.5',
+  content: 'flex flex-col gap-0.5 text-left',
   title: 'text-sm font-semibold text-default',
   description: 'text-xs text-muted',
 } as const;

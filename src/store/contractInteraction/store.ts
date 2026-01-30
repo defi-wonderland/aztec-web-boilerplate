@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { loadCachedContracts } from '../../utils/contractCache';
+import {
+  loadCachedContracts,
+  removeContract,
+  persistCachedContracts,
+  deleteArtifact,
+} from '../../utils/contractCache';
 import { getFormStore } from '../form';
 import type {
   LogEntry,
@@ -58,6 +63,7 @@ type Actions = {
   setSavedContracts: (contracts: CachedContract[]) => void;
   setIsLoadingPreconfigured: (loading: boolean) => void;
   refreshSavedContracts: (networkName?: string) => void;
+  deleteSavedContract: (address: string, networkName?: string) => Promise<void>;
   clearArtifactState: () => void;
   // UI layout actions
   setViewMode: (mode: ViewMode) => void;
@@ -159,6 +165,23 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
     refreshSavedContracts: (networkName) => {
       const contracts = loadCachedContracts(networkName);
       set({ savedContracts: contracts });
+    },
+
+    deleteSavedContract: async (address, networkName) => {
+      const state = useContractInteractionStore.getState();
+      const contractToDelete = state.savedContracts.find(
+        (c) => c.address.toLowerCase() === address.toLowerCase()
+      );
+
+      // Delete artifact from IndexedDB if stored there
+      if (contractToDelete?.artifactKey) {
+        await deleteArtifact(contractToDelete.artifactKey);
+      }
+
+      // Remove from list and persist
+      const updated = removeContract(state.savedContracts, address);
+      persistCachedContracts(updated, networkName);
+      set({ savedContracts: updated });
     },
 
     clearArtifactState: () => {

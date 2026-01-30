@@ -100,6 +100,7 @@ export const useArtifactActions = () =>
       setSavedContracts: state.setSavedContracts,
       setIsLoadingPreconfigured: state.setIsLoadingPreconfigured,
       refreshSavedContracts: state.refreshSavedContracts,
+      deleteSavedContract: state.deleteSavedContract,
       clearArtifactState: state.clearArtifactState,
     }))
   );

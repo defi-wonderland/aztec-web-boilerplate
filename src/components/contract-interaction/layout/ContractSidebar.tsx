@@ -1,13 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Plus,
   ChevronDown,
+  ChevronRight,
   Search,
   Circle,
   FileCode,
   Coins,
   Droplet,
+  Trash2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { cn, iconSize, truncateAddress } from '../../../utils';
 import type { FunctionGroup } from '../types';
@@ -60,7 +64,15 @@ const styles = {
   contractIconInner: 'text-accent',
   contractStatus: 'w-2 h-2 rounded-full status-dot',
   chevronIcon: 'text-muted',
+  contractAddrRow: 'flex items-center gap-1.5',
   contractAddr: 'text-[11px] font-mono text-muted',
+  contractCopyBtn: cn(
+    'flex items-center justify-center',
+    'w-5 h-5 rounded',
+    'text-muted hover:text-accent hover:bg-surface-tertiary',
+    'transition-colors cursor-pointer'
+  ),
+  contractCopySuccess: 'text-success',
 
   // === Search Section ===
   searchSection: 'px-4 py-3',
@@ -133,7 +145,7 @@ const styles = {
   ),
 
   contractItem: cn(
-    'flex items-center gap-2.5',
+    'flex text-start gap-2.5',
     'px-3 py-2.5 rounded-lg',
     'cursor-pointer transition-colors'
   ),
@@ -142,21 +154,30 @@ const styles = {
 
   contractItemIcon: cn(
     'flex items-center justify-center',
-    'w-[18px] h-[18px] flex-shrink-0'
+    'w-[18px] h-[18px] flex-shrink-0',
+    'self-start mt-[3px]'
   ),
   contractItemIconPreconfigured: 'text-accent',
   contractItemIconSaved: 'text-muted',
 
-  contractItemInfo: 'flex flex-col gap-0.5 min-w-0 flex-1',
+  contractItemInfo: 'flex flex-col gap-0.5 flex-1 min-w-0 overflow-hidden',
   contractItemName: 'text-[13px] font-semibold text-default truncate',
   contractItemAddr: 'text-[11px] font-mono text-muted truncate',
+  contractItemDelete: cn(
+    'flex items-center justify-center',
+    'w-6 h-6 rounded-md flex-shrink-0',
+    'text-muted/50',
+    'hover:text-red-500 hover:bg-red-500/15',
+    'transition-colors duration-150 cursor-pointer'
+  ),
 
   addContractBtn: cn(
     'flex items-center gap-2',
     'px-3 py-2.5 rounded-lg',
-    'bg-accent/10 hover:bg-accent/15',
     'cursor-pointer transition-colors'
   ),
+  addContractBtnDefault: 'bg-accent/10 hover:bg-accent/15',
+  addContractBtnSelected: 'bg-accent/15',
   addContractIcon: 'text-accent',
   addContractText: 'text-[13px] font-semibold text-default',
 } as const;
@@ -181,6 +202,7 @@ interface ContractSidebarProps {
   onSelectContract: (id: string) => void;
   onSelectFunction: (name: string) => void;
   onFilterChange: (filter: string) => void;
+  onDeleteContract?: (contract: SidebarContract) => void;
 }
 
 export const ContractSidebar: React.FC<ContractSidebarProps> = ({
@@ -196,6 +218,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
   onSelectContract,
   onSelectFunction,
   onFilterChange,
+  onDeleteContract,
 }) => {
   // Count functions in each group
   const groupCounts = useMemo(() => {
@@ -205,6 +228,37 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
     });
     return counts;
   }, [functionGroups]);
+
+  // Track collapsed groups (all groups expanded by default)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set()
+  );
+
+  const toggleGroupCollapsed = useCallback((groupId: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Track copy success state for contract address
+  const [addressCopied, setAddressCopied] = useState(false);
+
+  const handleCopyAddress = useCallback(async () => {
+    if (!selectedContract?.address) return;
+    try {
+      await navigator.clipboard.writeText(selectedContract.address);
+      setAddressCopied(true);
+      setTimeout(() => setAddressCopied(false), 2000);
+    } catch {
+      // Clipboard API failed silently
+    }
+  }, [selectedContract?.address]);
 
   // Helper to get icon for contract type based on name
   const getContractIcon = (contract: SidebarContract) => {
@@ -242,6 +296,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
         <div className={styles.contractsList}>
           {contracts.map((contract) => {
             const isSelected = selectedContractId === contract.id;
+            const canDelete = onDeleteContract !== undefined;
             return (
               <button
                 key={contract.id}
@@ -257,7 +312,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                 <span className={styles.contractItemIcon}>
                   {getContractIcon(contract)}
                 </span>
-                <div className={styles.contractItemInfo}>
+                <div className={styles.contractItemInfo} title={contract.name}>
                   <span className={styles.contractItemName}>
                     {contract.name}
                   </span>
@@ -265,6 +320,26 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                     {truncateAddress(contract.address)}
                   </span>
                 </div>
+                {canDelete && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={styles.contractItemDelete}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteContract(contract);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation();
+                        onDeleteContract(contract);
+                      }
+                    }}
+                    title="Remove contract"
+                  >
+                    <Trash2 size={14} />
+                  </span>
+                )}
               </button>
             );
           })}
@@ -272,7 +347,12 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
           {/* Add Contract button */}
           <button
             type="button"
-            className={styles.addContractBtn}
+            className={cn(
+              styles.addContractBtn,
+              selectedContractId === null
+                ? styles.addContractBtnSelected
+                : styles.addContractBtnDefault
+            )}
             onClick={onAddContract}
           >
             <Plus size={18} className={styles.addContractIcon} />
@@ -314,11 +394,24 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
             </div>
             <div className={styles.contractStatus} />
           </div>
-          <ChevronDown size={iconSize()} className={styles.chevronIcon} />
         </div>
-        <span className={styles.contractAddr}>
-          {truncateAddress(selectedContract.address)}
-        </span>
+        <div className={styles.contractAddrRow}>
+          <span className={styles.contractAddr}>
+            {truncateAddress(selectedContract.address, 14, 6)}
+          </span>
+          <button
+            type="button"
+            className={cn(
+              styles.contractCopyBtn,
+              addressCopied && styles.contractCopySuccess
+            )}
+            onClick={handleCopyAddress}
+            aria-label="Copy contract address"
+            title="Copy address"
+          >
+            {addressCopied ? <Check size={12} /> : <Copy size={12} />}
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -337,63 +430,78 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
 
       {/* Function Tree */}
       <div className={styles.functionTree}>
-        {functionGroups.map((group) => (
-          <div key={group.id} className={styles.group}>
-            {/* Group header */}
-            <div className={styles.groupHeader}>
-              <ChevronDown size={12} className={styles.groupChevron} />
-              <span className={styles.groupLabel}>{group.label}</span>
-              <span className={styles.groupCount}>
-                {groupCounts[group.id] ?? 0}
-              </span>
-            </div>
+        {functionGroups.map((group) => {
+          const isCollapsed = collapsedGroups.has(group.id);
+          const GroupChevron = isCollapsed ? ChevronRight : ChevronDown;
 
-            {/* Function items */}
-            {group.items.map((fn) => {
-              const isSelected = selectedFunctionName === fn.name;
-              return (
-                <button
-                  key={fn.name}
-                  type="button"
-                  className={cn(
-                    styles.functionItem,
-                    isSelected
-                      ? styles.functionItemSelected
-                      : styles.functionItemDefault
+          return (
+            <div key={group.id} className={styles.group}>
+              {/* Group header */}
+              <button
+                type="button"
+                className={styles.groupHeader}
+                onClick={() => toggleGroupCollapsed(group.id)}
+                aria-expanded={!isCollapsed}
+              >
+                <GroupChevron size={12} className={styles.groupChevron} />
+                <span className={styles.groupLabel}>{group.label}</span>
+                <span className={styles.groupCount}>
+                  {groupCounts[group.id] ?? 0}
+                </span>
+              </button>
+
+              {/* Function items - only show when expanded */}
+              {!isCollapsed && (
+                <>
+                  {group.items.map((fn) => {
+                    const isSelected = selectedFunctionName === fn.name;
+                    return (
+                      <button
+                        key={fn.name}
+                        type="button"
+                        className={cn(
+                          styles.functionItem,
+                          isSelected
+                            ? styles.functionItemSelected
+                            : styles.functionItemDefault
+                        )}
+                        onClick={() => onSelectFunction(fn.name)}
+                        title={fn.name}
+                      >
+                        <Circle
+                          size={6}
+                          className={cn(
+                            styles.functionIcon,
+                            isSelected
+                              ? styles.functionIconSelected
+                              : styles.functionIconDefault
+                          )}
+                          fill="currentColor"
+                        />
+                        <span
+                          className={cn(
+                            styles.functionName,
+                            isSelected
+                              ? styles.functionNameSelected
+                              : styles.functionNameDefault
+                          )}
+                        >
+                          {fn.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  {group.items.length === 0 && (
+                    <div className="pl-7 py-2 text-xs text-muted">
+                      No functions found
+                    </div>
                   )}
-                  onClick={() => onSelectFunction(fn.name)}
-                >
-                  <Circle
-                    size={6}
-                    className={cn(
-                      styles.functionIcon,
-                      isSelected
-                        ? styles.functionIconSelected
-                        : styles.functionIconDefault
-                    )}
-                    fill="currentColor"
-                  />
-                  <span
-                    className={cn(
-                      styles.functionName,
-                      isSelected
-                        ? styles.functionNameSelected
-                        : styles.functionNameDefault
-                    )}
-                  >
-                    {fn.name}
-                  </span>
-                </button>
-              );
-            })}
-
-            {group.items.length === 0 && (
-              <div className="pl-7 py-2 text-xs text-muted">
-                No functions found
-              </div>
-            )}
-          </div>
-        ))}
+                </>
+              )}
+            </div>
+          );
+        })}
 
         {functionGroups.length === 0 && (
           <div className={styles.emptyState}>
