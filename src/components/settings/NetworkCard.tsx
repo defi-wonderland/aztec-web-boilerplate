@@ -37,34 +37,39 @@ const NETWORK_INFO = {
 const styles = {
   container:
     'rounded-2xl p-6 flex flex-col gap-4 cursor-pointer transition-all',
-  containerActive: 'bg-[#8B5CF6]/10',
-  containerSelected: 'bg-[#F3F4F6] ring-2 ring-[#8B5CF6]',
-  containerInactive: 'bg-white hover:bg-[#F9FAFB]',
-  containerUnavailable: 'bg-[#F3F4F6] opacity-60 cursor-not-allowed',
+  containerActive: 'bg-[#8B5CF6]/10 dark:bg-[#a78bfa]/15',
+  containerSelected:
+    'bg-[#F3F4F6] dark:bg-[#2a2a32] ring-2 ring-[#8B5CF6] dark:ring-[#a78bfa]',
+  containerInactive:
+    'bg-white dark:bg-[#2a2a32] hover:bg-[#F9FAFB] dark:hover:bg-[#3a3a44]',
+  containerUnavailable:
+    'bg-[#F3F4F6] dark:bg-[#2a2a32] opacity-60 cursor-not-allowed',
   header: 'flex items-center gap-3',
   iconBox:
     'w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0',
-  iconBoxActive: 'bg-[#8B5CF6]',
-  iconBoxInactive: 'bg-[#F3F4F6]',
+  iconBoxActive: 'bg-[#8B5CF6] dark:bg-[#a78bfa]',
+  iconBoxInactive: 'bg-[#F3F4F6] dark:bg-[#3a3a44]',
   titleGroup: 'flex flex-col gap-0.5 flex-1',
-  title: 'text-base font-semibold text-[#1A1A1A]',
-  subtitle: 'text-xs text-[#6B7280]',
+  title: 'text-base font-semibold text-[#1A1A1A] dark:text-white',
+  subtitle: 'text-xs text-[#6B7280] dark:text-[#9ca3af]',
   activeBadge:
-    'px-2 py-1 rounded-md bg-[#8B5CF6] text-[11px] font-semibold text-white',
+    'px-2 py-1 rounded-md bg-[#8B5CF6] dark:bg-[#a78bfa] text-[11px] font-semibold text-white dark:text-black',
   statsRow: 'flex gap-4',
   statItem: 'flex flex-col gap-0.5 flex-1',
   statLabel: 'text-[11px] text-[#9CA3AF]',
   statValue: 'flex items-center gap-1.5',
   statDot: 'w-2 h-2 rounded-full',
-  statDotConnected: 'bg-[#22C55E]',
+  statDotConnected: 'bg-[#22C55E] dark:bg-[#4ade80]',
   statDotIdle: 'bg-[#9CA3AF]',
-  statDotUnavailable: 'bg-[#EF4444]',
+  statDotUnavailable: 'bg-[#EF4444] dark:bg-[#f87171]',
   statDotChecking: 'bg-[#F59E0B] animate-pulse',
-  statValueText: 'text-[13px] font-medium text-[#1A1A1A]',
-  statValueTextMuted: 'text-[13px] font-medium text-[#6B7280]',
-  statValueTextError: 'text-[13px] font-medium text-[#EF4444]',
+  statValueText: 'text-[13px] font-medium text-[#1A1A1A] dark:text-white',
+  statValueTextMuted:
+    'text-[13px] font-medium text-[#6B7280] dark:text-[#9ca3af]',
+  statValueTextError:
+    'text-[13px] font-medium text-[#EF4444] dark:text-[#f87171]',
   switchButton:
-    'flex items-center justify-center gap-2 w-full py-3 px-4 rounded-[10px] bg-[#F3F4F6] text-[13px] font-semibold text-[#4B5563] cursor-pointer hover:bg-[#E5E7EB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'flex items-center justify-center gap-2 w-full py-3 px-4 rounded-[10px] bg-[#F3F4F6] dark:bg-[#3a3a44] text-[13px] font-semibold text-[#4B5563] dark:text-[#9ca3af] cursor-pointer hover:bg-[#E5E7EB] dark:hover:bg-[#4a4a54] transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
 } as const;
 
 const STATUS_CONFIG = {

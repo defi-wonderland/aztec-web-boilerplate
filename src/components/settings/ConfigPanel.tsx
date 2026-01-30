@@ -8,13 +8,14 @@ export interface ConfigPanelProps {
 }
 
 const styles = {
-  container: 'flex-1 flex flex-col gap-7 bg-[#F8F8FA] px-10 py-8',
+  container:
+    'flex-1 flex flex-col gap-7 bg-[#F8F8FA] dark:bg-[#121218] px-10 py-8',
   header: 'flex items-center gap-4',
   headerIcon:
-    'w-12 h-12 rounded-[14px] flex items-center justify-center bg-[#8B5CF6]/20 text-[22px]',
+    'w-12 h-12 rounded-[14px] flex items-center justify-center bg-[#8B5CF6]/20 dark:bg-[#a78bfa]/20 text-[22px]',
   headerContent: 'flex flex-col gap-1',
-  headerTitle: 'text-2xl font-bold text-[#1A1A1A]',
-  headerSubtitle: 'text-sm text-[#6B7280]',
+  headerTitle: 'text-2xl font-bold text-[#1A1A1A] dark:text-white',
+  headerSubtitle: 'text-sm text-[#6B7280] dark:text-[#9ca3af]',
   sectionsContainer: 'flex flex-col gap-5',
   grid2Col: 'grid grid-cols-2 gap-4',
   contractsGap: 'flex flex-col gap-4',

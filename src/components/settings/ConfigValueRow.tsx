@@ -18,23 +18,26 @@ export interface ConfigValueRowProps {
 }
 
 const BADGE_STYLES: Record<BadgeVariant, string> = {
-  blue: 'bg-[#DBEAFE] text-[#1D4ED8]', // TOKEN
-  red: 'bg-[#FEE2E2] text-[#DC2626]', // FAUCET
-  purple: 'bg-[#8B5CF6]/20 text-[#8B5CF6]',
-  green: 'bg-[#DCFCE7] text-[#15803D]',
+  blue: 'bg-[#DBEAFE] dark:bg-[#1d4ed8]/30 text-[#1D4ED8] dark:text-[#60a5fa]', // TOKEN
+  red: 'bg-[#FEE2E2] dark:bg-[#dc2626]/30 text-[#DC2626] dark:text-[#f87171]', // FAUCET
+  purple:
+    'bg-[#8B5CF6]/20 dark:bg-[#a78bfa]/20 text-[#8B5CF6] dark:text-[#a78bfa]',
+  green: 'bg-[#DCFCE7] dark:bg-[#22c55e]/20 text-[#15803D] dark:text-[#4ade80]',
 };
 
 const styles = {
   container: 'flex flex-col gap-2',
   labelRow: 'flex items-center gap-2',
-  label: 'text-[13px] font-medium text-[#6B7280]',
+  label: 'text-[13px] font-medium text-[#6B7280] dark:text-[#9ca3af]',
   badge: 'px-1.5 py-0.5 rounded text-[10px] font-semibold',
   valueContainer:
-    'flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-[#F3F4F6]',
-  value: 'flex-1 text-[13px] text-[#1A1A1A] font-mono break-all',
+    'flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-[#F3F4F6] dark:bg-[#2a2a32]',
+  value:
+    'flex-1 text-[13px] text-[#1A1A1A] dark:text-white font-mono break-all',
   copyButton:
-    'w-7 h-7 rounded-md flex items-center justify-center bg-[#E5E5E5] text-[#6B7280] hover:bg-[#D1D5DB] transition-colors shrink-0',
-  copySuccess: 'text-[#22C55E] bg-[#DCFCE7]',
+    'w-7 h-7 rounded-md flex items-center justify-center bg-[#E5E5E5] dark:bg-[#3a3a44] text-[#6B7280] dark:text-[#9ca3af] hover:bg-[#D1D5DB] dark:hover:bg-[#4a4a54] transition-colors shrink-0',
+  copySuccess:
+    'text-[#22C55E] dark:text-[#4ade80] bg-[#DCFCE7] dark:bg-[#22c55e]/20',
 } as const;
 
 /**
