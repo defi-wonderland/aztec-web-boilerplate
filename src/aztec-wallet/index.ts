@@ -136,6 +136,12 @@ export { useIsEvmWalletInstalled } from './hooks';
  */
 export { ConnectButton, type ConnectButtonProps } from './components';
 
+/**
+ * Network picker button that opens the network switching modal.
+ * Can be used standalone when you need the picker in a custom location.
+ */
+export { NetworkPicker, type NetworkPickerProps } from './components';
+
 // =============================================================================
 // TYPES
 // =============================================================================

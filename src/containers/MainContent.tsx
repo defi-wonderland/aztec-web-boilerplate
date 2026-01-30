@@ -11,8 +11,9 @@ const styles = {
   main: 'flex flex-col',
   contentWrapper:
     'w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6',
-  settingsWrapper: 'w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 py-6',
   contractWrapper: 'w-full',
+  settingsWrapper:
+    'w-full max-w-[1400px] mx-auto px-0 lg:px-6 xl:px-10 py-0 lg:py-6',
 } as const;
 
 export const MainContent: React.FC = () => {

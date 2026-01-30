@@ -8,7 +8,7 @@ import { useNetworkHealth } from '../hooks/useNetworkHealth';
 import type { AztecNetwork } from '../config/networks/constants';
 
 const styles = {
-  container: 'flex w-full min-h-[600px]',
+  container: 'flex flex-col lg:flex-row w-full min-h-[600px]',
 } as const;
 
 const NETWORK_CONFIGS = {
