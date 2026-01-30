@@ -36,7 +36,7 @@ const NETWORK_INFO = {
 
 const styles = {
   container:
-    'rounded-2xl p-6 flex flex-col gap-4 cursor-pointer transition-all',
+    'rounded-2xl p-4 md:p-6 flex flex-col gap-3 md:gap-4 cursor-pointer transition-all',
   containerActive: 'bg-[#8B5CF6]/10 dark:bg-[#a78bfa]/15',
   containerSelected:
     'bg-[#F3F4F6] dark:bg-[#2a2a32] ring-2 ring-[#8B5CF6] dark:ring-[#a78bfa]',
@@ -46,30 +46,32 @@ const styles = {
     'bg-[#F3F4F6] dark:bg-[#2a2a32] opacity-60 cursor-not-allowed',
   header: 'flex items-center gap-3',
   iconBox:
-    'w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0',
+    'w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center text-lg md:text-xl shrink-0',
   iconBoxActive: 'bg-[#8B5CF6] dark:bg-[#a78bfa]',
   iconBoxInactive: 'bg-[#F3F4F6] dark:bg-[#3a3a44]',
   titleGroup: 'flex flex-col gap-0.5 flex-1',
-  title: 'text-base font-semibold text-[#1A1A1A] dark:text-white',
+  title:
+    'text-[15px] md:text-base font-semibold text-[#1A1A1A] dark:text-white',
   subtitle: 'text-xs text-[#6B7280] dark:text-[#9ca3af]',
   activeBadge:
-    'px-2 py-1 rounded-md bg-[#8B5CF6] dark:bg-[#a78bfa] text-[11px] font-semibold text-white dark:text-black',
+    'px-2 py-1 rounded-md bg-[#8B5CF6] dark:bg-[#a78bfa] text-[10px] md:text-[11px] font-semibold text-white dark:text-black',
   statsRow: 'flex gap-4',
   statItem: 'flex flex-col gap-0.5 flex-1',
-  statLabel: 'text-[11px] text-[#9CA3AF]',
+  statLabel: 'text-[10px] md:text-[11px] text-[#9CA3AF]',
   statValue: 'flex items-center gap-1.5',
-  statDot: 'w-2 h-2 rounded-full',
+  statDot: 'w-1.5 h-1.5 md:w-2 md:h-2 rounded-full',
   statDotConnected: 'bg-[#22C55E] dark:bg-[#4ade80]',
   statDotIdle: 'bg-[#9CA3AF]',
   statDotUnavailable: 'bg-[#EF4444] dark:bg-[#f87171]',
   statDotChecking: 'bg-[#F59E0B] animate-pulse',
-  statValueText: 'text-[13px] font-medium text-[#1A1A1A] dark:text-white',
+  statValueText:
+    'text-xs md:text-[13px] font-medium text-[#1A1A1A] dark:text-white',
   statValueTextMuted:
-    'text-[13px] font-medium text-[#6B7280] dark:text-[#9ca3af]',
+    'text-xs md:text-[13px] font-medium text-[#6B7280] dark:text-[#9ca3af]',
   statValueTextError:
-    'text-[13px] font-medium text-[#EF4444] dark:text-[#f87171]',
+    'text-xs md:text-[13px] font-medium text-[#EF4444] dark:text-[#f87171]',
   switchButton:
-    'flex items-center justify-center gap-2 w-full py-3 px-4 rounded-[10px] bg-[#F3F4F6] dark:bg-[#3a3a44] text-[13px] font-semibold text-[#4B5563] dark:text-[#9ca3af] cursor-pointer hover:bg-[#E5E7EB] dark:hover:bg-[#4a4a54] transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'flex items-center justify-center gap-2 w-full py-2.5 md:py-3 px-4 rounded-[10px] bg-[#F3F4F6] dark:bg-[#3a3a44] text-xs md:text-[13px] font-semibold text-[#4B5563] dark:text-[#9ca3af] cursor-pointer hover:bg-[#E5E7EB] dark:hover:bg-[#4a4a54] transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
 } as const;
 
 const STATUS_CONFIG = {

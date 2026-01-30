@@ -30,11 +30,11 @@ export interface NetworkSelectorProps {
 
 const styles = {
   container:
-    'w-[380px] flex flex-col gap-5 shrink-0 bg-white dark:bg-[#1e1e24] p-6',
+    'w-full lg:w-[380px] flex flex-col gap-4 md:gap-5 shrink-0 bg-white dark:bg-[#1e1e24] p-4 md:p-6',
   sectionLabel:
-    'text-[13px] font-semibold text-[#9CA3AF] uppercase tracking-[1px]',
+    'text-[11px] md:text-[13px] font-semibold text-[#9CA3AF] uppercase tracking-[1px]',
   networksSection: 'flex flex-col gap-3',
-  tipCard: 'flex gap-3 rounded-xl bg-[#FEF3C7] dark:bg-[#422006]/30 p-4',
+  tipCard: 'flex gap-3 rounded-xl bg-[#FEF3C7] dark:bg-[#422006]/30 p-3 md:p-4',
   tipIcon: 'text-base shrink-0',
   tipContent: 'flex flex-col gap-1',
   tipTitle: 'text-[13px] font-semibold text-[#92400E] dark:text-[#fcd34d]',

@@ -106,6 +106,8 @@ export interface ConnectButtonProps {
    * - false/null: no icon
    */
   icon?: React.ReactNode | false | null;
+  /** Hide the network picker (useful for mobile where it's shown separately) */
+  hideNetworkPicker?: boolean;
   /** Additional class names */
   className?: string;
 }
@@ -142,6 +144,7 @@ export interface ConnectButtonProps {
 export const ConnectButton: React.FC<ConnectButtonProps> = ({
   label = 'Connect Wallet',
   icon,
+  hideNetworkPicker: hideNetworkPickerProp = false,
   className,
 }) => {
   // Read config from context
@@ -172,7 +175,8 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
   const networkPickerVariant = config.showNetworkPicker as
     | NetworkPickerVariant
     | undefined;
-  const showNetworkPicker = isConnected && !!networkPickerVariant;
+  const showNetworkPicker =
+    isConnected && !!networkPickerVariant && !hideNetworkPickerProp;
 
   // Handle click based on connection state
   const handleClick = useCallback(() => {

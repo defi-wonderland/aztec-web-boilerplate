@@ -41,11 +41,13 @@ const BADGE_STYLES: Record<BadgeVariant, { container: string; text: string }> =
 const styles = {
   container: 'rounded-2xl overflow-hidden bg-white dark:bg-[#1e1e24]',
   header:
-    'flex items-center gap-3 px-5 py-4 bg-[#F9FAFB] dark:bg-[#2a2a32] rounded-t-2xl border-b border-[#F3F4F6] dark:border-[#3a3a44]',
-  iconBox: 'w-8 h-8 rounded-lg flex items-center justify-center text-sm',
-  title: 'text-[15px] font-semibold text-[#1A1A1A] dark:text-white flex-1',
+    'flex items-center gap-2 md:gap-3 px-4 py-3 md:px-5 md:py-4 bg-[#F9FAFB] dark:bg-[#2a2a32] rounded-t-2xl border-b border-[#F3F4F6] dark:border-[#3a3a44]',
+  iconBox:
+    'w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-xs md:text-sm',
+  title:
+    'text-sm md:text-[15px] font-semibold text-[#1A1A1A] dark:text-white flex-1',
   onlineDot: 'w-1.5 h-1.5 rounded-full bg-[#22C55E] dark:bg-[#4ade80]',
-  body: 'p-5',
+  body: 'p-4 md:p-5',
 } as const;
 
 /**
