@@ -3,11 +3,11 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
 import {
+  useAztecWallet,
   hasAppManagedPXE,
   isBrowserWalletConnector,
-} from '../../types/walletConnector';
+} from '../../aztec-wallet';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
-import { useUniversalWallet } from '../context/useUniversalWallet';
 import { getContractMethod } from './utils';
 import type { SimulateViewsOp } from '../../types';
 
@@ -27,7 +27,7 @@ interface CallResult {
 export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
-  const { connector, account } = useUniversalWallet();
+  const { connector, account } = useAztecWallet();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);

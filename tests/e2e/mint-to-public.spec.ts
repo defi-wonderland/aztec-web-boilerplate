@@ -12,7 +12,6 @@ import { test, expect, ANVIL_ACCOUNTS } from './fixtures/walletless';
 import { test as baseTest } from '@playwright/test';
 
 const MINT_AMOUNT = '1';
-const SANDBOX_CONNECTION_TIMEOUT = 120000;
 const WALLET_OPERATION_TIMEOUT = 120000;
 
 /**
@@ -31,9 +30,32 @@ async function clearBrowserStorage(page: import('@playwright/test').Page) {
 }
 
 /**
- * Helper to connect to sandbox network
+ * Helper to switch to Sandbox network
  */
-async function connectToSandbox(page: import('@playwright/test').Page) {
+async function switchToSandbox(page: import('@playwright/test').Page) {
+  // Click network picker to change network to Sandbox
+  const networkPicker = page.locator('[data-testid="network-picker"]');
+  await expect(networkPicker).toBeVisible({ timeout: 30000 });
+  await networkPicker.click();
+
+  // Wait for network modal
+  const networkModal = page.locator('[data-testid="network-modal"]');
+  await expect(networkModal).toBeVisible({ timeout: 5000 });
+
+  // Select Sandbox network
+  const sandboxOption = networkModal.locator('[data-testid="network-option-sandbox"]');
+  await sandboxOption.click();
+  console.log('Sandbox network selected');
+
+  // Wait for network modal to close
+  await expect(networkModal).not.toBeVisible({ timeout: 5000 });
+}
+
+/**
+ * Helper to open the connect modal
+ * Returns the modal locator
+ */
+async function openConnectModal(page: import('@playwright/test').Page) {
   // Click "Connect Wallet" to open modal
   const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
   await expect(connectBtn).toBeVisible({ timeout: 30000 });
@@ -43,19 +65,64 @@ async function connectToSandbox(page: import('@playwright/test').Page) {
   const modal = page.locator('[data-testid="connect-wallet-modal"]');
   await expect(modal).toBeVisible({ timeout: 5000 });
 
-  // Select sandbox network using Radix Select
-  const networkTrigger = modal.locator('[data-testid="network-selector"]');
-  await networkTrigger.click();
-  const sandboxOption = page.locator('[role="option"]').filter({ hasText: 'Sandbox' });
-  await sandboxOption.click();
-
-  // Wait for network to be ready (idle or connected state)
-  const networkStatus = modal.locator('[data-testid="network-status"]');
-  await expect(networkStatus).toContainText(/ready to connect|connected/, {
-    timeout: SANDBOX_CONNECTION_TIMEOUT,
-  });
-
   return modal;
+}
+
+/**
+ * Helper to connect via EVM wallet (MetaMask)
+ */
+async function connectViaEVMWallet(page: import('@playwright/test').Page) {
+  // First switch to Sandbox
+  await switchToSandbox(page);
+
+  const modal = await openConnectModal(page);
+
+  // Click "EVM Wallet" group to see EVM wallets list
+  const evmWalletGroup = modal.locator('[data-testid="wallet-group-evm"]');
+  await expect(evmWalletGroup).toBeVisible({ timeout: 5000 });
+  await evmWalletGroup.click();
+
+  // Click MetaMask button
+  const metamaskBtn = modal.locator('[data-testid="wallet-button-metamask"]');
+  await expect(metamaskBtn).toBeVisible({ timeout: 10000 });
+  await metamaskBtn.click();
+  console.log('MetaMask button clicked, waiting for wallet connection...');
+
+  // Wait for modal to close (connection complete)
+  await expect(modal).not.toBeVisible({ timeout: WALLET_OPERATION_TIMEOUT });
+  console.log('Wallet connected');
+
+  // Wait for account section to be visible
+  const accountSection = page.locator('[data-testid="connected-account"]');
+  await expect(accountSection).toBeVisible({
+    timeout: WALLET_OPERATION_TIMEOUT,
+  });
+}
+
+/**
+ * Helper to connect via Embedded wallet
+ */
+async function connectViaEmbeddedWallet(page: import('@playwright/test').Page) {
+  // First switch to Sandbox
+  await switchToSandbox(page);
+
+  const modal = await openConnectModal(page);
+
+  // Click "Embedded Wallet" group
+  const embeddedGroup = modal.locator('[data-testid="wallet-group-embedded"]');
+  await expect(embeddedGroup).toBeVisible({ timeout: 5000 });
+  await embeddedGroup.click();
+  console.log('Embedded Wallet clicked, waiting for account creation...');
+
+  // Wait for modal to close (account creation complete)
+  await expect(modal).not.toBeVisible({ timeout: WALLET_OPERATION_TIMEOUT });
+  console.log('Account created and connected');
+
+  // Wait for account section to be visible
+  const accountSection = page.locator('[data-testid="connected-account"]');
+  await expect(accountSection).toBeVisible({
+    timeout: WALLET_OPERATION_TIMEOUT,
+  });
 }
 
 /**
@@ -184,25 +251,8 @@ test.describe('Mint to Public - Walletless (MetaMask)', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Connect to sandbox and open modal
-    const modal = await connectToSandbox(page);
-    console.log('Sandbox connected');
-
-    // Click MetaMask connect button
-    const metamaskBtn = modal.locator('button:has-text("MetaMask")');
-    await expect(metamaskBtn).toBeEnabled({ timeout: 10000 });
-    await metamaskBtn.click();
-    console.log('MetaMask button clicked, waiting for wallet connection...');
-
-    // Wait for modal to close (connection complete)
-    await expect(modal).not.toBeVisible({ timeout: WALLET_OPERATION_TIMEOUT });
-    console.log('Wallet connected');
-
-    // Wait for account section to be visible
-    const accountSection = page.locator('[data-testid="connected-account"]');
-    await expect(accountSection).toBeVisible({
-      timeout: WALLET_OPERATION_TIMEOUT,
-    });
+    // Connect via EVM wallet (MetaMask)
+    await connectViaEVMWallet(page);
 
     // Get initial public balance
     const initialBalance = await getPublicBalance(page);
@@ -243,27 +293,8 @@ baseTest.describe('Mint to Public - Embedded Wallet (Create New Account)', () =>
       await page.goto('/');
       await page.waitForLoadState('networkidle');
 
-      // Connect to sandbox and open modal
-      const modal = await connectToSandbox(page);
-      console.log('Sandbox connected');
-
-      // Click "Create New Account" button
-      const createAccountBtn = modal.locator(
-        'button:has-text("Create New Account")'
-      );
-      await expect(createAccountBtn).toBeEnabled({ timeout: 10000 });
-      await createAccountBtn.click();
-      console.log('Create New Account clicked, waiting for account creation...');
-
-      // Wait for modal to close (account creation complete)
-      await expect(modal).not.toBeVisible({ timeout: WALLET_OPERATION_TIMEOUT });
-      console.log('Account created and connected');
-
-      // Wait for account section to be visible
-      const accountSection = page.locator('[data-testid="connected-account"]');
-      await expect(accountSection).toBeVisible({
-        timeout: WALLET_OPERATION_TIMEOUT,
-      });
+      // Connect via Embedded wallet
+      await connectViaEmbeddedWallet(page);
 
       // Get initial public balance (should be 0 for new account)
       const initialBalance = await getPublicBalance(page);

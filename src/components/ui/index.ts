@@ -81,3 +81,6 @@ export {
 
 // Toggle
 export { Toggle, toggleVariants, type ToggleProps } from './Toggle';
+
+// Accessibility utilities
+export { VisuallyHidden, type VisuallyHiddenProps } from './VisuallyHidden';

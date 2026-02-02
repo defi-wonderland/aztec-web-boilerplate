@@ -32,6 +32,23 @@ test.describe('Wallet Connection E2E', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
+    // Click network picker to change network to Sandbox
+    const networkPicker = page.locator('[data-testid="network-picker"]');
+    await expect(networkPicker).toBeVisible({ timeout: 30000 });
+    await networkPicker.click();
+
+    // Wait for network modal
+    const networkModal = page.locator('[data-testid="network-modal"]');
+    await expect(networkModal).toBeVisible({ timeout: 5000 });
+
+    // Select Sandbox network
+    const sandboxOption = networkModal.locator('[data-testid="network-option-sandbox"]');
+    await sandboxOption.click();
+    console.log('Sandbox network selected');
+
+    // Wait for network modal to close
+    await expect(networkModal).not.toBeVisible({ timeout: 5000 });
+
     // Click "Connect Wallet"
     const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
     await expect(connectBtn).toBeVisible({ timeout: 30000 });
@@ -41,20 +58,15 @@ test.describe('Wallet Connection E2E', () => {
     const modal = page.locator('[data-testid="connect-wallet-modal"]');
     await expect(modal).toBeVisible({ timeout: 5000 });
 
-    // Select sandbox network using Radix Select
-    const networkTrigger = modal.locator('[data-testid="network-selector"]');
-    await networkTrigger.click();
-    const sandboxOption = page.locator('[role="option"]').filter({ hasText: 'Sandbox' });
-    await sandboxOption.click();
+    // Click "EVM Wallet" group to see EVM wallets list
+    const evmWalletGroup = modal.locator('[data-testid="wallet-group-evm"]');
+    await expect(evmWalletGroup).toBeVisible({ timeout: 5000 });
+    await evmWalletGroup.click();
+    console.log('EVM Wallet group clicked');
 
-    // Wait for network to be ready (idle or connected state)
-    const networkStatus = modal.locator('[data-testid="network-status"]');
-    await expect(networkStatus).toContainText(/ready to connect|connected/, { timeout: 120000 });
-    console.log('Sandbox network ready');
-
-    // Click MetaMask connect button
-    const metamaskBtn = modal.locator('button:has-text("MetaMask")');
-    await expect(metamaskBtn).toBeEnabled({ timeout: 10000 });
+    // Click MetaMask button
+    const metamaskBtn = modal.locator('[data-testid="wallet-button-metamask"]');
+    await expect(metamaskBtn).toBeVisible({ timeout: 10000 });
     await metamaskBtn.click();
     console.log('MetaMask button clicked, waiting for signature...');
 

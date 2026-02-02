@@ -91,7 +91,10 @@ const BalanceContent: React.FC<BalanceMetrics> = ({
           <Shield size={iconSize()} />
           <span>Private:</span>
         </div>
-        <span className={styles.balanceValue} data-testid="balance-value-private">
+        <span
+          className={styles.balanceValue}
+          data-testid="balance-value-private"
+        >
           {privateBalance.toString()}
         </span>
       </div>
@@ -100,7 +103,10 @@ const BalanceContent: React.FC<BalanceMetrics> = ({
           <Globe size={iconSize()} />
           <span>Public:</span>
         </div>
-        <span className={styles.balanceValue} data-testid="balance-value-public">
+        <span
+          className={styles.balanceValue}
+          data-testid="balance-value-public"
+        >
           {publicBalance.toString()}
         </span>
       </div>
@@ -145,14 +151,22 @@ export const TokenBalance: React.FC = () => {
   const metrics = calculateBalanceMetrics(formattedBalances);
 
   return (
-    <Card padding="sm" className={styles.cardWrapper} data-testid="token-balance-card">
+    <Card
+      padding="sm"
+      className={styles.cardWrapper}
+      data-testid="token-balance-card"
+    >
       <div className={styles.cardHeader}>
         <CardTitle className={styles.cardTitle}>
           <Coins size={iconSize('md')} className={styles.cardTitleIcon} />
           Your Balance
         </CardTitle>
         {isFetching && !isLoading && (
-          <Badge variant="info" className={styles.syncBadge} data-testid="balance-syncing">
+          <Badge
+            variant="info"
+            className={styles.syncBadge}
+            data-testid="balance-syncing"
+          >
             Syncing
           </Badge>
         )}

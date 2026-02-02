@@ -27,7 +27,22 @@ import {
   Edit,
   ExternalLink,
   BookOpen,
+  // Wallet icons
+  Wallet,
+  ChevronDown,
+  ChevronRight,
+  Key,
+  CreditCard,
+  LogOut,
+  Globe,
+  FlaskConical,
+  Box,
 } from 'lucide-react';
+import {
+  useConnectModal,
+  useAccountModal,
+  useNetworkModal,
+} from '../aztec-wallet';
 import {
   Card,
   CardHeader,
@@ -74,6 +89,7 @@ const styles = {
   sectionDescription: 'text-sm text-muted',
   // Component showcase
   componentGrid: 'flex flex-wrap gap-3 items-center',
+  componentGridWide: 'flex flex-wrap gap-4 items-center',
   componentRow: 'flex flex-wrap gap-3 items-end',
   componentColumn: 'flex flex-col gap-3',
   // Labels
@@ -100,6 +116,194 @@ const styles = {
   guidelineTitle: 'font-semibold text-default flex items-center gap-2',
   guidelineText: 'text-sm text-muted',
   guidelineList: 'list-disc list-inside text-sm text-muted space-y-1 ml-2',
+  // ========== AZTEC WALLET SHOWCASE STYLES ==========
+  walletSection: 'space-y-5',
+  walletSectionTitle:
+    'text-lg font-semibold text-default border-b border-default pb-2 flex items-center gap-3',
+  walletSectionSubtitle:
+    'text-base font-semibold text-default border-b border-default pb-2 mt-4 mb-3',
+  // ConnectButton styles (matching real ConnectButton.tsx)
+  connectButtonDisconnected: [
+    'group relative overflow-hidden',
+    'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]',
+    'hover:shadow-[0_0_20px_color-mix(in_srgb,var(--accent-primary)_40%,transparent)]',
+    'transition-all duration-300',
+  ].join(' '),
+  walletIcon: 'transition-transform duration-300 group-hover:scale-110',
+  connectButtonConnecting: [
+    'relative',
+    'bg-surface-secondary border-accent/50',
+    'animate-shimmer',
+  ].join(' '),
+  connectingContent: 'flex items-center gap-2',
+  connectButtonConnected: [
+    'group flex items-center gap-2',
+    'pl-2.5 pr-2 py-1.5 rounded-lg',
+    'bg-surface-secondary hover:bg-surface-tertiary',
+    'border border-default hover:border-accent/50',
+    'transition-all duration-200',
+    'cursor-pointer',
+  ].join(' '),
+  walletEmoji: 'text-base',
+  walletAddress: 'font-mono text-sm text-default',
+  walletChevron: 'text-muted transition-transform duration-200',
+  walletContainer: 'flex items-center gap-3',
+  // NetworkPicker styles (mockups)
+  networkPickerFull: [
+    'group flex items-center gap-2',
+    'pl-2 pr-1.5 py-1.5 rounded-lg',
+    'bg-surface-secondary hover:bg-surface-tertiary',
+    'border border-default hover:border-accent/50',
+    'transition-all duration-200',
+    'cursor-pointer',
+  ].join(' '),
+  networkPickerCompact: [
+    'group flex items-center justify-center',
+    'h-9 w-9 rounded-lg',
+    'bg-surface-secondary hover:bg-surface-tertiary',
+    'border border-default hover:border-accent/50',
+    'transition-all duration-200',
+    'cursor-pointer',
+  ].join(' '),
+  networkIconContainer: [
+    'flex items-center justify-center',
+    'w-6 h-6 rounded-lg',
+    'bg-accent/10',
+    'transition-colors duration-200',
+    'group-hover:bg-accent/20',
+  ].join(' '),
+  networkIcon: 'text-accent text-sm',
+  networkName: 'text-sm font-semibold text-default',
+  // Wallet Group Button styles (mockups for connect modal)
+  walletGroupButton: [
+    'group w-full flex items-center gap-4',
+    'px-4 py-4 rounded-xl',
+    'bg-surface-secondary hover:bg-surface-tertiary',
+    'border border-transparent hover:border-accent/30',
+    'transition-all duration-200',
+    'cursor-pointer',
+  ].join(' '),
+  walletGroupIconContainer: [
+    'flex items-center justify-center',
+    'w-10 h-10 rounded-xl',
+    'bg-accent/10',
+    'text-accent',
+    'transition-all duration-200',
+    'group-hover:bg-accent/20',
+  ].join(' '),
+  walletGroupContent: 'flex-1 flex flex-col items-start gap-0.5',
+  walletGroupLabel: 'text-sm font-semibold text-default',
+  walletGroupDescription: 'text-xs text-muted',
+  walletGroupRightSection: 'flex items-center gap-2',
+  walletGroupArrow: [
+    'text-muted',
+    'transition-all duration-200',
+    'group-hover:text-accent',
+  ].join(' '),
+  // Account Modal styles (mockups)
+  accountModalHeader: 'flex flex-col items-center gap-3 pb-4',
+  accountEmojiContainer: [
+    'w-16 h-16 rounded-2xl',
+    'bg-surface-secondary',
+    'border border-default',
+    'flex items-center justify-center',
+    'text-4xl',
+    'shadow-lg',
+  ].join(' '),
+  accountStatusBadge: [
+    'inline-flex items-center gap-1.5',
+    'px-2.5 py-1 rounded-full',
+    'bg-green-500/10 text-green-500',
+    'text-xs font-medium',
+  ].join(' '),
+  accountStatusDot: 'w-1.5 h-1.5 rounded-full bg-green-500',
+  accountSection: 'flex flex-col gap-2',
+  accountLabel: 'text-xs uppercase tracking-wider text-muted font-medium',
+  accountAddressContainer: [
+    'group relative flex items-center justify-between',
+    'bg-surface-secondary px-4 py-3 rounded-xl',
+    'border border-default',
+  ].join(' '),
+  accountAddressText: 'font-mono text-sm text-default tracking-tight',
+  accountCopyButton: [
+    'flex items-center justify-center',
+    'w-8 h-8 rounded-lg',
+    'bg-surface-tertiary hover:bg-accent/10',
+    'text-muted hover:text-accent',
+    'transition-all duration-200',
+    'cursor-pointer',
+  ].join(' '),
+  accountNetworkContainer: [
+    'flex items-center justify-between',
+    'bg-surface-secondary px-4 py-3 rounded-xl',
+    'border border-default',
+  ].join(' '),
+  accountNetworkInfo: 'flex items-center gap-3',
+  accountNetworkIconContainer: [
+    'flex items-center justify-center',
+    'w-8 h-8 rounded-lg',
+    'bg-accent/10 text-accent',
+  ].join(' '),
+  accountNetworkName: 'text-sm font-medium text-default',
+  accountNetworkBadge: [
+    'text-xs px-2 py-0.5 rounded-full',
+    'bg-surface-tertiary text-muted',
+  ].join(' '),
+  accountDisconnectButton: [
+    'w-full flex items-center justify-center gap-2',
+    'px-4 py-2 rounded-lg',
+    'bg-transparent hover:bg-red-500/10',
+    'text-red-400 hover:text-red-500',
+    'border border-red-500/20 hover:border-red-500/40',
+    'transition-all duration-200',
+    'cursor-pointer',
+  ].join(' '),
+  // Network Modal styles (mockups)
+  networkModalButton: [
+    'group w-full flex items-center gap-3',
+    'px-4 py-3 rounded-xl',
+    'bg-surface-secondary hover:bg-surface-tertiary',
+    'border border-transparent hover:border-accent/30',
+    'transition-all duration-200',
+    'cursor-pointer',
+  ].join(' '),
+  networkModalButtonActive: 'border-accent/50 bg-accent/5 hover:bg-accent/10',
+  networkModalIconContainer: [
+    'flex items-center justify-center',
+    'w-10 h-10 rounded-xl',
+    'bg-surface-tertiary',
+  ].join(' '),
+  networkModalIconText: 'text-accent text-lg',
+  networkModalName: 'text-sm font-medium text-default',
+  networkModalSpacer: 'flex-1',
+  networkModalCheck: 'text-green-500',
+  // Modal preview container
+  modalPreview: [
+    'bg-surface rounded-2xl border border-default shadow-lg',
+    'max-w-md w-full p-6',
+  ].join(' '),
+  modalPreviewTitle: 'text-lg font-semibold text-default',
+  modalPreviewSubtitle: 'text-sm text-muted mt-1 mb-4',
+  // Spinner
+  spinner:
+    'animate-spin rounded-full border-2 border-current border-t-transparent text-accent h-4 w-4',
+  // Custom button example
+  customConnectButton: [
+    'px-4 py-2 rounded-lg font-medium',
+    'bg-surface-secondary hover:bg-surface-tertiary',
+    'border border-default hover:border-accent/50',
+    'text-default',
+    'transition-all duration-200',
+    'cursor-pointer',
+  ].join(' '),
+  // Code block
+  codeBlock: [
+    'font-mono text-xs',
+    'bg-surface-secondary px-3 py-2 rounded-lg',
+    'border border-default',
+    'text-muted',
+    'overflow-x-auto',
+  ].join(' '),
 } as const;
 
 /**
@@ -112,6 +316,11 @@ export const UIComponentsShowcase: React.FC = () => {
   const [selectValue, setSelectValue] = useState('');
   const [togglePressed, setTogglePressed] = useState(false);
   const { success, error, warning, info, loading } = useToast();
+
+  // Aztec Wallet hooks
+  const { open: openConnectModal } = useConnectModal();
+  const { open: openAccountModal } = useAccountModal();
+  const { open: openNetworkModal } = useNetworkModal();
 
   return (
     <Card>
@@ -126,6 +335,539 @@ export const UIComponentsShowcase: React.FC = () => {
       </CardHeader>
 
       <CardContent className={styles.sectionsContainer}>
+        {/* ============ AZTEC WALLET UI ============ */}
+        <section className={styles.walletSection}>
+          <h2 className={styles.walletSectionTitle}>
+            <Wallet size={iconSize('lg')} className={styles.headerIcon} />
+            Aztec Wallet UI Components
+          </h2>
+          <p className={styles.sectionDescription}>
+            Showcase of aztec-wallet library components. These are visual
+            mockups - they don't reflect actual wallet state.
+          </p>
+
+          {/* ConnectButton States */}
+          <h3 className={styles.walletSectionSubtitle}>ConnectButton States</h3>
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>Disconnected (default)</span>
+            <div className={styles.componentGrid}>
+              <Button
+                variant="primary"
+                className={styles.connectButtonDisconnected}
+                icon={
+                  <Wallet size={iconSize()} className={styles.walletIcon} />
+                }
+              >
+                Connect Wallet
+              </Button>
+            </div>
+          </div>
+
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>Custom label & icon</span>
+            <div className={styles.componentGrid}>
+              <Button
+                variant="primary"
+                className={styles.connectButtonDisconnected}
+                icon={
+                  <Rocket size={iconSize()} className={styles.walletIcon} />
+                }
+              >
+                Sign In
+              </Button>
+              <Button
+                variant="primary"
+                className={styles.connectButtonDisconnected}
+              >
+                Get Started
+              </Button>
+            </div>
+          </div>
+
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>
+              Connecting (shimmer animation)
+            </span>
+            <div className={styles.componentGrid}>
+              <Button
+                variant="secondary"
+                className={styles.connectButtonConnecting}
+                disabled
+              >
+                <div className={styles.connectingContent}>
+                  <div className={styles.spinner} />
+                  <span>Connecting...</span>
+                </div>
+              </Button>
+            </div>
+          </div>
+
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>
+              Connected (with NetworkPicker full)
+            </span>
+            <div className={styles.componentGridWide}>
+              <div className={styles.walletContainer}>
+                {/* NetworkPicker Full */}
+                <button type="button" className={styles.networkPickerFull}>
+                  <div className={styles.networkIconContainer}>
+                    <Globe size={iconSize()} className={styles.networkIcon} />
+                  </div>
+                  <span className={styles.networkName}>Devnet</span>
+                  <ChevronDown
+                    size={iconSize()}
+                    className={styles.walletChevron}
+                  />
+                </button>
+                {/* Connected Address */}
+                <button type="button" className={styles.connectButtonConnected}>
+                  <span className={styles.walletEmoji}>🦊</span>
+                  <span className={styles.walletAddress}>0x1234...5678</span>
+                  <ChevronDown
+                    size={iconSize()}
+                    className={styles.walletChevron}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>
+              Connected (with NetworkPicker compact)
+            </span>
+            <div className={styles.componentGridWide}>
+              <div className={styles.walletContainer}>
+                {/* NetworkPicker Compact */}
+                <button
+                  type="button"
+                  className={styles.networkPickerCompact}
+                  title="Devnet"
+                >
+                  <div className={styles.networkIconContainer}>
+                    <Globe
+                      size={iconSize('md')}
+                      className={styles.networkIcon}
+                    />
+                  </div>
+                </button>
+                {/* Connected Address */}
+                <button type="button" className={styles.connectButtonConnected}>
+                  <span className={styles.walletEmoji}>🐸</span>
+                  <span className={styles.walletAddress}>0xabcd...ef12</span>
+                  <ChevronDown
+                    size={iconSize()}
+                    className={styles.walletChevron}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>
+              Connected (without NetworkPicker)
+            </span>
+            <div className={styles.componentGridWide}>
+              {/* Just the Connected Address */}
+              <button type="button" className={styles.connectButtonConnected}>
+                <span className={styles.walletEmoji}>🦄</span>
+                <span className={styles.walletAddress}>0x5678...9abc</span>
+                <ChevronDown
+                  size={iconSize()}
+                  className={styles.walletChevron}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* NetworkPicker Variants */}
+          <h3 className={styles.walletSectionSubtitle}>
+            NetworkPicker Variants
+          </h3>
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>
+              Full variant (icon + name)
+            </span>
+            <div className={styles.componentGridWide}>
+              <button type="button" className={styles.networkPickerFull}>
+                <div className={styles.networkIconContainer}>
+                  <Globe size={iconSize()} className={styles.networkIcon} />
+                </div>
+                <span className={styles.networkName}>Devnet</span>
+                <ChevronDown
+                  size={iconSize()}
+                  className={styles.walletChevron}
+                />
+              </button>
+              <button type="button" className={styles.networkPickerFull}>
+                <div className={styles.networkIconContainer}>
+                  <FlaskConical
+                    size={iconSize()}
+                    className={styles.networkIcon}
+                  />
+                </div>
+                <span className={styles.networkName}>Sandbox</span>
+                <ChevronDown
+                  size={iconSize()}
+                  className={styles.walletChevron}
+                />
+              </button>
+              <button type="button" className={styles.networkPickerFull}>
+                <div className={styles.networkIconContainer}>
+                  <Box size={iconSize()} className={styles.networkIcon} />
+                </div>
+                <span className={styles.networkName}>Testnet</span>
+                <ChevronDown
+                  size={iconSize()}
+                  className={styles.walletChevron}
+                />
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>
+              Compact variant (icon only)
+            </span>
+            <div className={styles.componentGridWide}>
+              <button
+                type="button"
+                className={styles.networkPickerCompact}
+                title="Devnet"
+              >
+                <div className={styles.networkIconContainer}>
+                  <Globe size={iconSize('md')} className={styles.networkIcon} />
+                </div>
+              </button>
+              <button
+                type="button"
+                className={styles.networkPickerCompact}
+                title="Sandbox"
+              >
+                <div className={styles.networkIconContainer}>
+                  <FlaskConical
+                    size={iconSize('md')}
+                    className={styles.networkIcon}
+                  />
+                </div>
+              </button>
+              <button
+                type="button"
+                className={styles.networkPickerCompact}
+                title="Testnet"
+              >
+                <div className={styles.networkIconContainer}>
+                  <Box size={iconSize('md')} className={styles.networkIcon} />
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Connect Modal Preview */}
+          <h3 className={styles.walletSectionSubtitle}>ConnectModal Preview</h3>
+          <p className={styles.sectionDescription}>
+            Modal that opens when clicking ConnectButton while disconnected.
+          </p>
+          <div className={styles.componentRow}>
+            <div className={styles.modalPreview}>
+              <h4 className={styles.modalPreviewTitle}>Connect Wallet</h4>
+              <p className={styles.modalPreviewSubtitle}>
+                Choose how you want to connect. Each option offers a different
+                balance of convenience and security.
+              </p>
+
+              <div className={styles.componentColumn}>
+                {/* Embedded Wallet Option */}
+                <button type="button" className={styles.walletGroupButton}>
+                  <div className={styles.walletGroupIconContainer}>
+                    <Key size={iconSize('md')} />
+                  </div>
+                  <div className={styles.walletGroupContent}>
+                    <span className={styles.walletGroupLabel}>
+                      Embedded Wallet
+                    </span>
+                    <span className={styles.walletGroupDescription}>
+                      Quick setup, no extension needed
+                    </span>
+                  </div>
+                  <div className={styles.walletGroupRightSection}>
+                    <Badge variant="primary">Beta</Badge>
+                  </div>
+                </button>
+
+                {/* Aztec Wallet Option */}
+                <button type="button" className={styles.walletGroupButton}>
+                  <div className={styles.walletGroupIconContainer}>
+                    <Wallet size={iconSize('md')} />
+                  </div>
+                  <div className={styles.walletGroupContent}>
+                    <span className={styles.walletGroupLabel}>
+                      Aztec Wallet
+                    </span>
+                    <span className={styles.walletGroupDescription}>
+                      Azguard and other Aztec wallets
+                    </span>
+                  </div>
+                  <div className={styles.walletGroupRightSection}>
+                    <ChevronRight
+                      size={iconSize('md')}
+                      className={styles.walletGroupArrow}
+                    />
+                  </div>
+                </button>
+
+                {/* EVM Wallet Option */}
+                <button type="button" className={styles.walletGroupButton}>
+                  <div className={styles.walletGroupIconContainer}>
+                    <CreditCard size={iconSize('md')} />
+                  </div>
+                  <div className={styles.walletGroupContent}>
+                    <span className={styles.walletGroupLabel}>EVM Wallet</span>
+                    <span className={styles.walletGroupDescription}>
+                      MetaMask, Rabby, and more
+                    </span>
+                  </div>
+                  <div className={styles.walletGroupRightSection}>
+                    <ChevronRight
+                      size={iconSize('md')}
+                      className={styles.walletGroupArrow}
+                    />
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Account Modal Preview */}
+          <h3 className={styles.walletSectionSubtitle}>AccountModal Preview</h3>
+          <p className={styles.sectionDescription}>
+            Modal that opens when clicking the connected address.
+          </p>
+          <div className={styles.componentColumn}>
+            {/* Default - without network */}
+            <div className={styles.componentColumn}>
+              <span className={styles.variantLabel}>
+                Default (showNetwork: false)
+              </span>
+              <div className={styles.modalPreview}>
+                <div className={styles.accountModalHeader}>
+                  <div className={styles.accountEmojiContainer}>🦊</div>
+                  <div className={styles.accountStatusBadge}>
+                    <span className={styles.accountStatusDot} />
+                    Connected
+                  </div>
+                </div>
+
+                <div className={styles.componentColumn}>
+                  <div className={styles.accountSection}>
+                    <span className={styles.accountLabel}>Wallet Address</span>
+                    <div className={styles.accountAddressContainer}>
+                      <span className={styles.accountAddressText}>
+                        0x1a2b3c4d...e5f6g7h8
+                      </span>
+                      <button
+                        type="button"
+                        className={styles.accountCopyButton}
+                      >
+                        <Copy size={iconSize()} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.accountSection}>
+                    <button
+                      type="button"
+                      className={styles.accountDisconnectButton}
+                    >
+                      <LogOut size={iconSize()} />
+                      Disconnect Wallet
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* With network section */}
+            <div className={styles.componentColumn}>
+              <span className={styles.variantLabel}>
+                With network (showNetwork: true)
+              </span>
+              <div className={styles.modalPreview}>
+                <div className={styles.accountModalHeader}>
+                  <div className={styles.accountEmojiContainer}>🐸</div>
+                  <div className={styles.accountStatusBadge}>
+                    <span className={styles.accountStatusDot} />
+                    Connected
+                  </div>
+                </div>
+
+                <div className={styles.componentColumn}>
+                  <div className={styles.accountSection}>
+                    <span className={styles.accountLabel}>Wallet Address</span>
+                    <div className={styles.accountAddressContainer}>
+                      <span className={styles.accountAddressText}>
+                        0xabcd1234...5678efgh
+                      </span>
+                      <button
+                        type="button"
+                        className={styles.accountCopyButton}
+                      >
+                        <Copy size={iconSize()} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.accountSection}>
+                    <span className={styles.accountLabel}>Network</span>
+                    <div className={styles.accountNetworkContainer}>
+                      <div className={styles.accountNetworkInfo}>
+                        <div className={styles.accountNetworkIconContainer}>
+                          <Globe size={iconSize()} />
+                        </div>
+                        <span className={styles.accountNetworkName}>
+                          Devnet
+                        </span>
+                      </div>
+                      <span className={styles.accountNetworkBadge}>Active</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.accountSection}>
+                    <button
+                      type="button"
+                      className={styles.accountDisconnectButton}
+                    >
+                      <LogOut size={iconSize()} />
+                      Disconnect Wallet
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Network Modal Preview */}
+          <h3 className={styles.walletSectionSubtitle}>NetworkModal Preview</h3>
+          <p className={styles.sectionDescription}>
+            Modal for selecting a different network.
+          </p>
+          <div className={styles.componentRow}>
+            <div className={styles.modalPreview}>
+              <h4 className={styles.modalPreviewTitle}>Switch Network</h4>
+              <p className={styles.modalPreviewSubtitle}>
+                Select the network you want to connect to.
+              </p>
+
+              <div className={styles.componentColumn}>
+                <button
+                  type="button"
+                  className={`${styles.networkModalButton} ${styles.networkModalButtonActive}`}
+                >
+                  <div className={styles.networkModalIconContainer}>
+                    <Globe
+                      size={iconSize('md')}
+                      className={styles.networkModalIconText}
+                    />
+                  </div>
+                  <span className={styles.networkModalName}>Devnet</span>
+                  <span className={styles.networkModalSpacer} />
+                  <Check
+                    size={iconSize()}
+                    className={styles.networkModalCheck}
+                  />
+                </button>
+
+                <button type="button" className={styles.networkModalButton}>
+                  <div className={styles.networkModalIconContainer}>
+                    <FlaskConical
+                      size={iconSize('md')}
+                      className={styles.networkModalIconText}
+                    />
+                  </div>
+                  <span className={styles.networkModalName}>Sandbox</span>
+                  <span className={styles.networkModalSpacer} />
+                </button>
+
+                <button type="button" className={styles.networkModalButton}>
+                  <div className={styles.networkModalIconContainer}>
+                    <Box
+                      size={iconSize('md')}
+                      className={styles.networkModalIconText}
+                    />
+                  </div>
+                  <span className={styles.networkModalName}>Testnet</span>
+                  <span className={styles.networkModalSpacer} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Custom Button with Hooks */}
+          <h3 className={styles.walletSectionSubtitle}>
+            Using Hooks for Custom Buttons
+          </h3>
+          <p className={styles.sectionDescription}>
+            Use hooks like useConnectModal, useAccountModal, and useNetworkModal
+            to control modals from custom buttons.
+          </p>
+          <div className={styles.componentColumn}>
+            <span className={styles.variantLabel}>
+              Custom buttons that open modals (click to test!)
+            </span>
+            <div className={styles.componentGrid}>
+              <Button
+                variant="secondary"
+                icon={<Wallet size={iconSize()} />}
+                onClick={openConnectModal}
+              >
+                Open Connect Modal
+              </Button>
+              <Button
+                variant="ghost"
+                icon={<User size={iconSize()} />}
+                onClick={openAccountModal}
+              >
+                View Account
+              </Button>
+              <Button
+                variant="ghost"
+                icon={<Globe size={iconSize()} />}
+                onClick={openNetworkModal}
+              >
+                Switch Network
+              </Button>
+            </div>
+            <pre className={styles.codeBlock}>
+              {`const { open: openConnect } = useConnectModal();
+const { open: openAccount } = useAccountModal();
+const { open: openNetwork } = useNetworkModal();
+
+<button onClick={openConnect}>Connect</button>`}
+            </pre>
+          </div>
+
+          {/* Configuration Example */}
+          <h3 className={styles.walletSectionSubtitle}>Configuration</h3>
+          <p className={styles.sectionDescription}>
+            Configure which wallet types and networks are available.
+          </p>
+          <pre className={styles.codeBlock}>
+            {`const config = createAztecWalletConfig({
+  networks: [
+    { name: 'devnet', nodeUrl: 'https://devnet.aztec.network' },
+    { name: 'sandbox', nodeUrl: 'http://localhost:8080' },
+  ],
+  walletGroups: {
+    embedded: true,
+    evmWallets: ['metamask', 'rabby'],
+    aztecWallets: ['azguard'],
+  },
+  showNetworkPicker: 'full', // or 'compact'
+});`}
+          </pre>
+        </section>
+
         {/* ============ BUTTONS ============ */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Buttons</h3>

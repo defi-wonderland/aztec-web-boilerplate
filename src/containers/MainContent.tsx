@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Coins, Wrench, Settings, Layers } from 'lucide-react';
+import { useAztecWallet, isEmbeddedConnector } from '../aztec-wallet';
 import { Tabs, SecurityWarning } from '../components';
-import { useUniversalWallet } from '../hooks';
 import { TabConfig, TabType } from '../types';
-import { isEmbeddedConnector } from '../types/walletConnector';
 import { iconSize } from '../utils';
 import { ContractInteractionCard } from './ContractInteractionCard';
 import { DripperCard } from './DripperCard';
@@ -15,7 +14,7 @@ const styles = {
 } as const;
 
 export const MainContent: React.FC = () => {
-  const { connector } = useUniversalWallet();
+  const { connector } = useAztecWallet();
   const [activeTab, setActiveTab] = useState<TabType>('mint');
 
   // Show security warning for embedded wallet (stores keys in browser localStorage)

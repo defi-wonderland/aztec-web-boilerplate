@@ -3,11 +3,11 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import {
+  useAztecWallet,
   isBrowserWalletConnector,
   hasAppManagedPXE,
-} from '../../types/walletConnector';
+} from '../../aztec-wallet';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
-import { useUniversalWallet } from '../context/useUniversalWallet';
 import type {
   MethodsOf,
   ArgsOf,
@@ -72,7 +72,7 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
  */
 export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const { timeout = 900, receiptPolling } = options;
-  const { connector, account } = useUniversalWallet();
+  const { connector, account } = useAztecWallet();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -196,7 +196,10 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
               simErr
             );
             setError(simErrorMsg);
-            return { success: false, error: `Simulation failed: ${simErrorMsg}` };
+            return {
+              success: false,
+              error: `Simulation failed: ${simErrorMsg}`,
+            };
           }
 
           const sentTx = (
