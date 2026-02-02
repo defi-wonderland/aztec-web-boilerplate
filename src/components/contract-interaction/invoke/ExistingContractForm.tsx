@@ -16,7 +16,7 @@ import type { ArtifactSummary, ExistingContractFormProps } from '../types';
  * This is much faster than full artifact parsing for large contracts.
  */
 function extractSummaryFromJson(json: string): ArtifactSummary | null {
-  if (!json || json.length < 100) return null;
+  if (!json) return null;
   try {
     // Look for contract name near the start of the JSON (first 500 chars)
     const startSection = json.slice(0, 500);
@@ -75,7 +75,7 @@ const ExistingContractForm: React.FC<ExistingContractFormProps> = ({
   // Always show summary if we have substantial artifact input (avoids rendering huge text)
   const effectiveSummary = useMemo(() => {
     if (artifactSummary) return artifactSummary;
-    if (artifactInput && artifactInput.length > 100) {
+    if (artifactInput) {
       return (
         extractSummaryFromJson(artifactInput) ?? {
           name: 'Contract',
