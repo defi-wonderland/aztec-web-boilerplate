@@ -52,18 +52,34 @@ export const isCaipAddress = (value: string): boolean => {
 };
 
 // ============================================================================
+// TYPE GUARDS
+// ============================================================================
+
+/**
+ * Check if value is an array of strings
+ */
+export function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === 'string')
+  );
+}
+
+// ============================================================================
 // ADDRESS UTILITIES
 // ============================================================================
 
-const TRUNCATE_START = 6;
-const TRUNCATE_END = 4;
+const DEFAULT_TRUNCATE_START = 6;
+const DEFAULT_TRUNCATE_END = 4;
 
-export const truncateAddress = (address: string | undefined): string => {
+export const truncateAddress = (
+  address: string | undefined,
+  startChars = DEFAULT_TRUNCATE_START,
+  endChars = DEFAULT_TRUNCATE_END
+): string => {
   if (!address) return '';
   const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
-  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END)
-    return formattedAddress;
-  return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
+  if (formattedAddress.length <= startChars + endChars) return formattedAddress;
+  return `${formattedAddress.slice(0, startChars)}...${formattedAddress.slice(-endChars)}`;
 };
 
 export const formatAddress = (address: string | undefined): string => {

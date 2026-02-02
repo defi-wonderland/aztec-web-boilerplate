@@ -6,8 +6,8 @@
  *
  * To add a new wallet:
  * 1. Find the wallet's rdns (check their docs or browser console)
- * 2. Add entry below
- * 3. Add evmWallet('id') to walletKit.ts
+ * 2. Add entry below with id, label, icon, and rdns
+ * 3. Add the wallet ID to `evmWallets` array in aztecWalletConfig.ts
  */
 
 export interface EVMWalletConfig {

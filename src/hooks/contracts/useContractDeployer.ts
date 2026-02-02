@@ -7,15 +7,15 @@ import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
 import {
+  useAztecWallet,
+  hasAppManagedPXE,
+  isBrowserWalletConnector,
+} from '../../aztec-wallet';
+import {
   restoreBytecodeBuffers,
   type SerializedArtifact,
 } from '../../services/aztec/artifactRegistry';
-import {
-  hasAppManagedPXE,
-  isBrowserWalletConnector,
-} from '../../types/walletConnector';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
-import { useUniversalWallet } from '../context/useUniversalWallet';
 import type { DeployResult } from '../../components/contract-interaction/types';
 import type {
   DeployableContract,
@@ -48,7 +48,7 @@ export interface DeployParams {
  * @returns Object with deploy function, status, and error handling utilities.
  */
 export const useContractDeployer = () => {
-  const { connector, account } = useUniversalWallet();
+  const { connector, account } = useAztecWallet();
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

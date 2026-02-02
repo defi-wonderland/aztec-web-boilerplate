@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { DripperContract } from '../../artifacts/Dripper';
+import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
-import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useWriteContract } from '../contracts/useWriteContract';
 import { queryKeys } from '../queries/queryKeys';
 
@@ -18,7 +18,7 @@ interface UseDripperOptions {
 }
 
 export const useDripper = (options: UseDripperOptions = {}) => {
-  const { account, currentConfig } = useUniversalWallet();
+  const { account, currentConfig } = useAztecWallet();
   const { writeContract } = useWriteContract();
   const queryClient = useQueryClient();
 

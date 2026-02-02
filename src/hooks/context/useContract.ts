@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
+import {
+  useAztecWallet,
+  WalletType,
+  hasAppManagedPXE,
+} from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
 import {
   getContractsForConfig,
@@ -15,10 +20,7 @@ import {
   useContractRegistryStore,
   useContractRegistryStatus,
 } from '../../store';
-import { WalletType } from '../../types/aztec';
-import { hasAppManagedPXE } from '../../types/walletConnector';
 import { queuePxeCall } from '../../utils';
-import { useUniversalWallet } from './useUniversalWallet';
 
 interface ExternalWalletContractProxy {
   readonly __browserWalletPlaceholder: true;
@@ -53,8 +55,7 @@ export function useContract<K extends ContractName>(
   const registry = useContractRegistryStore((state) => state.registry);
   const artifacts = useContractRegistryStore((state) => state.artifacts);
   const registryStatus = useContractRegistryStatus();
-  const { connector, account, currentConfig, walletType } =
-    useUniversalWallet();
+  const { connector, account, currentConfig, walletType } = useAztecWallet();
 
   const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
 

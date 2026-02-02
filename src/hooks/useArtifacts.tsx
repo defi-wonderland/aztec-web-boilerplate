@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { CloudDownload, Database, Zap } from 'lucide-react';
+import { useAztecWallet } from '../aztec-wallet';
 import { ArtifactService, type LoadSource } from '../services/aztec/artifact';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { iconSize } from '../utils';
 import { useToast } from './context/useToast';
-import { useUniversalWallet } from './context/useUniversalWallet';
 
 interface UseArtifactsOptions {
   showToast?: boolean;
@@ -49,7 +49,7 @@ function getSourceToastConfig(source: LoadSource): {
  * This hook should be called once at app initialization.
  */
 export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
-  const { currentConfig } = useUniversalWallet();
+  const { currentConfig } = useAztecWallet();
   const { addToast } = useToast();
 
   const {
