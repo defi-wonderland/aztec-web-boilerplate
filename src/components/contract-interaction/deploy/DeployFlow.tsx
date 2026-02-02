@@ -24,7 +24,11 @@ import {
   loadAndPrepareArtifact,
   type ParsedFunction,
 } from '../../../utils/contractInteraction';
-import { toTitleCase } from '../../../utils/string';
+import {
+  buildConstructorLabel,
+  type ContractConstructor,
+  type DeployableContract,
+} from '../../../utils/deployableContracts';
 import {
   Button,
   Textarea,
@@ -36,10 +40,6 @@ import {
 } from '../../ui';
 import ParameterInputs from '../ParameterInputs';
 import type { AztecNetwork } from '../../../config/networks/constants';
-import type {
-  ContractConstructor,
-  DeployableContract,
-} from '../../../utils/deployableContracts';
 
 const styles = {
   section: 'flex flex-col gap-4',
@@ -68,14 +68,6 @@ export interface DeployFlowProps {
 type CustomDeployableResult = {
   contract: DeployableContract | null;
   error: string | null;
-};
-
-const buildConstructorLabel = (name: string): string => {
-  const labelPart = name
-    .replace(/^constructor_?/, '')
-    .replace(/_/g, ' ')
-    .trim();
-  return labelPart ? toTitleCase(labelPart) : 'Default';
 };
 
 const buildCustomDeployableContract = (

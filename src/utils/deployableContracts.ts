@@ -44,7 +44,7 @@ export type DeployableContract = {
 /**
  * Build a friendly label from a constructor function name.
  */
-const buildConstructorLabel = (name: string): string => {
+export const buildConstructorLabel = (name: string): string => {
   const labelPart = name
     .replace(/^constructor_?/, '')
     .replace(/_/g, ' ')
