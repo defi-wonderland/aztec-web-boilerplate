@@ -25,7 +25,9 @@ export const DEVNET_CONFIG: NetworkConfig = {
   proverEnabled: true,
   isTestnet: true,
   artifactSource: 'registry',
-  artifactRegistryUrl: import.meta.env.VITE_ARTIFACT_REGISTRY_URL,
+  artifactRegistryUrl:
+    import.meta.env.VITE_ARTIFACT_REGISTRY_URL ??
+    'https://devnet.aztec-registry.xyz',
   classIds: {
     dripper:
       '0x1d1014602e766124a9a52429708ed416708b39e3e6ad88fcbf7757af093062e5',
