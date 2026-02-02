@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Coins, Copy, Shield, Globe, AlertTriangle } from 'lucide-react';
-import { FeePaymentSelector } from '../components/FeePaymentSelector';
+import { FeePaymentInfo } from '../components/FeePaymentInfo';
 import { TokenBalance } from '../components/TokenBalance';
 import {
   Card,
@@ -272,8 +272,8 @@ export const DripperCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Fee Payment Method */}
-            <FeePaymentSelector disabled={isProcessing || !isReady} />
+            {/* Fee Payment Method (read-only, configured in Settings) */}
+            <FeePaymentInfo />
 
             {/* Submit Button */}
             <Button
