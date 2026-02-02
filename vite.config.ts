@@ -5,6 +5,45 @@ import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 
 /**
+ * Plugin to fix static class field initialization issue with Rollup bundling.
+ * When Rollup bundles classes, it transforms `class Foo {}` to `let Foo; Foo = class {}`
+ * This breaks static initializers like `static ZERO = new AztecAddress(...)` because
+ * they execute before the assignment completes.
+ *
+ * This plugin runs AFTER minification (writeBundle hook) and transforms the minified
+ * pattern to a lazy getter that defers initialization.
+ */
+const fixStaticFieldInit = (): Plugin => ({
+  name: 'fix-static-field-init',
+  enforce: 'post',
+  async writeBundle(options, bundle) {
+    const fs = await import('fs');
+    const path = await import('path');
+    const outDir = options.dir || 'dist';
+
+    for (const [fileName, chunk] of Object.entries(bundle)) {
+      if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
+        const filePath = path.default.join(outDir, fileName);
+        let code = fs.default.readFileSync(filePath, 'utf-8');
+
+        // Pattern for minified code: static ZERO=new X(Y.alloc(32,0))
+        // Both class name and Buffer get minified to short identifiers
+        const minifiedPattern = /static ZERO=new (\w+)\((\w+)\.alloc\(32,0\)\)/g;
+
+        if (minifiedPattern.test(code)) {
+          code = code.replace(
+            /static ZERO=new (\w+)\((\w+)\.alloc\(32,0\)\)/g,
+            'static get ZERO(){return this._ZC||(this._ZC=new $1($2.alloc(32,0)))}'
+          );
+          fs.default.writeFileSync(filePath, code);
+          console.log(`[fix-static-field-init] Patched ${fileName}`);
+        }
+      }
+    }
+  },
+});
+
+/**
  * Plugin to shim Node.js built-in modules that shouldn't run in browser.
  * Must run before nodePolyfills to intercept fs/promises correctly.
  */
@@ -61,6 +100,7 @@ export default defineConfig({
     react(),
     wasm(),
     topLevelAwait(),
+    fixStaticFieldInit(), // Fix static field initialization after bundling
     nodePolyfills({
       // Include specific polyfills that your Webpack config provided
       include: ['buffer', 'crypto', 'util', 'assert', 'process', 'stream', 'path', 'events'],
@@ -79,6 +119,9 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
+  },
+  esbuild: {
+    target: 'esnext',
   },
   resolve: {
     alias: {
@@ -105,7 +148,7 @@ export default defineConfig({
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
     },
     // Dedupe critical packages to prevent class identity issues
-    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@noble/curves'],
+    dedupe: ['@aztec/foundation', '@aztec/circuits.js', '@aztec/stdlib', '@aztec/aztec.js', '@noble/curves'],
   },
   server: {
     port: 3000,
@@ -130,6 +173,7 @@ export default defineConfig({
     sourcemap: false, // Disable sourcemaps to reduce memory usage
     minify: 'esbuild',
     chunkSizeWarningLimit: 2000, // Increase chunk size warning limit
+    target: 'esnext',
     commonjsOptions: {
       // Forces @aztec packages to be treated as ESM to prevent class identity errors
       defaultIsModuleExports: (id) => {
@@ -138,6 +182,11 @@ export default defineConfig({
         }
         return 'auto';
       },
+      exclude: [
+        '@aztec/stdlib/**',
+        '@aztec/foundation/**',
+        '@aztec/aztec.js/**',
+      ],
     },
     rollupOptions: {
       output: {
@@ -175,6 +224,8 @@ export default defineConfig({
       '@aztec/noir-contracts.js',
       '@aztec/ethereum',
       '@aztec/accounts',
+      '@aztec/stdlib',
+      '@aztec/aztec.js',
       '@defi-wonderland/aztec-standards',
       'noirc_abi_wasm',
     ],

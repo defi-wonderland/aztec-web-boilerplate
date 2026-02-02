@@ -50,6 +50,8 @@ export interface EmbeddedWalletConnector extends WalletConnector {
 export interface ExternalSignerWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.EXTERNAL_SIGNER;
   readonly signerType: ExternalSignerType;
+  /** RDNS identifier for the EVM wallet (e.g., 'io.metamask') */
+  readonly rdns?: string;
 
   getPXE: () => PXE | null;
   getWallet: () => Wallet | null;

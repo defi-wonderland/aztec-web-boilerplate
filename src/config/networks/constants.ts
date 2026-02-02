@@ -28,10 +28,11 @@ export type AztecChainId = `aztec:${number}`;
 
 /**
  * Chain IDs for each network (CAIP-2 format)
+ * Note: devnet chain ID must match browser wallet configuration
  */
 export const CHAIN_IDS: Record<AztecNetwork, AztecChainId> = {
   sandbox: 'aztec:0',
-  devnet: 'aztec:1674512022',
+  devnet: 'aztec:1654394782',
 };
 
 /**
@@ -47,7 +48,7 @@ export const NETWORK_NAMES: Record<AztecNetwork, string> = {
  */
 export const CHAIN_ID_TO_NETWORK: Record<string, AztecNetwork> = {
   '0': 'sandbox',
-  '1674512022': 'devnet',
+  '1654394782': 'devnet',
 };
 
 /**

@@ -2,12 +2,12 @@ import { useState, useCallback } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
-import { SimulateViewsOp } from '../../types';
 import {
+  useAztecWallet,
   isEmbeddedConnector,
   isBrowserWalletConnector,
-} from '../../types/walletConnector';
-import { useUniversalWallet } from '../context/useUniversalWallet';
+} from '../../aztec-wallet';
+import { SimulateViewsOp } from '../../types';
 import { getContractMethod } from './utils';
 import type {
   MethodsOf,
@@ -57,7 +57,7 @@ interface ReadContractParams<
  * ```
  */
 export const useReadContract = () => {
-  const { connector, account } = useUniversalWallet();
+  const { connector, account } = useAztecWallet();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

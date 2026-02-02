@@ -1,0 +1,1 @@
+export { AztecWalletModals } from './AztecWalletModals';

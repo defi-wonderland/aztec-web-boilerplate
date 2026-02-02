@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUniversalWallet } from '../hooks';
+import { useAztecWallet } from '../aztec-wallet';
 import { MainContent } from './MainContent';
 
 const styles = {
@@ -7,9 +7,9 @@ const styles = {
 } as const;
 
 export const Layout: React.FC = () => {
-  const { isInitialized, isConnected } = useUniversalWallet();
+  const { isPXEInitialized, isConnected } = useAztecWallet();
 
-  const showLayout = isConnected && isInitialized;
+  const showLayout = isConnected && isPXEInitialized;
 
   if (!showLayout) {
     return null;

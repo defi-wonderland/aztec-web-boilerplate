@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { Wrench, FileUp, Rocket } from 'lucide-react';
+import { useAztecWallet } from '../aztec-wallet';
 import {
   DeployFlow,
   InvokeFlow,
@@ -16,7 +17,6 @@ import {
   TabsTrigger,
   TabsContent,
 } from '../components/ui';
-import { useUniversalWallet } from '../hooks';
 import { useContractDeployer, useLoadArtifact } from '../hooks/contracts';
 import { useDeployableContracts } from '../hooks/useInteractionContracts';
 import {
@@ -39,8 +39,8 @@ const styles = {
 } as const;
 
 export const ContractInteractionCard: React.FC = () => {
-  const { isConnected, isInitialized, account, currentConfig } =
-    useUniversalWallet();
+  const { isConnected, isPXEInitialized, account, currentConfig } =
+    useAztecWallet();
 
   const isDeployModeRaw = useIsDeployMode();
   const deployableContracts = useDeployableContracts(currentConfig?.name);
@@ -138,7 +138,7 @@ export const ContractInteractionCard: React.FC = () => {
 
   const deploymentErrorMessage = deployError ?? getUnsupportedMessage();
 
-  if (!isConnected || !isInitialized) {
+  if (!isConnected || !isPXEInitialized) {
     return null;
   }
 

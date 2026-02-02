@@ -253,90 +253,114 @@ yarn clean                    # Remove all build artifacts
 
 ## Architecture Overview
 
-### Wallet System (Multi-Connector Architecture)
+### Wallet System (aztec-wallet)
 
-This boilerplate uses a **connector pattern** to support three distinct wallet types:
+This boilerplate uses **aztec-wallet** (`src/aztec-wallet/`) - a modular wallet connection library similar to wagmi + RainbowKit for EVM.
 
-#### 1. Embedded Wallet (`EmbeddedConnector`)
+**Quick Start:**
 
-- **PXE Location**: App-managed (SharedPXEService)
-- **Signing**: Internal (keys stored in browser localStorage)
-- **Use Case**: Quick testing, simple dApps, development
-- **Files**: `src/connectors/EmbeddedConnector.ts`, `src/providers/hooks/useEmbeddedWallet.ts`
+```tsx
+import { AztecWalletProvider, createAztecWalletConfig, ConnectButton } from './aztec-wallet';
 
-**Key Features**:
+const config = createAztecWalletConfig({
+  networks: [{ name: 'devnet', nodeUrl: 'https://devnet.aztec.network' }],
+  walletGroups: {
+    embedded: true,
+    evmWallets: ['metamask', 'rabby'],
+    aztecWallets: ['azguard'],
+  },
+  showNetworkPicker: 'full',
+});
 
-- Auto-initialization with shared PXE
-- Account creation with credential generation
-- Test account connection support (from `@aztec/accounts/testing`)
-- Account persistence across sessions
-- Sponsored fee payments
-
-#### 2. External Signer Wallet (`ExternalSignerConnector`)
-
-- **PXE Location**: App-managed (SharedPXEService)
-- **Signing**: External EVM wallet (MetaMask, Rabby, etc.)
-- **Use Case**: Users with existing EVM wallets
-- **Files**: `src/connectors/ExternalSignerConnector.ts`, `src/providers/hooks/useExternalSignerWallet.ts`
-
-**Key Features**:
-
-- EIP-6963 compatible (multi-wallet support via rdns)
-- Wallet signs transactions, app runs Aztec PXE logic
-- EVM address recovery from signatures
-- State sync between app and EVM wallet
-- Sponsored fee payments
-
-#### 3. Browser Wallet (`BrowserWalletConnector`)
-
-- **PXE Location**: External (browser extension manages everything)
-- **Signing**: External (extension handles it)
-- **Use Case**: Production apps with full-featured wallets like Azguard
-- **Files**: `src/connectors/BrowserWalletConnector.ts`, `src/providers/hooks/useBrowserWallet.ts`
-
-**Key Features**:
-
-- Adapter pattern for wallet-specific implementations
-- Supports operations: `send_transaction`, `simulate_views`, `register_contract`
-- CAIP account handling
-- Minimal app responsibility (wallet does everything)
-
-**Adapter Implementation** (`src/adapters/`):
-
-- `AzguardAdapter` - Reference implementation for Azguard wallet
-- Implement `IBrowserWalletAdapter` interface for new wallets
-- See README section "Adding a New Browser Wallet" for instructions
-
-### Wallet State Management
-
-**UniversalWalletProvider** (`src/providers/UniversalWalletProvider.tsx`):
-
-- Single provider managing all wallet types
-- Composes network, signer, and wallet context
-- Exposes unified context via `useUniversalWallet()` hook
-
-**Key Context Values**:
-
-```typescript
-{
-  // Wallet
-  isConnected: boolean,
-  isInitialized: boolean,
-  walletType: 'embedded' | 'external_signer' | 'browser_wallet',
-  account: AccountWithSecretKey | null,
-  connector: WalletConnector | null,
-  connectWith(connectorId: string): Promise<void>,
-  disconnect(): Promise<void>,
-
-  // Network
-  currentConfig: NetworkConfig,
-  switchToNetwork(name: string): Promise<void>,
-
-  // EVM Signer (for External Signer wallet)
-  evmAddress: Hex | null,
-  connectEVMWallet(): Promise<void>,
-  disconnectEVMWallet(): void,
+function App() {
+  return (
+    <AztecWalletProvider config={config}>
+      <ConnectButton />  {/* Handles everything automatically */}
+    </AztecWalletProvider>
+  );
 }
+```
+
+#### Wallet Types (Connector Architecture)
+
+| Type | PXE Location | Signing | Use Case |
+|------|--------------|---------|----------|
+| **Embedded** | App-managed (SharedPXEService) | Internal (localStorage) | Quick testing, development |
+| **External Signer** | App-managed (SharedPXEService) | EVM wallet (MetaMask, etc.) | Users with existing wallets |
+| **Browser Wallet** | Extension-managed | Extension (Azguard) | Production apps |
+
+**Connector Files** (`src/aztec-wallet/connectors/`):
+- `EmbeddedConnector.ts` - Auto-initialization, account persistence
+- `ExternalSignerConnector.ts` - EIP-6963 support, EVM address recovery
+- `BrowserWalletConnector.ts` - Adapter pattern for extensions
+
+### Using useAztecWallet
+
+The main hook for wallet interaction:
+
+```tsx
+import { useAztecWallet } from './aztec-wallet';
+
+function MyComponent() {
+  const {
+    // Connection state
+    isConnected,
+    isConnecting,
+    isLoading,
+    isPXEInitialized,
+    needsSigner,          // true when External Signer needs EVM wallet
+
+    // Account data
+    account,              // AccountWithSecretKey | null
+    address,              // string | null
+    walletType,           // 'embedded' | 'external_signer' | 'browser_wallet'
+
+    // Connector
+    connector,            // Current WalletConnector
+    connectors,           // All available connectors
+
+    // Network
+    network,              // Current NetworkConfig
+    currentConfig,        // Alias for network
+    networkName,          // string
+
+    // EVM Signer (for External Signer wallet)
+    signer: {
+      address,            // Hex | null
+      isAvailable,
+      isConnecting,
+      connect,            // (rdns?: string) => Promise<Hex>
+      disconnect,
+      getService,         // () => EVMWalletService
+    },
+
+    // Actions
+    connect,              // (connectorId: string) => Promise<void>
+    disconnect,
+    switchNetwork,        // (networkName: string) => Promise<void>
+
+    // PXE/Wallet access (Embedded/ExternalSigner only)
+    getPXE,               // () => PXE | null
+    getWallet,            // () => Wallet | null
+  } = useAztecWallet();
+}
+```
+
+### Modal Hooks
+
+Control modals programmatically when building custom UIs:
+
+```tsx
+import { useConnectModal, useAccountModal, useNetworkModal } from './aztec-wallet';
+
+// Open connect modal
+const { open: openConnect } = useConnectModal();
+
+// Open account modal (when connected)
+const { open: openAccount } = useAccountModal();
+
+// Open network modal
+const { open: openNetwork } = useNetworkModal();
 ```
 
 ### Contract Management
@@ -410,32 +434,43 @@ const balance = await token.methods.balance_of_public(address).simulate();
 
 **Switching Networks**:
 
-- Use `switchToNetwork(name)` from `useUniversalWallet()`
+- Use `switchNetwork(name)` from `useAztecWallet()`
 - Automatically reinitializes PXE and clears contract cache
 - Requires reconnecting wallet
 
-### Service Layer
+### Type Guards
 
-**SharedPXEService** (`src/services/aztec/SharedPXEService.ts`):
+aztec-wallet exports type guards for working with different connector types:
 
-- Singleton PXE instance shared across Embedded and External Signer connectors
-- Auto-initialization from network config
-- Wallet instance creation
-- Sponsored fee payment method management
-- IndexedDB persistence
+```tsx
+import {
+  isEmbeddedConnector,
+  isExternalSignerConnector,
+  isBrowserWalletConnector,
+  hasAppManagedPXE,
+} from './aztec-wallet';
 
-**EVMWalletService** (`src/services/evm/EVMWalletService.ts`):
+const { connector } = useAztecWallet();
 
-- Manages EVM wallet connections for External Signer wallet
-- EIP-6963 support (discovers and connects to multiple wallet providers)
-- Event listeners: `accountsChanged`, `chainChanged`, `disconnect`
-- Uses `viem` WalletClient
+// Check if connector has app-managed PXE (Embedded or ExternalSigner)
+if (connector && hasAppManagedPXE(connector)) {
+  const pxe = connector.getPXE();
+  const wallet = connector.getWallet();
+}
+```
 
-**AztecStorageService** (`src/services/aztec/AztecStorageService.ts`):
+### Deep Imports (Advanced)
 
-- IndexedDB-based contract storage
-- Caches registered contracts across sessions
-- Reduces PXE synchronization time
+Internal services and stores are available via deep imports for advanced use cases. **These are not part of the stable public API and may change without notice:**
+
+```tsx
+// ⚠️ Use at your own risk - not part of stable API
+import { getWalletStore } from './aztec-wallet/store/wallet';
+import { SharedPXEService } from './aztec-wallet/services/aztec/pxe';
+import { EVMWalletService } from './aztec-wallet/services/evm/EVMWalletService';
+```
+
+For most use cases, the public API (`useAztecWallet`, `ConnectButton`, etc.) is sufficient.
 
 ### Build System & Vite Configuration
 
@@ -526,7 +561,19 @@ await myContract.methods.myMethod(args).send().wait();
 
 ```
 src/
-├── adapters/            # Browser wallet adapters (Azguard, etc.)
+├── aztec-wallet/        # Modular wallet library (wagmi-like for Aztec)
+│   ├── adapters/        # Browser wallet adapters (Azguard)
+│   ├── assets/icons/    # Wallet icons (MetaMask, Rabby, Azguard)
+│   ├── components/      # ConnectButton (public), modals (internal)
+│   ├── config/          # createAztecWalletConfig, presets
+│   ├── connectors/      # Connector implementations (internal)
+│   ├── hooks/           # useAztecWallet, useConnectModal, etc. (public)
+│   ├── providers/       # AztecWalletProvider (public)
+│   ├── services/        # Internal services (not exported)
+│   ├── signers/         # Account signing implementations (internal)
+│   ├── store/           # Zustand stores (internal)
+│   ├── types/           # Configuration types (public)
+│   └── index.ts         # Public exports only
 ├── artifacts/           # Generated contract TypeScript bindings
 │   ├── devnet/          # Devnet-specific artifacts
 │   └── sandbox/         # Sandbox-specific artifacts
@@ -535,19 +582,13 @@ src/
 │   └── ...              # Feature components
 ├── config/
 │   ├── contracts.ts     # Contract registry configuration
-│   ├── walletKit.ts     # Wallet & network configuration
-│   ├── evmWallets.ts    # EVM wallet provider mapping
+│   ├── aztecWalletConfig.ts  # AztecWallet configuration
 │   ├── networks/        # Network-specific configs
 │   └── deployments/     # Deployed contract addresses (generated)
-├── connectors/          # Wallet connectors (Embedded, ExternalSigner, BrowserWallet)
 ├── containers/          # Page-level components
 ├── contract-registry/   # Contract registration utilities
 ├── hooks/               # Custom React hooks
-├── providers/           # Context providers
-│   └── hooks/           # Provider-specific hooks (wallet implementations)
-├── services/            # Service layer
-│   ├── aztec/           # Aztec-specific services (PXE, storage)
-│   └── evm/             # EVM wallet service
+├── providers/           # App context providers
 ├── styles/
 │   ├── globals.css      # Global styles & Tailwind config
 │   └── theme.ts         # CVA variants for components
@@ -576,8 +617,8 @@ tests/                   # Test suites (unit, integration, e2e)
 **Provider Composition**:
 
 - `AppProvider` composes all providers
-- `UniversalWalletProvider` handles wallet state
-- Context hooks expose state to components
+- `AztecWalletProvider` handles wallet state via Zustand stores
+- `useAztecWallet()` hook exposes state to components
 
 **Lazy Loading**:
 
