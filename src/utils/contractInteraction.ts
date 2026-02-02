@@ -420,16 +420,18 @@ export type FunctionCapabilities = {
 
 /**
  * Analyzes function attributes to determine its capabilities and visibility.
+ * Handles both prefixed (abi_*) and non-prefixed attribute variants.
  */
 export const analyzeFunctionCapabilities = (
   attributes: string[],
-  inputs?: ParsedField[]
+  inputs?: ParsedField[],
+  isUnconstrained?: boolean
 ): FunctionCapabilities => {
   const hasAttr = (value: string): boolean => attributes.includes(value);
 
-  const isView = hasAttr('abi_view');
-  const isUtility = hasAttr('abi_utility');
-  const isInitializer = hasAttr('abi_initializer');
+  const isView = hasAttr('abi_view') || hasAttr('view');
+  const isUtility = hasAttr('abi_utility') || hasAttr('utility');
+  const isInitializer = hasAttr('abi_initializer') || hasAttr('initializer');
   const attrHasPrivate = hasAttr('abi_private') || hasAttr('private');
   const attrHasPublic = hasAttr('abi_public') || hasAttr('public');
 
@@ -441,7 +443,7 @@ export const analyzeFunctionCapabilities = (
 
   const isExecutable =
     (isPublic || attrHasPrivate) && !isView && !isInitializer;
-  const canSimulate = isView || isUtility || !isExecutable;
+  const canSimulate = isUnconstrained || isView || isUtility || !isExecutable;
 
   return {
     isPrivate,
@@ -611,8 +613,8 @@ export const hasHiddenAttribute = (attrs: string[] = []): boolean =>
  * View functions don't change state and can be simulated.
  */
 export const isViewFn = (fn: ParsedFunction): boolean => {
-  const attrs = fn.attributes ?? [];
-  return attrs.includes('abi_view') || attrs.includes('view');
+  const capabilities = analyzeFunctionCapabilities(fn.attributes ?? []);
+  return capabilities.isView;
 };
 
 /**
@@ -620,13 +622,8 @@ export const isViewFn = (fn: ParsedFunction): boolean => {
  * Executable functions are public/private, not view, and not initializers.
  */
 export const isExecutableFn = (fn: ParsedFunction): boolean => {
-  const attrs = fn.attributes ?? [];
-  const hasAttr = (value: string) => attrs.includes(value);
-  const isView = isViewFn(fn);
-  const isInitializer = hasAttr('abi_initializer') || hasAttr('initializer');
-  const isPublic = hasAttr('abi_public') || hasAttr('public');
-  const isPrivate = hasAttr('abi_private') || hasAttr('private');
-  return (isPublic || isPrivate) && !isView && !isInitializer;
+  const capabilities = analyzeFunctionCapabilities(fn.attributes ?? []);
+  return capabilities.isExecutable;
 };
 
 /**
@@ -634,5 +631,10 @@ export const isExecutableFn = (fn: ParsedFunction): boolean => {
  * Includes unconstrained functions, view functions, and utility functions.
  */
 export const isReadOnlyFn = (fn: ParsedFunction): boolean => {
-  return fn.isUnconstrained || isViewFn(fn);
+  const capabilities = analyzeFunctionCapabilities(
+    fn.attributes ?? [],
+    undefined,
+    fn.isUnconstrained
+  );
+  return capabilities.canSimulate;
 };

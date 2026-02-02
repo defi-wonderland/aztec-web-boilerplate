@@ -21,6 +21,7 @@ import FunctionList from './FunctionList';
 import PreconfiguredSelector from './PreconfiguredSelector';
 import SavedContractsList from './SavedContractsList';
 import type { AztecNetwork } from '../../../config/networks/constants';
+import type { PreconfiguredContract } from '../../../config/preconfiguredContracts';
 
 const styles = {
   container: 'flex flex-col gap-6',
@@ -100,7 +101,8 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
     () =>
       analyzeFunctionCapabilities(
         selectedFn?.attributes ?? [],
-        selectedFn?.inputs
+        selectedFn?.inputs,
+        selectedFn?.isUnconstrained
       ),
     [selectedFn]
   );
@@ -171,7 +173,7 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
         <div className={styles.loaderCard}>
           {hasPreconfigured && (
             <PreconfiguredSelector
-              preconfigured={preconfiguredOptions}
+              preconfigured={preconfiguredOptions as PreconfiguredContract[]}
               selectedId={preconfiguredId}
               onSelect={onSelectPreconfigured}
               isLoading={isLoadingPreconfigured}
