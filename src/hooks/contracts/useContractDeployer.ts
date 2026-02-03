@@ -4,7 +4,7 @@ import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
-import { useFeePaymentMethod } from '../../store/feePayment';
+import { useFeePayment } from '../../store/feePayment';
 import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
@@ -32,7 +32,7 @@ export interface DeployParams {
  */
 export const useContractDeployer = () => {
   const { connector, account, currentConfig } = useUniversalWallet();
-  const feePaymentMethod = useFeePaymentMethod();
+  const { method: feePaymentMethod } = useFeePayment();
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

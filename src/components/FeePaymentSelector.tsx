@@ -8,10 +8,7 @@ import {
 import { useUniversalWallet } from '../hooks';
 import { useFeeJuiceBalance } from '../hooks/queries/useFeeJuiceBalance';
 import { useFeePayerAddress } from '../hooks/queries/useFeePayerAddress';
-import {
-  useFeePaymentMethod,
-  useSetFeePaymentMethod,
-} from '../store/feePayment';
+import { useFeePayment } from '../store/feePayment';
 import { hasAppManagedPXE } from '../types/walletConnector';
 import { iconSize, cn, formatFeeJuiceBalance } from '../utils';
 import {
@@ -55,8 +52,8 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   disabled = false,
   className,
 }) => {
-  const storedMethod = useFeePaymentMethod();
-  const setSelectedMethod = useSetFeePaymentMethod();
+  const { method: storedMethod, setMethod: setSelectedMethod } =
+    useFeePayment();
   const { connector, currentConfig, isConnected, isInitialized } =
     useUniversalWallet();
 

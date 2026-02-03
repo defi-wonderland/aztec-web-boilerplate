@@ -8,7 +8,7 @@
 import React from 'react';
 import { Fuel } from 'lucide-react';
 import { FEE_PAYMENT_METHOD_LABELS } from '../config/feePaymentContracts';
-import { useFeePaymentMethod } from '../store/feePayment';
+import { useFeePayment } from '../store/feePayment';
 import { iconSize, cn } from '../utils';
 import { Badge } from './ui';
 
@@ -25,7 +25,7 @@ interface FeePaymentInfoProps {
 export const FeePaymentInfo: React.FC<FeePaymentInfoProps> = ({
   className,
 }) => {
-  const selectedMethod = useFeePaymentMethod();
+  const { method: selectedMethod } = useFeePayment();
   const label = FEE_PAYMENT_METHOD_LABELS[selectedMethod];
 
   return (

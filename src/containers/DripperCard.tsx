@@ -22,7 +22,7 @@ import {
 import { useUniversalWallet, useRequiredContracts } from '../hooks';
 import { useToast, type LoadingToastResult } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
-import { useFeePaymentMethod } from '../store/feePayment';
+import { useFeePayment } from '../store/feePayment';
 import { iconSize } from '../utils';
 
 const styles = {
@@ -72,7 +72,7 @@ export const DripperCard: React.FC = () => {
 
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
-  const feePaymentMethod = useFeePaymentMethod();
+  const { method: feePaymentMethod } = useFeePayment();
   const loadingToastRef = useRef<LoadingToastResult | null>(null);
 
   const { dripToPrivate, dripToPublic, isReady } = useDripper({

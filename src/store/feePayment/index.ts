@@ -4,8 +4,4 @@ export {
   DEFAULT_FEE_PAYMENT_METHOD,
   type FeePaymentStore,
 } from './store';
-export {
-  useFeePaymentMethod,
-  useSetFeePaymentMethod,
-  useFeePaymentState,
-} from './selectors';
+export { useFeePayment } from './selectors';

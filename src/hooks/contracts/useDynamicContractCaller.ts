@@ -3,7 +3,7 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
-import { useFeePaymentMethod } from '../../store/feePayment';
+import { useFeePayment } from '../../store/feePayment';
 import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
@@ -30,7 +30,7 @@ export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
   const { connector, account, currentConfig } = useUniversalWallet();
-  const feePaymentMethod = useFeePaymentMethod();
+  const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
