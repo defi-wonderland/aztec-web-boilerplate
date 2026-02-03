@@ -56,14 +56,14 @@ export const SettingsCard: React.FC = () => {
             <div className={styles.tabContent}>
               <ConfigDisplay networkName="sandbox" />
               <div className={styles.divider} />
-              <FeePaymentSelector />
+              <FeePaymentSelector networkName="sandbox" />
             </div>
           </TabsContent>
           <TabsContent value="devnet">
             <div className={styles.tabContent}>
               <ConfigDisplay networkName="devnet" />
               <div className={styles.divider} />
-              <FeePaymentSelector />
+              <FeePaymentSelector networkName="devnet" />
             </div>
           </TabsContent>
         </Tabs>

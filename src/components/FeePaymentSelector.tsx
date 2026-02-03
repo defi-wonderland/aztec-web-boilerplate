@@ -6,6 +6,7 @@ import {
   getAvailableFeePaymentMethods,
   type FeePaymentMethodType,
 } from '../config/feePaymentContracts';
+import { AVAILABLE_NETWORKS, type AztecNetwork } from '../config/networks';
 import { useUniversalWallet } from '../hooks';
 import { useFeeJuiceBalance } from '../hooks/queries/useFeeJuiceBalance';
 import { useFeePayerAddress } from '../hooks/queries/useFeePayerAddress';
@@ -46,18 +47,26 @@ interface FeePaymentSelectorProps {
   disabled?: boolean;
   /** Additional class names */
   className?: string;
+  /** Network name to determine available methods */
+  networkName?: AztecNetwork;
 }
 
 export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   disabled = false,
   className,
+  networkName,
 }) => {
   const { method: storedMethod, setMethod } = useFeePayment();
   const { connector, currentConfig, isConnected, isInitialized } =
     useUniversalWallet();
 
+  // Use provided networkName's config for available methods, or fall back to connected network
+  const targetConfig = networkName
+    ? AVAILABLE_NETWORKS.find((n) => n.name === networkName)
+    : currentConfig;
+
   const availableMethods = getAvailableFeePaymentMethods(
-    currentConfig?.feePaymentContracts
+    targetConfig?.feePaymentContracts
   );
 
   const selectedMethod: FeePaymentMethodType = availableMethods.includes(
@@ -92,9 +101,8 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
       enabled: !!feePayerAddress,
     });
 
-  const isSandbox = currentConfig?.name === 'sandbox';
-
-  if (isSandbox || availableMethods.length <= 1) {
+  // Hide selector if only one method available (nothing to select)
+  if (availableMethods.length <= 1) {
     return null;
   }
 
