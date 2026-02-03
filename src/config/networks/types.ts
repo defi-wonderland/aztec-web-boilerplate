@@ -1,16 +1,22 @@
 import type { AztecNetwork } from './constants';
 
 /**
- * Fee Payment Contracts configuration for a network.
+ * Configuration for a deployed contract on a network.
+ * Contains address, deployment salt, and deployer address.
  */
-export interface FeePaymentContractsConfig {
-  /** Metered FPC address - tracks internal balances, deducts max gas cost */
-  metered?: string;
-  /** Metered FPC deployment salt */
-  meteredSalt?: string;
-  /** Metered FPC deployer address */
-  meteredDeployer?: string;
+export interface DeployedContractConfig {
+  /** Contract address */
+  address?: string;
+  /** Deployment salt (for deterministic addresses) */
+  salt?: string;
+  /** Deployer address */
+  deployer?: string;
 }
+
+/**
+ * Fee Payment Contracts configuration - a map of contract names to their deployment configs.
+ */
+export type FeePaymentContractsConfig = Record<string, DeployedContractConfig>;
 
 export interface NetworkConfig {
   name: AztecNetwork;
@@ -24,6 +30,6 @@ export interface NetworkConfig {
   tokenDeploymentSalt: string;
   proverEnabled: boolean;
   isTestnet: boolean;
-  /** Fee payment contracts configuration */
-  feePaymentContracts?: FeePaymentContractsConfig;
+  /** Fee payment contracts configuration (keyed by contract name, e.g., 'metered') */
+  feePaymentContracts?: Record<string, DeployedContractConfig>;
 }

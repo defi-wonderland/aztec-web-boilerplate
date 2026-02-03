@@ -22,9 +22,11 @@ export const DEVNET_CONFIG: NetworkConfig = {
   proverEnabled: true,
   isTestnet: true,
   feePaymentContracts: {
-    metered:
-      '0x2a39ba8b469adc19bfc0f5c1a9d496f73b82e95fb113e020214c729ff9cd1ff4',
-    meteredSalt: '1337',
-    meteredDeployer: AztecAddress.ZERO.toString(),
+    metered: {
+      address:
+        '0x2a39ba8b469adc19bfc0f5c1a9d496f73b82e95fb113e020214c729ff9cd1ff4',
+      salt: '1337',
+      deployer: AztecAddress.ZERO.toString(),
+    },
   },
 };

@@ -30,19 +30,19 @@ export async function createFeePaymentMethod(
       return getSponsoredFeePaymentMethod();
 
     case 'metered':
-      if (!config.metered) {
+      if (!config.metered?.address) {
         throw new Error('Metered FPC not configured for this network');
       }
       return new MeteredFeePaymentMethod(
-        AztecAddress.fromString(config.metered)
+        AztecAddress.fromString(config.metered.address)
       );
 
     case 'meteredExact':
-      if (!config.metered) {
+      if (!config.metered?.address) {
         throw new Error('Metered FPC not configured for this network');
       }
       return new MeteredExactFeePaymentMethod(
-        AztecAddress.fromString(config.metered)
+        AztecAddress.fromString(config.metered.address)
       );
 
     default:

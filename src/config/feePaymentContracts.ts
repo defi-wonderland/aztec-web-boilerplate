@@ -43,7 +43,7 @@ export function getAvailableFeePaymentMethods(
 ): FeePaymentMethodType[] {
   const methods: FeePaymentMethodType[] = ['sponsored'];
 
-  if (config?.metered) {
+  if (config?.metered?.address) {
     methods.push('metered', 'meteredExact');
   }
 
