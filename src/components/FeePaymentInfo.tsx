@@ -1,8 +1,7 @@
 /**
  * FeePaymentInfo Component
  *
- * Read-only display of the current global fee payment method.
- * Used on feature pages to show which method is configured in Settings.
+ * Read-only display of the current fee payment method for the connected network.
  */
 
 import React from 'react';
@@ -25,8 +24,8 @@ interface FeePaymentInfoProps {
 export const FeePaymentInfo: React.FC<FeePaymentInfoProps> = ({
   className,
 }) => {
-  const { method: selectedMethod } = useFeePayment();
-  const label = FEE_PAYMENT_METHOD_LABELS[selectedMethod];
+  const { method } = useFeePayment();
+  const label = FEE_PAYMENT_METHOD_LABELS[method];
 
   return (
     <div className={cn(styles.container, className)}>

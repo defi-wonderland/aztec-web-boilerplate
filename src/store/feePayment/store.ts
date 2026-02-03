@@ -1,7 +1,7 @@
 /**
  * Fee Payment Zustand Store
  *
- * Global store for fee payment method selection with localStorage persistence.
+ * Per-network fee payment method storage with localStorage persistence.
  */
 
 import { create } from 'zustand';
@@ -12,11 +12,13 @@ const STORAGE_KEY = 'aztec-fee-payment';
 export const DEFAULT_FEE_PAYMENT_METHOD: FeePaymentMethodType = 'sponsored';
 
 interface FeePaymentState {
-  method: FeePaymentMethodType;
+  /** Fee payment method per network */
+  methods: Record<string, FeePaymentMethodType>;
 }
 
 interface FeePaymentActions {
-  setMethod: (method: FeePaymentMethodType) => void;
+  setMethod: (network: string, method: FeePaymentMethodType) => void;
+  getMethod: (network: string) => FeePaymentMethodType;
   reset: () => void;
 }
 
@@ -24,10 +26,15 @@ export type FeePaymentStore = FeePaymentState & FeePaymentActions;
 
 export const useFeePaymentStore = create<FeePaymentStore>()(
   persist(
-    (set) => ({
-      method: DEFAULT_FEE_PAYMENT_METHOD,
-      setMethod: (method) => set({ method }),
-      reset: () => set({ method: DEFAULT_FEE_PAYMENT_METHOD }),
+    (set, get) => ({
+      methods: {},
+      setMethod: (network, method) =>
+        set((state) => ({
+          methods: { ...state.methods, [network]: method },
+        })),
+      getMethod: (network) =>
+        get().methods[network] ?? DEFAULT_FEE_PAYMENT_METHOD,
+      reset: () => set({ methods: {} }),
     }),
     {
       name: STORAGE_KEY,

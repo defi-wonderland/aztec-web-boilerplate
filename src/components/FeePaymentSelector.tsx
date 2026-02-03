@@ -10,7 +10,7 @@ import { AVAILABLE_NETWORKS, type AztecNetwork } from '../config/networks';
 import { useUniversalWallet } from '../hooks';
 import { useFeeJuiceBalance } from '../hooks/queries/useFeeJuiceBalance';
 import { useFeePayerAddress } from '../hooks/queries/useFeePayerAddress';
-import { useFeePayment, DEFAULT_FEE_PAYMENT_METHOD } from '../store/feePayment';
+import { useFeePayment } from '../store/feePayment';
 import { hasAppManagedPXE } from '../types/walletConnector';
 import { iconSize, cn, formatFeeJuiceBalance } from '../utils';
 import {
@@ -56,7 +56,7 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   className,
   networkName,
 }) => {
-  const { method: storedMethod, setMethod } = useFeePayment();
+  const { method, setMethod } = useFeePayment(networkName);
   const { connector, currentConfig, isConnected, isInitialized } =
     useUniversalWallet();
 
@@ -69,24 +69,18 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
     targetConfig?.feePaymentContracts
   );
 
-  const selectedMethod: FeePaymentMethodType = availableMethods.includes(
-    storedMethod
-  )
-    ? storedMethod
-    : DEFAULT_FEE_PAYMENT_METHOD;
-
   const isReady = isConnected && isInitialized && hasAppManagedPXE(connector);
 
-  const handleMethodChange = (method: FeePaymentMethodType) => {
-    if (availableMethods.includes(method)) {
-      setMethod(method);
+  const handleMethodChange = (newMethod: FeePaymentMethodType) => {
+    if (availableMethods.includes(newMethod)) {
+      setMethod(newMethod);
     }
   };
 
   const appManagedConnector = hasAppManagedPXE(connector) ? connector : null;
 
   const { feePayerAddress } = useFeePayerAddress({
-    selectedMethod,
+    selectedMethod: method,
     connector: appManagedConnector,
     feePaymentConfig: currentConfig?.feePaymentContracts,
     enabled: isReady,
@@ -117,19 +111,19 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
               <Info size={iconSize()} className={styles.infoIcon} />
             </TooltipTrigger>
             <TooltipContent className={styles.tooltipContent}>
-              {availableMethods.map((method) => (
-                <p key={method} className={styles.tooltipMethod}>
+              {availableMethods.map((m) => (
+                <p key={m} className={styles.tooltipMethod}>
                   <span className={styles.tooltipMethodName}>
-                    {FEE_PAYMENT_METHOD_LABELS[method]}:
+                    {FEE_PAYMENT_METHOD_LABELS[m]}:
                   </span>{' '}
-                  {FEE_PAYMENT_METHOD_DESCRIPTIONS[method]}
+                  {FEE_PAYMENT_METHOD_DESCRIPTIONS[m]}
                 </p>
               ))}
             </TooltipContent>
           </Tooltip>
         </div>
         <Select
-          value={selectedMethod}
+          value={method}
           onValueChange={handleMethodChange}
           disabled={disabled}
         >
@@ -137,9 +131,9 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
             <SelectValue placeholder="Select method" />
           </SelectTrigger>
           <SelectContent>
-            {availableMethods.map((method) => (
-              <SelectItem key={method} value={method}>
-                {FEE_PAYMENT_METHOD_LABELS[method]}
+            {availableMethods.map((m) => (
+              <SelectItem key={m} value={m}>
+                {FEE_PAYMENT_METHOD_LABELS[m]}
               </SelectItem>
             ))}
           </SelectContent>
