@@ -44,7 +44,6 @@ class SharedPXEServiceClass {
   private initPromises: Map<string, Promise<SharedPXEInstance>> = new Map();
   private cachedPaymentMethods: Map<string, SponsoredFeePaymentMethod> =
     new Map();
-  private cachedFeePayerAddresses: Map<string, AztecAddress> = new Map();
   private storePromises: Map<
     string,
     Promise<Awaited<ReturnType<typeof createStore>>>
@@ -129,7 +128,6 @@ class SharedPXEServiceClass {
     const key = this.getInstanceKey(networkName);
     this.instances.delete(key);
     this.cachedPaymentMethods.delete(key);
-    this.cachedFeePayerAddresses.delete(key);
     logger.info(`Cleared PXE instance for ${networkName}`);
   }
 
@@ -139,7 +137,6 @@ class SharedPXEServiceClass {
   clearAll(): void {
     this.instances.clear();
     this.cachedPaymentMethods.clear();
-    this.cachedFeePayerAddresses.clear();
     logger.info('Cleared all PXE instances');
   }
 
@@ -288,11 +285,11 @@ class SharedPXEServiceClass {
     }
 
     const sponsoredPFCContract = await this.getSponsoredPFCContract(pxe);
-    const feePayerAddress = sponsoredPFCContract.address;
-    const paymentMethod = new SponsoredFeePaymentMethod(feePayerAddress);
+    const paymentMethod = new SponsoredFeePaymentMethod(
+      sponsoredPFCContract.address
+    );
 
     this.cachedPaymentMethods.set(key, paymentMethod);
-    this.cachedFeePayerAddresses.set(key, feePayerAddress);
 
     return paymentMethod;
   }
