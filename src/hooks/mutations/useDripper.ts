@@ -2,8 +2,8 @@ import { useRef, useLayoutEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { DripperContract } from '../../artifacts/Dripper';
+import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
-import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useWriteContract } from '../contracts/useWriteContract';
 import { queryKeys } from '../queries/queryKeys';
 import { useFeeJuiceBalanceInvalidation } from '../queries/useFeeJuiceBalance';
@@ -29,7 +29,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   useLayoutEffect(() => {
     callbacksRef.current = options;
   });
-  const { account, currentConfig } = useUniversalWallet();
+  const { account, currentConfig } = useAztecWallet();
   const { writeContract } = useWriteContract();
   const queryClient = useQueryClient();
   const { invalidateAll: invalidateFeeJuiceBalances } =
@@ -92,6 +92,14 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         throw new Error('Account not available');
       }
 
+      // Simulate first to catch revert reasons before sending
+      console.log('[useDripper] Simulating drip_to_public...', {
+        dripperAddress,
+        tokenAddress,
+        amount: amount.toString(),
+        account: account.getAddress().toString(),
+      });
+
       const result = await writeContract({
         contract: DripperContract,
         address: dripperAddress,
@@ -101,6 +109,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
       });
 
       if (!result.success) {
+        console.error('[useDripper] drip_to_public failed:', result.error);
         throw new Error(result.error ?? 'drip_to_public failed');
       }
 

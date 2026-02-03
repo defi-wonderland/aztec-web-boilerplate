@@ -2,14 +2,14 @@ import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
-import { createFeePaymentMethod } from '../../services/aztec/feePayment';
-import { useFeePayment } from '../../store/feePayment';
 import {
+  useAztecWallet,
   hasAppManagedPXE,
   isBrowserWalletConnector,
-} from '../../types/walletConnector';
+} from '../../aztec-wallet';
+import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { useFeePayment } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
-import { useUniversalWallet } from '../context/useUniversalWallet';
 import { getContractMethod } from './utils';
 import type { SimulateViewsOp } from '../../types';
 
@@ -29,7 +29,7 @@ interface CallResult {
 export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
-  const { connector, account, currentConfig } = useUniversalWallet();
+  const { connector, account, currentConfig } = useAztecWallet();
   const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);

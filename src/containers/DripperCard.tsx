@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Coins, Copy, Shield, Globe, AlertTriangle } from 'lucide-react';
+import { useAztecWallet } from '../aztec-wallet';
 import { FeePaymentInfo } from '../components/FeePaymentInfo';
 import { TokenBalance } from '../components/TokenBalance';
 import {
@@ -19,7 +20,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '../components/ui';
-import { useUniversalWallet, useRequiredContracts } from '../hooks';
+import { useRequiredContracts } from '../hooks';
 import { useToast, type LoadingToastResult } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
 import { useFeePayment } from '../store/feePayment';
@@ -58,8 +59,8 @@ const styles = {
 } as const;
 
 export const DripperCard: React.FC = () => {
-  const { account, isInitialized, connectors, connector, currentConfig } =
-    useUniversalWallet();
+  const { account, isPXEInitialized, connectors, connector, currentConfig } =
+    useAztecWallet();
   const { success, loading } = useToast();
 
   const {
@@ -162,7 +163,7 @@ export const DripperCard: React.FC = () => {
   const isAnyWalletConnected =
     Boolean(account) ||
     connectors.some((conn) => conn.getStatus().status === 'connected');
-  const showDripForm = isAnyWalletConnected && isInitialized;
+  const showDripForm = isAnyWalletConnected && isPXEInitialized;
 
   if (!showDripForm) {
     return null;
@@ -201,7 +202,7 @@ export const DripperCard: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className={styles.formSection}>
+          <div className={styles.formSection} data-testid="dripper-form">
             {/* Token Address - First, so user knows which token */}
             <div className={styles.formGroup}>
               <label htmlFor="token-address" className={styles.label}>
@@ -304,6 +305,7 @@ export const DripperCard: React.FC = () => {
                   <Globe size={iconSize()} />
                 )
               }
+              data-testid="drip-button"
             >
               {isWalletBusy
                 ? 'Wallet Busy...'

@@ -43,25 +43,27 @@ The application will be available at **http://localhost:3000**
 
 ### Wallet Configuration
 
-Edit `src/config/walletKit.ts` to customize wallet connectors and networks:
+Edit `src/config/aztecWalletConfig.ts` to customize wallet options and networks:
 
 ```typescript
-export const walletKitConfig: WalletKitConfig = {
-  // Available connectors: embedded(), azguard()
-  connectors: [embedded(), azguard()],
+import { createAztecWalletConfig } from '../aztec-wallet';
 
+export const aztecWalletConfig = createAztecWalletConfig({
   // Networks to support
   networks: [
-    {
-      aztecNetwork: 'devnet',
-      nodeUrl: NETWORK_URLS.devnet, // https://devnet.aztec-labs.com/
-    },
-    {
-      aztecNetwork: 'sandbox',
-      nodeUrl: NETWORK_URLS.sandbox, // http://localhost:8080
-    },
+    { name: 'devnet', nodeUrl: 'https://devnet.aztec.network' },
+    { name: 'sandbox', nodeUrl: 'http://localhost:8080' },
   ],
-};
+
+  // Wallet types to enable
+  walletGroups: {
+    embedded: true,                    // App-managed wallet
+    evmWallets: ['metamask', 'rabby'], // EVM wallets as signers
+    aztecWallets: ['azguard'],         // Browser extension wallets
+  },
+
+  showNetworkPicker: 'full',
+});
 ```
 
 ### Contract Configuration
@@ -205,19 +207,28 @@ aztec-web-boilerplate/
 │   ├── artifacts/             # Generated contract TypeScript bindings
 │   │   ├── devnet/            # Devnet-specific artifacts
 │   │   └── sandbox/           # Sandbox-specific artifacts
+│   ├── aztec-wallet/          # Modular wallet library (wagmi-like for Aztec)
+│   │   ├── adapters/          # Browser wallet adapters (Azguard)
+│   │   ├── components/        # ConnectButton and internal modals
+│   │   ├── config/            # createAztecWalletConfig
+│   │   ├── connectors/        # Wallet connector implementations
+│   │   ├── hooks/             # useAztecWallet, useConnectModal, etc.
+│   │   ├── providers/         # AztecWalletProvider
+│   │   ├── services/          # Internal services (PXE, EVM)
+│   │   ├── signers/           # Account signing implementations
+│   │   ├── store/             # Zustand stores
+│   │   └── types/             # Configuration types
 │   ├── components/            # React UI components
+│   │   └── ui/                # Primitive UI components (Button, Input, etc.)
 │   ├── config/
 │   │   ├── contracts.ts       # Contract configuration
-│   │   ├── walletKit.ts       # Wallet & network configuration
+│   │   ├── aztecWalletConfig.ts # Wallet & network configuration
 │   │   ├── deployments/       # Deployment config JSON files
 │   │   └── networks/          # Network constants
-│   ├── connectors/            # Wallet connectors (Embedded, Azguard)
 │   ├── containers/            # Layout and page containers
 │   ├── contract-registry/     # Contract registration utilities
-│   ├── hooks/                 # React hooks and context hooks
+│   ├── hooks/                 # React hooks
 │   ├── providers/             # React context providers
-│   ├── services/              # Service layer
-│   │   └── aztec/             # Aztec-specific services
 │   ├── styles/                # Tailwind CSS configuration
 │   │   ├── globals.css        # Global styles & theme variables
 │   │   └── theme.ts           # CVA variants for components
@@ -329,10 +340,10 @@ To add support for a new browser wallet (e.g., Obsidian), follow these steps:
 
 ### 1. Create the Adapter Folder
 
-Create a new folder under `src/adapters/` with your wallet name:
+Create a new folder under `src/aztec-wallet/adapters/` with your wallet name:
 
 ```
-src/adapters/obsidian/
+src/aztec-wallet/adapters/obsidian/
 ├── ObsidianAdapter.ts       # Implements IBrowserWalletAdapter interface
 ├── ObsidianWalletService.ts # Handles extension communication
 └── index.ts                 # Exports adapter and factory
@@ -376,36 +387,38 @@ export const createObsidianAdapter = (): IBrowserWalletAdapter =>
   new ObsidianAdapter();
 ```
 
-### 4. Add the Factory Function
+### 4. Register the Wallet
 
-In `src/connectors/factories.ts`, add your wallet factory:
+In `src/aztec-wallet/config/aztecWallets.ts`, add your wallet configuration:
 
 ```typescript
-import { createObsidianAdapter } from '../adapters';
-
-export const obsidian = (): ConnectorFactory => () =>
-  new BrowserWalletConnector({
+export const AZTEC_WALLETS: AztecWalletInfo[] = [
+  // ... existing wallets
+  {
     id: 'obsidian',
-    label: 'Obsidian Wallet',
+    name: 'Obsidian',
+    icon: ObsidianIcon,
     adapterFactory: createObsidianAdapter,
-  });
+  },
+];
 ```
 
 ### 5. Enable the Wallet
 
-In `src/config/walletKit.ts`, add your connector:
+In `src/config/aztecWalletConfig.ts`, add your wallet to the config:
 
 ```typescript
-connectors: [embedded(), azguard(), obsidian()],
+walletGroups: {
+  aztecWallets: ['azguard', 'obsidian'],
+},
 ```
 
 ### 6. Export from Index Files
 
-Make sure to properly export your adapter and factory from:
+Make sure to properly export your adapter from:
 
-- `src/adapters/obsidian/index.ts`
-- `src/adapters/index.ts`
-- `src/connectors/index.ts`
+- `src/aztec-wallet/adapters/obsidian/index.ts`
+- `src/aztec-wallet/adapters/index.ts`
 
 > **Note:** No changes are needed to hooks, providers, or the `BrowserWalletConnector` class. The adapter pattern handles all wallet-specific logic.
 

@@ -2,14 +2,14 @@ import { useState, useCallback } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
-import { createFeePaymentMethod } from '../../services/aztec/feePayment';
-import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import {
+  useAztecWallet,
   isBrowserWalletConnector,
   hasAppManagedPXE,
-} from '../../types/walletConnector';
+} from '../../aztec-wallet';
+import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
-import { useUniversalWallet } from '../context/useUniversalWallet';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type {
   MethodsOf,
@@ -78,7 +78,7 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
  */
 export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const { timeout = 900, receiptPolling } = options;
-  const { connector, account, currentConfig } = useUniversalWallet();
+  const { connector, account, currentConfig } = useAztecWallet();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -193,6 +193,33 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           }
 
           const tx = method(...(args as unknown[]));
+
+          // Simulate first to catch revert reasons before sending
+          console.log(
+            `[useWriteContract] Simulating ${String(functionName)}...`
+          );
+          try {
+            const simulateResult = await (
+              tx as { simulate: (opts: unknown) => Promise<unknown> }
+            ).simulate({ from: account.getAddress() });
+            console.log(
+              `[useWriteContract] Simulation successful:`,
+              simulateResult
+            );
+          } catch (simErr) {
+            const simErrorMsg =
+              simErr instanceof Error ? simErr.message : 'Simulation failed';
+            console.error(
+              `[useWriteContract] Simulation failed for ${String(functionName)}:`,
+              simErr
+            );
+            setError(simErrorMsg);
+            return {
+              success: false,
+              error: `Simulation failed: ${simErrorMsg}`,
+            };
+          }
+
           const sentTx = (
             tx as {
               send: (opts: unknown) => {

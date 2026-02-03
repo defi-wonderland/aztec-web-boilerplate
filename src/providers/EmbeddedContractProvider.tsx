@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Zap, RefreshCw } from 'lucide-react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
+import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
 import { contractsConfig } from '../config/contracts';
 import { getNetworkArtifacts } from '../config/networkArtifacts';
 import {
@@ -11,9 +12,7 @@ import {
   type ContractNames,
 } from '../contract-registry';
 import { useToast } from '../hooks';
-import { useUniversalWallet } from '../hooks/context/useUniversalWallet';
 import { useContractRegistryStore } from '../store/contractRegistry';
-import { hasAppManagedPXE } from '../types/walletConnector';
 import { iconSize } from '../utils';
 import type { NetworkConfig } from '../config/networks';
 
@@ -47,15 +46,15 @@ export function EmbeddedContractProvider<
   showTimingToast = true,
   children,
 }: EmbeddedContractProviderProps): React.ReactElement {
-  const { connector, isInitialized, isConnected, currentConfig } =
-    useUniversalWallet();
+  const { connector, isPXEInitialized, isConnected, currentConfig } =
+    useAztecWallet();
   const { addToast } = useToast();
 
   // Get PXE from the active connector (embedded or external signer)
   const pxe = hasAppManagedPXE(connector) ? connector.getPXE() : null;
 
   // Only register contracts when wallet is connected and PXE is ready
-  const isReady = isConnected && isInitialized && pxe !== null;
+  const isReady = isConnected && isPXEInitialized && pxe !== null;
 
   const contracts = useMemo(
     () =>
