@@ -175,6 +175,33 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           }
 
           const tx = method(...(args as unknown[]));
+
+          // Simulate first to catch revert reasons before sending
+          console.log(
+            `[useWriteContract] Simulating ${String(functionName)}...`
+          );
+          try {
+            const simulateResult = await (
+              tx as { simulate: (opts: unknown) => Promise<unknown> }
+            ).simulate({ from: account.getAddress() });
+            console.log(
+              `[useWriteContract] Simulation successful:`,
+              simulateResult
+            );
+          } catch (simErr) {
+            const simErrorMsg =
+              simErr instanceof Error ? simErr.message : 'Simulation failed';
+            console.error(
+              `[useWriteContract] Simulation failed for ${String(functionName)}:`,
+              simErr
+            );
+            setError(simErrorMsg);
+            return {
+              success: false,
+              error: `Simulation failed: ${simErrorMsg}`,
+            };
+          }
+
           const sentTx = (
             tx as {
               send: (opts: unknown) => {

@@ -50,6 +50,7 @@ export const MainView: React.FC = () => {
           showArrow={false}
           onClick={handleEmbeddedClick}
           disabled={isLoading}
+          data-testid="wallet-group-embedded"
         />
       )}
 
@@ -58,6 +59,7 @@ export const MainView: React.FC = () => {
           label={walletGroups.aztecWallets.label || 'Aztec Wallet'}
           onClick={handleAztecWalletsClick}
           disabled={isLoading}
+          data-testid="wallet-group-aztec"
         />
       )}
 
@@ -66,6 +68,7 @@ export const MainView: React.FC = () => {
           label={walletGroups.evmWallets.label || 'EVM Wallet'}
           onClick={handleEvmWalletsClick}
           disabled={isLoading}
+          data-testid="wallet-group-evm"
         />
       )}
     </div>

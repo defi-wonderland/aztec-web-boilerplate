@@ -78,6 +78,7 @@ export const EVMWalletsView: React.FC = () => {
                 handleWalletClick(wallet.id, wallet.name, wallet.rdns)
               }
               disabled={isLoading}
+              data-testid={`wallet-button-${wallet.id}`}
             />
           );
         })}
