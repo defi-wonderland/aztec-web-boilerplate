@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Coins, Copy, Shield, Globe, AlertTriangle } from 'lucide-react';
-import { FeePaymentSelector } from '../components/FeePaymentSelector';
+import { FeePaymentInfo } from '../components/FeePaymentInfo';
 import { TokenBalance } from '../components/TokenBalance';
 import {
   Card,
@@ -22,7 +22,7 @@ import {
 import { useUniversalWallet, useRequiredContracts } from '../hooks';
 import { useToast, type LoadingToastResult } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
-import { useFeePaymentType } from '../store';
+import { useFeePaymentMethod } from '../store/feePayment';
 import { iconSize } from '../utils';
 
 const styles = {
@@ -72,7 +72,7 @@ export const DripperCard: React.FC = () => {
 
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
-  const { feePaymentType, setFeePaymentType } = useFeePaymentType('dripper');
+  const feePaymentMethod = useFeePaymentMethod();
   const loadingToastRef = useRef<LoadingToastResult | null>(null);
 
   const { dripToPrivate, dripToPublic, isReady } = useDripper({
@@ -129,12 +129,12 @@ export const DripperCard: React.FC = () => {
     if (dripType === 'private') {
       dripToPrivate.mutate({
         amount: amountBigInt,
-        feePaymentMethod: feePaymentType,
+        feePaymentMethod,
       });
     } else {
       dripToPublic.mutate({
         amount: amountBigInt,
-        feePaymentMethod: feePaymentType,
+        feePaymentMethod,
       });
     }
   };
@@ -280,12 +280,8 @@ export const DripperCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Fee Payment Type */}
-            <FeePaymentSelector
-              value={feePaymentType}
-              onChange={setFeePaymentType}
-              disabled={isProcessing || !isReady}
-            />
+            {/* Fee Payment Method (read-only, configured in Settings) */}
+            <FeePaymentInfo />
 
             {/* Submit Button */}
             <Button

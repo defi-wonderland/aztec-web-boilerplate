@@ -1,27 +1,39 @@
+/**
+ * Fee Payment Zustand Store
+ *
+ * Global store for fee payment method selection with localStorage persistence.
+ */
+
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 
-/** Default fee payment method when none is explicitly set */
+const STORAGE_KEY = 'aztec-fee-payment';
 export const DEFAULT_FEE_PAYMENT_METHOD: FeePaymentMethodType = 'sponsored';
 
-type State = {
-  methods: Record<string, FeePaymentMethodType>;
-};
+interface FeePaymentState {
+  method: FeePaymentMethodType;
+}
 
-type Actions = {
-  setMethod: (feature: string, method: FeePaymentMethodType) => void;
-};
+interface FeePaymentActions {
+  setMethod: (method: FeePaymentMethodType) => void;
+  reset: () => void;
+}
 
-export type FeePaymentStore = State & Actions;
+export type FeePaymentStore = FeePaymentState & FeePaymentActions;
 
-const INITIAL_STATE: State = {
-  methods: {},
-};
+export const useFeePaymentStore = create<FeePaymentStore>()(
+  persist(
+    (set) => ({
+      method: DEFAULT_FEE_PAYMENT_METHOD,
+      setMethod: (method) => set({ method }),
+      reset: () => set({ method: DEFAULT_FEE_PAYMENT_METHOD }),
+    }),
+    {
+      name: STORAGE_KEY,
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
 
-export const useFeePaymentStore = create<FeePaymentStore>((set) => ({
-  ...INITIAL_STATE,
-  setMethod: (feature, method) =>
-    set((state) => ({
-      methods: { ...state.methods, [feature]: method },
-    })),
-}));
+export const getFeePaymentStore = () => useFeePaymentStore.getState();

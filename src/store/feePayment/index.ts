@@ -1,3 +1,11 @@
-export { useFeePaymentStore, DEFAULT_FEE_PAYMENT_METHOD } from './store';
-export type { FeePaymentStore } from './store';
-export { useFeePaymentType } from './selectors';
+export {
+  useFeePaymentStore,
+  getFeePaymentStore,
+  DEFAULT_FEE_PAYMENT_METHOD,
+  type FeePaymentStore,
+} from './store';
+export {
+  useFeePaymentMethod,
+  useSetFeePaymentMethod,
+  useFeePaymentState,
+} from './selectors';

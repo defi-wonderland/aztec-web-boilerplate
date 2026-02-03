@@ -1,34 +1,20 @@
-import { useCallback } from 'react';
-import { useFeePaymentStore, DEFAULT_FEE_PAYMENT_METHOD } from './store';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
-
 /**
- * Hook to get and set the fee payment type for a specific feature.
+ * Fee Payment Store Selectors
  *
- * Each feature maintains its own independent fee payment selection,
- * allowing different parts of the app to have separate fee type choices.
- *
- * @param feature - Unique key identifying the feature (e.g., 'dripper', 'contractUI')
- * @returns The current fee payment type and a setter function
- *
- * @example
- * ```tsx
- * const { feePaymentType, setFeePaymentType } = useFeePaymentType('dripper');
- * ```
+ * Hook selectors for accessing fee payment state.
  */
-export const useFeePaymentType = (feature: string) => {
-  const feePaymentType = useFeePaymentStore(
-    (s) => s.methods[feature] ?? DEFAULT_FEE_PAYMENT_METHOD
-  );
-  const setMethod = useFeePaymentStore((s) => s.setMethod);
 
-  const setFeePaymentType = useCallback(
-    (type: FeePaymentMethodType) => setMethod(feature, type),
-    [setMethod, feature]
-  );
+import { useFeePaymentStore } from './store';
 
-  return {
-    feePaymentType,
-    setFeePaymentType,
-  };
-};
+/** Returns the current fee payment method */
+export const useFeePaymentMethod = () => useFeePaymentStore((s) => s.method);
+
+/** Returns the setter for fee payment method */
+export const useSetFeePaymentMethod = () =>
+  useFeePaymentStore((s) => s.setMethod);
+
+/** Returns both the method and setter for convenience */
+export const useFeePaymentState = () => ({
+  feePaymentMethod: useFeePaymentStore((s) => s.method),
+  setFeePaymentMethod: useFeePaymentStore((s) => s.setMethod),
+});

@@ -3,13 +3,14 @@ import { loadContractArtifact } from '@aztec/aztec.js/abi';
 import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
+import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { useFeePaymentMethod } from '../../store/feePayment';
 import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../../types/walletConnector';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
 import { useUniversalWallet } from '../context/useUniversalWallet';
-import { useFeePaymentConfig } from '../useFeePaymentConfig';
 import type { DeployResult } from '../../components/contract-interaction/types';
 import type {
   DeployableContract,
@@ -25,12 +26,13 @@ export interface DeployParams {
 /**
  * Hook for deploying contracts to the Aztec network.
  * Handles artifact loading, argument building, and deployment transactions.
+ * Uses the global fee payment method from Settings.
  *
  * @returns Object with deploy function, status, and error handling utilities.
  */
 export const useContractDeployer = () => {
-  const { connector, account } = useUniversalWallet();
-  const { createPaymentMethod } = useFeePaymentConfig();
+  const { connector, account, currentConfig } = useUniversalWallet();
+  const feePaymentMethod = useFeePaymentMethod();
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,7 +101,12 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        const paymentMethod = await createPaymentMethod('sponsored');
+        // Get fee payment method from global store
+        const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
+          config: currentConfig?.feePaymentContracts ?? {},
+          getSponsoredFeePaymentMethod: () =>
+            connector.getSponsoredFeePaymentMethod(),
+        });
 
         const receipt = await deployMethod
           .send({
@@ -127,7 +134,7 @@ export const useContractDeployer = () => {
         setIsDeploying(false);
       }
     },
-    [connector, account, createPaymentMethod]
+    [connector, account, feePaymentMethod, currentConfig?.feePaymentContracts]
   );
 
   const clearError = useCallback(() => {
