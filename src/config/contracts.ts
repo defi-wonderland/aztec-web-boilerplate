@@ -28,7 +28,7 @@ export const contractsConfig = createContractConfig({
   },
 
   /**
-   * Token contract - Yield Token (YT)
+   * Token contract - WETH
    */
   token: {
     artifact: TokenContract.artifact,
@@ -38,8 +38,8 @@ export const contractsConfig = createContractConfig({
       salt: Fr.fromString(config.tokenDeploymentSalt),
       deployer: getDeployerAddress(config),
       constructorArgs: [
-        config.name === 'devnet' ? 'WETH' : 'Yield Token',
-        config.name === 'devnet' ? 'WETH' : 'YT',
+        'WETH',
+        'WETH',
         18,
         AztecAddress.fromString(config.dripperContractAddress),
         AztecAddress.ZERO,
