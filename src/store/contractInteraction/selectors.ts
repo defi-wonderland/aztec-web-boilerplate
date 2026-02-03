@@ -93,11 +93,10 @@ export const useArtifactActions = () =>
   useContractInteractionStore(
     useShallow((state) => ({
       setArtifactInput: state.setArtifactInput,
-      setParsedArtifact: state.setParsedArtifact,
-      setParseError: state.setParseError,
       setSavedContracts: state.setSavedContracts,
-      setIsLoadingPreconfigured: state.setIsLoadingPreconfigured,
       refreshSavedContracts: state.refreshSavedContracts,
-      clearArtifactState: state.clearArtifactState,
+      resetArtifact: state.resetArtifact,
+      setArtifactLoaded: state.setArtifactLoaded,
+      setArtifactError: state.setArtifactError,
     }))
   );

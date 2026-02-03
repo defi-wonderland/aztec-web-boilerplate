@@ -35,12 +35,11 @@ type Actions = {
   reset: () => void;
   // Artifact actions
   setArtifactInput: (input: string) => void;
-  setParsedArtifact: (artifact: ParsedArtifact | null) => void;
-  setParseError: (error: ArtifactError | null) => void;
   setSavedContracts: (contracts: CachedContract[]) => void;
-  setIsLoadingPreconfigured: (loading: boolean) => void;
   refreshSavedContracts: (networkName?: string) => void;
-  clearArtifactState: () => void;
+  resetArtifact: (loading?: boolean) => void;
+  setArtifactLoaded: (parsed: ParsedArtifact, artifactInput?: string) => void;
+  setArtifactError: (error: ArtifactError) => void;
 };
 
 export type ContractInteractionStore = State & Actions;
@@ -115,26 +114,33 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
     // Artifact actions
     setArtifactInput: (artifactInput) => set({ artifactInput }),
 
-    setParsedArtifact: (parsedArtifact) => set({ parsedArtifact }),
-
-    setParseError: (parseError) => set({ parseError }),
-
     setSavedContracts: (savedContracts) => set({ savedContracts }),
-
-    setIsLoadingPreconfigured: (isLoadingPreconfigured) =>
-      set({ isLoadingPreconfigured }),
 
     refreshSavedContracts: (networkName) => {
       const contracts = loadCachedContracts(networkName);
       set({ savedContracts: contracts });
     },
 
-    clearArtifactState: () => {
+    resetArtifact: (loading = false) => {
+      getFormStore().reset();
+      set({ ...ARTIFACT_INITIAL_STATE, isLoadingPreconfigured: loading });
+    },
+
+    setArtifactLoaded: (parsed, artifactInput) => {
       getFormStore().reset();
       set({
-        ...ARTIFACT_INITIAL_STATE,
-        address: '',
-        preconfiguredId: null,
+        parsedArtifact: parsed,
+        parseError: null,
+        isLoadingPreconfigured: false,
+        ...(artifactInput !== undefined && { artifactInput }),
+      });
+    },
+
+    setArtifactError: (error) => {
+      set({
+        parsedArtifact: null,
+        parseError: error,
+        isLoadingPreconfigured: false,
       });
     },
   })
