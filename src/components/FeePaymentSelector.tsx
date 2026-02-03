@@ -1,14 +1,15 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Fuel, Info, Loader2 } from 'lucide-react';
 import {
   FEE_PAYMENT_METHOD_LABELS,
   FEE_PAYMENT_METHOD_DESCRIPTIONS,
   getAvailableFeePaymentMethods,
+  type FeePaymentMethodType,
 } from '../config/feePaymentContracts';
 import { useUniversalWallet } from '../hooks';
 import { useFeeJuiceBalance } from '../hooks/queries/useFeeJuiceBalance';
 import { useFeePayerAddress } from '../hooks/queries/useFeePayerAddress';
-import { useFeePayment } from '../store/feePayment';
+import { useFeePayment, DEFAULT_FEE_PAYMENT_METHOD } from '../store/feePayment';
 import { hasAppManagedPXE } from '../types/walletConnector';
 import { iconSize, cn, formatFeeJuiceBalance } from '../utils';
 import {
@@ -22,7 +23,6 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from './ui';
-import type { FeePaymentMethodType } from '../config/feePaymentContracts';
 
 const styles = {
   container: 'flex flex-col gap-2',
@@ -52,8 +52,7 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   disabled = false,
   className,
 }) => {
-  const { method: storedMethod, setMethod: setSelectedMethod } =
-    useFeePayment();
+  const { method: storedMethod, setMethod } = useFeePayment();
   const { connector, currentConfig, isConnected, isInitialized } =
     useUniversalWallet();
 
@@ -65,15 +64,15 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
     storedMethod
   )
     ? storedMethod
-    : 'sponsored';
+    : DEFAULT_FEE_PAYMENT_METHOD;
 
   const isReady = isConnected && isInitialized && hasAppManagedPXE(connector);
 
-  useEffect(() => {
-    if (selectedMethod !== storedMethod) {
-      setSelectedMethod(selectedMethod);
+  const handleMethodChange = (method: FeePaymentMethodType) => {
+    if (availableMethods.includes(method)) {
+      setMethod(method);
     }
-  }, [selectedMethod, storedMethod, setSelectedMethod]);
+  };
 
   const appManagedConnector = hasAppManagedPXE(connector) ? connector : null;
 
@@ -95,7 +94,6 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
 
   const isSandbox = currentConfig?.name === 'sandbox';
 
-  // Don't render on sandbox (requires additional contract deployment) or if only one method available
   if (isSandbox || availableMethods.length <= 1) {
     return null;
   }
@@ -124,7 +122,7 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
         </div>
         <Select
           value={selectedMethod}
-          onValueChange={setSelectedMethod}
+          onValueChange={handleMethodChange}
           disabled={disabled}
         >
           <SelectTrigger className={styles.trigger}>

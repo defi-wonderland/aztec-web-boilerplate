@@ -34,10 +34,23 @@ interface UseFeePayerAddressReturn {
 
 /**
  * Creates a stable hash from the fee payment config for use in query keys.
+ * Uses sorted keys to ensure consistent serialization regardless of property order.
  */
 const getConfigHash = (
   config: FeePaymentContractsConfig | undefined
-): string => (config ? JSON.stringify(config) : '');
+): string => {
+  if (!config) return '';
+  // Sort keys for stable serialization
+  const sortedKeys = Object.keys(config).sort();
+  const sortedConfig = sortedKeys.reduce(
+    (acc, key) => {
+      acc[key] = config[key as keyof FeePaymentContractsConfig];
+      return acc;
+    },
+    {} as Record<string, unknown>
+  );
+  return JSON.stringify(sortedConfig);
+};
 
 /**
  * Hook to fetch the fee payer address for the selected fee payment method.

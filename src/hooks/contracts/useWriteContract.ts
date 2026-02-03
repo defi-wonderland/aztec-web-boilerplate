@@ -3,6 +3,7 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import {
   isBrowserWalletConnector,
   hasAppManagedPXE,
@@ -48,7 +49,7 @@ interface WriteContractParams<
   functionName: TMethod;
   /** Method arguments */
   args: ArgsOf<TContract, TMethod>;
-  /** Fee payment method to use (defaults to 'sponsored') */
+  /** Fee payment method to use (defaults to DEFAULT_FEE_PAYMENT_METHOD) */
   feePaymentMethod?: FeePaymentMethodType;
 }
 
@@ -93,7 +94,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
         address,
         functionName,
         args,
-        feePaymentMethod = 'sponsored',
+        feePaymentMethod = DEFAULT_FEE_PAYMENT_METHOD,
       } = params;
       const artifact = contract.artifact;
 

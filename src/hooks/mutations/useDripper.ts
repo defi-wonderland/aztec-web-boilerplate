@@ -1,3 +1,4 @@
+import { useRef, useLayoutEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { DripperContract } from '../../artifacts/Dripper';
@@ -22,7 +23,12 @@ interface UseDripperOptions {
 }
 
 export const useDripper = (options: UseDripperOptions = {}) => {
-  const callbacks = options;
+  // Use ref to avoid stale closures in mutation callbacks
+  const callbacksRef = useRef(options);
+  // Update ref in layout effect to ensure latest callbacks are available
+  useLayoutEffect(() => {
+    callbacksRef.current = options;
+  });
   const { account, currentConfig } = useUniversalWallet();
   const { writeContract } = useWriteContract();
   const queryClient = useQueryClient();
@@ -71,8 +77,9 @@ export const useDripper = (options: UseDripperOptions = {}) => {
 
       invalidateAllBalances();
     },
-    onSuccess: () => callbacks.onDripToPrivateSuccess?.(),
-    onError: (error: Error) => callbacks.onDripToPrivateError?.(error),
+    onSuccess: () => callbacksRef.current.onDripToPrivateSuccess?.(),
+    onError: (error: Error) =>
+      callbacksRef.current.onDripToPrivateError?.(error),
   });
 
   const dripToPublic = useMutation({
@@ -99,8 +106,9 @@ export const useDripper = (options: UseDripperOptions = {}) => {
 
       invalidateAllBalances();
     },
-    onSuccess: () => callbacks.onDripToPublicSuccess?.(),
-    onError: (error: Error) => callbacks.onDripToPublicError?.(error),
+    onSuccess: () => callbacksRef.current.onDripToPublicSuccess?.(),
+    onError: (error: Error) =>
+      callbacksRef.current.onDripToPublicError?.(error),
   });
 
   return {
