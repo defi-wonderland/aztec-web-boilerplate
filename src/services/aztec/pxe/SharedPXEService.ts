@@ -143,15 +143,6 @@ class SharedPXEServiceClass {
     logger.info('Cleared all PXE instances');
   }
 
-  /**
-   * Get the sponsored FPC address synchronously from cache.
-   * Returns null if PXE not initialized for this network.
-   */
-  getSponsoredFPCAddress(networkName: AztecNetwork): AztecAddress | null {
-    const key = this.getInstanceKey(networkName);
-    return this.cachedFeePayerAddresses.get(key) ?? null;
-  }
-
   private getInstanceKey(networkName: AztecNetwork | string): string {
     return `${networkName}`;
   }

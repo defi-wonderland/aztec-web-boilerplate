@@ -1,5 +1,4 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
@@ -46,8 +45,6 @@ export interface EmbeddedWalletConnector extends WalletConnector {
   getPXE: () => PXE | null;
   getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
-  /** Get the sponsored FPC address synchronously from cache */
-  getSponsoredFPCAddress: () => AztecAddress | null;
 }
 
 export interface ExternalSignerWalletConnector extends WalletConnector {
@@ -57,8 +54,6 @@ export interface ExternalSignerWalletConnector extends WalletConnector {
   getPXE: () => PXE | null;
   getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
-  /** Get the sponsored FPC address synchronously from cache */
-  getSponsoredFPCAddress: () => AztecAddress | null;
 }
 
 export interface BrowserWalletConnector extends WalletConnector {
