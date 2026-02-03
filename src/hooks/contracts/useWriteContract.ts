@@ -2,13 +2,15 @@ import { useState, useCallback } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
-import { useFeePayment } from '../../providers/FeePaymentProvider';
+import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import {
   isBrowserWalletConnector,
   hasAppManagedPXE,
 } from '../../types/walletConnector';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 import { useUniversalWallet } from '../context/useUniversalWallet';
+import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type {
   MethodsOf,
   ArgsOf,
@@ -47,6 +49,8 @@ interface WriteContractParams<
   functionName: TMethod;
   /** Method arguments */
   args: ArgsOf<TContract, TMethod>;
+  /** Fee payment method to use (defaults to DEFAULT_FEE_PAYMENT_METHOD) */
+  feePaymentMethod?: FeePaymentMethodType;
 }
 
 const getChainFromCaipAccount = (caipAccount: string): string => {
@@ -57,6 +61,7 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
 /**
  * Hook for executing write operations on Aztec contracts.
  * Handles both embedded and browser wallet flows automatically.
+ * Uses the global fee payment method from Settings.
  *
  * @example
  * ```tsx
@@ -73,8 +78,7 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
  */
 export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const { timeout = 900, receiptPolling } = options;
-  const { connector, account } = useUniversalWallet();
-  const { getFeePaymentMethod } = useFeePayment();
+  const { connector, account, currentConfig } = useUniversalWallet();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,7 +89,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
     >(
       params: WriteContractParams<TContract, TMethod>
     ): Promise<WriteContractResult> => {
-      const { contract, address, functionName, args } = params;
+      const {
+        contract,
+        address,
+        functionName,
+        args,
+        feePaymentMethod = DEFAULT_FEE_PAYMENT_METHOD,
+      } = params;
       const artifact = contract.artifact;
 
       if (!connector || !account) {
@@ -157,9 +167,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          const paymentMethod = await getFeePaymentMethod(() =>
-            connector.getSponsoredFeePaymentMethod()
-          );
+          // Get fee payment method from global store
+          const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
+            config: currentConfig?.feePaymentContracts ?? {},
+            getSponsoredFeePaymentMethod: () =>
+              connector.getSponsoredFeePaymentMethod(),
+          });
+
           const contractAddress = AztecAddress.fromString(address);
 
           // Create contract instance
@@ -209,7 +223,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
         setIsPending(false);
       }
     },
-    [connector, account, timeout, getFeePaymentMethod, receiptPolling]
+    [
+      connector,
+      account,
+      timeout,
+      currentConfig?.feePaymentContracts,
+      receiptPolling,
+    ]
   );
 
   const reset = useCallback(() => {

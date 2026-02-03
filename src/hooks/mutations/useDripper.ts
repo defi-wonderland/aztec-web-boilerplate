@@ -1,3 +1,4 @@
+import { useRef, useLayoutEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { DripperContract } from '../../artifacts/Dripper';
@@ -6,9 +7,12 @@ import { useUniversalWallet } from '../context/useUniversalWallet';
 import { useWriteContract } from '../contracts/useWriteContract';
 import { queryKeys } from '../queries/queryKeys';
 import { useFeeJuiceBalanceInvalidation } from '../queries/useFeeJuiceBalance';
+import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 
 interface DripParams {
   amount: bigint;
+  /** Fee payment method to use (defaults to 'sponsored') */
+  feePaymentMethod?: FeePaymentMethodType;
 }
 
 interface UseDripperOptions {
@@ -19,6 +23,12 @@ interface UseDripperOptions {
 }
 
 export const useDripper = (options: UseDripperOptions = {}) => {
+  // Use ref to avoid stale closures in mutation callbacks
+  const callbacksRef = useRef(options);
+  // Update ref in layout effect to ensure latest callbacks are available
+  useLayoutEffect(() => {
+    callbacksRef.current = options;
+  });
   const { account, currentConfig } = useUniversalWallet();
   const { writeContract } = useWriteContract();
   const queryClient = useQueryClient();
@@ -45,7 +55,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
 
   const dripToPrivate = useMutation({
     retry: false,
-    mutationFn: async ({ amount }: DripParams) => {
+    mutationFn: async ({ amount, feePaymentMethod }: DripParams) => {
       if (!dripperAddress || !tokenAddress) {
         throw new Error('Contract addresses not configured');
       }
@@ -58,6 +68,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         address: dripperAddress,
         functionName: 'drip_to_private',
         args: [AztecAddress.fromString(tokenAddress), amount],
+        feePaymentMethod,
       });
 
       if (!result.success) {
@@ -66,13 +77,14 @@ export const useDripper = (options: UseDripperOptions = {}) => {
 
       invalidateAllBalances();
     },
-    onSuccess: () => options.onDripToPrivateSuccess?.(),
-    onError: (error: Error) => options.onDripToPrivateError?.(error),
+    onSuccess: () => callbacksRef.current.onDripToPrivateSuccess?.(),
+    onError: (error: Error) =>
+      callbacksRef.current.onDripToPrivateError?.(error),
   });
 
   const dripToPublic = useMutation({
     retry: false,
-    mutationFn: async ({ amount }: DripParams) => {
+    mutationFn: async ({ amount, feePaymentMethod }: DripParams) => {
       if (!dripperAddress || !tokenAddress) {
         throw new Error('Contract addresses not configured');
       }
@@ -85,6 +97,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         address: dripperAddress,
         functionName: 'drip_to_public',
         args: [AztecAddress.fromString(tokenAddress), amount],
+        feePaymentMethod,
       });
 
       if (!result.success) {
@@ -93,8 +106,9 @@ export const useDripper = (options: UseDripperOptions = {}) => {
 
       invalidateAllBalances();
     },
-    onSuccess: () => options.onDripToPublicSuccess?.(),
-    onError: (error: Error) => options.onDripToPublicError?.(error),
+    onSuccess: () => callbacksRef.current.onDripToPublicSuccess?.(),
+    onError: (error: Error) =>
+      callbacksRef.current.onDripToPublicError?.(error),
   });
 
   return {

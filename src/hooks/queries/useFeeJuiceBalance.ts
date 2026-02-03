@@ -9,12 +9,15 @@ import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import { getFeeJuiceBalance } from '@aztec/aztec.js/utils';
 import { NetworkService } from '../../services/aztec/network/NetworkService';
 import { queryKeys } from './queryKeys';
+import type { AztecNetwork } from '../../config/networks/constants';
 
 interface UseFeeJuiceBalanceOptions {
   /** The fee payer address to query balance for */
   feePayerAddress: AztecAddress | null;
   /** The node URL to query */
   nodeUrl: string | undefined;
+  /** The network name for cache key isolation */
+  networkName: AztecNetwork | undefined;
   /** Whether to enable the query */
   enabled?: boolean;
 }
@@ -33,6 +36,7 @@ interface UseFeeJuiceBalanceReturn {
 export const useFeeJuiceBalance = ({
   feePayerAddress,
   nodeUrl,
+  networkName,
   enabled = true,
 }: UseFeeJuiceBalanceOptions): UseFeeJuiceBalanceReturn => {
   const queryClient = useQueryClient();
@@ -40,11 +44,14 @@ export const useFeeJuiceBalance = ({
   const feePayerAddressStr = feePayerAddress?.toString() ?? '';
 
   const isQueryEnabled = Boolean(
-    enabled && feePayerAddress && nodeUrl && feePayerAddressStr
+    enabled && feePayerAddress && nodeUrl && feePayerAddressStr && networkName
   );
 
   const query = useQuery({
-    queryKey: queryKeys.feeJuice.balance(feePayerAddressStr),
+    queryKey: queryKeys.feeJuice.balance(
+      networkName ?? 'devnet',
+      feePayerAddressStr
+    ),
     queryFn: async (): Promise<bigint> => {
       if (!feePayerAddress || !nodeUrl) {
         throw new Error('Fee payer address or node URL not available');
@@ -58,12 +65,12 @@ export const useFeeJuiceBalance = ({
   });
 
   const refetch = useCallback(async () => {
-    if (feePayerAddressStr) {
+    if (feePayerAddressStr && networkName) {
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.feeJuice.balance(feePayerAddressStr),
+        queryKey: queryKeys.feeJuice.balance(networkName, feePayerAddressStr),
       });
     }
-  }, [queryClient, feePayerAddressStr]);
+  }, [queryClient, networkName, feePayerAddressStr]);
 
   return {
     balance: query.data ?? null,
@@ -87,9 +94,9 @@ export const useFeeJuiceBalanceInvalidation = () => {
   }, [queryClient]);
 
   const invalidateBalance = useCallback(
-    async (feePayerAddress: string) => {
+    async (networkName: AztecNetwork, feePayerAddress: string) => {
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.feeJuice.balance(feePayerAddress),
+        queryKey: queryKeys.feeJuice.balance(networkName, feePayerAddress),
       });
     },
     [queryClient]
