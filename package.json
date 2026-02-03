@@ -11,8 +11,8 @@
     "build-contracts": "npx tsx scripts/build-contracts.ts --force",
     "deploy-contracts": "tsx scripts/deploy.ts --network sandbox",
     "dev": "vite",
-    "build-app": "node --max-old-space-size=14336 node_modules/vite/bin/vite.js build",
-    "build-app:ci": "NODE_ENV=production node --max-old-space-size=6656 node_modules/vite/bin/vite.js build",
+    "build-app": "NODE_OPTIONS='--max-old-space-size=14336' vite build",
+    "build-app:ci": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=6656' vite build",
     "build": "yarn build-contracts && yarn build-app",
     "build:ci": "yarn build-contracts && yarn build-app:ci",
     "serve": "vite preview --port ${PORT:-3000}",
@@ -23,7 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:e2e": "yarn prep-test && yarn playwright test",
+    "test:e2e": "yarn prep-test && yarn playwright test --project=chromium",
     "lint": "eslint src && prettier --check ./src",
     "lint:fix": "eslint src --fix && prettier --write ./src"
   },
@@ -31,7 +31,6 @@
     "@azguardwallet/client": "0.7.0",
     "@azguardwallet/types": "0.7.0",
     "@aztec/accounts": "3.0.0-devnet.20251212",
-    "@aztec/aztec": "3.0.0-devnet.20251212",
     "@aztec/aztec.js": "3.0.0-devnet.20251212",
     "@aztec/constants": "3.0.0-devnet.20251212",
     "@aztec/foundation": "3.0.0-devnet.20251212",
@@ -71,6 +70,7 @@
     "@types/react-dom": "19.1.7",
     "@vitejs/plugin-react": "5.0.1",
     "@vitest/ui": "3.2.4",
+    "@wonderland/walletless": "1.0.0",
     "assert": "2.1.0",
     "buffer": "6.0.3",
     "crypto-browserify": "3.12.1",
@@ -91,7 +91,7 @@
     "typescript": "5.3.3",
     "typescript-eslint": "8.52.0",
     "util": "0.12.5",
-    "vite": "7.1.11",
+    "vite": "7.3.1",
     "vite-plugin-node-polyfills": "0.24.0",
     "vite-plugin-top-level-await": "1.6.0",
     "vite-plugin-wasm": "3.5.0",
@@ -108,6 +108,7 @@
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "resolutions": {
-    "systeminformation": "5.27.14"
+    "systeminformation": "5.27.14",
+    "@wonderland/walletless/viem": "2.41.2"
   }
 }

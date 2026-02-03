@@ -73,6 +73,7 @@ const NetworkButton: React.FC<NetworkButtonProps> = ({
         styles.networkButton,
         isActive && styles.networkButtonActive
       )}
+      data-testid={`network-option-${network.name}`}
     >
       <div className={styles.iconContainer}>
         <NetworkIcon icon={icon} size="md" className={styles.networkIcon} />
@@ -115,7 +116,11 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={styles.content} aria-describedby={undefined}>
+      <DialogContent
+        className={styles.content}
+        aria-describedby={undefined}
+        data-testid="network-modal"
+      >
         <div className={styles.header}>
           <DialogTitle className={styles.title}>{title}</DialogTitle>
         </div>

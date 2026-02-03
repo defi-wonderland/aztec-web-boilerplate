@@ -86,6 +86,8 @@ export interface WalletGroupButtonProps {
   onClick?: () => void;
   /** Additional class names */
   className?: string;
+  /** Test ID for e2e testing */
+  'data-testid'?: string;
 }
 
 /**
@@ -98,6 +100,7 @@ export const WalletGroupButton: React.FC<WalletGroupButtonProps> = ({
   disabled,
   onClick,
   className,
+  'data-testid': testId,
 }) => {
   return (
     <button
@@ -105,6 +108,7 @@ export const WalletGroupButton: React.FC<WalletGroupButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       className={cn(styles.button, className)}
+      data-testid={testId}
     >
       <div className={styles.iconContainer}>{getGroupIcon(label)}</div>
       <div className={styles.content}>
