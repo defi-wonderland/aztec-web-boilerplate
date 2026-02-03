@@ -4,7 +4,7 @@
  * Hook selectors for accessing fee payment state per network.
  */
 
-import { useUniversalWallet } from '../../hooks';
+import { useAztecWallet } from '../../aztec-wallet';
 import { useFeePaymentStore, DEFAULT_FEE_PAYMENT_METHOD } from './store';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type { AztecNetwork } from '../../config/networks';
@@ -14,7 +14,7 @@ import type { AztecNetwork } from '../../config/networks';
  * @param networkOverride - If provided, uses this network instead of connected network
  */
 export const useFeePayment = (networkOverride?: AztecNetwork) => {
-  const { currentConfig } = useUniversalWallet();
+  const { currentConfig } = useAztecWallet();
   const networkName = networkOverride ?? currentConfig?.name ?? 'sandbox';
 
   const methods = useFeePaymentStore((s) => s.methods);

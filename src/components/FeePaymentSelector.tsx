@@ -1,5 +1,6 @@
 import React from 'react';
 import { Fuel, Info, Loader2 } from 'lucide-react';
+import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
 import {
   FEE_PAYMENT_METHOD_LABELS,
   FEE_PAYMENT_METHOD_DESCRIPTIONS,
@@ -7,11 +8,9 @@ import {
   type FeePaymentMethodType,
 } from '../config/feePaymentContracts';
 import { AVAILABLE_NETWORKS, type AztecNetwork } from '../config/networks';
-import { useUniversalWallet } from '../hooks';
 import { useFeeJuiceBalance } from '../hooks/queries/useFeeJuiceBalance';
 import { useFeePayerAddress } from '../hooks/queries/useFeePayerAddress';
 import { useFeePayment } from '../store/feePayment';
-import { hasAppManagedPXE } from '../types/walletConnector';
 import { iconSize, cn, formatFeeJuiceBalance } from '../utils';
 import {
   Select,
@@ -57,8 +56,8 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   networkName,
 }) => {
   const { method, setMethod } = useFeePayment(networkName);
-  const { connector, currentConfig, isConnected, isInitialized } =
-    useUniversalWallet();
+  const { connector, currentConfig, isConnected, isPXEInitialized } =
+    useAztecWallet();
 
   // Use provided networkName's config for available methods, or fall back to connected network
   const targetConfig = networkName
@@ -69,7 +68,8 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
     targetConfig?.feePaymentContracts
   );
 
-  const isReady = isConnected && isInitialized && hasAppManagedPXE(connector);
+  const isReady =
+    isConnected && isPXEInitialized && hasAppManagedPXE(connector);
 
   const handleMethodChange = (newMethod: FeePaymentMethodType) => {
     if (availableMethods.includes(newMethod)) {
