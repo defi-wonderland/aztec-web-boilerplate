@@ -33,4 +33,12 @@ export const DEVNET_CONFIG: NetworkConfig = {
       '0x1d1014602e766124a9a52429708ed416708b39e3e6ad88fcbf7757af093062e5',
     token: '0x1a89e73869a0969d6a14a8eb2ad8c981820302ff64c55b1225fbe29e4bfa99aa',
   },
+  feePaymentContracts: {
+    metered: {
+      address:
+        '0x2a39ba8b469adc19bfc0f5c1a9d496f73b82e95fb113e020214c729ff9cd1ff4',
+      salt: '1337',
+      deployer: AztecAddress.ZERO.toString(),
+    },
+  },
 };

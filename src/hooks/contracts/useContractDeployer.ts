@@ -15,6 +15,8 @@ import {
   restoreBytecodeBuffers,
   type SerializedArtifact,
 } from '../../services/aztec/artifactRegistry';
+import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { useFeePayment } from '../../store/feePayment';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
 import type { DeployResult } from '../../components/contract-interaction/types';
 import type {
@@ -44,11 +46,13 @@ export interface DeployParams {
 /**
  * Hook for deploying contracts to the Aztec network.
  * Handles artifact loading, argument building, and deployment transactions.
+ * Uses the global fee payment method from Settings.
  *
  * @returns Object with deploy function, status, and error handling utilities.
  */
 export const useContractDeployer = () => {
-  const { connector, account } = useAztecWallet();
+  const { connector, account, currentConfig } = useAztecWallet();
+  const { method: feePaymentMethod } = useFeePayment();
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -121,7 +125,12 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        const paymentMethod = await connector.getSponsoredFeePaymentMethod();
+        // Get fee payment method from global store
+        const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
+          config: currentConfig?.feePaymentContracts ?? {},
+          getSponsoredFeePaymentMethod: () =>
+            connector.getSponsoredFeePaymentMethod(),
+        });
 
         const receipt = await deployMethod
           .send({
@@ -149,7 +158,7 @@ export const useContractDeployer = () => {
         setIsDeploying(false);
       }
     },
-    [connector, account]
+    [connector, account, feePaymentMethod, currentConfig?.feePaymentContracts]
   );
 
   const clearError = useCallback(() => {

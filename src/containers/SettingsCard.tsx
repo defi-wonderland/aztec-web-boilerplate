@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, Home, Globe } from 'lucide-react';
+import { FeePaymentSelector } from '../components/FeePaymentSelector';
 import { ConfigDisplay } from '../components/settings';
 import {
   Card,
@@ -18,6 +19,8 @@ import type { AztecNetwork } from '../config/networks/constants';
 const styles = {
   headerRow: 'flex flex-row items-start gap-3',
   headerIcon: 'text-accent',
+  tabContent: 'space-y-6',
+  divider: 'border-t border-default',
 } as const;
 
 export const SettingsCard: React.FC = () => {
@@ -50,10 +53,18 @@ export const SettingsCard: React.FC = () => {
           </TabsList>
 
           <TabsContent value="sandbox">
-            <ConfigDisplay networkName="sandbox" />
+            <div className={styles.tabContent}>
+              <ConfigDisplay networkName="sandbox" />
+              <div className={styles.divider} />
+              <FeePaymentSelector networkName="sandbox" />
+            </div>
           </TabsContent>
           <TabsContent value="devnet">
-            <ConfigDisplay networkName="devnet" />
+            <div className={styles.tabContent}>
+              <ConfigDisplay networkName="devnet" />
+              <div className={styles.divider} />
+              <FeePaymentSelector networkName="devnet" />
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
