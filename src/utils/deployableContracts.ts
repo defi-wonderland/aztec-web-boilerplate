@@ -1,10 +1,8 @@
-import {
-  parseArtifactSource,
-  type ParsedFunction,
-} from './contractInteraction';
+import { parseArtifactSource } from './contractInteraction';
 import { isKnownStructPath, getKnownStructKind } from './knownStructTypes';
 import { toTitleCase } from './string';
 import type { AztecNetwork } from '../config/networks/constants';
+import type { ParsedFunction } from '../types/artifact';
 
 export type DeployableContractConfig = {
   id: string;

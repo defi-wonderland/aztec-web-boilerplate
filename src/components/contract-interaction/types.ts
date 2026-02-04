@@ -1,10 +1,7 @@
-import { CachedContract } from '../../utils/contractCache';
 import type { PreconfiguredContract } from '../../config/preconfiguredContracts';
 import type { FormValues } from '../../store/form';
-import type {
-  ParsedFunction,
-  ArtifactSummary,
-} from '../../utils/contractInteraction';
+import type { ParsedFunction, ArtifactSummary } from '../../types/artifact';
+import type { CachedContract } from '../../utils/contractCache';
 import type { DeployableContract } from '../../utils/deployableContracts';
 
 export type InvokeStatus = 'idle' | 'simulating' | 'executing';

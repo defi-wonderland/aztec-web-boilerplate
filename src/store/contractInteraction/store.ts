@@ -5,8 +5,8 @@ import type {
   LogEntry,
   ArtifactLoaderMode,
 } from '../../components/contract-interaction/types';
+import type { ParsedArtifact } from '../../types/artifact';
 import type { CachedContract } from '../../utils/contractCache';
-import type { ParsedArtifact } from '../../utils/contractInteraction';
 import type { ArtifactError } from '../../utils/errors';
 
 type State = {

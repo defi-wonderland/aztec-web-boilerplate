@@ -5,7 +5,7 @@ import {
   getLabelForType,
   shouldTrimInput,
 } from './helpers';
-import type { ParsedType } from '../../utils/contractInteraction';
+import type { ParsedType } from '../../types/artifact';
 
 const styles = {
   grid: 'grid gap-4 sm:grid-cols-2',

@@ -20,10 +20,7 @@ import {
 } from '../../../store';
 import { iconSize } from '../../../utils';
 import { constants } from '../../../utils/contractCache';
-import {
-  loadAndPrepareArtifact,
-  type ParsedFunction,
-} from '../../../utils/contractInteraction';
+import { loadAndPrepareArtifact } from '../../../utils/contractInteraction';
 import {
   buildConstructorLabel,
   type ContractConstructor,
@@ -40,6 +37,7 @@ import {
 } from '../../ui';
 import ParameterInputs from '../ParameterInputs';
 import type { AztecNetwork } from '../../../config/networks/constants';
+import type { ParsedFunction } from '../../../types/artifact';
 
 const styles = {
   section: 'flex flex-col gap-4',

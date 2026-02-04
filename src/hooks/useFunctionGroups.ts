@@ -5,8 +5,8 @@ import {
   HIDDEN_FUNCTION_NAMES,
   isExecutableFn,
   isReadOnlyFn,
-  type ParsedFunction,
 } from '../utils/contractInteraction';
+import type { ParsedFunction } from '../types/artifact';
 
 export const useFunctionGroups = (
   functions: ParsedFunction[],

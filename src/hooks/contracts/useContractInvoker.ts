@@ -35,8 +35,6 @@ import {
   loadAndPrepareArtifact,
   parseArtifactSource,
   validateAndBuildCallArgs,
-  type ArtifactSummary,
-  type ParsedFunction,
 } from '../../utils/contractInteraction';
 import {
   ArtifactParseError,
@@ -53,6 +51,7 @@ import type {
   InvokeStatus,
 } from '../../components/contract-interaction/types';
 import type { AztecNetwork } from '../../config/networks/constants';
+import type { ArtifactSummary, ParsedFunction } from '../../types/artifact';
 import type { CachedContract } from '../../utils/contractCache';
 
 export interface UseContractInvokerOptions {
