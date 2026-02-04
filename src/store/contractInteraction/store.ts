@@ -6,6 +6,7 @@ import type {
   ArtifactLoaderMode,
 } from '../../components/contract-interaction/types';
 import type { ParsedArtifact } from '../../types/artifact';
+import type { ArtifactStateUpdate } from '../../types/artifactRegistry';
 import type { CachedContract } from '../../utils/contractCache';
 import type { ArtifactError } from '../../utils/errors';
 
@@ -23,12 +24,6 @@ type State = {
   savedContracts: CachedContract[];
   isLoadingPreconfigured: boolean;
 };
-
-type ArtifactStateUpdate = Partial<{
-  parsed: ParsedArtifact | null;
-  error: ArtifactError | null;
-  isLoading: boolean;
-}>;
 
 type Actions = {
   setMode: (mode: ArtifactLoaderMode) => void;

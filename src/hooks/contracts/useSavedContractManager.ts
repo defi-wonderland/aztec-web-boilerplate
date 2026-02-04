@@ -14,8 +14,8 @@ import {
   removeContract,
   resolveCachedArtifact,
 } from '../../utils/contractCache';
-import { parseArtifactSource } from '../../utils/contractInteraction';
-import { ArtifactParseError, getErrorMessage } from '../../utils/errors';
+import { getErrorMessage } from '../../utils/errors';
+import { useArtifactStateManager } from './useArtifactStateManager';
 import type { AztecNetwork } from '../../config/networks/constants';
 import type { CachedContract } from '../../utils/contractCache';
 
@@ -44,6 +44,7 @@ export const useSavedContractManager = (
   const { setArtifactInput, setSavedContracts, setArtifactState } =
     useArtifactActions();
   const { reset: resetFormValues } = useFormActions();
+  const { parseAndSetArtifact } = useArtifactStateManager();
 
   const handleApplySaved = useCallback(
     async (contract: CachedContract) => {
@@ -63,29 +64,19 @@ export const useSavedContractManager = (
         return;
       }
 
-      try {
-        const parsedArtifact = parseArtifactSource(resolved.artifact);
-        setArtifactState({ parsed: parsedArtifact });
+      const result = parseAndSetArtifact(resolved.artifact);
+      if (result.success) {
         setArtifactInput(resolved.artifact);
         pushLog({
           level: 'success',
           title: 'Saved contract loaded',
-          detail: `Loaded ${parsedArtifact.functions.length} functions from cache`,
+          detail: `Loaded ${result.parsed.functions.length} functions from cache`,
         });
-      } catch (err) {
-        const error =
-          err instanceof ArtifactParseError
-            ? err
-            : ArtifactParseError.invalidStructure(
-                err instanceof Error
-                  ? err.message
-                  : 'Failed to parse cached artifact'
-              );
-        setArtifactState({ parsed: null, error });
+      } else {
         pushLog({
           level: 'error',
           title: 'Cached artifact parse failed',
-          detail: getErrorMessage(error),
+          detail: getErrorMessage(result.error),
         });
       }
     },
@@ -95,6 +86,7 @@ export const useSavedContractManager = (
       setArtifactState,
       resetFormValues,
       pushLog,
+      parseAndSetArtifact,
     ]
   );
 

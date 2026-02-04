@@ -10,6 +10,7 @@ import {
 } from '../../store';
 import { ArtifactFetchError } from '../../utils/errors';
 import { resolvePreconfiguredArtifact } from '../useInteractionContracts';
+import { useArtifactStateManager } from './useArtifactStateManager';
 
 export interface UsePreconfiguredLoaderOptions {
   onClearState: () => void;
@@ -31,6 +32,7 @@ export const usePreconfiguredLoader = (
   const { setInvokeTarget } = useContractActions();
   const { setArtifactInput, setArtifactState } = useArtifactActions();
   const { reset: resetFormValues } = useFormActions();
+  const { setLoading, handleArtifactError } = useArtifactStateManager();
 
   const handleSelectPreconfigured = useCallback(
     async (contractId: string | null) => {
@@ -46,33 +48,23 @@ export const usePreconfiguredLoader = (
       if (!contract) return;
 
       setInvokeTarget(contract.address, contractId);
-      setArtifactState({ isLoading: true, error: null });
+      setArtifactState({ error: null });
+      setLoading(true);
       resetFormValues();
 
       try {
         const artifactJson = await resolvePreconfiguredArtifact(contract);
         if (!artifactJson) {
-          setArtifactState({
-            error: new ArtifactFetchError(
-              'Artifact not available for this contract'
-            ),
-            isLoading: false,
-          });
+          handleArtifactError(
+            new ArtifactFetchError('Artifact not available for this contract'),
+            'Load failed'
+          );
           return;
         }
         setArtifactInput(artifactJson);
-        setArtifactState({ isLoading: false });
+        setLoading(false);
       } catch (err) {
-        const error =
-          err instanceof ArtifactFetchError
-            ? err
-            : new ArtifactFetchError(
-                err instanceof Error ? err.message : 'Failed to load artifact',
-                undefined,
-                undefined,
-                err
-              );
-        setArtifactState({ error, isLoading: false });
+        handleArtifactError(err, 'Failed to load preconfigured artifact');
       }
     },
     [
@@ -81,6 +73,8 @@ export const usePreconfiguredLoader = (
       setArtifactInput,
       resetFormValues,
       onClearState,
+      setLoading,
+      handleArtifactError,
     ]
   );
 

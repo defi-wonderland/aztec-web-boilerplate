@@ -4,15 +4,12 @@ import type {
   ContractConfigMap,
 } from '../../contract-registry';
 import type { ArtifactOverrides } from '../../services/aztec/artifact';
-
-export type ContractRegistryStatus = 'initializing' | 'ready' | 'error';
-export type ArtifactStatus = 'idle' | 'loading' | 'ready' | 'error';
-
-export type TimingInfo = {
-  elapsedMs: number;
-  contractCount: number;
-  fromCache: boolean;
-};
+import type {
+  ContractRegistryStatus,
+  ArtifactStatus,
+  TimingInfo,
+} from '../../types/artifactRegistry';
+import type { ArtifactError } from '../../utils/errors';
 
 type State = {
   registry: IContractRegistry<ContractConfigMap> | null;
@@ -21,7 +18,7 @@ type State = {
   timingInfo: TimingInfo | null;
   artifacts: ArtifactOverrides | null;
   artifactStatus: ArtifactStatus;
-  artifactError: Error | null;
+  artifactError: ArtifactError | null;
 };
 
 type Actions = {
@@ -31,7 +28,7 @@ type Actions = {
   setTimingInfo: (info: TimingInfo | null) => void;
   setArtifacts: (artifacts: ArtifactOverrides | null) => void;
   setArtifactStatus: (status: ArtifactStatus) => void;
-  setArtifactError: (error: Error | null) => void;
+  setArtifactError: (error: ArtifactError | null) => void;
   reset: () => void;
 };
 

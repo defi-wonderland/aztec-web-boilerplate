@@ -8,6 +8,7 @@ export { useLoadArtifact } from './useLoadArtifact';
 export { useSavedContractManager } from './useSavedContractManager';
 export { usePreconfiguredLoader } from './usePreconfiguredLoader';
 export { useContractCaller } from './useContractCaller';
+export { useArtifactStateManager } from './useArtifactStateManager';
 export type {
   UseContractInvokerOptions,
   UseContractInvokerReturn,
@@ -24,3 +25,4 @@ export type {
   UseContractCallerOptions,
   UseContractCallerReturn,
 } from './useContractCaller';
+export type { UseArtifactStateManagerReturn } from './useArtifactStateManager';
