@@ -1,7 +1,7 @@
-import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { ContractConfigMap, ContractConfigDefinition } from './types';
 import type { NetworkConfig } from '../config/networks';
+import type { ArtifactOverrides } from '../types/contractRegistry';
 
 export const createContractConfig = <
   const T extends ContractConfigMap<NetworkConfig>,
@@ -48,10 +48,8 @@ export const getDeployerAddress = (config: NetworkConfig): AztecAddress => {
 // Network-specific Artifact Overrides
 // =============================================================================
 
-/**
- * Artifact overrides per network. Keys are contract names, values are artifacts.
- */
-export type ArtifactOverrides = Record<string, ContractArtifact>;
+// Re-export for backwards compatibility
+export type { ArtifactOverrides } from '../types/contractRegistry';
 
 /**
  * Returns contract configs with optional artifact overrides applied.

@@ -1,11 +1,10 @@
-import { wrapIDBRequest } from '../indexeddb';
+import { IndexedDBStore } from './IndexedDBStore';
 import type {
   CachedArtifact,
   SerializedArtifact,
 } from '../../types/artifactRegistry';
 
 const DB_NAME = 'aztec-artifact-registry';
-const DB_VERSION = 1;
 const STORE_NAME = 'artifacts';
 
 /**
@@ -19,67 +18,23 @@ export interface IArtifactStorage {
 
 /**
  * IndexedDB-based artifact storage implementation.
+ * Uses the generic IndexedDBStore for underlying operations.
  */
 export class IndexedDBArtifactStorage implements IArtifactStorage {
-  private db: IDBDatabase | null = null;
-
-  private async getDB(): Promise<IDBDatabase> {
-    if (this.db) {
-      return this.db;
-    }
-
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'classId' });
-      }
-    };
-
-    this.db = await wrapIDBRequest(request, {
-      throw: 'Failed to open IndexedDB',
-    });
-    return this.db;
-  }
+  private store = new IndexedDBStore<CachedArtifact>({
+    dbName: DB_NAME,
+    storeName: STORE_NAME,
+    keyPath: 'classId',
+  });
 
   async get(classId: string): Promise<SerializedArtifact | null> {
-    try {
-      const db = await this.getDB();
-      const transaction = db.transaction(STORE_NAME, 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const result = await wrapIDBRequest<CachedArtifact | undefined>(
-        store.get(classId),
-        { throw: 'Failed to read from IndexedDB' }
-      );
-      return result?.artifact ?? null;
-    } catch (err) {
-      console.warn(
-        `[ArtifactStorage] Failed to read artifact ${classId} from IndexedDB:`,
-        err instanceof Error ? err.message : err
-      );
-      return null;
-    }
+    const result = await this.store.get(classId);
+    return result?.artifact ?? null;
   }
 
   async save(classId: string, artifact: SerializedArtifact): Promise<void> {
-    try {
-      const db = await this.getDB();
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const data: CachedArtifact = {
-        classId,
-        artifact,
-      };
-      await wrapIDBRequest(store.put(data), {
-        throw: 'Failed to write to IndexedDB',
-      });
-    } catch (err) {
-      console.warn(
-        `[ArtifactStorage] Failed to save artifact ${classId} to IndexedDB:`,
-        err instanceof Error ? err.message : err
-      );
-    }
+    const data: CachedArtifact = { classId, artifact };
+    await this.store.save(classId, data);
   }
 }
 

@@ -1,7 +1,7 @@
-import { type ArtifactOverrides } from '../../../contract-registry/helpers';
 import { ArtifactRegistryService } from '../artifactRegistry';
 import type { NetworkConfig } from '../../../config/networks/types';
 import type { ArtifactSource } from '../../../types/artifactRegistry';
+import type { ArtifactOverrides } from '../../../types/contractRegistry';
 
 export type { ArtifactOverrides, ArtifactSource };
 
