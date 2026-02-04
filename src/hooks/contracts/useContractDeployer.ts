@@ -11,14 +11,12 @@ import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../../aztec-wallet';
-import {
-  restoreBytecodeBuffers,
-  type SerializedArtifact,
-} from '../../services/aztec/artifactRegistry';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { useFeePayment } from '../../store/feePayment';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
+import { restoreBytecodeBuffers } from '../../utils/storage';
 import type { DeployResult } from '../../components/contract-interaction/types';
+import type { SerializedArtifact } from '../../types/artifactRegistry';
 import type {
   DeployableContract,
   ContractConstructor,
