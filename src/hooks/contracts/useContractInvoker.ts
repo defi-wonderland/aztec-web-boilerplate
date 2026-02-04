@@ -95,7 +95,7 @@ export const useContractInvoker = (
   // Read from Zustand store
   const address = useContractTargetAddress();
   const formValues = useFormValues();
-  const { setAddress, setPreconfiguredId, pushLog } = useContractActions();
+  const { setInvokeTarget, pushLog } = useContractActions();
   const { reset: resetFormValues } = useFormActions();
 
   // Artifact state from Zustand (instead of local useState)
@@ -191,8 +191,7 @@ export const useContractInvoker = (
       } = result;
 
       setArtifactState({ parsed: parsedArtifact, error: null });
-      setAddress(resolvedAddress);
-      setPreconfiguredId(null);
+      setInvokeTarget(resolvedAddress, null);
       resetFormValues();
       pushLog({
         level: 'success',
@@ -221,8 +220,7 @@ export const useContractInvoker = (
     },
     [
       networkName,
-      setAddress,
-      setPreconfiguredId,
+      setInvokeTarget,
       setArtifactState,
       setSavedContracts,
       resetFormValues,
@@ -238,7 +236,7 @@ export const useContractInvoker = (
   const handleSelectPreconfigured = useCallback(
     async (contractId: string | null) => {
       if (!contractId) {
-        setPreconfiguredId(null);
+        setInvokeTarget('', null);
         clearContractState();
         return;
       }
@@ -248,8 +246,7 @@ export const useContractInvoker = (
       );
       if (!contract) return;
 
-      setPreconfiguredId(contractId);
-      setAddress(contract.address);
+      setInvokeTarget(contract.address, contractId);
       setArtifactState({ isLoading: true, error: null });
       resetFormValues();
 
@@ -280,8 +277,7 @@ export const useContractInvoker = (
       }
     },
     [
-      setPreconfiguredId,
-      setAddress,
+      setInvokeTarget,
       setArtifactState,
       setArtifactInput,
       resetFormValues,
@@ -291,9 +287,8 @@ export const useContractInvoker = (
 
   const handleApplySaved = useCallback(
     async (contract: CachedContract) => {
-      setAddress(contract.address);
+      setInvokeTarget(contract.address, null);
       setArtifactInput(contract.artifact ?? '');
-      setPreconfiguredId(null);
       setArtifactState({ error: null });
       resetFormValues();
 
@@ -335,9 +330,8 @@ export const useContractInvoker = (
       }
     },
     [
-      setAddress,
+      setInvokeTarget,
       setArtifactInput,
-      setPreconfiguredId,
       setArtifactState,
       resetFormValues,
       pushLog,
@@ -468,18 +462,16 @@ export const useContractInvoker = (
     const latest = cachedList[0];
 
     // Reset specific state (not full store to preserve logs)
-    setPreconfiguredId(null);
-    setAddress(latest?.address ?? '');
+    setInvokeTarget(latest?.address ?? '', null);
     setArtifactInput(latest?.artifact ?? '');
     setArtifactState({ parsed: null });
     resetFormValues();
   }, [
     networkName,
     refreshSavedContracts,
-    setAddress,
+    setInvokeTarget,
     setArtifactInput,
     setArtifactState,
-    setPreconfiguredId,
     resetFormValues,
   ]);
 

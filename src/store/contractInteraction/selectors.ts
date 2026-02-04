@@ -45,12 +45,9 @@ export const useContractActions = () =>
   useContractInteractionStore(
     useShallow((state) => ({
       setMode: state.setMode,
-      setPreconfiguredId: state.setPreconfiguredId,
-      setAddress: state.setAddress,
-      setDeployableId: state.setDeployableId,
-      setSelectedConstructor: state.setSelectedConstructor,
+      setInvokeTarget: state.setInvokeTarget,
+      setDeployTarget: state.setDeployTarget,
       pushLog: state.pushLog,
-      clearLogs: state.clearLogs,
       reset: state.reset,
     }))
   );

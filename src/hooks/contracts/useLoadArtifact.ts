@@ -19,7 +19,7 @@ import type { AztecNetwork } from '../../config/networks/constants';
  * to trigger artifact loading with shared state.
  */
 export const useLoadArtifact = (networkName?: AztecNetwork) => {
-  const { setAddress, setPreconfiguredId, pushLog } = useContractActions();
+  const { setInvokeTarget, pushLog } = useContractActions();
   const { setSavedContracts, setArtifactState } = useArtifactActions();
 
   const loadArtifactWithData = useCallback(
@@ -54,8 +54,7 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
       } = result;
 
       setArtifactState({ parsed: parsedArtifact, error: null });
-      setAddress(resolvedAddress);
-      setPreconfiguredId(null);
+      setInvokeTarget(resolvedAddress, null);
       pushLog({
         level: 'success',
         title: 'Artifact loaded',
@@ -81,14 +80,7 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
         });
       }
     },
-    [
-      networkName,
-      setAddress,
-      setPreconfiguredId,
-      setArtifactState,
-      setSavedContracts,
-      pushLog,
-    ]
+    [networkName, setInvokeTarget, setArtifactState, setSavedContracts, pushLog]
   );
 
   return loadArtifactWithData;

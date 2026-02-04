@@ -72,7 +72,7 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
   const address = useContractTargetAddress();
   const formValues = useFormValues();
   const { preconfiguredId } = useInvokeFlowState();
-  const { setAddress } = useContractActions();
+  const { setInvokeTarget } = useContractActions();
   const { setValue: setFormValue } = useFormActions();
   const preconfiguredContracts = usePreconfiguredContracts(networkName);
 
@@ -130,9 +130,9 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
 
   const handleAddressChange = useCallback(
     (value: string) => {
-      setAddress(value);
+      setInvokeTarget(value, null);
     },
-    [setAddress]
+    [setInvokeTarget]
   );
 
   const handleFormValueChange = useCallback(

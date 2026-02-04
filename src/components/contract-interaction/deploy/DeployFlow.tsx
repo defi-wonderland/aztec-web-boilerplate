@@ -132,7 +132,7 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
   const isCustomSelected = useIsCustomDeployable();
   const formValues = useFormValues();
   const { deployableId, constructorName } = useDeployFlowState();
-  const { setDeployableId, setSelectedConstructor } = useContractActions();
+  const { setDeployTarget } = useContractActions();
   const { setValue: setFormValue } = useFormActions();
 
   const [customArtifactInput, setCustomArtifactInput] = useState('');
@@ -240,17 +240,17 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
 
   const handleDeployableChange = useCallback(
     (value: string) => {
-      setDeployableId(value === 'custom' ? null : value || null);
+      setDeployTarget(value === 'custom' ? null : value || null, null);
       setCustomArtifactInput('');
     },
-    [setDeployableId]
+    [setDeployTarget]
   );
 
   const handleConstructorChange = useCallback(
     (value: string) => {
-      setSelectedConstructor(value || null);
+      setDeployTarget(deployableId, value || null);
     },
-    [setSelectedConstructor]
+    [setDeployTarget, deployableId]
   );
 
   const handleParamChange = useCallback(
@@ -274,23 +274,24 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
       !constructorName &&
       effectiveDeployable.constructors.length > 0
     ) {
-      setSelectedConstructor(effectiveDeployable.constructors[0].name);
+      setDeployTarget(deployableId, effectiveDeployable.constructors[0].name);
     }
   }, [
     isCustomSelected,
     effectiveDeployable,
     constructorName,
-    setSelectedConstructor,
+    deployableId,
+    setDeployTarget,
   ]);
 
   const prevConstructorsLength = useRef(0);
   useEffect(() => {
     const currentLength = customDeployable.contract?.constructors.length ?? 0;
     if (currentLength > 0 && prevConstructorsLength.current === 0) {
-      setSelectedConstructor(customDeployable.contract!.constructors[0].name);
+      setDeployTarget(null, customDeployable.contract!.constructors[0].name);
     }
     prevConstructorsLength.current = currentLength;
-  }, [customDeployable.contract, setSelectedConstructor]);
+  }, [customDeployable.contract, setDeployTarget]);
 
   const handleDeploy = useCallback(() => {
     if (!effectiveDeployable || !effectiveConstructor) return;

@@ -32,12 +32,14 @@ type ArtifactStateUpdate = Partial<{
 
 type Actions = {
   setMode: (mode: ArtifactLoaderMode) => void;
-  setPreconfiguredId: (id: string | null) => void;
-  setAddress: (address: string) => void;
-  setDeployableId: (id: string | null) => void;
-  setSelectedConstructor: (name: string | null) => void;
+  // Invoke mode
+  setInvokeTarget: (address: string, preconfiguredId?: string | null) => void;
+  // Deploy mode
+  setDeployTarget: (
+    deployableId: string | null,
+    constructorName?: string | null
+  ) => void;
   pushLog: (entry: Omit<LogEntry, 'id'>) => void;
-  clearLogs: () => void;
   reset: () => void;
   // Artifact actions
   setArtifactInput: (input: string) => void;
@@ -84,21 +86,14 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
         return { mode };
       }),
 
-    setPreconfiguredId: (preconfiguredId) => {
+    setInvokeTarget: (address, preconfiguredId = null) => {
       getFormStore().reset();
-      set({ preconfiguredId });
+      set({ address, preconfiguredId });
     },
 
-    setAddress: (address) => set({ address }),
-
-    setDeployableId: (deployableId) => {
+    setDeployTarget: (deployableId, constructorName = null) => {
       getFormStore().reset();
-      set({ deployableId, constructorName: null });
-    },
-
-    setSelectedConstructor: (constructorName) => {
-      getFormStore().reset();
-      set({ constructorName });
+      set({ deployableId, constructorName });
     },
 
     pushLog: (entry) =>
@@ -108,8 +103,6 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
           ...state.logs,
         ].slice(0, 50),
       })),
-
-    clearLogs: () => set({ logs: [] }),
 
     reset: () => {
       getFormStore().reset();
