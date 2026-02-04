@@ -1,3 +1,10 @@
+import {
+  wrapIDBOpen,
+  wrapIDBTransaction,
+  wrapIDBRequest,
+  wrapIDBDelete,
+} from './indexeddb';
+
 const contractCacheKey = (networkName?: string) =>
   `aztec-contract-cache${networkName ? `:${networkName}` : ''}`;
 
@@ -23,16 +30,10 @@ const getIndexedDB = (): IDBFactory | null =>
 const openArtifactDb = async (): Promise<IDBDatabase | null> => {
   const indexedDB = getIndexedDB();
   if (!indexedDB) return null;
-  return new Promise((resolve) => {
-    const req = indexedDB.open(ARTIFACT_DB, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(ARTIFACT_STORE)) {
-        db.createObjectStore(ARTIFACT_STORE);
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => resolve(null);
+  return wrapIDBOpen(indexedDB.open(ARTIFACT_DB, 1), (db) => {
+    if (!db.objectStoreNames.contains(ARTIFACT_STORE)) {
+      db.createObjectStore(ARTIFACT_STORE);
+    }
   });
 };
 
@@ -47,47 +48,34 @@ export const storeArtifact = async (
     ''
   );
   const key = `${sanitizedNamespace}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  return new Promise((resolve) => {
-    const tx = db.transaction(ARTIFACT_STORE, 'readwrite');
-    tx.objectStore(ARTIFACT_STORE).put(artifact, key);
-    tx.oncomplete = () => resolve(key);
-    tx.onerror = () => resolve(null);
-  });
+  const tx = db.transaction(ARTIFACT_STORE, 'readwrite');
+  tx.objectStore(ARTIFACT_STORE).put(artifact, key);
+  return wrapIDBTransaction(tx, key, null);
 };
 
 export const loadArtifact = async (key?: string): Promise<string | null> => {
   if (!key) return null;
   const db = await openArtifactDb();
   if (!db) return null;
-  return new Promise((resolve) => {
-    const tx = db.transaction(ARTIFACT_STORE, 'readonly');
-    const req = tx.objectStore(ARTIFACT_STORE).get(key);
-    req.onsuccess = () => resolve((req.result as string | undefined) ?? null);
-    req.onerror = () => resolve(null);
-  });
+  const tx = db.transaction(ARTIFACT_STORE, 'readonly');
+  const req = tx.objectStore(ARTIFACT_STORE).get(key);
+  const result = await wrapIDBRequest(req, null);
+  return (result as string | undefined) ?? null;
 };
 
 export const deleteArtifact = async (key?: string): Promise<void> => {
   if (!key) return;
   const db = await openArtifactDb();
   if (!db) return;
-  return new Promise((resolve) => {
-    const tx = db.transaction(ARTIFACT_STORE, 'readwrite');
-    tx.objectStore(ARTIFACT_STORE).delete(key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => resolve();
-  });
+  const tx = db.transaction(ARTIFACT_STORE, 'readwrite');
+  tx.objectStore(ARTIFACT_STORE).delete(key);
+  await wrapIDBTransaction(tx, undefined, undefined);
 };
 
 export const clearArtifactsDb = async () => {
   const indexedDB = getIndexedDB();
   if (!indexedDB) return;
-  await new Promise((resolve) => {
-    const req = indexedDB.deleteDatabase(ARTIFACT_DB);
-    req.onsuccess = () => resolve(null);
-    req.onerror = () => resolve(null);
-    req.onblocked = () => resolve(null);
-  });
+  await wrapIDBDelete(indexedDB.deleteDatabase(ARTIFACT_DB));
 };
 
 export const loadCachedContracts = (networkName?: string): CachedContract[] => {

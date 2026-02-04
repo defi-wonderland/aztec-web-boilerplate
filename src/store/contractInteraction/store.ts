@@ -24,6 +24,12 @@ type State = {
   isLoadingPreconfigured: boolean;
 };
 
+type ArtifactStateUpdate = Partial<{
+  parsed: ParsedArtifact | null;
+  error: ArtifactError | null;
+  isLoading: boolean;
+}>;
+
 type Actions = {
   setMode: (mode: ArtifactLoaderMode) => void;
   setPreconfiguredId: (id: string | null) => void;
@@ -37,9 +43,8 @@ type Actions = {
   setArtifactInput: (input: string) => void;
   setSavedContracts: (contracts: CachedContract[]) => void;
   refreshSavedContracts: (networkName?: string) => void;
-  resetArtifact: (loading?: boolean) => void;
-  setArtifactLoaded: (parsed: ParsedArtifact, artifactInput?: string) => void;
-  setArtifactError: (error: ArtifactError) => void;
+  resetArtifact: () => void;
+  setArtifactState: (update: ArtifactStateUpdate) => void;
 };
 
 export type ContractInteractionStore = State & Actions;
@@ -121,27 +126,18 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
       set({ savedContracts: contracts });
     },
 
-    resetArtifact: (loading = false) => {
+    resetArtifact: () => {
       getFormStore().reset();
-      set({ ...ARTIFACT_INITIAL_STATE, isLoadingPreconfigured: loading });
+      set(ARTIFACT_INITIAL_STATE);
     },
 
-    setArtifactLoaded: (parsed, artifactInput) => {
-      getFormStore().reset();
-      set({
-        parsedArtifact: parsed,
-        parseError: null,
-        isLoadingPreconfigured: false,
-        ...(artifactInput !== undefined && { artifactInput }),
-      });
-    },
-
-    setArtifactError: (error) => {
-      set({
-        parsedArtifact: null,
-        parseError: error,
-        isLoadingPreconfigured: false,
-      });
+    setArtifactState: (update) => {
+      const mapped: Partial<State> = {};
+      if ('parsed' in update) mapped.parsedArtifact = update.parsed;
+      if ('error' in update) mapped.parseError = update.error;
+      if ('isLoading' in update)
+        mapped.isLoadingPreconfigured = update.isLoading;
+      set(mapped);
     },
   })
 );

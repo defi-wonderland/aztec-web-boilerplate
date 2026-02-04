@@ -93,7 +93,6 @@ export const useArtifactActions = () =>
       setSavedContracts: state.setSavedContracts,
       refreshSavedContracts: state.refreshSavedContracts,
       resetArtifact: state.resetArtifact,
-      setArtifactLoaded: state.setArtifactLoaded,
-      setArtifactError: state.setArtifactError,
+      setArtifactState: state.setArtifactState,
     }))
   );

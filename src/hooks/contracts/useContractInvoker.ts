@@ -43,6 +43,7 @@ import {
   ArtifactFetchError,
   getErrorMessage,
 } from '../../utils/errors';
+import { requestPersistentStorage } from '../../utils/indexeddb';
 import { safeStringify } from '../../utils/string';
 import { useFunctionGroups } from '../useFunctionGroups';
 import { resolvePreconfiguredArtifact } from '../useInteractionContracts';
@@ -53,14 +54,6 @@ import type {
 } from '../../components/contract-interaction/types';
 import type { AztecNetwork } from '../../config/networks/constants';
 import type { CachedContract } from '../../utils/contractCache';
-
-const requestPersistentStorage = async () => {
-  if (!navigator.storage?.persist) return;
-  const alreadyPersisted = await navigator.storage.persisted();
-  if (!alreadyPersisted) {
-    await navigator.storage.persist();
-  }
-};
 
 export interface UseContractInvokerOptions {
   networkName?: AztecNetwork;
@@ -114,12 +107,10 @@ export const useContractInvoker = (
 
   const {
     setArtifactInput,
-    setParsedArtifact,
-    setParseError,
     setSavedContracts,
-    setIsLoadingPreconfigured,
     refreshSavedContracts,
-    clearArtifactState,
+    resetArtifact,
+    setArtifactState,
   } = useArtifactActions();
 
   const hasAutoLoadedRef = useRef(false);
@@ -165,8 +156,8 @@ export const useContractInvoker = (
       : 'idle';
 
   const clearContractState = useCallback(() => {
-    clearArtifactState();
-  }, [clearArtifactState]);
+    resetArtifact();
+  }, [resetArtifact]);
 
   const loadArtifactWithData = useCallback(
     async (
@@ -183,7 +174,7 @@ export const useContractInvoker = (
       );
 
       if (!result.success) {
-        setParseError(result.error);
+        setArtifactState({ error: result.error });
         pushLog({
           level: 'error',
           title: 'Artifact parse failed',
@@ -199,10 +190,9 @@ export const useContractInvoker = (
         shouldCacheInline,
       } = result;
 
-      setParsedArtifact(parsedArtifact);
+      setArtifactState({ parsed: parsedArtifact, error: null });
       setAddress(resolvedAddress);
       setPreconfiguredId(null);
-      setParseError(null);
       resetFormValues();
       pushLog({
         level: 'success',
@@ -233,8 +223,7 @@ export const useContractInvoker = (
       networkName,
       setAddress,
       setPreconfiguredId,
-      setParsedArtifact,
-      setParseError,
+      setArtifactState,
       setSavedContracts,
       resetFormValues,
       pushLog,
@@ -261,20 +250,22 @@ export const useContractInvoker = (
 
       setPreconfiguredId(contractId);
       setAddress(contract.address);
-      setIsLoadingPreconfigured(true);
-      setParseError(null);
+      setArtifactState({ isLoading: true, error: null });
       resetFormValues();
 
       try {
         const artifactJson = await resolvePreconfiguredArtifact(contract);
         if (!artifactJson) {
-          setParseError(
-            new ArtifactFetchError('Artifact not available for this contract')
-          );
-          setIsLoadingPreconfigured(false);
+          setArtifactState({
+            error: new ArtifactFetchError(
+              'Artifact not available for this contract'
+            ),
+            isLoading: false,
+          });
           return;
         }
         setArtifactInput(artifactJson);
+        setArtifactState({ isLoading: false });
       } catch (err) {
         const error =
           err instanceof ArtifactFetchError
@@ -285,16 +276,13 @@ export const useContractInvoker = (
                 undefined,
                 err
               );
-        setParseError(error);
-      } finally {
-        setIsLoadingPreconfigured(false);
+        setArtifactState({ error, isLoading: false });
       }
     },
     [
       setPreconfiguredId,
       setAddress,
-      setIsLoadingPreconfigured,
-      setParseError,
+      setArtifactState,
       setArtifactInput,
       resetFormValues,
       clearContractState,
@@ -306,12 +294,12 @@ export const useContractInvoker = (
       setAddress(contract.address);
       setArtifactInput(contract.artifact ?? '');
       setPreconfiguredId(null);
-      setParseError(null);
+      setArtifactState({ error: null });
       resetFormValues();
 
       const resolved = await resolveCachedArtifact(contract);
       if (!resolved.found) {
-        setParsedArtifact(null);
+        setArtifactState({ parsed: null });
         const detail =
           resolved.reason === 'extended_storage_unavailable'
             ? 'Cached artifact unavailable (too large / cleared); paste it to load functions.'
@@ -322,7 +310,7 @@ export const useContractInvoker = (
 
       try {
         const parsedArtifact = parseArtifactSource(resolved.artifact);
-        setParsedArtifact(parsedArtifact);
+        setArtifactState({ parsed: parsedArtifact });
         setArtifactInput(resolved.artifact);
         pushLog({
           level: 'success',
@@ -338,8 +326,7 @@ export const useContractInvoker = (
                   ? err.message
                   : 'Failed to parse cached artifact'
               );
-        setParsedArtifact(null);
-        setParseError(error);
+        setArtifactState({ parsed: null, error });
         pushLog({
           level: 'error',
           title: 'Cached artifact parse failed',
@@ -351,8 +338,7 @@ export const useContractInvoker = (
       setAddress,
       setArtifactInput,
       setPreconfiguredId,
-      setParseError,
-      setParsedArtifact,
+      setArtifactState,
       resetFormValues,
       pushLog,
     ]
@@ -485,14 +471,14 @@ export const useContractInvoker = (
     setPreconfiguredId(null);
     setAddress(latest?.address ?? '');
     setArtifactInput(latest?.artifact ?? '');
-    setParsedArtifact(null);
+    setArtifactState({ parsed: null });
     resetFormValues();
   }, [
     networkName,
     refreshSavedContracts,
     setAddress,
     setArtifactInput,
-    setParsedArtifact,
+    setArtifactState,
     setPreconfiguredId,
     resetFormValues,
   ]);

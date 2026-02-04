@@ -10,15 +10,8 @@ import {
   getCacheStatusMessage,
 } from '../../utils/contractCache';
 import { loadAndPrepareArtifact } from '../../utils/contractInteraction';
+import { requestPersistentStorage } from '../../utils/indexeddb';
 import type { AztecNetwork } from '../../config/networks/constants';
-
-const requestPersistentStorage = async () => {
-  if (!navigator.storage?.persist) return;
-  const alreadyPersisted = await navigator.storage.persisted();
-  if (!alreadyPersisted) {
-    await navigator.storage.persist();
-  }
-};
 
 /**
  * Lightweight hook that provides artifact loading functionality.
@@ -27,8 +20,7 @@ const requestPersistentStorage = async () => {
  */
 export const useLoadArtifact = (networkName?: AztecNetwork) => {
   const { setAddress, setPreconfiguredId, pushLog } = useContractActions();
-  const { setParsedArtifact, setParseError, setSavedContracts } =
-    useArtifactActions();
+  const { setSavedContracts, setArtifactState } = useArtifactActions();
 
   const loadArtifactWithData = useCallback(
     async (
@@ -45,11 +37,11 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
       );
 
       if (!result.success) {
-        setParseError(result.error ?? 'Parse failed');
+        setArtifactState({ error: result.error });
         pushLog({
           level: 'error',
           title: 'Artifact parse failed',
-          detail: result.error ?? 'Unknown error',
+          detail: result.error.message,
         });
         return;
       }
@@ -61,10 +53,9 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
         shouldCacheInline,
       } = result;
 
-      setParsedArtifact(parsedArtifact);
+      setArtifactState({ parsed: parsedArtifact, error: null });
       setAddress(resolvedAddress);
       setPreconfiguredId(null);
-      setParseError(null);
       pushLog({
         level: 'success',
         title: 'Artifact loaded',
@@ -94,8 +85,7 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
       networkName,
       setAddress,
       setPreconfiguredId,
-      setParsedArtifact,
-      setParseError,
+      setArtifactState,
       setSavedContracts,
       pushLog,
     ]

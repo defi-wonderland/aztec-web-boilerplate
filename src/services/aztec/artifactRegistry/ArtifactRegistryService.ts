@@ -4,6 +4,7 @@ import {
   ArtifactFetchError,
   ArtifactValidationError,
 } from '../../../utils/errors';
+import { wrapIDBRequest } from '../../../utils/indexeddb';
 
 const DB_NAME = 'aztec-artifact-registry';
 
@@ -258,25 +259,19 @@ export class ArtifactRegistryService {
       return this.db;
     }
 
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onerror = () => {
-        reject(new Error('Failed to open IndexedDB'));
-      };
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'classId' });
+      }
+    };
 
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve(request.result);
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME, { keyPath: 'classId' });
-        }
-      };
+    this.db = await wrapIDBRequest(request, {
+      throw: 'Failed to open IndexedDB',
     });
+    return this.db;
   }
 
   private async getFromStorage(
@@ -284,20 +279,13 @@ export class ArtifactRegistryService {
   ): Promise<SerializedArtifact | null> {
     try {
       const db = await this.getDB();
-      return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.get(classId);
-
-        request.onerror = () => {
-          reject(new Error('Failed to read from IndexedDB'));
-        };
-
-        request.onsuccess = () => {
-          const result = request.result as CachedArtifact | undefined;
-          resolve(result?.artifact ?? null);
-        };
-      });
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const result = await wrapIDBRequest<CachedArtifact | undefined>(
+        store.get(classId),
+        { throw: 'Failed to read from IndexedDB' }
+      );
+      return result?.artifact ?? null;
     } catch (err) {
       console.warn(
         `[ArtifactRegistry] Failed to read artifact ${classId} from IndexedDB:`,
@@ -314,22 +302,14 @@ export class ArtifactRegistryService {
     try {
       const db = await this.getDB();
       const storableArtifact = prepareArtifactForStorage(artifact);
-      return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const data: CachedArtifact = {
-          classId,
-          artifact: storableArtifact,
-        };
-        const request = store.put(data);
-
-        request.onerror = () => {
-          reject(new Error('Failed to write to IndexedDB'));
-        };
-
-        request.onsuccess = () => {
-          resolve();
-        };
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const data: CachedArtifact = {
+        classId,
+        artifact: storableArtifact,
+      };
+      await wrapIDBRequest(store.put(data), {
+        throw: 'Failed to write to IndexedDB',
       });
     } catch (err) {
       console.warn(
