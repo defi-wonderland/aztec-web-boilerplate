@@ -120,12 +120,9 @@ export const loadCachedContracts = (networkName?: string): CachedContract[] => {
         if (typeof value?.address !== 'string') return null;
 
         const result: CachedContract = { address: value.address };
-        if (typeof value.artifact === 'string')
-          result.artifact = value.artifact;
         if (typeof value.artifactKey === 'string')
           result.artifactKey = value.artifactKey;
         if (typeof value.label === 'string') result.label = value.label;
-        if (typeof value.savedAt === 'number') result.savedAt = value.savedAt;
 
         return result;
       })
@@ -137,38 +134,20 @@ export const loadCachedContracts = (networkName?: string): CachedContract[] => {
 
 /**
  * Persists cached contracts to localStorage.
- * Falls back to saving without artifacts if storage quota exceeded.
  */
 export const persistCachedContracts = (
   contracts: CachedContract[],
   networkName?: string,
   maxContracts: number = 10
-): { savedArtifacts: boolean } => {
+): void => {
   const storage = getLocalStorage();
-  if (!storage) return { savedArtifacts: false };
+  if (!storage) return;
   const key = contractCacheKey(networkName);
   const sanitized = contracts.slice(0, maxContracts);
-  const attemptSave = (payload: CachedContract[]) => {
-    storage.setItem(key, JSON.stringify(payload));
-  };
   try {
-    attemptSave(sanitized);
-    return {
-      savedArtifacts: sanitized.some((c) => Boolean(c.artifact)),
-    };
+    storage.setItem(key, JSON.stringify(sanitized));
   } catch {
-    const stripped = sanitized.map((c) => ({
-      address: c.address,
-      label: c.label,
-      savedAt: c.savedAt,
-      artifactKey: c.artifactKey,
-    }));
-    try {
-      attemptSave(stripped);
-    } catch {
-      // ignore
-    }
-    return { savedArtifacts: false };
+    // ignore quota errors - metadata is small, shouldn't fail
   }
 };
 

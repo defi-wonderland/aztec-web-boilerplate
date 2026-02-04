@@ -19,7 +19,6 @@ import {
   useFormActions,
 } from '../../../store';
 import { iconSize } from '../../../utils';
-import { constants } from '../../../utils/contractCache';
 import { loadAndPrepareArtifact } from '../../../utils/contractInteraction';
 import {
   buildConstructorLabel,
@@ -76,11 +75,7 @@ const buildCustomDeployableContract = (
   }
 
   try {
-    const result = loadAndPrepareArtifact(
-      artifactInput,
-      '',
-      constants.MAX_CACHE_CHARS
-    );
+    const result = loadAndPrepareArtifact(artifactInput, '');
     if (!result.success) {
       return { contract: null, error: result.error.message };
     }

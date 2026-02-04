@@ -61,8 +61,6 @@ type LoadArtifactResult =
       parsed: ParsedArtifact;
       address: string;
       contractLabel: string | undefined;
-      shouldCacheInline: boolean;
-      firstFunctionName: string | null;
     }
   | {
       success: false;
@@ -75,8 +73,7 @@ type LoadArtifactResult =
  */
 export const loadAndPrepareArtifact = (
   artifactInput: string,
-  currentAddress: string,
-  maxCacheChars: number
+  currentAddress: string
 ): LoadArtifactResult => {
   try {
     const parsed = parseArtifactSource(artifactInput);
@@ -94,16 +91,11 @@ export const loadAndPrepareArtifact = (
         ? discoveredAddress
         : '');
 
-    const shouldCacheInline = artifactInput.length <= maxCacheChars;
-    const firstFunctionName = parsed.functions[0]?.name ?? null;
-
     return {
       success: true,
       parsed,
       address,
       contractLabel,
-      shouldCacheInline,
-      firstFunctionName,
     };
   } catch (err) {
     const error =

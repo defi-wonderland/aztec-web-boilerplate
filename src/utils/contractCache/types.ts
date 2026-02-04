@@ -7,10 +7,8 @@
  */
 export type CachedContract = {
   address: string;
-  artifact?: string;
   artifactKey?: string;
   label?: string;
-  savedAt?: number;
 };
 
 /**
@@ -20,7 +18,6 @@ export type CacheArtifactParams = {
   address: string;
   artifactInput: string;
   label?: string;
-  shouldCacheInline: boolean;
   savedContracts: CachedContract[];
   networkName?: string;
 };
@@ -30,8 +27,7 @@ export type CacheArtifactParams = {
  */
 export type CacheArtifactResult = {
   updatedContracts: CachedContract[];
-  savedArtifacts: boolean;
-  storedInExtended: boolean;
+  stored: boolean;
 };
 
 /**

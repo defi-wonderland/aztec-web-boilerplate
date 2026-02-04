@@ -58,15 +58,6 @@ export const hasHiddenAttribute = (attrs: string[] = []): boolean =>
   attrs.includes('abi_only_self');
 
 /**
- * Checks if a function is a view (read-only) function.
- * View functions don't change state and can be simulated.
- */
-export const isViewFn = (fn: ParsedFunction): boolean => {
-  const capabilities = analyzeFunctionCapabilities(fn.attributes ?? []);
-  return capabilities.isView;
-};
-
-/**
  * Checks if a function is executable (state-changing).
  * Executable functions are public/private, not view, and not initializers.
  */

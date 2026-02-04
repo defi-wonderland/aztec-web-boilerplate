@@ -6,7 +6,6 @@ import {
 } from '../../store';
 import {
   cacheAndPersistArtifact,
-  constants,
   getCacheStatusMessage,
 } from '../../utils/contractCache';
 import { loadAndPrepareArtifact } from '../../utils/contractInteraction';
@@ -30,11 +29,7 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
     ) => {
       requestPersistentStorage();
 
-      const result = loadAndPrepareArtifact(
-        loadArtifactJson,
-        loadAddress,
-        constants.MAX_CACHE_CHARS
-      );
+      const result = loadAndPrepareArtifact(loadArtifactJson, loadAddress);
 
       if (!result.success) {
         setArtifactState({ error: result.error });
@@ -50,7 +45,6 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
         parsed: parsedArtifact,
         address: resolvedAddress,
         contractLabel,
-        shouldCacheInline,
       } = result;
 
       setArtifactState({ parsed: parsedArtifact, error: null });
@@ -65,13 +59,12 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
         address: resolvedAddress,
         artifactInput: loadArtifactJson,
         label: customLabel ?? contractLabel,
-        shouldCacheInline,
         savedContracts: getContractInteractionStore().savedContracts,
         networkName,
       });
       setSavedContracts(cacheResult.updatedContracts);
 
-      const cacheMsg = getCacheStatusMessage(cacheResult, shouldCacheInline);
+      const cacheMsg = getCacheStatusMessage(cacheResult.stored);
       if (cacheMsg) {
         pushLog({
           level: 'info',

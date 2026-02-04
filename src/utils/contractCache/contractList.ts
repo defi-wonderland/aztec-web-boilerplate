@@ -8,13 +8,7 @@ import type { CachedContract } from './types';
 // Constants
 // =============================================================================
 
-export const MAX_CACHE_CHARS = 400_000;
 export const MAX_SAVED_CONTRACTS = 10;
-
-export const constants = {
-  MAX_CACHE_CHARS,
-  MAX_SAVED_CONTRACTS,
-};
 
 // =============================================================================
 // List Operations
@@ -32,11 +26,7 @@ export const upsertContract = (
   const filtered = current.filter(
     (item) => item.address.toLowerCase() !== normalizedAddress
   );
-  const entry: CachedContract = {
-    ...next,
-    savedAt: Date.now(),
-  };
-  return [entry, ...filtered].slice(0, MAX_SAVED_CONTRACTS);
+  return [next, ...filtered].slice(0, MAX_SAVED_CONTRACTS);
 };
 
 /**

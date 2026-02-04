@@ -9,10 +9,8 @@ export {
   analyzeFunctionCapabilities,
   HIDDEN_FUNCTION_NAMES,
   hasHiddenAttribute,
-  isViewFn,
   isExecutableFn,
   isReadOnlyFn,
-  type FunctionCapabilities,
 } from './functionAnalyzer';
 
 // Validation - address validation and call argument building

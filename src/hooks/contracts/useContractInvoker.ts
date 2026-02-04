@@ -21,7 +21,6 @@ import {
   cacheAndPersistArtifact,
   clearArtifactsDb,
   clearCachedContract,
-  constants,
   deleteArtifact,
   getCacheStatusMessage,
   persistCachedContracts,
@@ -166,11 +165,7 @@ export const useContractInvoker = (
     ) => {
       requestPersistentStorage();
 
-      const result = loadAndPrepareArtifact(
-        loadArtifactJson,
-        loadAddress,
-        constants.MAX_CACHE_CHARS
-      );
+      const result = loadAndPrepareArtifact(loadArtifactJson, loadAddress);
 
       if (!result.success) {
         setArtifactState({ error: result.error });
@@ -186,7 +181,6 @@ export const useContractInvoker = (
         parsed: parsedArtifact,
         address: resolvedAddress,
         contractLabel,
-        shouldCacheInline,
       } = result;
 
       setArtifactState({ parsed: parsedArtifact, error: null });
@@ -202,13 +196,12 @@ export const useContractInvoker = (
         address: resolvedAddress,
         artifactInput: loadArtifactJson,
         label: customLabel ?? contractLabel,
-        shouldCacheInline,
         savedContracts: getContractInteractionStore().savedContracts,
         networkName,
       });
       setSavedContracts(cacheResult.updatedContracts);
 
-      const cacheMsg = getCacheStatusMessage(cacheResult, shouldCacheInline);
+      const cacheMsg = getCacheStatusMessage(cacheResult.stored);
       if (cacheMsg) {
         pushLog({
           level: 'info',
@@ -287,7 +280,7 @@ export const useContractInvoker = (
   const handleApplySaved = useCallback(
     async (contract: CachedContract) => {
       setInvokeTarget(contract.address, null);
-      setArtifactInput(contract.artifact ?? '');
+      setArtifactInput('');
       setArtifactState({ error: null });
       resetFormValues();
 
@@ -462,7 +455,7 @@ export const useContractInvoker = (
 
     // Reset specific state (not full store to preserve logs)
     setInvokeTarget(latest?.address ?? '', null);
-    setArtifactInput(latest?.artifact ?? '');
+    setArtifactInput('');
     setArtifactState({ parsed: null });
     resetFormValues();
   }, [
