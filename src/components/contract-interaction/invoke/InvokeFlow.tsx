@@ -3,11 +3,10 @@ import { Play, Zap } from 'lucide-react';
 import { useContractInvoker } from '../../../hooks/contracts';
 import { usePreconfiguredContracts } from '../../../hooks/useInteractionContracts';
 import {
-  useContractTargetAddress,
   useContractActions,
-  useInvokeFlowState,
   useFormValues,
   useFormActions,
+  useInvokeFlowData,
 } from '../../../store';
 import { iconSize } from '../../../utils';
 import {
@@ -48,17 +47,22 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
   const [filter, setFilter] = useState('');
 
   const {
-    savedContracts,
+    address,
     artifactInput,
-    parseError,
+    savedContracts,
     isLoadingPreconfigured,
+    preconfiguredId,
     hasContract,
     hasCache,
     contractName,
+    artifactSummary,
+    parseError,
+  } = useInvokeFlowData();
+
+  const {
     groups,
     status,
     error,
-    artifactSummary,
     onLoad,
     onSimulate,
     onExecute,
@@ -69,9 +73,7 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
     onSelectPreconfigured,
   } = useContractInvoker({ networkName, filter });
 
-  const address = useContractTargetAddress();
   const formValues = useFormValues();
-  const { preconfiguredId } = useInvokeFlowState();
   const { setInvokeTarget } = useContractActions();
   const { setValue: setFormValue } = useFormActions();
   const preconfiguredContracts = usePreconfiguredContracts(networkName);

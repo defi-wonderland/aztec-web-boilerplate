@@ -5,7 +5,22 @@ export { useDynamicContractCaller } from './useDynamicContractCaller';
 export { useContractDeployer } from './useContractDeployer';
 export { useContractInvoker } from './useContractInvoker';
 export { useLoadArtifact } from './useLoadArtifact';
+export { useSavedContractManager } from './useSavedContractManager';
+export { usePreconfiguredLoader } from './usePreconfiguredLoader';
+export { useContractCaller } from './useContractCaller';
 export type {
   UseContractInvokerOptions,
   UseContractInvokerReturn,
 } from './useContractInvoker';
+export type {
+  UseSavedContractManagerOptions,
+  UseSavedContractManagerReturn,
+} from './useSavedContractManager';
+export type {
+  UsePreconfiguredLoaderOptions,
+  UsePreconfiguredLoaderReturn,
+} from './usePreconfiguredLoader';
+export type {
+  UseContractCallerOptions,
+  UseContractCallerReturn,
+} from './useContractCaller';
