@@ -108,7 +108,6 @@ const STORE_NAME = 'artifacts';
 interface CachedArtifact {
   classId: string;
   artifact: SerializedArtifact;
-  cachedAt: number;
 }
 
 export type ArtifactSource = 'memory' | 'indexeddb' | 'network';
@@ -321,7 +320,6 @@ export class ArtifactRegistryService {
         const data: CachedArtifact = {
           classId,
           artifact: storableArtifact,
-          cachedAt: Date.now(),
         };
         const request = store.put(data);
 

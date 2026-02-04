@@ -7,9 +7,6 @@ import {
 import { useContractInteractionStore } from './store';
 import type { AztecNetwork } from '../../config/networks/constants';
 
-export const useContractMode = () =>
-  useContractInteractionStore((state) => state.mode);
-
 export const useIsDeployMode = () =>
   useContractInteractionStore((state) => state.mode === 'deploy');
 

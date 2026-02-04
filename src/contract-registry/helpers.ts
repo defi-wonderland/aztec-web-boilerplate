@@ -44,17 +44,6 @@ export const getDeployerAddress = (config: NetworkConfig): AztecAddress => {
     : AztecAddress.ZERO;
 };
 
-/**
- * Helper to build token constructor args per network
- */
-export const getTokenConstructorArgs = (config: NetworkConfig) => {
-  const minterAddress = AztecAddress.fromString(config.dripperContractAddress);
-  if (config.name === 'devnet') {
-    return ['WETH', 'WETH', 18, minterAddress, AztecAddress.ZERO] as const;
-  }
-  return ['Yield Token', 'YT', 18, minterAddress, AztecAddress.ZERO] as const;
-};
-
 // =============================================================================
 // Network-specific Artifact Overrides
 // =============================================================================

@@ -5,7 +5,6 @@ export {
 export type { ContractInteractionStore } from './store';
 
 export {
-  useContractMode,
   useIsDeployMode,
   useContractCallLogs,
   useContractTargetAddress,

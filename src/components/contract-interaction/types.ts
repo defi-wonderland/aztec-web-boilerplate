@@ -7,8 +7,6 @@ import type {
 } from '../../utils/contractInteraction';
 import type { DeployableContract } from '../../utils/deployableContracts';
 
-export type LogLevel = 'info' | 'error' | 'success' | 'warning';
-
 export type InvokeStatus = 'idle' | 'simulating' | 'executing';
 
 export interface DeployResult {
