@@ -12,6 +12,12 @@ export const NETWORK_URLS = {
 } as const;
 
 /**
+ * Default artifact registry URL for fetching contract artifacts
+ */
+export const DEFAULT_ARTIFACT_REGISTRY_URL =
+  'https://devnet.aztec-registry.xyz';
+
+/**
  * Available network types
  */
 export type NetworkType = keyof typeof NETWORK_URLS;

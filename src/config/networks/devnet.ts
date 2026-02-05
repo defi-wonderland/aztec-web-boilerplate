@@ -1,4 +1,5 @@
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
+import { DEFAULT_ARTIFACT_REGISTRY_URL } from './constants';
 import { NetworkConfig } from './types';
 
 /**
@@ -26,8 +27,7 @@ export const DEVNET_CONFIG: NetworkConfig = {
   isTestnet: true,
   artifactSource: 'registry',
   artifactRegistryUrl:
-    import.meta.env.VITE_ARTIFACT_REGISTRY_URL ??
-    'https://devnet.aztec-registry.xyz',
+    import.meta.env.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL,
   classIds: {
     dripper:
       '0x1d1014602e766124a9a52429708ed416708b39e3e6ad88fcbf7757af093062e5',
