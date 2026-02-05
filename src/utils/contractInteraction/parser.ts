@@ -9,7 +9,7 @@ import {
   type RawParamType,
   type RawParameter,
 } from '../artifactNormalizer';
-import { ArtifactParseError } from '../errors';
+import { ArtifactErrorFactory } from '../errors';
 import { getKnownStructKind } from '../knownStructTypes';
 import type {
   ParsedType,
@@ -158,22 +158,22 @@ const extractAllFunctions = (
  * Supports both artifact formats:
  * - NoirCompiledContract (raw from compiler/local builds)
  * - ContractArtifact (processed from registry)
- * @throws {ArtifactParseError} When JSON is invalid or artifact structure is malformed
+ * @throws {ArtifactError} When JSON is invalid or artifact structure is malformed
  */
 export const parseArtifactSource = (source: string): ParsedArtifact => {
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(source) as Record<string, unknown>;
   } catch (err) {
-    throw ArtifactParseError.invalidJson(err);
+    throw ArtifactErrorFactory.invalidJson(err);
   }
 
   if (!parsed || typeof parsed !== 'object') {
-    throw ArtifactParseError.invalidStructure();
+    throw ArtifactErrorFactory.invalidStructure();
   }
 
   if (!Array.isArray(parsed.functions)) {
-    throw ArtifactParseError.missingFunctions();
+    throw ArtifactErrorFactory.missingFunctions();
   }
 
   const isProcessedFormat = hasProcessedFunctions(parsed);

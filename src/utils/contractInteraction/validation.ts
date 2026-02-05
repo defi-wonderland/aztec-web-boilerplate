@@ -1,9 +1,8 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { ArtifactParseError } from '../errors';
+import { ArtifactError, ArtifactErrorFactory } from '../errors';
 import { buildArgsFromInputs } from './parameterBuilder';
 import { parseArtifactSource } from './parser';
 import type { ParsedFunction, ParsedArtifact } from '../../types/artifact';
-import type { ArtifactError } from '../errors';
 
 export const isValidAztecAddress = (value: string): boolean => {
   if (!value) return false;
@@ -99,9 +98,9 @@ export const loadAndPrepareArtifact = (
     };
   } catch (err) {
     const error =
-      err instanceof ArtifactParseError
+      err instanceof ArtifactError
         ? err
-        : ArtifactParseError.invalidStructure(
+        : ArtifactErrorFactory.invalidStructure(
             err instanceof Error ? err.message : 'Failed to parse artifact'
           );
     return { success: false, error };

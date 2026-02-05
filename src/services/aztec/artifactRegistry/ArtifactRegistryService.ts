@@ -1,9 +1,6 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
-import {
-  ArtifactFetchError,
-  ArtifactValidationError,
-} from '../../../utils/errors';
+import { ArtifactErrorFactory } from '../../../utils/errors';
 import {
   createArtifactStorage,
   prepareArtifactForStorage,
@@ -120,9 +117,9 @@ export class ArtifactRegistryService {
 
     if (!response.ok) {
       if (response.status === 404) {
-        throw ArtifactFetchError.notFound(classId);
+        throw ArtifactErrorFactory.notFound(classId);
       }
-      throw ArtifactFetchError.fetchFailed(
+      throw ArtifactErrorFactory.fetchFailed(
         response.status,
         response.statusText
       );
@@ -141,7 +138,7 @@ export class ArtifactRegistryService {
     expectedClassId: string
   ): Promise<void> {
     if (!artifact.name || !Array.isArray(artifact.functions)) {
-      throw new ArtifactValidationError(
+      throw ArtifactErrorFactory.invalidStructure(
         `Invalid artifact structure for classId: ${expectedClassId}`
       );
     }
@@ -150,7 +147,7 @@ export class ArtifactRegistryService {
     const computedClassId = contractClass.id.toString();
 
     if (computedClassId !== expectedClassId) {
-      throw ArtifactValidationError.classIdMismatch(
+      throw ArtifactErrorFactory.classIdMismatch(
         expectedClassId,
         computedClassId
       );

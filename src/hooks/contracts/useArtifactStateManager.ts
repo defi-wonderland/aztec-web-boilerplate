@@ -3,7 +3,7 @@ import { useContractActions, useArtifactActions } from '../../store';
 import { parseArtifactSource } from '../../utils/contractInteraction';
 import {
   ArtifactError,
-  ArtifactParseError,
+  ArtifactErrorFactory,
   ArtifactFetchError,
   getErrorMessage,
 } from '../../utils/errors';
@@ -65,7 +65,7 @@ export const useArtifactStateManager = (): UseArtifactStateManagerReturn => {
         const error =
           err instanceof ArtifactError
             ? err
-            : ArtifactParseError.invalidStructure(
+            : ArtifactErrorFactory.invalidStructure(
                 err instanceof Error ? err.message : 'Failed to parse artifact'
               );
         setArtifactState({ parsed: null, error });

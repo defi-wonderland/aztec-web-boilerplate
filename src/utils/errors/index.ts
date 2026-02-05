@@ -1,11 +1,9 @@
 export {
   ArtifactError,
   ArtifactErrorCode,
-  ArtifactParseError,
   ArtifactFetchError,
-  ArtifactValidationError,
+  ArtifactErrorFactory,
   isArtifactError,
-  isArtifactParseError,
   isArtifactFetchError,
   getErrorMessage,
 } from './artifactErrors';
