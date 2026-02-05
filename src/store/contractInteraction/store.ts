@@ -1,5 +1,8 @@
 import { create } from 'zustand';
-import { loadCachedContracts } from '../../utils/contractCache';
+import {
+  getArtifactStorageService,
+  type CachedContract,
+} from '../../services/storage';
 import { getFormStore } from '../form';
 import type {
   LogEntry,
@@ -7,7 +10,6 @@ import type {
 } from '../../components/contract-interaction/types';
 import type { ParsedArtifact } from '../../types/artifact';
 import type { ArtifactStateUpdate } from '../../types/artifactRegistry';
-import type { CachedContract } from '../../utils/contractCache';
 import type { ArtifactError } from '../../utils/errors';
 
 type State = {
@@ -17,7 +19,6 @@ type State = {
   deployableId: string | null;
   constructorName: string | null;
   logs: LogEntry[];
-  // Artifact state (moved from useContractInvoker local state)
   artifactInput: string;
   parsedArtifact: ParsedArtifact | null;
   parseError: ArtifactError | null;
@@ -39,7 +40,7 @@ type Actions = {
   // Artifact actions
   setArtifactInput: (input: string) => void;
   setSavedContracts: (contracts: CachedContract[]) => void;
-  refreshSavedContracts: (networkName?: string) => void;
+  refreshSavedContracts: (networkName?: string) => Promise<void>;
   resetArtifact: () => void;
   setArtifactState: (update: ArtifactStateUpdate) => void;
 };
@@ -109,8 +110,9 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
 
     setSavedContracts: (savedContracts) => set({ savedContracts }),
 
-    refreshSavedContracts: (networkName) => {
-      const contracts = loadCachedContracts(networkName);
+    refreshSavedContracts: async (networkName) => {
+      const storage = getArtifactStorageService();
+      const contracts = await storage.getContracts(networkName);
       set({ savedContracts: contracts });
     },
 

@@ -22,6 +22,11 @@ export type NetworkType = keyof typeof NETWORK_URLS;
 export type AztecNetwork = 'sandbox' | 'devnet';
 
 /**
+ * Default network used when none is specified
+ */
+export const DEFAULT_NETWORK: AztecNetwork = 'devnet';
+
+/**
  * Aztec chain ID type - follows CAIP-2 format
  */
 export type AztecChainId = `aztec:${number}`;

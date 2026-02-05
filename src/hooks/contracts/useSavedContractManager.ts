@@ -1,23 +1,18 @@
 import { useCallback } from 'react';
 import {
+  getArtifactStorageService,
+  type CachedContract,
+} from '../../services/storage';
+import {
   useContractTargetAddress,
   useContractActions,
   useArtifactActions,
   useFormActions,
   getContractInteractionStore,
 } from '../../store';
-import {
-  clearArtifactsDb,
-  clearCachedContract,
-  deleteArtifact,
-  persistCachedContracts,
-  removeContract,
-  resolveCachedArtifact,
-} from '../../utils/contractCache';
 import { getErrorMessage } from '../../utils/errors';
 import { useArtifactStateManager } from './useArtifactStateManager';
 import type { AztecNetwork } from '../../config/networks/constants';
-import type { CachedContract } from '../../utils/contractCache';
 
 export interface UseSavedContractManagerOptions {
   networkName?: AztecNetwork;
@@ -27,13 +22,9 @@ export interface UseSavedContractManagerOptions {
 export interface UseSavedContractManagerReturn {
   handleApplySaved: (contract: CachedContract) => Promise<void>;
   handleDeleteSaved: (address: string) => Promise<void>;
-  handleClearCache: () => void;
+  handleClearCache: () => Promise<void>;
 }
 
-/**
- * Hook for managing saved/cached contracts.
- * Handles CRUD operations on the contract cache.
- */
 export const useSavedContractManager = (
   options: UseSavedContractManagerOptions
 ): UseSavedContractManagerReturn => {
@@ -53,20 +44,33 @@ export const useSavedContractManager = (
       setArtifactState({ error: null });
       resetFormValues();
 
-      const resolved = await resolveCachedArtifact(contract);
-      if (!resolved.found) {
+      if (!contract.artifactKey) {
         setArtifactState({ parsed: null });
-        const detail =
-          resolved.reason === 'extended_storage_unavailable'
-            ? 'Cached artifact unavailable (too large / cleared); paste it to load functions.'
-            : 'Artifact not cached (too large); paste it to load functions.';
-        pushLog({ level: 'info', title: 'Address applied', detail });
+        pushLog({
+          level: 'info',
+          title: 'Address applied',
+          detail: 'Artifact not cached; paste it to load functions.',
+        });
         return;
       }
 
-      const result = parseAndSetArtifact(resolved.artifact);
+      const artifact = await getArtifactStorageService().get(
+        contract.artifactKey
+      );
+
+      if (!artifact) {
+        setArtifactState({ parsed: null });
+        pushLog({
+          level: 'info',
+          title: 'Address applied',
+          detail: 'Cached artifact unavailable; paste it to load functions.',
+        });
+        return;
+      }
+
+      const result = parseAndSetArtifact(artifact);
       if (result.success) {
-        setArtifactInput(resolved.artifact);
+        setArtifactInput(artifact);
         pushLog({
           level: 'success',
           title: 'Saved contract loaded',
@@ -92,15 +96,21 @@ export const useSavedContractManager = (
 
   const handleDeleteSaved = useCallback(
     async (targetAddress: string) => {
+      const storage = getArtifactStorageService();
       const currentContracts = getContractInteractionStore().savedContracts;
+
       const target = currentContracts.find(
         (c) => c.address.toLowerCase() === targetAddress.toLowerCase()
       );
-      if (target?.artifactKey) await deleteArtifact(target.artifactKey);
+      if (target?.artifactKey) {
+        await storage.delete(target.artifactKey);
+      }
 
-      const next = removeContract(currentContracts, targetAddress);
+      const next = currentContracts.filter(
+        (c) => c.address.toLowerCase() !== targetAddress.toLowerCase()
+      );
       setSavedContracts(next);
-      persistCachedContracts(next, networkName);
+      await storage.saveContracts(networkName, next);
 
       if (address.toLowerCase() === targetAddress.toLowerCase()) {
         onClearState();
@@ -114,9 +124,10 @@ export const useSavedContractManager = (
     [address, networkName, setSavedContracts, onClearState, pushLog]
   );
 
-  const handleClearCache = useCallback(() => {
-    clearCachedContract(networkName);
-    clearArtifactsDb();
+  const handleClearCache = useCallback(async () => {
+    const storage = getArtifactStorageService();
+    await storage.clearArtifactsForNetwork(networkName);
+    await storage.clearContracts(networkName);
     setSavedContracts([]);
     onClearState();
     pushLog({ level: 'info', title: 'Cleared' });

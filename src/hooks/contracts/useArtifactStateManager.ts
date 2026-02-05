@@ -1,62 +1,33 @@
 import { useCallback } from 'react';
-import { useContractActions, useArtifactActions } from '../../store';
-import { parseArtifactSource } from '../../utils/contractInteraction';
+import { useArtifactActions } from '../../store';
 import {
-  ArtifactError,
-  ArtifactErrorFactory,
-  ArtifactFetchError,
-  getErrorMessage,
-} from '../../utils/errors';
+  loadAndPrepareArtifact,
+  parseArtifactSource,
+} from '../../utils/contractInteraction';
+import { ArtifactError, ArtifactErrorFactory } from '../../utils/errors';
 import type { ParsedArtifact } from '../../types/artifact';
 
-interface ArtifactLoadSuccess {
-  success: true;
-  parsed: ParsedArtifact;
-}
+type ParseResult =
+  | { success: true; parsed: ParsedArtifact }
+  | { success: false; error: ArtifactError };
 
-interface ArtifactLoadFailure {
-  success: false;
-  error: ArtifactError;
-}
-
-type ArtifactLoadResult = ArtifactLoadSuccess | ArtifactLoadFailure;
-
-export interface UseArtifactStateManagerReturn {
-  /** Reset artifact state before loading */
-  resetArtifactState: () => void;
-
-  /** Parse artifact JSON and update store state */
-  parseAndSetArtifact: (artifactJson: string) => ArtifactLoadResult;
-
-  /** Handle artifact error with appropriate logging */
-  handleArtifactError: (err: unknown, title: string) => ArtifactError;
-
-  /** Set loading state */
-  setLoading: (isLoading: boolean) => void;
-}
+type LoadResult =
+  | {
+      success: true;
+      parsed: ParsedArtifact;
+      address?: string;
+      contractLabel?: string;
+    }
+  | { success: false; error: ArtifactError };
 
 /**
- * Hook for managing artifact loading state operations.
- * Consolidates shared patterns across useSavedContractManager,
- * usePreconfiguredLoader, and useLoadArtifact.
+ * Hook for artifact parsing with state management.
  */
-export const useArtifactStateManager = (): UseArtifactStateManagerReturn => {
-  const { pushLog } = useContractActions();
+export const useArtifactStateManager = () => {
   const { setArtifactState } = useArtifactActions();
 
-  const resetArtifactState = useCallback(() => {
-    setArtifactState({ error: null, parsed: null });
-  }, [setArtifactState]);
-
-  const setLoading = useCallback(
-    (isLoading: boolean) => {
-      setArtifactState({ isLoading });
-    },
-    [setArtifactState]
-  );
-
   const parseAndSetArtifact = useCallback(
-    (artifactJson: string): ArtifactLoadResult => {
+    (artifactJson: string): ParseResult => {
       try {
         const parsed = parseArtifactSource(artifactJson);
         setArtifactState({ parsed, error: null });
@@ -75,31 +46,25 @@ export const useArtifactStateManager = (): UseArtifactStateManagerReturn => {
     [setArtifactState]
   );
 
-  const handleArtifactError = useCallback(
-    (err: unknown, title: string): ArtifactError => {
-      const error =
-        err instanceof ArtifactError
-          ? err
-          : new ArtifactFetchError(
-              err instanceof Error ? err.message : 'Failed to load artifact'
-            );
+  const loadAndSetArtifact = useCallback(
+    (artifactJson: string, currentAddress?: string): LoadResult => {
+      const result = loadAndPrepareArtifact(artifactJson, currentAddress ?? '');
 
-      setArtifactState({ error, isLoading: false });
-      pushLog({
-        level: 'error',
-        title,
-        detail: getErrorMessage(error),
-      });
+      if (!result.success) {
+        setArtifactState({ parsed: null, error: result.error });
+        return { success: false, error: result.error };
+      }
 
-      return error;
+      setArtifactState({ parsed: result.parsed, error: null });
+      return {
+        success: true,
+        parsed: result.parsed,
+        address: result.address,
+        contractLabel: result.contractLabel,
+      };
     },
-    [setArtifactState, pushLog]
+    [setArtifactState]
   );
 
-  return {
-    resetArtifactState,
-    parseAndSetArtifact,
-    handleArtifactError,
-    setLoading,
-  };
+  return { parseAndSetArtifact, loadAndSetArtifact };
 };

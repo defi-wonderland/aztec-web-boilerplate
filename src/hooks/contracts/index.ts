@@ -25,4 +25,3 @@ export type {
   UseContractCallerOptions,
   UseContractCallerReturn,
 } from './useContractCaller';
-export type { UseArtifactStateManagerReturn } from './useArtifactStateManager';

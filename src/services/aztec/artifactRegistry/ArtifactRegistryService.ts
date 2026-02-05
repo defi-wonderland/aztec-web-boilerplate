@@ -2,11 +2,10 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
 import { ArtifactErrorFactory } from '../../../utils/errors';
 import {
-  createArtifactStorage,
   prepareArtifactForStorage,
   restoreBytecodeBuffers,
-  type IArtifactStorage,
 } from '../../../utils/storage';
+import { getArtifactStorageService } from '../../storage';
 import type {
   ArtifactResult,
   GetArtifactOptions,
@@ -20,10 +19,7 @@ export class ArtifactRegistryService {
   private stringCache = new Map<string, string>();
   private pendingRequests = new Map<string, Promise<ArtifactResult>>();
 
-  private constructor(
-    private baseUrl: string,
-    private storage: IArtifactStorage = createArtifactStorage()
-  ) {}
+  private constructor(private baseUrl: string) {}
 
   static getInstance(baseUrl: string): ArtifactRegistryService {
     const existing = this.instances.get(baseUrl);
@@ -82,11 +78,13 @@ export class ArtifactRegistryService {
     options: GetArtifactOptions = {}
   ): Promise<ArtifactResult> {
     const { skipValidation = false } = options;
+    const storage = getArtifactStorageService();
 
-    const storedArtifact = await this.storage.get(classId);
-    if (storedArtifact) {
+    const stored = await storage.get(classId);
+    if (stored) {
       try {
-        const restoredArtifact = restoreBytecodeBuffers(storedArtifact);
+        const parsed = JSON.parse(stored) as SerializedArtifact;
+        const restoredArtifact = restoreBytecodeBuffers(parsed);
         if (!skipValidation) {
           await this.validateArtifact(restoredArtifact, classId);
         }
@@ -102,7 +100,8 @@ export class ArtifactRegistryService {
 
     const artifact = await this.fetchFromRegistry(classId, options);
     this.memoryCache.set(classId, artifact);
-    await this.storage.save(classId, prepareArtifactForStorage(artifact));
+    const serialized = JSON.stringify(prepareArtifactForStorage(artifact));
+    await storage.save(classId, serialized);
     return { artifact, source: 'network' };
   }
 

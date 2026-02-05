@@ -1,27 +1,36 @@
 import { useCallback } from 'react';
 import {
+  getArtifactStorageService,
+  type CachedContract,
+} from '../../services/storage';
+import {
   useContractActions,
   useArtifactActions,
   getContractInteractionStore,
 } from '../../store';
-import {
-  cacheAndPersistArtifact,
-  getCacheStatusMessage,
-} from '../../utils/contractCache';
-import { loadAndPrepareArtifact } from '../../utils/contractInteraction';
 import { requestPersistentStorage } from '../../utils/indexeddb';
+import { useArtifactStateManager } from './useArtifactStateManager';
 import type { AztecNetwork } from '../../config/networks/constants';
 
-/**
- * Lightweight hook that provides artifact loading functionality.
- * Uses Zustand store for state management, allowing any component
- * to trigger artifact loading with shared state.
- */
+const generateKey = (network?: string): string =>
+  `${network ?? 'default'}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const upsertContract = (
+  list: CachedContract[],
+  contract: CachedContract
+): CachedContract[] => {
+  const filtered = list.filter(
+    (c) => c.address.toLowerCase() !== contract.address.toLowerCase()
+  );
+  return [contract, ...filtered].slice(0, 10);
+};
+
 export const useLoadArtifact = (networkName?: AztecNetwork) => {
   const { setInvokeTarget, pushLog } = useContractActions();
-  const { setSavedContracts, setArtifactState } = useArtifactActions();
+  const { setSavedContracts } = useArtifactActions();
+  const { loadAndSetArtifact } = useArtifactStateManager();
 
-  const loadArtifactWithData = useCallback(
+  return useCallback(
     async (
       loadAddress: string,
       loadArtifactJson: string,
@@ -29,52 +38,49 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
     ) => {
       requestPersistentStorage();
 
-      const result = loadAndPrepareArtifact(loadArtifactJson, loadAddress);
+      const result = loadAndSetArtifact(loadArtifactJson, loadAddress);
+      if (!result.success) return;
 
-      if (!result.success) {
-        setArtifactState({ error: result.error });
-        pushLog({
-          level: 'error',
-          title: 'Artifact parse failed',
-          detail: result.error.message,
-        });
-        return;
-      }
+      const { parsed, address: resolvedAddress, contractLabel } = result;
+      const address = resolvedAddress ?? '';
+      const label = customLabel ?? contractLabel;
 
-      const {
-        parsed: parsedArtifact,
-        address: resolvedAddress,
-        contractLabel,
-      } = result;
-
-      setArtifactState({ parsed: parsedArtifact, error: null });
-      setInvokeTarget(resolvedAddress, null);
+      setInvokeTarget(address, null);
       pushLog({
         level: 'success',
         title: 'Artifact loaded',
-        detail: `Loaded ${parsedArtifact.functions.length} functions`,
+        detail: `Loaded ${parsed.functions.length} functions`,
       });
 
-      const cacheResult = await cacheAndPersistArtifact({
-        address: resolvedAddress,
-        artifactInput: loadArtifactJson,
-        label: customLabel ?? contractLabel,
-        savedContracts: getContractInteractionStore().savedContracts,
-        networkName,
-      });
-      setSavedContracts(cacheResult.updatedContracts);
+      // Cache artifact and update contracts list
+      const storage = getArtifactStorageService();
+      const key = generateKey(networkName);
+      const saved = await storage.save(key, loadArtifactJson);
 
-      const cacheMsg = getCacheStatusMessage(cacheResult.stored);
-      if (cacheMsg) {
+      const currentContracts = getContractInteractionStore().savedContracts;
+      const updatedContracts = upsertContract(currentContracts, {
+        address,
+        label,
+        artifactKey: saved ? key : undefined,
+      });
+
+      await storage.saveContracts(networkName, updatedContracts);
+      setSavedContracts(updatedContracts);
+
+      if (!saved) {
         pushLog({
           level: 'info',
           title: 'Cached address only',
-          detail: cacheMsg,
+          detail: 'Failed to cache artifact; saved contract address only.',
         });
       }
     },
-    [networkName, setInvokeTarget, setArtifactState, setSavedContracts, pushLog]
+    [
+      networkName,
+      setInvokeTarget,
+      setSavedContracts,
+      pushLog,
+      loadAndSetArtifact,
+    ]
   );
-
-  return loadArtifactWithData;
 };
