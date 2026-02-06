@@ -99,7 +99,11 @@ export const useContractDeployer = () => {
           throw new Error('Wallet instance not available');
         }
 
-        const parsed = JSON.parse(contract.artifactJson!);
+        if (!contract.artifactJson) {
+          throw new Error('Contract artifact not available');
+        }
+
+        const parsed = JSON.parse(contract.artifactJson);
         // Registry artifacts are already ContractArtifact format but need bytecode restoration,
         // local artifacts need conversion via loadContractArtifact
         const artifact: ContractArtifact = isRegistryArtifact(parsed)
