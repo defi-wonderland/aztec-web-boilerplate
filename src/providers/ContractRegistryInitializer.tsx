@@ -57,7 +57,7 @@ export function ContractRegistryInitializer<
   // Get PXE from the active connector (embedded or external signer)
   const pxe = hasAppManagedPXE(connector) ? connector.getPXE() : null;
 
-  const { setStatus, setError, setRegistry } = useContractRegistryStore();
+  const { setStatus, setRegistry } = useContractRegistryStore();
 
   // Only register contracts when wallet is connected, PXE is ready, and artifacts are loaded
   const isReady =
@@ -146,13 +146,9 @@ export function ContractRegistryInitializer<
         }
 
         setStatus('ready');
-        setError(undefined);
       } catch (err) {
-        const registrationError =
-          err instanceof Error ? err : new Error(String(err));
-        setError(registrationError);
         setStatus('error');
-        console.error('Contract registration failed:', registrationError);
+        console.error('Contract registration failed:', err);
       } finally {
         initializingRef.current = false;
       }
@@ -169,7 +165,6 @@ export function ContractRegistryInitializer<
     showTimingToast,
     checkContractsCached,
     setStatus,
-    setError,
     setRegistry,
   ]);
 

@@ -20,13 +20,6 @@ export type ContractRegistryStatus = 'initializing' | 'ready' | 'error';
 /** Status of an artifact loading operation */
 export type ArtifactStatus = 'idle' | 'loading' | 'ready' | 'error';
 
-/** Timing information for registry operations */
-export interface TimingInfo {
-  elapsedMs: number;
-  contractCount: number;
-  fromCache: boolean;
-}
-
 /** Update payload for artifact state in stores */
 export interface ArtifactStateUpdate {
   parsed?: ParsedArtifact | null;

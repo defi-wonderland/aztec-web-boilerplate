@@ -52,19 +52,13 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
   const { currentConfig } = useAztecWallet();
   const { addToast } = useToast();
 
-  const {
-    artifacts,
-    artifactStatus,
-    setArtifacts,
-    setArtifactStatus,
-    setArtifactError,
-  } = useContractRegistryStore();
+  const { artifacts, artifactStatus, setArtifacts, setArtifactStatus } =
+    useContractRegistryStore();
 
   useEffect(() => {
     const abortController = new AbortController();
 
     setArtifactStatus('loading');
-    setArtifactError(null);
 
     ArtifactService.getInstance()
       .loadArtifacts(currentConfig)
@@ -90,7 +84,6 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
 
         const error = err instanceof Error ? err : new Error(String(err));
         setArtifactStatus('error');
-        setArtifactError(error);
 
         addToast({
           title: 'Failed to load contract artifacts',
@@ -103,20 +96,10 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
     return () => {
       abortController.abort();
     };
-  }, [
-    currentConfig,
-    showToast,
-    addToast,
-    setArtifacts,
-    setArtifactStatus,
-    setArtifactError,
-  ]);
+  }, [currentConfig, showToast, addToast, setArtifacts, setArtifactStatus]);
 
   return {
     artifacts,
-    artifactStatus,
     isReady: artifactStatus === 'ready',
-    isLoading: artifactStatus === 'loading',
-    isError: artifactStatus === 'error',
   };
 }
