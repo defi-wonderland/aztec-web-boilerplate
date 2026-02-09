@@ -1,5 +1,6 @@
 import type { AztecNetwork } from './constants';
 
+export type ArtifactSource = 'local' | 'registry';
 /**
  * Configuration for a deployed contract on a network.
  * Contains address, deployment salt, and deployer address.
@@ -30,6 +31,9 @@ export interface NetworkConfig {
   tokenDeploymentSalt: string;
   proverEnabled: boolean;
   isTestnet: boolean;
+  artifactSource: ArtifactSource;
+  artifactRegistryUrl?: string;
+  classIds?: Record<string, string>;
   /** Fee payment contracts configuration (keyed by contract name, e.g., 'metered') */
   feePaymentContracts?: Record<string, DeployedContractConfig>;
 }

@@ -14,6 +14,7 @@ import {
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { useFeePayment } from '../../store/feePayment';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
+import { restoreBytecodeBuffers } from '../../utils/storage';
 import type { DeployResult } from '../../components/contract-interaction/types';
 import type {
   DeployableContract,
@@ -89,11 +90,11 @@ export const useContractDeployer = () => {
         }
 
         const parsed = JSON.parse(contract.artifactJson);
-        // 'artifact' = already ContractArtifact format, use as-is
-        // 'compiled' or unset = NoirCompiledContract, needs conversion
+        // 'artifact' = already ContractArtifact, needs bytecode buffer restoration
+        // 'compiled' or unset = NoirCompiledContract, needs full conversion
         const artifact: ContractArtifact =
           contract.artifactFormat === 'artifact'
-            ? (parsed as ContractArtifact)
+            ? restoreBytecodeBuffers(parsed)
             : loadContractArtifact(parsed);
 
         const { args, errors } = buildArgsFromInputs(ctor.inputs, formValues);

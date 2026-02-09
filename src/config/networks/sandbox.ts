@@ -15,6 +15,8 @@ const deployment = getSandboxDeployment();
  *
  * Contract addresses are loaded from src/config/deployments/sandbox.json
  * Run `yarn deploy-contracts` to deploy contracts and generate this config.
+ *
+ * Uses local artifacts for offline development (no external registry).
  */
 export const SANDBOX_CONFIG: NetworkConfig = {
   name: 'sandbox',
@@ -30,4 +32,5 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   tokenDeploymentSalt: deployment.tokenContract.salt,
   proverEnabled: env.proverEnabled,
   isTestnet: false,
+  artifactSource: 'local',
 };

@@ -21,7 +21,7 @@ interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
  * Automatically triggers registration for unregistered contracts.
  *
  * This hook only checks STATUS - it does NOT return contract instances.
- * Use `useContractRegistration` to get callable contract instances.
+ * Use `useContract` to get callable contract instances.
  *
  * @example
  * ```tsx

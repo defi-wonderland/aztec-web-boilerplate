@@ -12,6 +12,12 @@ export const NETWORK_URLS = {
 } as const;
 
 /**
+ * Default artifact registry URL for fetching contract artifacts
+ */
+export const DEFAULT_ARTIFACT_REGISTRY_URL =
+  'https://devnet.aztec-registry.xyz';
+
+/**
  * Available network types
  */
 export type NetworkType = keyof typeof NETWORK_URLS;
@@ -20,6 +26,11 @@ export type NetworkType = keyof typeof NETWORK_URLS;
  * Supported Aztec network identifiers
  */
 export type AztecNetwork = 'sandbox' | 'devnet';
+
+/**
+ * Default network used when none is specified
+ */
+export const DEFAULT_NETWORK: AztecNetwork = 'devnet';
 
 /**
  * Aztec chain ID type - follows CAIP-2 format

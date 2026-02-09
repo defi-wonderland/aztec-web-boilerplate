@@ -47,7 +47,7 @@ export const ContractInteractionCard: React.FC = () => {
 
   const isDeployMode = deployableContracts.length > 0 && isDeployModeRaw;
 
-  const { setMode, setAddress, pushLog } = useContractActions();
+  const { setMode, setInvokeTarget, pushLog } = useContractActions();
   const { reset: resetFormValues } = useFormActions();
 
   const loadArtifactWithData = useLoadArtifact(currentConfig?.name);
@@ -109,13 +109,13 @@ export const ContractInteractionCard: React.FC = () => {
       });
 
       setMode('existing');
-      setAddress(result.address ?? '');
+      setInvokeTarget(result.address ?? '', null);
       resetFormValues();
 
       requestAnimationFrame(() => {
         loadArtifactWithData(
           result.address ?? '',
-          deployable.artifactJson,
+          deployable.artifactJson ?? '',
           deployedLabel
         ).catch((err) => {
           pushLog({
@@ -130,7 +130,7 @@ export const ContractInteractionCard: React.FC = () => {
       deploy,
       pushLog,
       setMode,
-      setAddress,
+      setInvokeTarget,
       resetFormValues,
       loadArtifactWithData,
     ]

@@ -4,14 +4,13 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
 import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
 import { contractsConfig } from '../config/contracts';
-import { getNetworkArtifacts } from '../config/networkArtifacts';
 import {
   ContractRegistry,
   getContractsForConfig,
   type ContractConfigMap,
   type ContractNames,
 } from '../contract-registry';
-import { useToast } from '../hooks';
+import { useArtifacts, useToast } from '../hooks';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { iconSize } from '../utils';
 import type { NetworkConfig } from '../config/networks';
@@ -50,27 +49,31 @@ export function ContractRegistryInitializer<
     useAztecWallet();
   const { addToast } = useToast();
 
+  // Load artifacts first
+  const { artifacts, isReady: artifactsReady } = useArtifacts({
+    showToast: showTimingToast,
+  });
+
   // Get PXE from the active connector (embedded or external signer)
   const pxe = hasAppManagedPXE(connector) ? connector.getPXE() : null;
 
-  // Only register contracts when wallet is connected and PXE is ready
-  const isReady = isConnected && isPXEInitialized && pxe !== null;
+  const { setStatus, setRegistry } = useContractRegistryStore();
 
-  const contracts = useMemo(
-    () =>
-      getContractsForConfig(
-        contractsConfig,
-        getNetworkArtifacts(currentConfig.name)
-      ) as unknown as T,
-    [currentConfig]
-  );
+  // Only register contracts when wallet is connected, PXE is ready, and artifacts are loaded
+  const isReady =
+    isConnected && isPXEInitialized && pxe !== null && artifactsReady;
+
+  const contracts = useMemo(() => {
+    if (!artifactsReady) return null;
+    return (artifacts
+      ? getContractsForConfig(contractsConfig, artifacts)
+      : contractsConfig) as unknown as T;
+  }, [artifacts, artifactsReady]);
 
   const initialContracts = useMemo(
-    () => getInitialContracts(contracts),
+    () => (contracts ? getInitialContracts(contracts) : []),
     [contracts]
   );
-
-  const { setStatus, setError, setRegistry } = useContractRegistryStore();
 
   const registryRef = useRef<ContractRegistry<T> | null>(null);
   const initializingRef = useRef(false);
@@ -80,12 +83,13 @@ export function ContractRegistryInitializer<
       async (
         pxeInstance: PXE,
         contractsList: ContractNames<T>[],
-        networkConfig: NetworkConfig
+        networkConfig: NetworkConfig,
+        contractsMap: T
       ): Promise<boolean> => {
         if (contractsList.length === 0) return true;
         const results = await Promise.all(
           contractsList.map(async (name) => {
-            const contractConfig = contracts[name];
+            const contractConfig = contractsMap[name];
             if (!contractConfig) return false;
             const expectedAddress = AztecAddress.fromString(
               contractConfig.address(networkConfig)
@@ -97,11 +101,11 @@ export function ContractRegistryInitializer<
         );
         return results.every(Boolean);
       },
-    [contracts]
+    []
   );
 
   useEffect(() => {
-    if (!isReady || initializingRef.current) {
+    if (!isReady || !contracts || !pxe || initializingRef.current) {
       return;
     }
 
@@ -116,7 +120,8 @@ export function ContractRegistryInitializer<
         const allCached = await checkContractsCached(
           pxe,
           initialContracts,
-          currentConfig
+          currentConfig,
+          contracts
         );
         const start = performance.now();
         await registry.registerAll(initialContracts);
@@ -141,13 +146,9 @@ export function ContractRegistryInitializer<
         }
 
         setStatus('ready');
-        setError(undefined);
       } catch (err) {
-        const registrationError =
-          err instanceof Error ? err : new Error(String(err));
-        setError(registrationError);
         setStatus('error');
-        console.error('Contract registration failed:', registrationError);
+        console.error('Contract registration failed:', err);
       } finally {
         initializingRef.current = false;
       }
@@ -164,7 +165,6 @@ export function ContractRegistryInitializer<
     showTimingToast,
     checkContractsCached,
     setStatus,
-    setError,
     setRegistry,
   ]);
 

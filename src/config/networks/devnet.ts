@@ -1,4 +1,5 @@
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
+import { DEFAULT_ARTIFACT_REGISTRY_URL } from './constants';
 import { NetworkConfig } from './types';
 
 /**
@@ -6,6 +7,9 @@ import { NetworkConfig } from './types';
  *
  * Contract addresses are hardcoded for the public devnet.
  * These contracts are already deployed and available for testing.
+ *
+ * Artifacts are fetched from the external registry using classIds.
+ * Update classIds when contracts are redeployed with new class IDs.
  */
 export const DEVNET_CONFIG: NetworkConfig = {
   name: 'devnet',
@@ -21,6 +25,14 @@ export const DEVNET_CONFIG: NetworkConfig = {
   tokenDeploymentSalt: '1337',
   proverEnabled: true,
   isTestnet: true,
+  artifactSource: 'registry',
+  artifactRegistryUrl:
+    import.meta.env.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL,
+  classIds: {
+    dripper:
+      '0x1d1014602e766124a9a52429708ed416708b39e3e6ad88fcbf7757af093062e5',
+    token: '0x1a89e73869a0969d6a14a8eb2ad8c981820302ff64c55b1225fbe29e4bfa99aa',
+  },
   feePaymentContracts: {
     metered: {
       address:

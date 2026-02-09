@@ -2,9 +2,8 @@
  * Deployable Contracts Configuration.
  * See docs/contract-ui.md for documentation.
  */
-import tokenDevnet from '../artifacts/devnet/token_contract-Token.json' with { type: 'json' };
-import dripperSandbox from '../artifacts/sandbox/dripper-Dripper.json' with { type: 'json' };
-import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json' with { type: 'json' };
+import dripperSandbox from '../artifacts/sandbox/dripper-Dripper.json';
+import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json';
 import {
   loadDeployableContracts,
   type DeployableContractConfig,
@@ -18,7 +17,8 @@ import {
  * Each entry needs:
  *   - id: Unique identifier
  *   - label: Display name shown in UI
- *   - artifact: Imported artifact JSON
+ *   - artifact: Imported artifact JSON (for local/sandbox)
+ *   - classId: Class ID to fetch artifact from registry (for devnet)
  *   - network: (optional) Filter by network name
  *   - labelField: (optional) Constructor param to distinguish multiple deployments (e.g., 'name' for Token)
  */
@@ -26,7 +26,8 @@ const DEPLOYABLE_CONTRACTS_CONFIG: DeployableContractConfig[] = [
   {
     id: 'token-devnet',
     label: 'Token Contract',
-    artifact: tokenDevnet,
+    classId:
+      '0x1a89e73869a0969d6a14a8eb2ad8c981820302ff64c55b1225fbe29e4bfa99aa',
     network: 'devnet',
     labelField: 'name',
   },
