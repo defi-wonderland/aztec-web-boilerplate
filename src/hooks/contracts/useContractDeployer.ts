@@ -1,5 +1,8 @@
 import { useCallback, useState } from 'react';
-import { loadContractArtifact } from '@aztec/aztec.js/abi';
+import {
+  loadContractArtifact,
+  type ContractArtifact,
+} from '@aztec/aztec.js/abi';
 import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
@@ -81,8 +84,17 @@ export const useContractDeployer = () => {
           throw new Error('Wallet instance not available');
         }
 
-        const compiled = JSON.parse(contract.artifactJson);
-        const artifact = loadContractArtifact(compiled);
+        if (!contract.artifactJson) {
+          throw new Error('Contract artifact not available');
+        }
+
+        const parsed = JSON.parse(contract.artifactJson);
+        // 'artifact' = already ContractArtifact format, use as-is
+        // 'compiled' or unset = NoirCompiledContract, needs conversion
+        const artifact: ContractArtifact =
+          contract.artifactFormat === 'artifact'
+            ? (parsed as ContractArtifact)
+            : loadContractArtifact(parsed);
 
         const { args, errors } = buildArgsFromInputs(ctor.inputs, formValues);
         if (errors.length > 0) {

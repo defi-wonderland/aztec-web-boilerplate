@@ -5,6 +5,9 @@ import {
 import { toTitleCase } from './string';
 import type { AztecNetwork } from '../config/networks/constants';
 
+/** Format discriminator for artifact JSON within a DeployableContract. */
+export type ArtifactFormat = 'compiled' | 'artifact';
+
 export type DeployableContractConfig = {
   id: string;
   label: string;
@@ -28,10 +31,23 @@ export type ContractConstructor = ParsedFunction & {
 export type DeployableContract = {
   id: string;
   label: string;
-  artifactJson: string;
+  artifactJson?: string;
+  /** Format of artifactJson: 'compiled' (NoirCompiledContract) or 'artifact' (ContractArtifact). */
+  artifactFormat?: ArtifactFormat;
   constructors: ContractConstructor[];
   network?: AztecNetwork;
   labelField?: string;
+};
+
+/**
+ * Build a friendly label from a constructor function name.
+ */
+export const buildConstructorLabel = (name: string): string => {
+  const labelPart = name
+    .replace(/^constructor_?/, '')
+    .replace(/_/g, ' ')
+    .trim();
+  return labelPart ? toTitleCase(labelPart) : 'Default';
 };
 
 /**
@@ -48,18 +64,10 @@ const extractConstructorsFromArtifact = (
       fn.attributes.includes('abi_initializer')
     );
 
-    return initializers.map((fn) => {
-      const labelPart = fn.name
-        .replace(/^constructor_?/, '')
-        .replace(/_/g, ' ')
-        .trim();
-      const label = labelPart ? toTitleCase(labelPart) : 'Default';
-
-      return {
-        ...fn,
-        label,
-      };
-    });
+    return initializers.map((fn) => ({
+      ...fn,
+      label: buildConstructorLabel(fn.name),
+    }));
   } catch {
     return [];
   }
@@ -75,6 +83,7 @@ const createDeployableContract = (
     id: config.id,
     label: config.label,
     artifactJson,
+    artifactFormat: 'compiled',
     constructors,
     network: config.network,
     labelField: config.labelField,

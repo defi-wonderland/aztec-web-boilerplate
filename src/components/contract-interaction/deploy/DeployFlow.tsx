@@ -22,7 +22,12 @@ import {
   loadAndPrepareArtifact,
   type ParsedFunction,
 } from '../../../utils/contractInteraction';
-import { toTitleCase } from '../../../utils/string';
+import {
+  buildConstructorLabel,
+  type ArtifactFormat,
+  type ContractConstructor,
+  type DeployableContract,
+} from '../../../utils/deployableContracts';
 import {
   Button,
   Textarea,
@@ -34,10 +39,6 @@ import {
 } from '../../ui';
 import ParameterInputs from '../ParameterInputs';
 import type { AztecNetwork } from '../../../config/networks/constants';
-import type {
-  ContractConstructor,
-  DeployableContract,
-} from '../../../utils/deployableContracts';
 
 const styles = {
   section: 'flex flex-col gap-4',
@@ -68,12 +69,20 @@ type CustomDeployableResult = {
   error: string | null;
 };
 
-const buildConstructorLabel = (name: string): string => {
-  const labelPart = name
-    .replace(/^constructor_?/, '')
-    .replace(/_/g, ' ')
-    .trim();
-  return labelPart ? toTitleCase(labelPart) : 'Default';
+/**
+ * Checks if a parsed artifact is in the processed ContractArtifact format
+ * (from registry or SDK output) vs raw NoirCompiledContract (from compiler).
+ * ContractArtifact functions have a `functionType` enum string.
+ */
+const isProcessedArtifact = (artifact: { functions?: unknown[] }): boolean => {
+  const firstFn = artifact.functions?.[0];
+  if (!firstFn || typeof firstFn !== 'object') return false;
+  const obj = firstFn as Record<string, unknown>;
+  return (
+    'functionType' in obj &&
+    typeof obj.functionType === 'string' &&
+    ['private', 'public', 'utility'].includes(obj.functionType)
+  );
 };
 
 const buildCustomDeployableContract = (
@@ -94,6 +103,13 @@ const buildCustomDeployableContract = (
     }
 
     const parsedArtifact = result.parsed;
+
+    // Detect format at the ingestion boundary so downstream consumers
+    // don't need to sniff the JSON structure at runtime
+    const raw = JSON.parse(artifactInput);
+    const artifactFormat: ArtifactFormat = isProcessedArtifact(raw)
+      ? 'artifact'
+      : 'compiled';
 
     const constructors: ContractConstructor[] = parsedArtifact.functions
       .filter((fn: ParsedFunction) => fn.attributes.includes('abi_initializer'))
@@ -117,6 +133,7 @@ const buildCustomDeployableContract = (
         id: 'custom',
         label: contractName,
         artifactJson: artifactInput,
+        artifactFormat,
         constructors,
       },
       error: null,
