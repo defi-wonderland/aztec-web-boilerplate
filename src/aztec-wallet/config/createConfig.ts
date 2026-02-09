@@ -1,8 +1,8 @@
+import { isStringArray } from '../../utils';
 import { BrowserWalletConnector } from '../connectors/BrowserWalletConnector';
 import { createEmbeddedConnector } from '../connectors/EmbeddedConnector';
 import { ExternalSignerConnector } from '../connectors/ExternalSignerConnector';
 import { ExternalSignerType } from '../types/aztec';
-import { isStringArray } from '../../utils';
 import {
   DEFAULT_LABELS,
   DEFAULT_MODAL_CONFIG,

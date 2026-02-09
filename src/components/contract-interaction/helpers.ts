@@ -1,4 +1,4 @@
-import type { ParsedType } from '../../utils/contractInteraction';
+import type { ParsedType } from '../../types/artifact';
 
 export const getPlaceholderForType = (type: ParsedType): string => {
   switch (type.kind) {

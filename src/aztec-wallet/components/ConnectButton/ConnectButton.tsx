@@ -206,12 +206,13 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
   // Connected state
   if (isConnected && address) {
     return (
-      <div className={styles.container}>
+      <div className={styles.container} data-testid="connected-account">
         {showNetworkPicker && <NetworkPicker variant={networkPickerVariant} />}
         <button
           type="button"
           onClick={handleClick}
           className={cn(styles.connectedButton, className)}
+          data-testid="account-address"
         >
           <span className={styles.emoji}>{getAddressEmoji(address)}</span>
           <span className={styles.address}>{truncateAddress(address)}</span>
@@ -236,6 +237,7 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
       onClick={handleClick}
       className={cn(styles.disconnectedButton, className)}
       icon={resolvedIcon}
+      data-testid="connect-wallet-button"
     >
       {label}
     </Button>

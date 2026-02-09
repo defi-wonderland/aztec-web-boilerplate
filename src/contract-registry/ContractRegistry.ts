@@ -1,5 +1,8 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
+import {
+  ContractInstanceWithAddress,
+  getContractInstanceFromInstantiationParams,
+} from '@aztec/aztec.js/contracts';
 import { createLogger } from '@aztec/foundation/log';
 import type { PXE } from '@aztec/pxe/server';
 import type {
@@ -317,10 +320,6 @@ export class ContractRegistry<T extends ContractConfigMap>
     contractConfig: T[ContractNames<T>]
   ): Promise<ContractInstanceWithAddress> {
     const deployParams = contractConfig.deployParams(this.config);
-
-    const { getContractInstanceFromInstantiationParams } = await import(
-      '@aztec/aztec.js/contracts'
-    );
 
     const instance = await getContractInstanceFromInstantiationParams(
       contractConfig.artifact,

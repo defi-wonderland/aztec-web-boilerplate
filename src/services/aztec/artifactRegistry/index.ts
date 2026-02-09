@@ -1,0 +1,1 @@
+export { ArtifactRegistryService } from './ArtifactRegistryService';
