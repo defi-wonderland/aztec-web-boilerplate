@@ -7,7 +7,7 @@ import {
 } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
 import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
-import { useContractRegistration } from '../context/useContractRegistration';
+import { useContract } from '../context/useContract';
 import { useContractRegistry } from '../context/useContractRegistry';
 import { queryKeys } from './queryKeys';
 import type { SimulateViewsOp } from '../../types/browserWallet';
@@ -39,7 +39,7 @@ interface UseTokenBalanceReturn {
 
 /**
  * Hook to fetch token balance for the connected account.
- * Uses the Token contract directly via useContractRegistration hook.
+ * Uses the Token contract directly via useContract hook.
  * Uses React Query for caching and automatic refetching.
  *
  * For Azguard wallets, uses simulate_views operation instead of direct contract calls.
@@ -50,8 +50,7 @@ interface UseTokenBalanceReturn {
 export const useTokenBalance = (
   options: UseTokenBalanceOptions = {}
 ): UseTokenBalanceReturn => {
-  const { contract: token, isReady: isTokenReady } =
-    useContractRegistration('token');
+  const { contract: token, isReady: isTokenReady } = useContract('token');
 
   const {
     account,
@@ -214,27 +213,5 @@ export const useTokenBalance = (
     error: query.error,
     refetch,
     formattedBalances,
-  };
-};
-
-/**
- * Hook to manage token balance utilities.
- */
-export const useTokenWithAddress = () => {
-  const { contract: token } = useContractRegistration('token');
-
-  const queryClient = useQueryClient();
-
-  const tokenAddress = token?.address.toString() ?? '';
-
-  const invalidateAllBalances = useCallback(async () => {
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.token.balances(),
-    });
-  }, [queryClient]);
-
-  return {
-    tokenAddress,
-    invalidateAllBalances,
   };
 };

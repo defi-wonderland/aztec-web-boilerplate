@@ -351,8 +351,8 @@ async function deployTokenContract(
   const salt = Fr.fromString(process.env.VITE_COMMON_SALT || '1337');
 
   const constructorArgs = [
-    'Yield Token', // name
-    'YT', // symbol
+    'WETH', // name
+    'WETH', // symbol
     18, // decimals
     dripperAddress, // minter (Dripper address)
     AztecAddress.ZERO, // upgrade_authority
@@ -366,7 +366,7 @@ async function deployTokenContract(
       constructorArgs,
       deployer: AztecAddress.ZERO, // universalDeploy uses ZERO deployer
       publicKeys: PublicKeys.default(),
-      initializationFunctionName: 'constructor_with_minter',
+      constructorArtifact: 'constructor_with_minter',
     }
   );
 

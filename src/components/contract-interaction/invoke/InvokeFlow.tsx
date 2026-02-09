@@ -3,11 +3,10 @@ import { Play, Zap } from 'lucide-react';
 import { useContractInvoker } from '../../../hooks/contracts';
 import { usePreconfiguredContracts } from '../../../hooks/useInteractionContracts';
 import {
-  useContractTargetAddress,
   useContractActions,
-  useInvokeFlowState,
   useFormValues,
   useFormActions,
+  useInvokeFlowData,
 } from '../../../store';
 import { iconSize } from '../../../utils';
 import {
@@ -21,6 +20,7 @@ import FunctionList from './FunctionList';
 import PreconfiguredSelector from './PreconfiguredSelector';
 import SavedContractsList from './SavedContractsList';
 import type { AztecNetwork } from '../../../config/networks/constants';
+import type { PreconfiguredContract } from '../../../config/preconfiguredContracts';
 
 const styles = {
   container: 'flex flex-col gap-6',
@@ -47,13 +47,19 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
   const [filter, setFilter] = useState('');
 
   const {
-    savedContracts,
+    address,
     artifactInput,
-    parseError,
+    savedContracts,
     isLoadingPreconfigured,
+    preconfiguredId,
     hasContract,
     hasCache,
     contractName,
+    artifactSummary,
+    parseError,
+  } = useInvokeFlowData();
+
+  const {
     groups,
     status,
     error,
@@ -67,10 +73,8 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
     onSelectPreconfigured,
   } = useContractInvoker({ networkName, filter });
 
-  const address = useContractTargetAddress();
   const formValues = useFormValues();
-  const { preconfiguredId } = useInvokeFlowState();
-  const { setAddress } = useContractActions();
+  const { setInvokeTarget } = useContractActions();
   const { setValue: setFormValue } = useFormActions();
   const preconfiguredContracts = usePreconfiguredContracts(networkName);
 
@@ -99,7 +103,8 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
     () =>
       analyzeFunctionCapabilities(
         selectedFn?.attributes ?? [],
-        selectedFn?.inputs
+        selectedFn?.inputs,
+        selectedFn?.isUnconstrained
       ),
     [selectedFn]
   );
@@ -127,9 +132,9 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
 
   const handleAddressChange = useCallback(
     (value: string) => {
-      setAddress(value);
+      setInvokeTarget(value, null);
     },
-    [setAddress]
+    [setInvokeTarget]
   );
 
   const handleFormValueChange = useCallback(
@@ -142,6 +147,12 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
   const handleSelectFunction = useCallback((name: string) => {
     setSelectedFnName(name);
   }, []);
+
+  const handleLoad = useCallback(async () => {
+    setSelectedFnName(null);
+    setFilter('');
+    await onLoad();
+  }, [onLoad]);
 
   const handleFilterChange = useCallback((value: string) => {
     setFilter(value);
@@ -164,7 +175,7 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
         <div className={styles.loaderCard}>
           {hasPreconfigured && (
             <PreconfiguredSelector
-              preconfigured={preconfiguredOptions}
+              preconfigured={preconfiguredOptions as PreconfiguredContract[]}
               selectedId={preconfiguredId}
               onSelect={onSelectPreconfigured}
               isLoading={isLoadingPreconfigured}
@@ -176,12 +187,13 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
             artifactInput={artifactInput}
             onAddressChange={handleAddressChange}
             onArtifactChange={onArtifactChange}
-            onLoad={onLoad}
+            onLoad={handleLoad}
             error={parseError}
             isValidAddress={!address || isValidAztecAddress(address)}
             isPreconfiguredMode={isPreconfiguredMode}
             isLoadingPreconfigured={isLoadingPreconfigured}
             canLoad={canLoadExisting}
+            artifactSummary={artifactSummary}
           />
 
           <SavedContractsList

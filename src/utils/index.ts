@@ -9,6 +9,7 @@ import {
 import { isBrowserWalletConnector } from '../types/walletConnector';
 import type { WalletConnector } from '../types/walletConnector';
 export { cn } from './cn';
+export { downloadJson } from './downloadArtifact';
 export { formatBalance, formatFeeJuiceBalance } from './format';
 export { iconSize, type IconSize } from './iconSize';
 export { MinimalWallet } from './MinimalWallet';
@@ -93,9 +94,9 @@ export const truncateCaipAddress = (
   if (!caipAccount) return '';
   const address = caipAccount.split(':')[2];
   const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
-  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END)
+  if (formattedAddress.length <= DEFAULT_TRUNCATE_START + DEFAULT_TRUNCATE_END)
     return formattedAddress;
-  return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
+  return `${formattedAddress.slice(0, DEFAULT_TRUNCATE_START)}...${formattedAddress.slice(-DEFAULT_TRUNCATE_END)}`;
 };
 
 export const getCaipChainName = (caipAccount: CaipAccountString): string => {

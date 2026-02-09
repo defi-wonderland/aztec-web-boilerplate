@@ -1,25 +1,12 @@
 import { useMemo } from 'react';
 import {
   formatFunctionSignature,
-  type ParsedFunction,
+  hasHiddenAttribute,
+  HIDDEN_FUNCTION_NAMES,
+  isExecutableFn,
+  isReadOnlyFn,
 } from '../utils/contractInteraction';
-
-const HIDDEN_FUNCTION_NAMES = ['constructor', 'public_dispatch'];
-
-const hasHiddenAttribute = (attrs: string[] = []): boolean =>
-  attrs.includes('initializer') ||
-  attrs.includes('abi_initializer') ||
-  attrs.includes('abi_only_self');
-
-const isExecutableFn = (fn: ParsedFunction): boolean => {
-  const attrs = fn.attributes ?? [];
-  const hasAttr = (value: string) => attrs.includes(value);
-  const isView = hasAttr('abi_view') || hasAttr('view');
-  const isInitializer = hasAttr('abi_initializer') || hasAttr('initializer');
-  const isPublic = hasAttr('abi_public') || hasAttr('public');
-  const isPrivate = hasAttr('abi_private') || hasAttr('private');
-  return (isPublic || isPrivate) && !isView && !isInitializer;
-};
+import type { ParsedFunction } from '../types/artifact';
 
 export const useFunctionGroups = (
   functions: ParsedFunction[],
@@ -45,11 +32,14 @@ export const useFunctionGroups = (
   const grouped = useMemo(() => {
     if (filteredFunctions.length === 0) return [];
 
-    const callableFunctions = filteredFunctions.filter(
-      (fn) => isExecutableFn(fn) || !fn.isUnconstrained
+    // Callable: state-changing functions (public/private, not view, not initializer)
+    const callableFunctions = filteredFunctions.filter((fn) =>
+      isExecutableFn(fn)
     );
+
+    // Read-only: unconstrained, view, or utility functions (can be simulated)
     const readFunctions = filteredFunctions.filter(
-      (fn) => fn.isUnconstrained && !isExecutableFn(fn)
+      (fn) => isReadOnlyFn(fn) && !isExecutableFn(fn)
     );
 
     const groups: { id: string; label: string; items: ParsedFunction[] }[] = [];

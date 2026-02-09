@@ -75,9 +75,7 @@ const SavedContractsList: React.FC<SavedContractsListProps> = ({
                   {contract.address}
                 </span>
                 <span className={styles.contractMeta}>
-                  {contract.artifact || contract.artifactKey
-                    ? 'Artifact cached'
-                    : 'Address only'}
+                  {contract.artifactKey ? 'Artifact cached' : 'Address only'}
                 </span>
               </div>
 
