@@ -19,6 +19,7 @@ import {
   useFormActions,
 } from '../../../store';
 import { iconSize } from '../../../utils';
+import { hasProcessedFunctions } from '../../../utils/artifactNormalizer';
 import { loadAndPrepareArtifact } from '../../../utils/contractInteraction';
 import {
   buildConstructorLabel,
@@ -68,22 +69,6 @@ type CustomDeployableResult = {
   error: string | null;
 };
 
-/**
- * Checks if a parsed artifact is in the processed ContractArtifact format
- * (from registry or SDK output) vs raw NoirCompiledContract (from compiler).
- * ContractArtifact functions have a `functionType` enum string.
- */
-const isProcessedArtifact = (artifact: { functions?: unknown[] }): boolean => {
-  const firstFn = artifact.functions?.[0];
-  if (!firstFn || typeof firstFn !== 'object') return false;
-  const obj = firstFn as Record<string, unknown>;
-  return (
-    'functionType' in obj &&
-    typeof obj.functionType === 'string' &&
-    ['private', 'public', 'utility'].includes(obj.functionType)
-  );
-};
-
 const buildCustomDeployableContract = (
   artifactInput: string
 ): CustomDeployableResult => {
@@ -102,7 +87,7 @@ const buildCustomDeployableContract = (
     // Detect format at the ingestion boundary so downstream consumers
     // don't need to sniff the JSON structure at runtime
     const raw = JSON.parse(artifactInput);
-    const artifactFormat: ArtifactFormat = isProcessedArtifact(raw)
+    const artifactFormat: ArtifactFormat = hasProcessedFunctions(raw)
       ? 'artifact'
       : 'compiled';
 
