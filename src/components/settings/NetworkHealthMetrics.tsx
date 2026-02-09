@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { formatRelativeTime } from '../../utils';
 
 export interface NetworkHealthMetricsProps {
   blockHeight: number | null;
@@ -30,24 +31,6 @@ const styles = {
   metricLabel: 'text-[9px] md:text-[11px] text-gray-400',
   skeleton: 'h-5 md:h-6 w-14 md:w-16 bg-interactive rounded animate-pulse',
 } as const;
-
-/**
- * Format a relative time string (e.g., "2s ago", "1m ago")
- */
-function formatRelativeTime(date: Date | null): string {
-  if (!date) return 'N/A';
-
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-
-  if (seconds < 5) return 'Now';
-  if (seconds < 60) return `${seconds}s ago`;
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ago`;
-}
 
 export const NetworkHealthMetrics: React.FC<NetworkHealthMetricsProps> = ({
   blockHeight,
