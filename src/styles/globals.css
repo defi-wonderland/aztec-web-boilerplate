@@ -62,6 +62,12 @@
   --navbar-bg: rgba(238, 237, 241, 0.95);
   --button-text: #eeedf1;
 
+  /* Surface hierarchy */
+  --bg-page: #f8f7fa;
+  --bg-card: #ffffff;
+  --bg-interactive: #f3f4f6;
+  --bg-interactive-hover: #e5e7eb;
+
   /* Semantic colors */
   --success: #10b981;
   --error: #ef4444;
@@ -91,6 +97,12 @@
   --shadow-color: rgba(0, 0, 0, 0.5);
   --navbar-bg: rgba(30, 30, 36, 0.95);
   --button-text: #000000;
+
+  /* Surface hierarchy */
+  --bg-page: #121218;
+  --bg-card: #1e1e24;
+  --bg-interactive: #3a3a44;
+  --bg-interactive-hover: #4a4a54;
 }
 
 /* =============================================================================
@@ -138,6 +150,15 @@ body {
 .bg-accent-secondary {
   background-color: var(--accent-secondary);
 }
+.bg-page {
+  background-color: var(--bg-page);
+}
+.bg-card {
+  background-color: var(--bg-card);
+}
+.bg-interactive {
+  background-color: var(--bg-interactive);
+}
 
 /* --- Hover variants for backgrounds --- */
 .hover\:bg-surface:hover {
@@ -151,6 +172,12 @@ body {
 }
 .hover\:bg-accent:hover {
   background-color: var(--accent-primary);
+}
+.hover\:bg-interactive:hover {
+  background-color: var(--bg-interactive);
+}
+.hover\:bg-interactive-hover:hover {
+  background-color: var(--bg-interactive-hover);
 }
 
 /* --- Data state variants for backgrounds (Radix UI) --- */

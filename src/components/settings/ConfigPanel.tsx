@@ -9,13 +9,13 @@ export interface ConfigPanelProps {
 
 const styles = {
   container:
-    'flex-1 flex flex-col gap-4 md:gap-7 bg-[#F8F8FA] dark:bg-[#121218] px-4 py-4 lg:px-10 lg:py-8',
+    'flex-1 flex flex-col gap-4 md:gap-7 bg-page px-4 py-4 lg:px-10 lg:py-8',
   header: 'flex items-center gap-3 md:gap-4',
   headerIcon:
-    'w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-[14px] flex items-center justify-center bg-[#8B5CF6]/20 dark:bg-[#a78bfa]/20 text-lg md:text-[22px]',
+    'w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-[14px] flex items-center justify-center bg-[var(--accent-primary)]/20 text-lg md:text-[22px]',
   headerContent: 'flex flex-col gap-0.5 md:gap-1',
-  headerTitle: 'text-xl md:text-2xl font-bold text-[#1A1A1A] dark:text-white',
-  headerSubtitle: 'text-xs md:text-sm text-[#6B7280] dark:text-[#9ca3af]',
+  headerTitle: 'text-xl md:text-2xl font-bold text-default',
+  headerSubtitle: 'text-xs md:text-sm text-muted',
   sectionsContainer: 'flex flex-col gap-4 md:gap-5',
   grid2Col: 'grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4',
   contractsGap: 'flex flex-col gap-3 md:gap-4',
