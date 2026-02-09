@@ -1,4 +1,19 @@
-import type { ContractFunctionInteraction } from '@aztec/aztec.js/contracts';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import type { AztecAddress } from '@aztec/aztec.js/addresses';
+import type {
+  ContractFunctionInteraction,
+  ContractBase,
+} from '@aztec/aztec.js/contracts';
+import type { Wallet } from '@aztec/aztec.js/wallet';
+
+/**
+ * Type helper to extract contract type from a contract class.
+ * Matches the static interface of generated Aztec contract classes.
+ */
+export type ContractClassFor<TContract extends ContractBase> = {
+  artifact: ContractArtifact;
+  at: (address: AztecAddress, wallet: Wallet) => TContract;
+};
 
 /**
  * Extract method names from a contract class.

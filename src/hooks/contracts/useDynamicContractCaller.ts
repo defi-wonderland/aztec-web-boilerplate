@@ -1,17 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { Contract } from '@aztec/aztec.js/contracts';
-import {
-  useAztecWallet,
-  hasAppManagedPXE,
-  isBrowserWalletConnector,
-} from '../../aztec-wallet';
-import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import type { ContractBase } from '@aztec/aztec.js/contracts';
 import { useFeePayment } from '../../store/feePayment';
-import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
-import { getContractMethod } from './utils';
-import type { SimulateViewsOp } from '../../types';
+import { useReadContract } from './useReadContract';
+import { useWriteContract } from './useWriteContract';
+import type { ContractClassFor } from '../../types/contractTypes';
 
 interface CallParams {
   address: string;
@@ -29,89 +22,52 @@ interface CallResult {
 export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
-  const { connector, account, currentConfig } = useAztecWallet();
+  const { readContract } = useReadContract();
+  const { writeContract } = useWriteContract();
   const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // readContract/writeContract expect a ContractClassFor<T> (i.e. a generated
+  // contract class like TokenContract with a real `at` factory). This hook only
+  // has a raw artifact, so we build a shim that provides:
+  //   - `artifact`: the real ABI, used at runtime by Contract.at(address, artifact, wallet)
+  //   - `at`: a dummy — only exists to satisfy the type shape. The typed hooks
+  //     never call it; they use the generic Contract.at() SDK factory instead.
+  const contractShim: ContractClassFor<ContractBase> | null = useMemo(() => {
+    if (!artifact) return null;
+    return {
+      artifact,
+      at: () => ({}),
+    } as unknown as ContractClassFor<ContractBase>;
+  }, [artifact]);
+
   const simulate = useCallback(
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
 
-      if (!connector || !account) {
-        return { success: false, error: 'Wallet not connected' };
+      if (!contractShim) {
+        return { success: false, error: 'Artifact not loaded' };
       }
 
       setIsSimulating(true);
       setError(null);
 
       try {
-        if (isBrowserWalletConnector(connector)) {
-          const selectedAccount = connector.getCaipAccount?.();
-          if (!selectedAccount) {
-            return {
-              success: false,
-              error: 'Browser wallet account not selected',
-            };
-          }
+        const result = await readContract({
+          contract: contractShim,
+          address,
+          functionName,
+          args,
+        });
 
-          const operation: SimulateViewsOp = {
-            kind: 'simulate_views',
-            account: selectedAccount,
-            calls: [
-              {
-                kind: 'call',
-                contract: address,
-                method: functionName,
-                args,
-              },
-            ],
-          };
-
-          const result = await connector.executeOperation(operation);
-
-          if (result.status !== 'ok') {
-            const errorMsg =
-              'error' in result && result.error
-                ? String(result.error)
-                : 'Simulation failed';
-            setError(errorMsg);
-            return { success: false, error: errorMsg };
-          }
-
-          return { success: true, data: result.result };
+        if (!result.success) {
+          setError(result.error ?? 'Simulation failed');
+          return { success: false, error: result.error };
         }
 
-        if (hasAppManagedPXE(connector)) {
-          if (!artifact) {
-            return { success: false, error: 'Artifact not loaded' };
-          }
-
-          const wallet = connector.getWallet();
-          if (!wallet) {
-            return { success: false, error: 'Wallet instance not available' };
-          }
-
-          const contractAddress = AztecAddress.fromString(address);
-          const contract = await Contract.at(contractAddress, artifact, wallet);
-          const method = getContractMethod(contract, functionName);
-
-          if (!method) {
-            return {
-              success: false,
-              error: `Method ${functionName} not found`,
-            };
-          }
-
-          const result = await method(...args).simulate({
-            from: account.getAddress(),
-          });
-
-          return { success: true, data: result };
-        }
-
-        return { success: false, error: 'Unsupported connector type' };
+        return { success: true, data: result.data };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMsg);
@@ -120,108 +76,39 @@ export const useDynamicContractCaller = (
         setIsSimulating(false);
       }
     },
-    [account, artifact, connector]
+    [contractShim, readContract]
   );
 
   const execute = useCallback(
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
 
-      if (!connector || !account) {
-        return { success: false, error: 'Wallet not connected' };
+      if (!contractShim) {
+        return { success: false, error: 'Artifact not loaded' };
       }
 
       setIsExecuting(true);
       setError(null);
 
       try {
-        if (isBrowserWalletConnector(connector)) {
-          const response = await connector.sendTransaction({
-            actions: [
-              {
-                contract: address,
-                method: functionName,
-                args: args.map((arg) =>
-                  typeof arg === 'bigint' ? arg.toString() : arg
-                ),
-              },
-            ],
-          });
+        const result = await writeContract({
+          contract: contractShim,
+          address,
+          functionName,
+          args,
+          feePaymentMethod,
+        });
 
-          if (response.status !== 'success') {
-            const errorMsg = response.error ?? 'Transaction failed';
-            setError(errorMsg);
-            return { success: false, error: errorMsg };
-          }
-
-          const caipAccount = connector.getCaipAccount?.();
-          if (!caipAccount || !response.txHash) {
-            return {
-              success: true,
-              txHash: response.txHash,
-              data: response.rawResult,
-            };
-          }
-
-          const chain = `${caipAccount.split(':')[0]}:${caipAccount.split(':')[1]}`;
-          const receipt = await waitForBrowserWalletReceipt(
-            connector,
-            response.txHash,
-            chain
-          );
-
-          if (!receipt.success) {
-            const errorMsg = receipt.error ?? 'Transaction confirmation failed';
-            setError(errorMsg);
-            return { success: false, error: errorMsg, txHash: response.txHash };
-          }
-
-          return {
-            success: true,
-            txHash: response.txHash,
-            data: response.rawResult,
-          };
+        if (!result.success) {
+          setError(result.error ?? 'Transaction failed');
+          return { success: false, error: result.error, txHash: result.txHash };
         }
 
-        if (hasAppManagedPXE(connector)) {
-          if (!artifact) {
-            return { success: false, error: 'Artifact not loaded' };
-          }
-
-          const wallet = connector.getWallet();
-          if (!wallet) {
-            return { success: false, error: 'Wallet instance not available' };
-          }
-
-          const contractAddress = AztecAddress.fromString(address);
-          const contract = await Contract.at(contractAddress, artifact, wallet);
-          const method = getContractMethod(contract, functionName);
-
-          if (!method) {
-            return {
-              success: false,
-              error: `Method ${functionName} not found`,
-            };
-          }
-
-          // Get fee payment method from global store
-          const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-            config: currentConfig?.feePaymentContracts ?? {},
-            getSponsoredFeePaymentMethod: () =>
-              connector.getSponsoredFeePaymentMethod(),
-          });
-
-          const tx = method(...args);
-          const sentTx = tx.send({
-            from: account.getAddress(),
-            fee: { paymentMethod },
-          });
-          const receipt = await sentTx.wait({ timeout: 900 });
-
-          return { success: true, data: receipt };
-        }
-
-        return { success: false, error: 'Unsupported connector type' };
+        return {
+          success: true,
+          data: result.data,
+          txHash: result.txHash,
+        };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMsg);
@@ -230,13 +117,7 @@ export const useDynamicContractCaller = (
         setIsExecuting(false);
       }
     },
-    [
-      account,
-      artifact,
-      connector,
-      feePaymentMethod,
-      currentConfig?.feePaymentContracts,
-    ]
+    [contractShim, writeContract, feePaymentMethod]
   );
 
   return {

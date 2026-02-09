@@ -1,16 +1,13 @@
 import { useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  useAztecWallet,
-  WalletType,
-  isBrowserWalletConnector,
-} from '../../aztec-wallet';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { TokenContract } from '../../artifacts/Token.js';
+import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
-import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
+import { queuePxeCall } from '../../utils';
 import { useContractRegistration } from '../context/useContractRegistration';
-import { useContractRegistry } from '../context/useContractRegistry';
+import { useReadContract } from '../contracts/useReadContract';
 import { queryKeys } from './queryKeys';
-import type { SimulateViewsOp } from '../../types/browserWallet';
 
 export interface TokenBalance {
   private: bigint;
@@ -39,10 +36,8 @@ interface UseTokenBalanceReturn {
 
 /**
  * Hook to fetch token balance for the connected account.
- * Uses the Token contract directly via useContractRegistration hook.
+ * Delegates to useReadContract for wallet-agnostic contract reads.
  * Uses React Query for caching and automatic refetching.
- *
- * For Azguard wallets, uses simulate_views operation instead of direct contract calls.
  *
  * @param options - Configuration options
  * @param options.enabled - Whether to enable the query (defaults to true when wallet is connected)
@@ -50,138 +45,67 @@ interface UseTokenBalanceReturn {
 export const useTokenBalance = (
   options: UseTokenBalanceOptions = {}
 ): UseTokenBalanceReturn => {
-  const { contract: token, isReady: isTokenReady } =
-    useContractRegistration('token');
+  const { isReady: isTokenReady } = useContractRegistration('token');
 
   const {
     account,
-    connector,
     isLoading: isWalletLoading,
     currentConfig,
-    walletType,
   } = useAztecWallet();
-  const { status: registryStatus } = useContractRegistry();
   const queryClient = useQueryClient();
+  const { readContracts } = useReadContract();
 
-  // Wallet type detection
-  const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
-  const isExternalSigner = walletType === WalletType.EXTERNAL_SIGNER;
-  const tokenAddress = token?.address.toString() ?? '';
+  const tokenAddress = contractsConfig.token.address(currentConfig);
   const ownerAddress = account?.getAddress().toString() ?? '';
 
-  if (isExternalSigner) {
-    console.log('[useTokenBalance] EXTERNAL_SIGNER detected', {
-      walletType,
-      hasToken: !!token,
-      isTokenReady,
-      hasAccount: !!account,
-      tokenAddress,
-      ownerAddress,
-      registryStatus,
-    });
-  }
-
-  const isRegistryReady = isBrowserWallet || registryStatus === 'ready';
-  const isWalletReady = !isWalletLoading;
-
   const isQueryEnabled = Boolean(
-    isRegistryReady &&
-      isWalletReady &&
-      token &&
+    !isWalletLoading &&
       isTokenReady &&
       account &&
       tokenAddress &&
       ownerAddress &&
-      (options.enabled ?? true) &&
-      (!isBrowserWallet ||
-        (isBrowserWalletConnector(connector) && connector.getCaipAccount()))
+      (options.enabled ?? true)
   );
 
   const query = useQuery({
     queryKey: queryKeys.token.balance(tokenAddress, ownerAddress),
     queryFn: async (): Promise<TokenBalance> => {
-      if (!token || !ownerAddress) {
+      if (!tokenAddress || !ownerAddress) {
         throw new Error('Token contract or owner address not available');
       }
 
-      // Log when external signer fetches balance
-      if (isExternalSigner) {
-        console.log('[useTokenBalance] EXTERNAL_SIGNER fetching balance...', {
-          tokenAddress,
-          ownerAddress,
-          tokenType: token?.constructor?.name,
-        });
-      }
+      const owner = AztecAddress.fromString(ownerAddress);
 
-      const useOperationsFlow =
-        isBrowserWallet && isBrowserWalletPlaceholder(token);
-
-      // Type guard needed here to access browser wallet specific methods
-      if (useOperationsFlow && isBrowserWalletConnector(connector)) {
-        const selectedAccount = connector.getCaipAccount();
-        if (!selectedAccount) {
-          throw new Error('External wallet account not selected');
-        }
-
-        const tokenContractAddress =
-          contractsConfig.token.address(currentConfig);
-        const accountAddress = account!.getAddress().toString();
-
-        const operation: SimulateViewsOp = {
-          kind: 'simulate_views',
-          account: selectedAccount,
-          calls: [
-            {
-              kind: 'call',
-              contract: tokenContractAddress,
-              method: 'balance_of_private',
-              args: [accountAddress],
-            },
-            {
-              kind: 'call',
-              contract: tokenContractAddress,
-              method: 'balance_of_public',
-              args: [accountAddress],
-            },
-          ],
-        };
-
-        const result = await connector.executeOperation(operation);
-
-        if (result.status !== 'ok') {
-          const errorMessage =
-            'error' in result ? result.error : 'Failed to fetch balance';
-          throw new Error(errorMessage || 'Balance query failed');
-        }
-
-        // Result contains decoded values for each call
-        const viewResult = result.result as { decoded: unknown[] };
-        const privateBalance = BigInt(String(viewResult.decoded[0] ?? 0));
-        const publicBalance = BigInt(String(viewResult.decoded[1] ?? 0));
-
-        return {
-          private: privateBalance,
-          public: publicBalance,
-        };
-      }
-
-      const fromAddress = account!.getAddress();
-
-      const privateBalance = await queuePxeCall(() =>
-        token.methods
-          .balance_of_private(fromAddress)
-          .simulate({ from: fromAddress })
+      const [privateResult, publicResult] = await queuePxeCall(() =>
+        readContracts([
+          {
+            contract: TokenContract,
+            address: tokenAddress,
+            functionName: 'balance_of_private',
+            args: [owner],
+          },
+          {
+            contract: TokenContract,
+            address: tokenAddress,
+            functionName: 'balance_of_public',
+            args: [owner],
+          },
+        ])
       );
 
-      const publicBalance = await queuePxeCall(() =>
-        token.methods
-          .balance_of_public(fromAddress)
-          .simulate({ from: fromAddress })
-      );
+      if (!privateResult.success) {
+        throw new Error(
+          privateResult.error ?? 'Failed to fetch private balance'
+        );
+      }
+
+      if (!publicResult.success) {
+        throw new Error(publicResult.error ?? 'Failed to fetch public balance');
+      }
 
       return {
-        private: privateBalance as bigint,
-        public: publicBalance as bigint,
+        private: BigInt(String(privateResult.data ?? 0)),
+        public: BigInt(String(publicResult.data ?? 0)),
       };
     },
     enabled: isQueryEnabled,
@@ -209,7 +133,7 @@ export const useTokenBalance = (
   return {
     tokenBalance: query.data ?? null,
     isLoading: query.isLoading,
-    isFetching: query.isFetching, // True during background refetch
+    isFetching: query.isFetching,
     isError: query.isError,
     error: query.error,
     refetch,
