@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { Copy, Check } from 'lucide-react';
+import { useCopyToClipboard } from '../../hooks';
 import { cn, iconSize } from '../../utils';
 
 type BadgeVariant = 'blue' | 'red' | 'purple' | 'green';
@@ -48,17 +49,7 @@ export const ConfigValueRow: React.FC<ConfigValueRowProps> = ({
   showCopy = true,
   className,
 }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy value:', err);
-    }
-  }, [value]);
+  const { copied, copy } = useCopyToClipboard();
 
   return (
     <div className={cn(styles.container, className)}>
@@ -75,7 +66,7 @@ export const ConfigValueRow: React.FC<ConfigValueRowProps> = ({
         <span className={styles.value}>{value}</span>
         {showCopy && (
           <button
-            onClick={handleCopy}
+            onClick={() => copy(value)}
             className={cn(styles.copyButton, copied && styles.copySuccess)}
             aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
             type="button"

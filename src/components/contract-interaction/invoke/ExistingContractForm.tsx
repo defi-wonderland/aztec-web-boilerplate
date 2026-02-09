@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Check, Copy, Download, Loader2 } from 'lucide-react';
+import { useCopyToClipboard } from '../../../hooks';
 import { downloadJson, iconSize } from '../../../utils';
 import {
   Button,
@@ -66,7 +67,7 @@ const ExistingContractForm: React.FC<ExistingContractFormProps> = ({
   canLoad,
   artifactSummary,
 }) => {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   const addressError =
     !isValidAddress && address ? 'Invalid Aztec address' : undefined;
@@ -88,16 +89,9 @@ const ExistingContractForm: React.FC<ExistingContractFormProps> = ({
 
   const showSummary = effectiveSummary && !isLoadingPreconfigured;
 
-  const handleCopy = useCallback(async () => {
-    if (!artifactInput) return;
-    try {
-      await navigator.clipboard.writeText(artifactInput);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      console.warn('Clipboard write failed');
-    }
-  }, [artifactInput]);
+  const handleCopy = () => {
+    if (artifactInput) copy(artifactInput);
+  };
 
   const handleDownload = () => {
     if (!artifactInput) return;

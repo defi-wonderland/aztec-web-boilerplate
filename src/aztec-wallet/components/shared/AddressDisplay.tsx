@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { Copy, Check } from 'lucide-react';
+import { useCopyToClipboard } from '../../../hooks';
 import { cn, iconSize, truncateAddress } from '../../../utils';
 
 const styles = {
@@ -65,17 +66,7 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
   showCopy = true,
   className,
 }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy address:', err);
-    }
-  }, [address]);
+  const { copied, copy } = useCopyToClipboard();
 
   const truncated = truncateAddress(address, startChars, endChars);
 
@@ -86,7 +77,7 @@ export const AddressDisplay: React.FC<AddressDisplayProps> = ({
       </div>
       {showCopy && (
         <button
-          onClick={handleCopy}
+          onClick={() => copy(address)}
           className={cn(styles.copyButton, copied && styles.copySuccess)}
           aria-label={copied ? 'Copied!' : 'Copy address'}
         >
