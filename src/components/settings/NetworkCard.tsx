@@ -23,7 +23,7 @@ export interface NetworkCardProps {
 
 const NETWORK_INFO = {
   sandbox: {
-    title: 'Sandbox',
+    title: 'Local Network',
     subtitle: 'Local Development',
     icon: '🏠',
   },

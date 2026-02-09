@@ -20,10 +20,10 @@ const deployment = getSandboxDeployment();
  */
 export const SANDBOX_CONFIG: NetworkConfig = {
   name: 'sandbox',
-  displayName: 'Local Sandbox',
+  displayName: 'Local Network',
   description: isDeploymentValid(deployment)
     ? 'Local development environment with deployed contracts'
-    : 'Local sandbox - run "yarn deploy-contracts" to deploy',
+    : 'Local network - run "yarn deploy-contracts" to deploy',
   nodeUrl: env.aztecNodeUrl || deployment.nodeUrl,
   dripperContractAddress: deployment.dripperContract.address,
   tokenContractAddress: deployment.tokenContract.address,

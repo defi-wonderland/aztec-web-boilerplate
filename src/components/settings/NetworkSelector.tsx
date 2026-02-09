@@ -105,8 +105,8 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
         <div className={styles.tipContent}>
           <span className={styles.tipTitle}>Quick Tip</span>
           <p className={styles.tipText}>
-            Use Sandbox for fast local testing. Switch to Devnet for production
-            testing.
+            Use Local Network for fast local testing. Switch to Devnet for
+            production testing.
           </p>
         </div>
       </div>
