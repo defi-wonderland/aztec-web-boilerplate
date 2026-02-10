@@ -149,8 +149,8 @@ bash -i <(curl -s https://install.aztec.network)
 ```
 
 ```bash
-# Currently we use 3.0.0-devnet.20251212 version, make sure you have the right one
-aztec-up 3.0.0-devnet.20251212
+# Currently we use 3.0.0-devnet.6-patch.1 version, make sure you have the right one
+aztec-up -v 3.0.0-devnet.6-patch.1
 ```
 
 ### Start Sandbox

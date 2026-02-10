@@ -10,6 +10,6 @@
     "salt": "0x0000000000000000000000000000000000000000000000000000000000000539"
   },
   "deployer": "0x18b1cbdcec832adbece3fb2aafa7cd0a6b7a892b76f85efc1499593b2556b20f",
-  "proverEnabled": true,
-  "deployedAt": "2026-02-03T23:06:35.194Z"
+  "proverEnabled": false,
+  "deployedAt": "2026-02-10T15:44:51.518Z"
 }
