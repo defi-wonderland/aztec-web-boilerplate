@@ -106,6 +106,8 @@ export interface ConnectButtonProps {
    * - false/null: no icon
    */
   icon?: React.ReactNode | false | null;
+  /** Hide the network picker (useful for mobile where it's shown separately) */
+  hideNetworkPicker?: boolean;
   /** Additional class names */
   className?: string;
 }
@@ -117,10 +119,10 @@ export interface ConnectButtonProps {
  * - Reads wallet state from the store
  * - Opens connect modal when disconnected
  * - Opens account modal when connected
- * - Shows NetworkPicker when connected (if enabled in config)
+ * - Shows NetworkPicker when enabled in config (regardless of connection state)
  *
  * Shows different states:
- * - Disconnected: Gradient CTA button with wallet icon
+ * - Disconnected: NetworkPicker + Gradient CTA button with wallet icon
  * - Connecting: Shimmer loading state
  * - Connected: NetworkPicker + Avatar with truncated address
  *
@@ -142,6 +144,7 @@ export interface ConnectButtonProps {
 export const ConnectButton: React.FC<ConnectButtonProps> = ({
   label = 'Connect Wallet',
   icon,
+  hideNetworkPicker: hideNetworkPickerProp = false,
   className,
 }) => {
   // Read config from context
@@ -168,11 +171,11 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
     walletState.status === 'connecting' || walletState.status === 'deploying';
   const address = walletState.account?.getAddress().toString() ?? null;
 
-  // Get network picker variant from config - show always if configured (not just when connected)
+  // Get network picker variant from config
   const networkPickerVariant = config.showNetworkPicker as
     | NetworkPickerVariant
     | undefined;
-  const showNetworkPicker = !!networkPickerVariant;
+  const showNetworkPicker = !!networkPickerVariant && !hideNetworkPickerProp;
 
   // Handle click based on connection state
   const handleClick = useCallback(() => {

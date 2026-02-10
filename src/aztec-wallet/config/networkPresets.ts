@@ -29,7 +29,7 @@ export const NETWORK_PRESETS: Record<string, NetworkPresetDefaults> = {
     icon: Globe,
   },
   sandbox: {
-    displayName: 'Sandbox',
+    displayName: 'Local Network',
     icon: FlaskConical,
   },
   testnet: {

@@ -22,7 +22,11 @@ export const aztecWalletConfig = createAztecWalletConfig({
   // Networks
   networks: [
     { name: 'devnet', displayName: 'Devnet', nodeUrl: NETWORK_URLS.devnet },
-    { name: 'sandbox', displayName: 'Sandbox', nodeUrl: NETWORK_URLS.sandbox },
+    {
+      name: 'sandbox',
+      displayName: 'Local Network',
+      nodeUrl: NETWORK_URLS.sandbox,
+    },
   ],
   defaultNetwork: DEFAULT_NETWORK,
 

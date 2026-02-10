@@ -1,73 +1,88 @@
-import React, { useState } from 'react';
-import { Settings, Home, Globe } from 'lucide-react';
-import { FeePaymentSelector } from '../components/FeePaymentSelector';
-import { ConfigDisplay } from '../components/settings';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '../components/ui';
-import { iconSize } from '../utils';
+import React, { useState, useCallback } from 'react';
+import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
+import { NetworkSelector, ConfigPanel } from '../components/settings';
+import { DEVNET_CONFIG } from '../config/networks/devnet';
+import { SANDBOX_CONFIG } from '../config/networks/sandbox';
+import { useNetworkAvailability } from '../hooks/useNetworkAvailability';
+import { useNetworkHealth } from '../hooks/useNetworkHealth';
 import type { AztecNetwork } from '../config/networks/constants';
 
 const styles = {
-  headerRow: 'flex flex-row items-start gap-3',
-  headerIcon: 'text-accent',
-  tabContent: 'space-y-6',
-  divider: 'border-t border-default',
+  container: 'flex flex-col lg:flex-row w-full min-h-[600px]',
+} as const;
+
+const NETWORK_CONFIGS = {
+  sandbox: SANDBOX_CONFIG,
+  devnet: DEVNET_CONFIG,
 } as const;
 
 export const SettingsCard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AztecNetwork>('sandbox');
+  const { networkName, switchNetwork, disconnect, isConnected, connector } =
+    useAztecWallet();
+
+  const healthMetrics = useNetworkHealth();
+  const networkAvailability = useNetworkAvailability();
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  const activeNetwork = (networkName ?? 'sandbox') as AztecNetwork;
+
+  const handleSelectNetwork = useCallback(
+    async (network: AztecNetwork) => {
+      if (network === activeNetwork) return;
+      if (!isConnected) {
+        try {
+          await switchNetwork(network);
+        } catch (error) {
+          console.error('Failed to select network:', error);
+        }
+      }
+    },
+    [activeNetwork, isConnected, switchNetwork]
+  );
+
+  const showHealthMetrics =
+    isConnected && connector && hasAppManagedPXE(connector);
+
+  const handleSwitchNetwork = useCallback(
+    async (network: AztecNetwork) => {
+      if (isSwitching) return;
+
+      setIsSwitching(true);
+      try {
+        if (isConnected) {
+          await disconnect();
+        }
+        // Switch to the new network
+        await switchNetwork(network);
+      } catch (error) {
+        console.error('Failed to switch network:', error);
+      } finally {
+        setIsSwitching(false);
+      }
+    },
+    [isSwitching, isConnected, disconnect, switchNetwork]
+  );
+
+  const activeConfig = NETWORK_CONFIGS[activeNetwork];
 
   return (
-    <Card>
-      <CardHeader className={styles.headerRow}>
-        <Settings size={iconSize('xl')} className={styles.headerIcon} />
-        <div>
-          <CardTitle>Network Configuration</CardTitle>
-          <CardDescription>View and configure network settings</CardDescription>
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as AztecNetwork)}
-        >
-          <TabsList>
-            <TabsTrigger value="sandbox">
-              <Home size={iconSize()} />
-              Sandbox
-            </TabsTrigger>
-            <TabsTrigger value="devnet">
-              <Globe size={iconSize()} />
-              Devnet
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="sandbox">
-            <div className={styles.tabContent}>
-              <ConfigDisplay networkName="sandbox" />
-              <div className={styles.divider} />
-              <FeePaymentSelector networkName="sandbox" />
-            </div>
-          </TabsContent>
-          <TabsContent value="devnet">
-            <div className={styles.tabContent}>
-              <ConfigDisplay networkName="devnet" />
-              <div className={styles.divider} />
-              <FeePaymentSelector networkName="devnet" />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div className={styles.container}>
+      <NetworkSelector
+        activeNetwork={activeNetwork}
+        selectedNetwork={activeNetwork}
+        connectedNetwork={isConnected ? activeNetwork : null}
+        networkAvailability={networkAvailability.networks}
+        healthMetrics={healthMetrics}
+        showHealthMetrics={!!showHealthMetrics}
+        onSelectNetwork={handleSelectNetwork}
+        onSwitchNetwork={handleSwitchNetwork}
+        isSwitching={isSwitching}
+        networkConfigs={{
+          sandbox: { proverEnabled: NETWORK_CONFIGS.sandbox.proverEnabled },
+          devnet: { proverEnabled: NETWORK_CONFIGS.devnet.proverEnabled },
+        }}
+      />
+      <ConfigPanel config={activeConfig} />
+    </div>
   );
 };
