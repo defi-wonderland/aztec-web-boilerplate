@@ -4,6 +4,10 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/artifact-registry/:path*",
+      "destination": "https://devnet.aztec-registry.xyz/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
