@@ -24,21 +24,20 @@ const NAV_TABS: NavTab[] = [
 ];
 
 const styles = {
-  navbar:
-    'sticky top-0 z-40 w-full bg-white dark:bg-[#1e1e24] border-b border-[#E5E7EB] dark:border-[#3a3a44]',
+  navbar: 'sticky top-0 z-40 w-full bg-card border-b border-default',
   navContainer:
     'flex items-center gap-2 md:gap-4 lg:gap-6 h-14 lg:h-[72px] px-4 md:px-6 lg:px-10',
   logoGroup: 'flex items-center gap-2 lg:gap-3',
   logoIcon:
-    'w-8 h-8 lg:w-9 lg:h-9 rounded-lg lg:rounded-[10px] bg-[#8B5CF6] dark:bg-[#a78bfa] flex items-center justify-center',
+    'w-8 h-8 lg:w-9 lg:h-9 rounded-lg lg:rounded-[10px] bg-accent flex items-center justify-center',
   logoIconInner: 'w-4 h-4 lg:w-5 lg:h-5 bg-white/30 rounded',
-  logoText: 'text-lg lg:text-[22px] font-bold text-[#1A1A1A] dark:text-white',
+  logoText: 'text-lg lg:text-[22px] font-bold text-default',
   // Desktop nav tabs - hidden on mobile
   navTabs: 'hidden md:flex items-center gap-1 lg:gap-2',
   navTab:
-    'flex items-center justify-center gap-2 w-9 h-9 lg:w-auto lg:h-auto lg:px-4 lg:py-2.5 rounded-lg text-sm font-medium text-[#6B7280] dark:text-[#9ca3af] hover:bg-[#F3F4F6] dark:hover:bg-[#2a2a32] transition-colors cursor-pointer',
+    'flex items-center justify-center gap-2 w-9 h-9 lg:w-auto lg:h-auto lg:px-4 lg:py-2.5 rounded-lg text-sm font-medium text-muted hover:bg-surface-tertiary transition-colors cursor-pointer',
   navTabActive:
-    'bg-[#8B5CF6]/10 dark:bg-[#a78bfa]/15 text-[#8B5CF6] dark:text-[#a78bfa] font-semibold',
+    'bg-[var(--accent-primary)]/10 dark:bg-[var(--accent-primary)]/15 text-accent font-semibold',
   navTabLabel: 'hidden lg:inline',
   spacer: 'flex-1',
   // Actions - different for mobile vs desktop
@@ -46,18 +45,18 @@ const styles = {
   actionsMobile: 'flex md:hidden items-center gap-2',
   // Mobile hamburger button
   menuButton:
-    'md:hidden flex items-center justify-center w-9 h-9 rounded-lg text-[#6B7280] dark:text-[#9ca3af] hover:bg-[#F3F4F6] dark:hover:bg-[#2a2a32] transition-colors',
+    'md:hidden flex items-center justify-center w-9 h-9 rounded-lg text-muted hover:bg-surface-tertiary transition-colors',
   // Mobile menu dropdown
   mobileMenu:
-    'md:hidden absolute top-14 left-0 right-0 bg-white dark:bg-[#1e1e24] border-b border-[#E5E7EB] dark:border-[#3a3a44] shadow-lg z-50',
+    'md:hidden absolute top-14 left-0 right-0 bg-card border-b border-default shadow-lg z-50',
   mobileMenuInner: 'flex flex-col p-2',
   mobileNavTab:
-    'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-[#6B7280] dark:text-[#9ca3af] hover:bg-[#F3F4F6] dark:hover:bg-[#2a2a32] transition-colors',
+    'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted hover:bg-surface-tertiary transition-colors',
   mobileNavTabActive:
-    'bg-[#8B5CF6]/10 dark:bg-[#a78bfa]/15 text-[#8B5CF6] dark:text-[#a78bfa] font-semibold',
-  mobileDivider: 'h-px bg-[#E5E7EB] dark:bg-[#3a3a44] my-2 mx-2',
+    'bg-[var(--accent-primary)]/10 dark:bg-[var(--accent-primary)]/15 text-accent font-semibold',
+  mobileDivider: 'h-px bg-gray-200 dark:bg-[var(--border-color)] my-2 mx-2',
   mobileSettingsRow:
-    'flex items-center justify-between px-4 py-3 text-sm font-medium text-[#6B7280] dark:text-[#9ca3af]',
+    'flex items-center justify-between px-4 py-3 text-sm font-medium text-muted',
   mobileSettingsLabel: 'flex items-center gap-2',
 } as const;
 

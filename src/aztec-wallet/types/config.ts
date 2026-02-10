@@ -6,7 +6,9 @@ import type { IBrowserWalletAdapter } from '../../types/browserWallet';
 /**
  * Icon type that supports emoji strings, URLs, or React components
  */
-export type IconType = string | ComponentType<{ className?: string; size?: number }>;
+export type IconType =
+  | string
+  | ComponentType<{ className?: string; size?: number }>;
 
 /**
  * Network preset for AztecWallet configuration

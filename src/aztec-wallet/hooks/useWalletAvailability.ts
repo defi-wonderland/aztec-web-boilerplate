@@ -2,6 +2,18 @@ import { useMemo, useState, useEffect } from 'react';
 import { useEVMStore } from '../store/evm';
 
 /**
+ * Check if walletless (E2E test provider) is injected
+ * Walletless simulates MetaMask for E2E testing
+ */
+function isWalletlessInjected(): boolean {
+  if (typeof window === 'undefined') return false;
+  const ethereum = (
+    window as Window & { ethereum?: { isWalletless?: boolean } }
+  ).ethereum;
+  return !!ethereum?.isWalletless;
+}
+
+/**
  * Hook to check if a specific EVM wallet is installed.
  *
  * Uses EIP-6963 discovery to determine wallet availability.
@@ -34,10 +46,17 @@ import { useEVMStore } from '../store/evm';
 export function useIsEvmWalletInstalled(rdns: string | undefined): boolean {
   const discoveredWallets = useEVMStore((state) => state.discoveredWallets);
 
+  // Check for walletless (E2E test provider) - it simulates MetaMask
+  const hasWalletless = useMemo(() => isWalletlessInjected(), []);
+
   return useMemo(() => {
     if (!rdns) return false;
+    // If walletless is injected and this is MetaMask, consider it installed
+    if (hasWalletless && rdns === 'io.metamask') {
+      return true;
+    }
     return discoveredWallets.some((wallet) => wallet.info.rdns === rdns);
-  }, [rdns, discoveredWallets]);
+  }, [rdns, discoveredWallets, hasWalletless]);
 }
 
 /**
@@ -69,6 +88,9 @@ export function useEvmWalletsAvailability(
 ): Record<string, boolean> {
   const discoveredWallets = useEVMStore((state) => state.discoveredWallets);
 
+  // Check for walletless (E2E test provider) - it simulates MetaMask
+  const hasWalletless = useMemo(() => isWalletlessInjected(), []);
+
   return useMemo(() => {
     const discoveredRdns = new Set(
       discoveredWallets.map((wallet) => wallet.info.rdns)
@@ -77,11 +99,16 @@ export function useEvmWalletsAvailability(
     const availability: Record<string, boolean> = {};
     for (const wallet of wallets) {
       if (wallet.rdns) {
-        availability[wallet.rdns] = discoveredRdns.has(wallet.rdns);
+        // If walletless is injected and this is MetaMask, consider it installed
+        if (hasWalletless && wallet.rdns === 'io.metamask') {
+          availability[wallet.rdns] = true;
+        } else {
+          availability[wallet.rdns] = discoveredRdns.has(wallet.rdns);
+        }
       }
     }
     return availability;
-  }, [wallets, discoveredWallets]);
+  }, [wallets, discoveredWallets, hasWalletless]);
 }
 
 /**

@@ -1,36 +1,36 @@
 import { useCallback } from 'react';
 import {
+  getArtifactStorageService,
+  type CachedContract,
+} from '../../services/storage';
+import {
   useContractActions,
   useArtifactActions,
   getContractInteractionStore,
 } from '../../store';
-import {
-  cacheAndPersistArtifact,
-  constants,
-  getCacheStatusMessage,
-} from '../../utils/contractCache';
-import { loadAndPrepareArtifact } from '../../utils/contractInteraction';
+import { requestPersistentStorage } from '../../utils/indexeddb';
+import { useArtifactStateManager } from './useArtifactStateManager';
 import type { AztecNetwork } from '../../config/networks/constants';
 
-const requestPersistentStorage = async () => {
-  if (!navigator.storage?.persist) return;
-  const alreadyPersisted = await navigator.storage.persisted();
-  if (!alreadyPersisted) {
-    await navigator.storage.persist();
-  }
+const generateKey = (network?: string): string =>
+  `${network ?? 'default'}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const upsertContract = (
+  list: CachedContract[],
+  contract: CachedContract
+): CachedContract[] => {
+  const filtered = list.filter(
+    (c) => c.address.toLowerCase() !== contract.address.toLowerCase()
+  );
+  return [contract, ...filtered].slice(0, 10);
 };
 
-/**
- * Lightweight hook that provides artifact loading functionality.
- * Uses Zustand store for state management, allowing any component
- * to trigger artifact loading with shared state.
- */
 export const useLoadArtifact = (networkName?: AztecNetwork) => {
-  const { setAddress, setPreconfiguredId, pushLog } = useContractActions();
-  const { setParsedArtifact, setParseError, setSavedContracts } =
-    useArtifactActions();
+  const { setInvokeTarget, pushLog } = useContractActions();
+  const { setSavedContracts } = useArtifactActions();
+  const { loadAndSetArtifact } = useArtifactStateManager();
 
-  const loadArtifactWithData = useCallback(
+  return useCallback(
     async (
       loadAddress: string,
       loadArtifactJson: string,
@@ -38,68 +38,49 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
     ) => {
       requestPersistentStorage();
 
-      const result = loadAndPrepareArtifact(
-        loadArtifactJson,
-        loadAddress,
-        constants.MAX_CACHE_CHARS
-      );
+      const result = loadAndSetArtifact(loadArtifactJson, loadAddress);
+      if (!result.success) return;
 
-      if (!result.success) {
-        setParseError(result.error ?? 'Parse failed');
-        pushLog({
-          level: 'error',
-          title: 'Artifact parse failed',
-          detail: result.error ?? 'Unknown error',
-        });
-        return;
-      }
+      const { parsed, address: resolvedAddress, contractLabel } = result;
+      const address = resolvedAddress ?? '';
+      const label = customLabel ?? contractLabel;
 
-      const {
-        parsed: parsedArtifact,
-        address: resolvedAddress,
-        contractLabel,
-        shouldCacheInline,
-      } = result;
-
-      setParsedArtifact(parsedArtifact);
-      setAddress(resolvedAddress);
-      setPreconfiguredId(null);
-      setParseError(null);
+      setInvokeTarget(address, null);
       pushLog({
         level: 'success',
         title: 'Artifact loaded',
-        detail: `Loaded ${parsedArtifact.functions.length} functions`,
+        detail: `Loaded ${parsed.functions.length} functions`,
       });
 
-      const cacheResult = await cacheAndPersistArtifact({
-        address: resolvedAddress,
-        artifactInput: loadArtifactJson,
-        label: customLabel ?? contractLabel,
-        shouldCacheInline,
-        savedContracts: getContractInteractionStore().savedContracts,
-        networkName,
-      });
-      setSavedContracts(cacheResult.updatedContracts);
+      // Cache artifact and update contracts list
+      const storage = getArtifactStorageService();
+      const key = generateKey(networkName);
+      const saved = await storage.save(key, loadArtifactJson);
 
-      const cacheMsg = getCacheStatusMessage(cacheResult, shouldCacheInline);
-      if (cacheMsg) {
+      const currentContracts = getContractInteractionStore().savedContracts;
+      const updatedContracts = upsertContract(currentContracts, {
+        address,
+        label,
+        artifactKey: saved ? key : undefined,
+      });
+
+      await storage.saveContracts(networkName, updatedContracts);
+      setSavedContracts(updatedContracts);
+
+      if (!saved) {
         pushLog({
           level: 'info',
           title: 'Cached address only',
-          detail: cacheMsg,
+          detail: 'Failed to cache artifact; saved contract address only.',
         });
       }
     },
     [
       networkName,
-      setAddress,
-      setPreconfiguredId,
-      setParsedArtifact,
-      setParseError,
+      setInvokeTarget,
       setSavedContracts,
       pushLog,
+      loadAndSetArtifact,
     ]
   );
-
-  return loadArtifactWithData;
 };

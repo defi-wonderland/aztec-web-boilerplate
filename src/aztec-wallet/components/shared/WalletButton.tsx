@@ -53,6 +53,8 @@ export interface WalletButtonProps {
   onClick?: () => void;
   /** Additional class names */
   className?: string;
+  /** Test ID for e2e testing */
+  'data-testid'?: string;
 }
 
 /**
@@ -66,6 +68,7 @@ export const WalletButton: React.FC<WalletButtonProps> = ({
   disabled,
   onClick,
   className,
+  'data-testid': testId,
 }) => {
   // Disable button if wallet is explicitly not installed
   const isNotInstalled = isInstalled === false;
@@ -82,6 +85,7 @@ export const WalletButton: React.FC<WalletButtonProps> = ({
         isNotInstalled ? styles.buttonDisabled : styles.buttonEnabled,
         className
       )}
+      data-testid={testId}
     >
       <div
         className={cn(

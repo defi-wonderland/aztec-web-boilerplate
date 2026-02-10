@@ -135,7 +135,11 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={styles.content} aria-describedby={undefined}>
+      <DialogContent
+        className={styles.content}
+        aria-describedby={undefined}
+        data-testid="connect-wallet-modal"
+      >
         <ConnectModalProvider
           config={config}
           onClose={handleClose}

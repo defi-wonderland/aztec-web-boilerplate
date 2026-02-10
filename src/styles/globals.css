@@ -62,6 +62,12 @@
   --navbar-bg: rgba(238, 237, 241, 0.95);
   --button-text: #eeedf1;
 
+  /* Surface hierarchy */
+  --bg-page: #f8f7fa;
+  --bg-card: #ffffff;
+  --bg-interactive: #f3f4f6;
+  --bg-interactive-hover: #e5e7eb;
+
   /* Semantic colors */
   --success: #10b981;
   --error: #ef4444;
@@ -70,7 +76,7 @@
 }
 
 .dark {
-  /* Background colors - from Pencil design */
+  /* Background colors */
   --bg-primary: #121218;
   --bg-secondary: #1e1e24;
   --bg-tertiary: #2a2a32;
@@ -91,6 +97,12 @@
   --shadow-color: rgba(0, 0, 0, 0.5);
   --navbar-bg: rgba(30, 30, 36, 0.95);
   --button-text: #000000;
+
+  /* Surface hierarchy */
+  --bg-page: #121218;
+  --bg-card: #1e1e24;
+  --bg-interactive: #3a3a44;
+  --bg-interactive-hover: #4a4a54;
 }
 
 /* =============================================================================
@@ -138,6 +150,15 @@ body {
 .bg-accent-secondary {
   background-color: var(--accent-secondary);
 }
+.bg-page {
+  background-color: var(--bg-page);
+}
+.bg-card {
+  background-color: var(--bg-card);
+}
+.bg-interactive {
+  background-color: var(--bg-interactive);
+}
 
 /* --- Hover variants for backgrounds --- */
 .hover\:bg-surface:hover {
@@ -151,6 +172,12 @@ body {
 }
 .hover\:bg-accent:hover {
   background-color: var(--accent-primary);
+}
+.hover\:bg-interactive:hover {
+  background-color: var(--bg-interactive);
+}
+.hover\:bg-interactive-hover:hover {
+  background-color: var(--bg-interactive-hover);
 }
 
 /* --- Data state variants for backgrounds (Radix UI) --- */
@@ -206,66 +233,6 @@ body {
 }
 .border-accent {
   border-color: var(--accent-primary);
-}
-
-/* --- Input Focus States --- */
-.focus-accent-soft:focus {
-  border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-color));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 12%, transparent);
-}
-
-/* --- Placeholder Color --- */
-.placeholder-muted::placeholder {
-  color: var(--text-muted);
-  opacity: 1;
-}
-
-/* --- Semantic Colors (success, error, warning, info) --- */
-.bg-success-soft {
-  background-color: color-mix(in srgb, var(--success) 10%, transparent);
-}
-.bg-error-soft {
-  background-color: color-mix(in srgb, var(--error) 10%, transparent);
-}
-.bg-warning-soft {
-  background-color: color-mix(in srgb, var(--warning) 10%, transparent);
-}
-.bg-info-soft {
-  background-color: color-mix(in srgb, var(--info) 10%, transparent);
-}
-
-.text-success {
-  color: var(--success);
-}
-.text-error {
-  color: var(--error);
-}
-.text-warning {
-  color: var(--warning);
-}
-.text-info {
-  color: var(--info);
-}
-
-.border-success {
-  border-color: var(--success);
-}
-.border-error {
-  border-color: var(--error);
-}
-.border-warning {
-  border-color: var(--warning);
-}
-.border-info {
-  border-color: var(--info);
-}
-
-/* Semantic backgrounds for cards/containers */
-.bg-success-container {
-  background-color: color-mix(in srgb, var(--success) 5%, var(--bg-primary));
-}
-.border-success-soft {
-  border-color: color-mix(in srgb, var(--success) 20%, transparent);
 }
 
 /* --- Shadows (theme-aware) --- */

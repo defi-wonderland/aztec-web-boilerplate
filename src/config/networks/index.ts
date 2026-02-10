@@ -11,5 +11,3 @@ export const AVAILABLE_NETWORKS: NetworkConfig[] = [
   SANDBOX_CONFIG,
   DEVNET_CONFIG,
 ];
-
-export const DEFAULT_NETWORK = SANDBOX_CONFIG;

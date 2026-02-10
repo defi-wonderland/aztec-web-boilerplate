@@ -3,27 +3,24 @@ import type {
   IContractRegistry,
   ContractConfigMap,
 } from '../../contract-registry';
-
-export type ContractRegistryStatus = 'initializing' | 'ready' | 'error';
-
-export type TimingInfo = {
-  elapsedMs: number;
-  contractCount: number;
-  fromCache: boolean;
-};
+import type { ArtifactOverrides } from '../../services/aztec/artifact';
+import type {
+  ContractRegistryStatus,
+  ArtifactStatus,
+} from '../../types/artifactRegistry';
 
 type State = {
   registry: IContractRegistry<ContractConfigMap> | null;
   status: ContractRegistryStatus;
-  error: Error | undefined;
-  timingInfo: TimingInfo | null;
+  artifacts: ArtifactOverrides | null;
+  artifactStatus: ArtifactStatus;
 };
 
 type Actions = {
   setRegistry: (registry: IContractRegistry<ContractConfigMap> | null) => void;
   setStatus: (status: ContractRegistryStatus) => void;
-  setError: (error: Error | undefined) => void;
-  setTimingInfo: (info: TimingInfo | null) => void;
+  setArtifacts: (artifacts: ArtifactOverrides | null) => void;
+  setArtifactStatus: (status: ArtifactStatus) => void;
   reset: () => void;
 };
 
@@ -32,8 +29,8 @@ export type ContractRegistryStore = State & Actions;
 const INITIAL_STATE: State = {
   registry: null,
   status: 'initializing',
-  error: undefined,
-  timingInfo: null,
+  artifacts: null,
+  artifactStatus: 'idle',
 };
 
 export const useContractRegistryStore = create<ContractRegistryStore>(
@@ -42,8 +39,9 @@ export const useContractRegistryStore = create<ContractRegistryStore>(
 
     setRegistry: (registry) => set({ registry }),
     setStatus: (status) => set({ status }),
-    setError: (error) => set({ error }),
-    setTimingInfo: (timingInfo) => set({ timingInfo }),
+    setArtifacts: (artifacts) => set({ artifacts }),
+    setArtifactStatus: (artifactStatus) => set({ artifactStatus }),
+
     reset: () => set(INITIAL_STATE),
   })
 );

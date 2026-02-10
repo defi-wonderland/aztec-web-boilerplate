@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Coins, Copy, Shield, Globe, AlertTriangle } from 'lucide-react';
 import { useAztecWallet } from '../aztec-wallet';
+import { FeePaymentInfo } from '../components/FeePaymentInfo';
 import { TokenBalance } from '../components/TokenBalance';
 import {
   Card,
@@ -22,6 +23,7 @@ import {
 import { useRequiredContracts } from '../hooks';
 import { useToast, type LoadingToastResult } from '../hooks';
 import { useDripper } from '../hooks/mutations/useDripper';
+import { useFeePayment } from '../store/feePayment';
 import { iconSize } from '../utils';
 
 const styles = {
@@ -71,6 +73,7 @@ export const DripperCard: React.FC = () => {
 
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
+  const { method: feePaymentMethod } = useFeePayment();
   const loadingToastRef = useRef<LoadingToastResult | null>(null);
 
   const { dripToPrivate, dripToPublic, isReady } = useDripper({
@@ -125,9 +128,15 @@ export const DripperCard: React.FC = () => {
     const amountBigInt = BigInt(amount);
 
     if (dripType === 'private') {
-      dripToPrivate.mutate({ amount: amountBigInt });
+      dripToPrivate.mutate({
+        amount: amountBigInt,
+        feePaymentMethod,
+      });
     } else {
-      dripToPublic.mutate({ amount: amountBigInt });
+      dripToPublic.mutate({
+        amount: amountBigInt,
+        feePaymentMethod,
+      });
     }
   };
 
@@ -193,7 +202,7 @@ export const DripperCard: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className={styles.formSection}>
+          <div className={styles.formSection} data-testid="dripper-form">
             {/* Token Address - First, so user knows which token */}
             <div className={styles.formGroup}>
               <label htmlFor="token-address" className={styles.label}>
@@ -272,6 +281,9 @@ export const DripperCard: React.FC = () => {
               </div>
             </div>
 
+            {/* Fee Payment Method (read-only, configured in Settings) */}
+            <FeePaymentInfo />
+
             {/* Submit Button */}
             <Button
               variant="primary"
@@ -293,6 +305,7 @@ export const DripperCard: React.FC = () => {
                   <Globe size={iconSize()} />
                 )
               }
+              data-testid="drip-button"
             >
               {isWalletBusy
                 ? 'Wallet Busy...'

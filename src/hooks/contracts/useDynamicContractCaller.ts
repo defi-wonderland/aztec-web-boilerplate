@@ -7,6 +7,8 @@ import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../../aztec-wallet';
+import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { useFeePayment } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 import { getContractMethod } from './utils';
 import type { SimulateViewsOp } from '../../types';
@@ -27,7 +29,8 @@ interface CallResult {
 export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
-  const { connector, account } = useAztecWallet();
+  const { connector, account, currentConfig } = useAztecWallet();
+  const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,7 +204,13 @@ export const useDynamicContractCaller = (
             };
           }
 
-          const paymentMethod = await connector.getSponsoredFeePaymentMethod();
+          // Get fee payment method from global store
+          const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
+            config: currentConfig?.feePaymentContracts ?? {},
+            getSponsoredFeePaymentMethod: () =>
+              connector.getSponsoredFeePaymentMethod(),
+          });
+
           const tx = method(...args);
           const sentTx = tx.send({
             from: account.getAddress(),
@@ -221,7 +230,13 @@ export const useDynamicContractCaller = (
         setIsExecuting(false);
       }
     },
-    [account, artifact, connector]
+    [
+      account,
+      artifact,
+      connector,
+      feePaymentMethod,
+      currentConfig?.feePaymentContracts,
+    ]
   );
 
   return {
