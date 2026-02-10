@@ -10,7 +10,7 @@ interface ConfigSectionBadge {
 }
 
 export interface ConfigSectionProps {
-  icon: string; // Emoji icon
+  icon: React.ReactNode;
   iconVariant: IconVariant;
   title: string;
   badge?: ConfigSectionBadge;

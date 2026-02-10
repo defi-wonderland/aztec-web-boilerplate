@@ -1,4 +1,6 @@
 import React from 'react';
+import { Lightbulb } from 'lucide-react';
+import { iconSize } from '../../utils';
 import { NetworkCard, type NetworkStatus } from './NetworkCard';
 import type { AztecNetwork } from '../../config/networks/constants';
 import type { AvailabilityStatus } from '../../hooks/useNetworkAvailability';
@@ -101,7 +103,9 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
       </div>
 
       <div className={styles.tipCard}>
-        <span className={styles.tipIcon}>💡</span>
+        <span className={styles.tipIcon}>
+          <Lightbulb size={iconSize()} />
+        </span>
         <div className={styles.tipContent}>
           <span className={styles.tipTitle}>Quick Tip</span>
           <p className={styles.tipText}>

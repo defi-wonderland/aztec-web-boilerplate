@@ -1,4 +1,6 @@
 import React from 'react';
+import { Settings, Link, FileText, Rocket } from 'lucide-react';
+import { iconSize } from '../../utils';
 import { ConfigSection } from './ConfigSection';
 import { ConfigValueRow } from './ConfigValueRow';
 import type { NetworkConfig } from '../../config/networks/types';
@@ -25,7 +27,9 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config }) => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div className={styles.headerIcon}>⚙️</div>
+        <div className={styles.headerIcon}>
+          <Settings size={iconSize('lg')} />
+        </div>
         <div className={styles.headerContent}>
           <span className={styles.headerTitle}>
             {config.displayName} Configuration
@@ -38,7 +42,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config }) => {
 
       <div className={styles.sectionsContainer}>
         <ConfigSection
-          icon="🔗"
+          icon={<Link size={iconSize()} />}
           iconVariant="green"
           title="Connection"
           badge={{ text: 'Online', variant: 'online' }}
@@ -47,7 +51,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config }) => {
         </ConfigSection>
 
         <ConfigSection
-          icon="📄"
+          icon={<FileText size={iconSize()} />}
           iconVariant="purple"
           title="Smart Contracts"
           badge={{ text: '2 deployed', variant: 'count' }}
@@ -66,7 +70,11 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config }) => {
           </div>
         </ConfigSection>
 
-        <ConfigSection icon="🚀" iconVariant="amber" title="Deployment Info">
+        <ConfigSection
+          icon={<Rocket size={iconSize()} />}
+          iconVariant="amber"
+          title="Deployment Info"
+        >
           <div className={styles.contractsGap}>
             <ConfigValueRow label="Deployer" value={config.deployerAddress} />
             <div className={styles.grid2Col}>

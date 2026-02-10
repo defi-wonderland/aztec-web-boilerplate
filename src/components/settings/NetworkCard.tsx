@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Loader2 } from 'lucide-react';
+import { RefreshCw, Loader2, Home, Globe } from 'lucide-react';
 import { AztecNetwork } from '../../config/networks/constants';
 import { cn, iconSize } from '../../utils';
 import {
@@ -25,14 +25,14 @@ const NETWORK_INFO = {
   sandbox: {
     title: 'Local Network',
     subtitle: 'Local Development',
-    icon: '🏠',
+    icon: <Home size={iconSize('md')} />,
   },
   devnet: {
     title: 'Devnet',
     subtitle: 'Public Testnet',
-    icon: '🌐',
+    icon: <Globe size={iconSize('md')} />,
   },
-} as const;
+};
 
 const styles = {
   container:
@@ -171,11 +171,10 @@ export const NetworkCard: React.FC<NetworkCardProps> = ({
             disabled={isSwitching}
             type="button"
           >
-            {isSwitching ? (
+            {isSwitching && (
               <Loader2 size={iconSize()} className="animate-spin" />
-            ) : (
-              <RefreshCw size={iconSize()} />
             )}
+            {!isSwitching && <RefreshCw size={iconSize()} />}
             {isSwitching ? 'Switching...' : `Switch to ${title}`}
           </button>
         )}
