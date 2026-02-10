@@ -71,7 +71,8 @@ export const ConfigValueRow: React.FC<ConfigValueRowProps> = ({
             aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
             type="button"
           >
-            {copied ? <Check size={iconSize()} /> : <Copy size={iconSize()} />}
+            {copied && <Check size={iconSize()} />}
+            {!copied && <Copy size={iconSize()} />}
           </button>
         )}
       </div>

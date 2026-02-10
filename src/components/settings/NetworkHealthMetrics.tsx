@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { formatRelativeTime } from '../../utils';
+import { cn, formatRelativeTime } from '../../utils';
 
 export interface NetworkHealthMetricsProps {
   blockHeight: number | null;
@@ -57,13 +57,15 @@ export const NetworkHealthMetrics: React.FC<NetworkHealthMetricsProps> = ({
         <div className={styles.headerSpacer} />
         {hasData && !isLoading && (
           <div
-            className={
-              isHealthy ? styles.healthBadgeHealthy : styles.healthBadgeDegraded
-            }
+            className={cn(
+              isHealthy && styles.healthBadgeHealthy,
+              !isHealthy && styles.healthBadgeDegraded
+            )}
           >
             <div className={styles.healthDot} />
             <span className={styles.healthText}>
-              {isHealthy ? 'Healthy' : 'Degraded'}
+              {isHealthy && 'Healthy'}
+              {!isHealthy && 'Degraded'}
             </span>
           </div>
         )}
@@ -71,31 +73,30 @@ export const NetworkHealthMetrics: React.FC<NetworkHealthMetricsProps> = ({
 
       <div className={styles.metricsRow}>
         <div className={styles.metricItem}>
-          {isLoading ? (
-            <div className={styles.skeleton} />
-          ) : (
+          {isLoading && <div className={styles.skeleton} />}
+          {!isLoading && (
             <span className={styles.metricValue}>
-              {blockHeight !== null ? blockHeight.toLocaleString() : 'N/A'}
+              {blockHeight !== null && blockHeight.toLocaleString()}
+              {blockHeight === null && 'N/A'}
             </span>
           )}
           <span className={styles.metricLabel}>Block Height</span>
         </div>
 
         <div className={styles.metricItem}>
-          {isLoading ? (
-            <div className={styles.skeleton} />
-          ) : (
+          {isLoading && <div className={styles.skeleton} />}
+          {!isLoading && (
             <span className={styles.metricValueGreen}>
-              {latency !== null ? `${latency}ms` : 'N/A'}
+              {latency !== null && `${latency}ms`}
+              {latency === null && 'N/A'}
             </span>
           )}
           <span className={styles.metricLabel}>Latency</span>
         </div>
 
         <div className={styles.metricItem}>
-          {isLoading ? (
-            <div className={styles.skeleton} />
-          ) : (
+          {isLoading && <div className={styles.skeleton} />}
+          {!isLoading && (
             <span className={styles.metricValueMuted}>{relativeTime}</span>
           )}
           <span className={styles.metricLabel}>Last Synced</span>
