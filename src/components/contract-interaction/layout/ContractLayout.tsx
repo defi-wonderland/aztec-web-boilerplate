@@ -65,6 +65,40 @@ export const ContractLayout: React.FC = () => {
 
   const loadArtifactWithData = useLoadArtifact(currentConfig?.name);
 
+  const loadSavedContractArtifact = useCallback(
+    async (sidebarId: string): Promise<boolean> => {
+      const address = fromSidebarId(sidebarId);
+      if (!address) return false;
+
+      const savedContract = savedContracts.find(
+        (c) => c.address.toLowerCase() === address.toLowerCase()
+      );
+      if (!savedContract) return false;
+
+      const storage = getArtifactStorageService();
+      const artifact = savedContract.artifactKey
+        ? await storage.get(savedContract.artifactKey)
+        : null;
+
+      if (artifact) {
+        await loadArtifactWithData(
+          savedContract.address,
+          artifact,
+          savedContract.label
+        );
+        return true;
+      }
+
+      pushLog({
+        level: 'info',
+        title: 'Artifact not cached',
+        detail: `Artifact for ${savedContract.label ?? savedContract.address} was not found in cache. Please reload it.`,
+      });
+      return false;
+    },
+    [savedContracts, loadArtifactWithData, pushLog]
+  );
+
   // Refresh saved contracts on mount
   useEffect(() => {
     refreshSavedContracts(currentConfig?.name);
@@ -84,37 +118,13 @@ export const ContractLayout: React.FC = () => {
         return;
       }
 
-      const address = fromSidebarId(sidebarSelectedId);
-      if (!address) return;
-      const savedContract = savedContracts.find(
-        (c) => c.address.toLowerCase() === address.toLowerCase()
-      );
+      if (cancelled) return;
 
-      if (!savedContract) {
-        setViewMode('setup');
-        setSidebarSelectedId(null);
-        return;
-      }
-
-      const storage = getArtifactStorageService();
-      const artifact = savedContract.artifactKey
-        ? await storage.get(savedContract.artifactKey)
-        : null;
+      const loaded = await loadSavedContractArtifact(sidebarSelectedId);
 
       if (cancelled) return;
 
-      if (artifact) {
-        await loadArtifactWithData(
-          savedContract.address,
-          artifact,
-          savedContract.label
-        );
-      } else {
-        pushLog({
-          level: 'info',
-          title: 'Artifact not cached',
-          detail: `Artifact for ${savedContract.label ?? savedContract.address} was not found in cache. Please reload it.`,
-        });
+      if (!loaded) {
         setViewMode('setup');
         setSidebarSelectedId(null);
       }
@@ -130,10 +140,9 @@ export const ContractLayout: React.FC = () => {
     sidebarSelectedId,
     parsedArtifact,
     savedContracts,
-    loadArtifactWithData,
+    loadSavedContractArtifact,
     setViewMode,
     setSidebarSelectedId,
-    pushLog,
   ]);
 
   // Build sidebar contracts list
@@ -159,32 +168,13 @@ export const ContractLayout: React.FC = () => {
       setViewMode('explorer');
       setSelectedFunctionName(null);
 
-      const address = fromSidebarId(id);
-      if (address) {
-        const savedContract = savedContracts.find(
-          (c) => c.address.toLowerCase() === address.toLowerCase()
-        );
-        if (savedContract) {
-          const storage = getArtifactStorageService();
-          const artifact = savedContract.artifactKey
-            ? await storage.get(savedContract.artifactKey)
-            : null;
-          if (artifact) {
-            await loadArtifactWithData(
-              savedContract.address,
-              artifact,
-              savedContract.label
-            );
-          }
-        }
-      }
+      await loadSavedContractArtifact(id);
     },
     [
       setSidebarSelectedId,
       setViewMode,
       setSelectedFunctionName,
-      loadArtifactWithData,
-      savedContracts,
+      loadSavedContractArtifact,
     ]
   );
 

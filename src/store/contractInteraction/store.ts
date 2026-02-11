@@ -54,7 +54,7 @@ type Actions = {
     deployableId: string | null,
     constructorName?: string | null
   ) => void;
-  pushLog: (entry: Omit<LogEntry, 'id'>) => void;
+  pushLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   clearLogs: () => void;
   setSelectedConstructor: (constructorName: string | null) => void;
   // Artifact actions
@@ -62,6 +62,7 @@ type Actions = {
   setSavedContracts: (contracts: CachedContract[]) => void;
   refreshSavedContracts: (networkName?: string) => Promise<void>;
   deleteSavedContract: (address: string, networkName?: string) => Promise<void>;
+  reset: () => void;
   resetArtifact: () => void;
   setArtifactState: (update: ArtifactStateUpdate) => void;
   // UI layout actions
@@ -128,12 +129,15 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
     },
 
     pushLog: (entry) =>
-      set((state) => ({
-        logs: [
-          { ...entry, id: `${Date.now()}-${state.logs.length}` },
-          ...state.logs,
-        ].slice(0, 50),
-      })),
+      set((state) => {
+        const now = Date.now();
+        return {
+          logs: [
+            { ...entry, id: `${now}-${state.logs.length}`, timestamp: now },
+            ...state.logs,
+          ].slice(0, 50),
+        };
+      }),
 
     clearLogs: () => set({ logs: [] }),
 
@@ -171,6 +175,11 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
       );
       await storage.saveContracts(networkName, updated);
       set({ savedContracts: updated });
+    },
+
+    reset: () => {
+      getFormStore().reset();
+      set(INITIAL_STATE);
     },
 
     resetArtifact: () => {

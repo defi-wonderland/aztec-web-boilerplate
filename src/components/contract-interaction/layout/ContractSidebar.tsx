@@ -90,7 +90,9 @@ const styles = {
   ),
   searchIcon: 'text-muted flex-shrink-0',
   searchInput: cn(
-    'flex-1 bg-transparent border-none outline-none',
+    'flex-1 h-auto p-0',
+    'bg-transparent border-none shadow-none outline-none',
+    'ring-0 focus:ring-0 focus:border-none',
     'text-xs text-default placeholder:text-muted',
     'font-normal'
   ),

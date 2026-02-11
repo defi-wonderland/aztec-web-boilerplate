@@ -173,7 +173,7 @@ export const ExecutionHistoryCard: React.FC = () => {
           {logs.map((log) => {
             const isSuccess = log.level === 'success';
             const isError = log.level === 'error';
-            const timestamp = new Date(parseInt(log.id.split('-')[0]));
+            const timestamp = new Date(log.timestamp);
             const isLongDetail =
               log.detail && log.detail.length > DETAIL_TRUNCATE_THRESHOLD;
             const isExpanded = expandedLogs.has(log.id);

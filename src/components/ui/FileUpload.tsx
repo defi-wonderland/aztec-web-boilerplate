@@ -79,6 +79,8 @@ export interface FileUploadProps {
   error?: string;
   /** Helper text to display */
   helperText?: string;
+  /** Maximum file size in bytes (default: 10MB) */
+  maxSize?: number;
   /** Custom class name for the container */
   className?: string;
   /** Read-only mode: shows copy/download actions instead of remove */
@@ -104,6 +106,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   error,
   helperText,
   className,
+  maxSize = 10 * 1024 * 1024, // 10MB default
   readOnly = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -125,6 +128,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       if (!isValidFile(inputFile.name)) {
         return;
       }
+      if (maxSize && inputFile.size > maxSize) {
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -137,7 +143,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       };
       reader.readAsText(inputFile);
     },
-    [isValidFile, onFileChange]
+    [isValidFile, maxSize, onFileChange]
   );
 
   const handleDrop = useCallback(

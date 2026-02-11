@@ -71,9 +71,9 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
     [setFormValue]
   );
 
-  const requiredCount = inputs.filter(
-    (input) => !input.path.includes('?')
-  ).length;
+  // Convention: optional fields contain '?' in their path (e.g. struct optionals)
+  const isRequired = (input: ParsedField) => !input.path.includes('?');
+  const requiredCount = inputs.filter(isRequired).length;
 
   return (
     <div className={styles.accordion}>
@@ -100,7 +100,7 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
         {inputs.length > 0 &&
           inputs.map((input) => {
             const value = formValues[input.path] ?? '';
-            const isRequired = !input.path.includes('?');
+            const required = isRequired(input);
 
             return (
               <div key={input.path} className={styles.paramGroup}>
@@ -108,7 +108,7 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
                   <div className={styles.paramLeft}>
                     <span className={styles.paramLabel}>
                       {toTitleCase(input.path)}
-                      {isRequired && (
+                      {required && (
                         <span className={styles.paramRequired}> *</span>
                       )}
                     </span>

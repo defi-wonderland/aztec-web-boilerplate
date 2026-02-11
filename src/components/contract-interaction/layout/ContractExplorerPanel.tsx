@@ -29,8 +29,8 @@ const styles = {
 
   // Actions Row
   actionsRow: cn('flex items-center gap-4', 'pt-5'),
-  simulateBtn: 'w-[260px] h-[54px] rounded-[14px] text-[15px] font-bold',
-  executeBtn: 'w-[340px] h-[54px] rounded-[14px] text-[15px] font-bold',
+  simulateBtn: 'w-64 h-14 rounded-2xl text-sm font-bold',
+  executeBtn: 'w-80 h-14 rounded-2xl text-sm font-bold',
 } as const;
 
 interface ContractExplorerPanelProps {

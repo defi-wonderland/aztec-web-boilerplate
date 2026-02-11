@@ -1,7 +1,7 @@
 import type { ParsedFunction, ArtifactSummary } from '../../types/artifact';
 
 /**
- * Status for invoke operations.
+ * Mode for contract function calls (simulate vs execute).
  */
 export type CallMode = 'simulate' | 'execute';
 
@@ -25,6 +25,7 @@ export interface LogEntry {
   level: 'info' | 'error' | 'success';
   title: string;
   detail?: string;
+  timestamp: number;
 }
 
 /**

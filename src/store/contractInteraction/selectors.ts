@@ -32,6 +32,7 @@ export const useContractActions = () =>
       setDeployTarget: state.setDeployTarget,
       pushLog: state.pushLog,
       clearLogs: state.clearLogs,
+      reset: state.reset,
       setSelectedConstructor: state.setSelectedConstructor,
     }))
   );

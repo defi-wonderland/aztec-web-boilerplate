@@ -38,6 +38,16 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
   const { walletType, isConnected } = useAztecWallet();
   const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
 
+  // Stabilize contractNames by contents, not reference identity.
+  // Callers typically pass inline arrays (e.g. ['dripper', 'token']),
+  // which creates a new reference on every render.
+  const contractNamesKey = contractNames.join(',');
+  const stableContractNames = useMemo(
+    () => contractNames,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [contractNamesKey]
+  );
+
   const {
     subscribe,
     registerMany,
@@ -48,7 +58,7 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
   // Get snapshot of current statuses (serialized for comparison)
   const getSnapshot = (): string => {
     const statuses = Object.fromEntries(
-      contractNames.map((name) => [name, getStatus(name)])
+      stableContractNames.map((name) => [name, getStatus(name)])
     );
     return JSON.stringify(statuses);
   };
@@ -58,21 +68,21 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
 
   // Trigger registration when registry is ready
   useEffect(() => {
-    if (registryStatus !== 'ready' || contractNames.length === 0) {
+    if (registryStatus !== 'ready' || stableContractNames.length === 0) {
       return;
     }
 
-    registerMany([...contractNames]).catch((err) => {
+    registerMany([...stableContractNames]).catch((err) => {
       console.error('[useRequiredContracts] Registration failed:', err);
     });
-  }, [contractNames, registerMany, registryStatus]);
+  }, [stableContractNames, registerMany, registryStatus]);
 
   // Compute derived state
   return useMemo(() => {
     // For browser wallets, contracts are always "ready" since useContractRegistration
     // handles them with proxies - no PXE registration needed on app side
     if (isBrowserWallet && isConnected) {
-      const statuses = contractNames.reduce((acc, name) => {
+      const statuses = stableContractNames.reduce((acc, name) => {
         acc[name as T[number]] = 'ready';
         return acc;
       }, {} as ContractStatusMap<T>);
@@ -87,22 +97,22 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
       };
     }
 
-    const statuses = contractNames.reduce((acc, name) => {
+    const statuses = stableContractNames.reduce((acc, name) => {
       acc[name as T[number]] = getStatus(name);
       return acc;
     }, {} as ContractStatusMap<T>);
 
-    const pendingContracts = contractNames.filter((name) => {
+    const pendingContracts = stableContractNames.filter((name) => {
       const status = statuses[name as T[number]];
       return status === 'idle' || status === 'registering';
     }) as T[number][];
 
-    const failedContracts = contractNames.filter(
+    const failedContracts = stableContractNames.filter(
       (name) => statuses[name as T[number]] === 'error'
     ) as T[number][];
 
     return {
-      isReady: contractNames.every(
+      isReady: stableContractNames.every(
         (name) => statuses[name as T[number]] === 'ready'
       ),
       isLoading: pendingContracts.length > 0,
@@ -111,5 +121,5 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
       pendingContracts,
       statuses,
     };
-  }, [contractNames, getStatus, isBrowserWallet, isConnected]);
+  }, [stableContractNames, getStatus, isBrowserWallet, isConnected]);
 }
