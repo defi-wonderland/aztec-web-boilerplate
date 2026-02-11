@@ -120,7 +120,9 @@ export async function createExternalSignerAccount(
     // Deploy if needed (don't throw on deployment failure)
     let deployment: DeployAccountResult;
     try {
-      deployment = await deployAccountIfNotExists(accountManager, pxeInstance);
+      deployment = await deployAccountIfNotExists(accountManager, pxeInstance, {
+        useFeePayment: networkConfig.feePaymentContracts.enabled,
+      });
     } catch {
       // Account created but deployment failed - still usable
       deployment = { deployed: false, address: accountManager.address };

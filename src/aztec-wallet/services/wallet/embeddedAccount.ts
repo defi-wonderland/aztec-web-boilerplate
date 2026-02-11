@@ -146,7 +146,9 @@ export async function createEmbeddedAccount(
     // Deploy if needed (don't throw on deployment failure)
     let deployment: DeployAccountResult;
     try {
-      deployment = await deployAccountIfNotExists(accountManager, pxeInstance);
+      deployment = await deployAccountIfNotExists(accountManager, pxeInstance, {
+        useFeePayment: networkConfig.feePaymentContracts.enabled,
+      });
     } catch {
       // Account created but deployment failed - still usable
       deployment = { deployed: false, address: accountManager.address };
@@ -201,7 +203,11 @@ export async function loadExistingEmbeddedAccount(
   const envCredentials = await getConfiguredAccountCredentials();
   if (envCredentials) {
     try {
-      const account = await connectWithCredentials(envCredentials, pxeInstance);
+      const account = await connectWithCredentials(
+        envCredentials,
+        pxeInstance,
+        networkConfig
+      );
       return { account, pxeInstance };
     } catch (cause) {
       throw new AccountLoadError(
@@ -220,7 +226,11 @@ export async function loadExistingEmbeddedAccount(
         signingKey: Buffer.from(saved.signingKey, 'hex'),
         salt: Fr.fromString(saved.salt),
       };
-      const account = await connectWithCredentials(credentials, pxeInstance);
+      const account = await connectWithCredentials(
+        credentials,
+        pxeInstance,
+        networkConfig
+      );
       return { account, pxeInstance };
     } catch (cause) {
       throw new AccountLoadError(
@@ -239,7 +249,8 @@ export async function loadExistingEmbeddedAccount(
 
 async function connectWithCredentials(
   credentials: AccountCredentials,
-  pxeInstance: SharedPXEInstance
+  pxeInstance: SharedPXEInstance,
+  networkConfig: NetworkConfig
 ): Promise<AccountWithSecretKey> {
   const wallet = pxeInstance.wallet;
   const accountContract = new EcdsaRAccountContract(credentials.signingKey);
@@ -264,7 +275,9 @@ async function connectWithCredentials(
 
   // Deploy account if not yet initialized (e.g., sandbox was restarted)
   try {
-    await deployAccountIfNotExists(accountManager, pxeInstance);
+    await deployAccountIfNotExists(accountManager, pxeInstance, {
+      useFeePayment: networkConfig.feePaymentContracts.enabled,
+    });
   } catch {
     // Non-fatal: account may still work if already deployed
   }
