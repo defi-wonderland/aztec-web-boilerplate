@@ -44,7 +44,7 @@ jobs:
       run: echo "/home/runner/.aztec/bin" >> $GITHUB_PATH
 
     - name: Start local network
-      run: aztec start --local-network &
+      run: /home/runner/.aztec/bin/aztec start --local-network &
 
     - name: Wait for sandbox to be ready
       run: |
