@@ -46,6 +46,17 @@ jobs:
     - name: Start local network
       run: aztec start --local-network &
 
+    - name: Wait for sandbox to be ready
+      run: |
+        echo "Waiting for Aztec sandbox at http://localhost:8080..."
+        timeout 300 bash -c '
+          until curl -sf -o /dev/null http://localhost:8080 2>/dev/null; do
+            echo "  Still waiting..."
+            sleep 5
+          done
+        '
+        echo "Sandbox is ready!"
+
     - name: Install dependencies
       working-directory: ./
       run: npm install -g yarn && yarn
