@@ -7,12 +7,11 @@ import {
   Search,
   Circle,
   FileCode,
-  Coins,
-  Droplet,
   Trash2,
   Copy,
   Check,
 } from 'lucide-react';
+import { useCopyToClipboard } from '../../../hooks';
 import { cn, iconSize, truncateAddress } from '../../../utils';
 import type { FunctionGroup } from '../types';
 
@@ -246,41 +245,20 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
     });
   }, []);
 
-  // Track copy success state for contract address
-  const [addressCopied, setAddressCopied] = useState(false);
+  const { copied: addressCopied, copy: copyAddress } = useCopyToClipboard();
 
-  const handleCopyAddress = useCallback(async () => {
-    if (!selectedContract?.address) return;
-    try {
-      await navigator.clipboard.writeText(selectedContract.address);
-      setAddressCopied(true);
-      setTimeout(() => setAddressCopied(false), 2000);
-    } catch {
-      // Clipboard API failed silently
+  const handleCopyAddress = useCallback(() => {
+    if (selectedContract?.address) {
+      copyAddress(selectedContract.address);
     }
-  }, [selectedContract?.address]);
+  }, [selectedContract, copyAddress]);
 
-  // Helper to get icon for contract type based on name
   const getContractIcon = (contract: SidebarContract) => {
-    const name = contract.name.toLowerCase();
-    if (name.includes('token')) {
-      return (
-        <Coins size={18} className={styles.contractItemIconPreconfigured} />
-      );
-    }
-    if (name.includes('dripper')) {
-      return <Droplet size={18} className={styles.contractItemIconSaved} />;
-    }
-    return (
-      <FileCode
-        size={18}
-        className={
-          contract.type === 'preconfigured'
-            ? styles.contractItemIconPreconfigured
-            : styles.contractItemIconSaved
-        }
-      />
-    );
+    const iconClass =
+      contract.type === 'preconfigured'
+        ? styles.contractItemIconPreconfigured
+        : styles.contractItemIconSaved;
+    return <FileCode size={18} className={iconClass} />;
   };
 
   // If in setup mode, show contracts list sidebar
