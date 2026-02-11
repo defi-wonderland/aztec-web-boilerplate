@@ -3,6 +3,11 @@ import type { ParsedFunction, ArtifactSummary } from '../../types/artifact';
 /**
  * Status for invoke operations.
  */
+export type CallMode = 'simulate' | 'execute';
+
+/**
+ * Status for invoke operations.
+ */
 export type InvokeStatus = 'idle' | 'simulating' | 'executing';
 
 export interface DeployResult {

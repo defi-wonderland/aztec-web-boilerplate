@@ -12,7 +12,6 @@ import {
   useFunctionFilter,
   useExplorerActions,
   useContractActions,
-  getContractInteractionStore,
 } from '../../../store';
 import { cn } from '../../../utils';
 import {
@@ -238,29 +237,22 @@ export const ContractLayout: React.FC = () => {
   // Wrap simulate to capture result
   const handleSimulate = useCallback(
     async (functionName: string) => {
-      await invokerSimulate(functionName);
-      setTimeout(() => {
-        const store = getContractInteractionStore();
-        const latestLogs = store.logs;
-        const successLog = latestLogs.find(
-          (log) => log.level === 'success' && log.title.includes('Simulation')
-        );
-        if (successLog?.detail) {
-          const selectedFn = groups
-            .flatMap((g) => g.items)
-            .find((fn) => fn.name === functionName);
-          const returnType = selectedFn?.output
-            ? formatParsedType(selectedFn.output)
-            : 'void';
+      const result = await invokerSimulate(functionName);
+      if (result) {
+        const selectedFn = groups
+          .flatMap((g) => g.items)
+          .find((fn) => fn.name === functionName);
+        const returnType = selectedFn?.output
+          ? formatParsedType(selectedFn.output)
+          : 'void';
 
-          setSimulationResult({
-            value: successLog.detail,
-            type: returnType,
-            timestamp: new Date(),
-            functionName,
-          });
-        }
-      }, 100);
+        setSimulationResult({
+          value: result,
+          type: returnType,
+          timestamp: new Date(),
+          functionName,
+        });
+      }
     },
     [invokerSimulate, setSimulationResult, groups]
   );

@@ -368,8 +368,7 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
         deployedLabel
       )
         .then(() => {
-          const contractId = `deployed-${result.address}`;
-          setSidebarSelectedId(contractId);
+          setSidebarSelectedId(toSidebarId(result.address ?? ''));
           setViewMode('explorer');
         })
         .catch((err) => {

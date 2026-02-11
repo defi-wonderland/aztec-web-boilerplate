@@ -31,8 +31,8 @@ export interface UseContractInvokerReturn {
   error: string | null;
   // Actions
   onLoad: () => Promise<void>;
-  onSimulate: (functionName: string) => Promise<void>;
-  onExecute: (functionName: string) => Promise<void>;
+  onSimulate: (functionName: string) => Promise<string | null>;
+  onExecute: (functionName: string) => Promise<string | null>;
   onApplySaved: (contract: CachedContract) => Promise<void>;
   onDeleteSaved: (address: string) => Promise<void>;
   onClearCache: () => void;
