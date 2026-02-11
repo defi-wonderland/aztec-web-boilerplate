@@ -28,6 +28,7 @@ export const useContractActions = () =>
   useContractInteractionStore(
     useShallow((state) => ({
       setMode: state.setMode,
+      setAddress: state.setAddress,
       setInvokeTarget: state.setInvokeTarget,
       setDeployTarget: state.setDeployTarget,
       pushLog: state.pushLog,
@@ -131,7 +132,13 @@ export const useInvokeFlowData = () => {
   const parseErrorMessage = parseError ? getErrorMessage(parseError) : null;
 
   return {
-    ...state,
+    address: state.address,
+    artifactInput: state.artifactInput,
+    savedContracts: state.savedContracts,
+    isLoadingPreconfigured: state.isLoadingPreconfigured,
+    preconfiguredId: state.preconfiguredId,
+    parsedArtifact: state.parsedArtifact,
+    parseError: state.parseError,
     hasContract,
     hasCache,
     contractName,

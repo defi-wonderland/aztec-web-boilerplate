@@ -111,6 +111,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const acceptString = accept.join(',');
@@ -126,12 +127,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const handleFileRead = useCallback(
     (inputFile: File) => {
       if (!isValidFile(inputFile.name)) {
+        setValidationError(`Invalid file type. Accepted: ${accept.join(', ')}`);
         return;
       }
       if (maxSize && inputFile.size > maxSize) {
+        setValidationError(
+          `File too large (${formatFileSize(inputFile.size)}). Maximum: ${formatFileSize(maxSize)}`
+        );
         return;
       }
 
+      setValidationError(null);
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
@@ -143,7 +149,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       };
       reader.readAsText(inputFile);
     },
-    [isValidFile, maxSize, onFileChange]
+    [isValidFile, maxSize, onFileChange, accept]
   );
 
   const handleDrop = useCallback(
@@ -198,6 +204,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   );
 
   const handleRemoveFile = useCallback(() => {
+    setValidationError(null);
     onFileChange(null);
   }, [onFileChange]);
 
@@ -320,8 +327,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
 
-      {error && <p className={styles.error}>{error}</p>}
-      {helperText && !error && (
+      {(error || validationError) && (
+        <p className={styles.error}>{error || validationError}</p>
+      )}
+      {helperText && !error && !validationError && (
         <p className={styles.helperText}>{helperText}</p>
       )}
     </div>

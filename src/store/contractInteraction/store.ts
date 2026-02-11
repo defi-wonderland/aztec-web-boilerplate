@@ -48,6 +48,7 @@ type State = {
 type Actions = {
   setMode: (mode: ArtifactLoaderMode) => void;
   // Invoke mode
+  setAddress: (address: string) => void;
   setInvokeTarget: (address: string, preconfiguredId?: string | null) => void;
   // Deploy mode
   setDeployTarget: (
@@ -117,6 +118,8 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
         }
         return { mode };
       }),
+
+    setAddress: (address) => set({ address }),
 
     setInvokeTarget: (address, preconfiguredId = null) => {
       getFormStore().reset();

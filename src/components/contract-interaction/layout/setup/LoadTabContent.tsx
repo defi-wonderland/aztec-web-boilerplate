@@ -66,7 +66,7 @@ export const LoadTabContent: React.FC<LoadTabContentProps> = ({
   onLoad,
 }) => {
   const { address } = useInvokeFlowData();
-  const { setInvokeTarget } = useContractActions();
+  const { setAddress } = useContractActions();
 
   const isValid = !address || isValidAztecAddress(address);
   const addressError =
@@ -74,9 +74,9 @@ export const LoadTabContent: React.FC<LoadTabContentProps> = ({
 
   const handleAddressChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInvokeTarget(e.target.value);
+      setAddress(e.target.value);
     },
-    [setInvokeTarget]
+    [setAddress]
   );
 
   return (

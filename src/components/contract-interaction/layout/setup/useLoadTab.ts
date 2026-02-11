@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useInvokeFlowData, useContractActions } from '../../../../store';
 import {
   isValidAztecAddress,
@@ -72,19 +72,6 @@ export const useLoadTab = (options: UseLoadTabOptions) => {
         selectedPreconfigured &&
         !isLoadingPreconfigured;
 
-  // Clear address and artifact when starting with custom mode (on mount)
-  const hasInitialized = useRef(false);
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      if (loadSource === 'custom') {
-        setInvokeTarget('');
-        onArtifactChange('');
-        onSelectPreconfigured(null);
-      }
-    }
-  }, [loadSource, setInvokeTarget, onArtifactChange, onSelectPreconfigured]);
-
   // --- Handlers ---
 
   const handleArtifactChange = useCallback(
@@ -100,7 +87,7 @@ export const useLoadTab = (options: UseLoadTabOptions) => {
       setArtifactMethod(null);
       if (source === 'custom') {
         onSelectPreconfigured(null);
-        setInvokeTarget('');
+        setInvokeTarget('', null);
         onArtifactChange('');
       } else if (preconfiguredContracts.length > 0) {
         onSelectPreconfigured(preconfiguredContracts[0].id);

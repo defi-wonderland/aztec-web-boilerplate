@@ -201,7 +201,7 @@ export const useDeployTab = (options: UseDeployTabOptions) => {
       detail: `${deployedLabel} at ${result.address}${result.txHash ? ` | TX: ${result.txHash}` : ''}`,
     });
 
-    setInvokeTarget(result.address ?? '');
+    setInvokeTarget(result.address ?? '', null);
     resetFormValues();
 
     try {

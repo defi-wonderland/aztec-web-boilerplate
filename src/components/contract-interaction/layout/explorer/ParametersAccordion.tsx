@@ -71,9 +71,9 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
     [setFormValue]
   );
 
-  // Convention: optional fields contain '?' in their path (e.g. struct optionals)
-  const isRequired = (input: ParsedField) => !input.path.includes('?');
-  const requiredCount = inputs.filter(isRequired).length;
+  // All Noir/Aztec function parameters are required at the ABI level —
+  // there is no concept of optional parameters in contract function signatures.
+  const requiredCount = inputs.length;
 
   return (
     <div className={styles.accordion}>
@@ -100,17 +100,13 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
         {inputs.length > 0 &&
           inputs.map((input) => {
             const value = formValues[input.path] ?? '';
-            const required = isRequired(input);
-
             return (
               <div key={input.path} className={styles.paramGroup}>
                 <div className={styles.paramHeader}>
                   <div className={styles.paramLeft}>
                     <span className={styles.paramLabel}>
                       {toTitleCase(input.path)}
-                      {required && (
-                        <span className={styles.paramRequired}> *</span>
-                      )}
+                      <span className={styles.paramRequired}> *</span>
                     </span>
                   </div>
                   <span className={styles.paramType}>
@@ -125,7 +121,7 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
                     placeholder={`Enter ${toTitleCase(input.path)} value...`}
                     disabled={isBusy}
                   />
-                  {input.path === 'from' && connectedAddress && (
+                  {input.type.kind === 'address' && connectedAddress && (
                     <Button
                       variant="ghost"
                       size="sm"
