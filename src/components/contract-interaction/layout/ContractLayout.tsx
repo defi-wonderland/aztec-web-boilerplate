@@ -155,8 +155,7 @@ export const ContractLayout: React.FC = () => {
     pushLog,
   ]);
 
-  // Build sidebar contracts list - only saved contracts, not preconfigured
-  // Preconfigured contracts are available in "Select Contract Source" options
+  // Build sidebar contracts list - only saved contracts
   const sidebarContracts: SidebarContract[] = useMemo(() => {
     return savedContracts.map((contract) => ({
       id: toSidebarId(contract.address),

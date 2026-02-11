@@ -15,6 +15,7 @@ import {
   useFormActions,
   type SimulationResult,
 } from '../../../store';
+import { ParsedFunction } from '../../../types';
 import { cn, iconSize, toTitleCase } from '../../../utils';
 import {
   analyzeFunctionCapabilities,
@@ -27,7 +28,6 @@ import {
   DialogTitle,
 } from '../../ui/Dialog';
 import type { AztecNetwork } from '../../../config/networks/constants';
-import type { ParsedFunction } from '../../../utils/contractInteraction';
 import type { LogEntry, FunctionGroup } from '../types';
 
 /**

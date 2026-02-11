@@ -1,4 +1,4 @@
-// Layout components (new V2 UI)
+// Layout components (V2 UI)
 export {
   ContractLayout,
   ContractSidebar,
@@ -8,21 +8,7 @@ export {
 } from './layout';
 export type { SidebarContract } from './layout';
 
-// Flow components
-export { DeployFlow } from './deploy';
-export type { DeployFlowProps } from './deploy';
-export {
-  InvokeFlow,
-  ExistingContractForm,
-  FunctionForm,
-  FunctionList,
-  PreconfiguredSelector,
-  SavedContractsList,
-} from './invoke';
-export type { InvokeFlowProps } from './invoke';
-
 // Shared components
-export { default as LogPanel } from './LogPanel';
 export { default as ParameterInputs } from './ParameterInputs';
 export type { ParameterInputsProps, ParameterInput } from './ParameterInputs';
 
