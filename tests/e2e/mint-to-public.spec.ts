@@ -45,7 +45,7 @@ async function getPublicBalance(page: Page): Promise<bigint> {
 async function waitForBalanceSync(
   page: Page,
   expectedMinimum: bigint,
-  timeout = TIMEOUTS.LONG
+  timeout = TIMEOUTS.WALLET_OPERATION
 ): Promise<bigint> {
   const startTime = Date.now();
 
@@ -112,7 +112,9 @@ async function mintToPublic(page: Page, amount: string): Promise<void> {
     );
   }
 
-  await expect(dripButton).toContainText('Drip to', { timeout: TIMEOUTS.LONG });
+  await expect(dripButton).toContainText('Drip to', {
+    timeout: TIMEOUTS.WALLET_OPERATION,
+  });
   console.log('Transaction completed');
 }
 
