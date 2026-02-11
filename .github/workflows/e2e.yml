@@ -24,6 +24,15 @@ jobs:
         echo "version=$AZTEC_VERSION" >> "$GITHUB_OUTPUT"
         echo "Aztec version is $AZTEC_VERSION"
 
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      # Pre-install foundry so the Aztec installer finds foundryup at
+      # $HOME/.foundry/bin/foundryup and skips its own broken curl install.
+      # The Aztec install script has a bug: its timeout() function does
+      # [ "${CI:-0}" -eq 1 ] but GitHub sets CI=true (string, not int),
+      # and the internal curl to foundry.paradigm.xyz fails to place
+      # foundryup at the expected path.
+
     - name: Install Aztec CLI
       run: |
         INSTALL_URL="https://install.aztec.network/${{ steps.aztec-version.outputs.version }}/"
