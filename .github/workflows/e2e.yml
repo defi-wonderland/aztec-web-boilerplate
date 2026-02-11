@@ -40,11 +40,24 @@ jobs:
         curl -sL $INSTALL_URL > tmp.sh
         VERSION=${{ steps.aztec-version.outputs.version }} bash tmp.sh <<< yes "yes"
 
+    - name: Debug Aztec install location
+      run: |
+        echo "=== ~/.aztec contents ==="
+        find /home/runner/.aztec -type f -name "aztec*" 2>/dev/null || echo "Nothing found"
+        echo "=== ~/.aztec/bin ==="
+        ls -la /home/runner/.aztec/bin/ 2>/dev/null || echo "bin dir not found"
+        echo "=== Check shell profile ==="
+        grep -r "aztec" ~/.bashrc ~/.bash_profile ~/.profile 2>/dev/null || echo "No aztec in profiles"
+        echo "=== which/type ==="
+        source ~/.bashrc 2>/dev/null; type aztec 2>/dev/null || echo "aztec not found after sourcing bashrc"
+
     - name: Update path
       run: echo "/home/runner/.aztec/bin" >> $GITHUB_PATH
 
     - name: Start local network
-      run: /home/runner/.aztec/bin/aztec start --local-network &
+      run: |
+        source ~/.bashrc 2>/dev/null || true
+        aztec start --local-network &
 
     - name: Wait for sandbox to be ready
       run: |
