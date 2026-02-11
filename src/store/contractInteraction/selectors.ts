@@ -31,7 +31,8 @@ export const useContractActions = () =>
       setInvokeTarget: state.setInvokeTarget,
       setDeployTarget: state.setDeployTarget,
       pushLog: state.pushLog,
-      reset: state.reset,
+      clearLogs: state.clearLogs,
+      setSelectedConstructor: state.setSelectedConstructor,
     }))
   );
 
@@ -42,15 +43,6 @@ export const useDeployFlowState = () =>
       constructorName: state.constructorName,
     }))
   );
-
-export const useArtifactInput = () =>
-  useContractInteractionStore((state) => state.artifactInput);
-
-export const useParsedArtifact = () =>
-  useContractInteractionStore((state) => state.parsedArtifact);
-
-export const useSavedContracts = () =>
-  useContractInteractionStore((state) => state.savedContracts);
 
 export const useArtifactActions = () =>
   useContractInteractionStore(
@@ -70,12 +62,6 @@ export const useViewMode = () =>
 
 export const useSidebarSelectedId = () =>
   useContractInteractionStore((state) => state.sidebarSelectedId);
-
-export const useIsSetupMode = () =>
-  useContractInteractionStore((state) => state.viewMode === 'setup');
-
-export const useIsExplorerMode = () =>
-  useContractInteractionStore((state) => state.viewMode === 'explorer');
 
 export const useLayoutActions = () =>
   useContractInteractionStore(
@@ -105,8 +91,8 @@ export const useExplorerActions = () =>
   );
 
 /**
- * Combined selector for InvokeFlow component.
- * Returns all state needed for the invoke UI in a single hook call.
+ * Combined selector for all invoke-related state.
+ * Returns raw store values plus derived helpers.
  */
 export const useInvokeFlowData = () => {
   const state = useContractInteractionStore(
@@ -121,15 +107,7 @@ export const useInvokeFlowData = () => {
     }))
   );
 
-  const {
-    address,
-    artifactInput,
-    savedContracts,
-    isLoadingPreconfigured,
-    preconfiguredId,
-    parsedArtifact,
-    parseError,
-  } = state;
+  const { address, savedContracts, parsedArtifact, parseError } = state;
 
   // Derived values
   const hasContract = (parsedArtifact?.functions?.length ?? 0) > 0;
@@ -152,15 +130,11 @@ export const useInvokeFlowData = () => {
   const parseErrorMessage = parseError ? getErrorMessage(parseError) : null;
 
   return {
-    address,
-    artifactInput,
-    savedContracts,
-    isLoadingPreconfigured,
-    preconfiguredId,
+    ...state,
     hasContract,
     hasCache,
     contractName,
     artifactSummary,
-    parseError: parseErrorMessage,
+    parseErrorMessage,
   };
 };

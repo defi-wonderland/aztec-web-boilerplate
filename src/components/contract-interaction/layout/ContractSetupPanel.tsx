@@ -19,18 +19,17 @@ import { useContractDeployer, useLoadArtifact } from '../../../hooks/contracts';
 import { useDeployableContracts } from '../../../hooks/useInteractionContracts';
 import {
   useContractActions,
-  useContractTargetAddress,
-  useInvokeFlowState,
+  useInvokeFlowData,
   useDeployFlowState,
   useFormValues,
   useFormActions,
   useLayoutActions,
 } from '../../../store';
 import { cn, iconSize, toTitleCase } from '../../../utils';
-import { constants } from '../../../utils/contractCache';
 import {
   isValidAztecAddress,
   loadAndPrepareArtifact,
+  toSidebarId,
 } from '../../../utils/contractInteraction';
 import { buildDeploymentLabel } from '../../../utils/deployableContracts';
 import {
@@ -50,7 +49,7 @@ import ParameterInputs from '../ParameterInputs';
 import ContractSourceCard from './ContractSourceCard';
 import type { AztecNetwork } from '../../../config/networks/constants';
 import type { PreconfiguredContract } from '../../../config/preconfiguredContracts';
-import type { ParsedFunction } from '../../../utils/contractInteraction';
+import type { ParsedFunction } from '../../../types/artifact';
 import type {
   ContractConstructor,
   DeployableContract,
@@ -154,13 +153,13 @@ const buildCustomDeployableContract = (
   }
 
   try {
-    const result = loadAndPrepareArtifact(
-      artifactInput,
-      '',
-      constants.MAX_CACHE_CHARS
-    );
+    // Empty address: we're parsing for deployment, no existing contract to target
+    const result = loadAndPrepareArtifact(artifactInput, '');
     if (!result.success) {
-      return { contract: null, error: result.error ?? 'Invalid artifact' };
+      return {
+        contract: null,
+        error: result.error?.message ?? 'Invalid artifact',
+      };
     }
 
     const parsedArtifact = result.parsed;
@@ -232,11 +231,10 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
   const [deployArtifactMethod, setDeployArtifactMethod] =
     useState<ArtifactInputMethod>(null);
 
-  const address = useContractTargetAddress();
-  const { preconfiguredId } = useInvokeFlowState();
+  const { address, preconfiguredId } = useInvokeFlowData();
   const { deployableId, constructorName } = useDeployFlowState();
   const formValues = useFormValues();
-  const { setAddress, setDeployableId, setSelectedConstructor, pushLog } =
+  const { setInvokeTarget, setDeployTarget, setSelectedConstructor, pushLog } =
     useContractActions();
   const { setValue: setFormValue, reset: resetFormValues } = useFormActions();
   const { setViewMode, setSidebarSelectedId } = useLayoutActions();
@@ -380,19 +378,19 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
       hasInitialized.current = true;
       // Clear state when mounting with custom mode selected
       if (loadSource === 'custom') {
-        setAddress('');
+        setInvokeTarget('');
         onArtifactChange('');
         onSelectPreconfigured(null);
       }
     }
-  }, [loadSource, setAddress, onArtifactChange, onSelectPreconfigured]);
+  }, [loadSource, setInvokeTarget, onArtifactChange, onSelectPreconfigured]);
 
   // Handlers
   const handleAddressChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setAddress(e.target.value);
+      setInvokeTarget(e.target.value);
     },
-    [setAddress]
+    [setInvokeTarget]
   );
 
   const handleArtifactChange = useCallback(
@@ -412,7 +410,7 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
       setArtifactMethod(null);
       if (source === 'custom') {
         onSelectPreconfigured(null);
-        setAddress('');
+        setInvokeTarget('');
         onArtifactChange('');
       } else if (preconfiguredContracts.length > 0) {
         onSelectPreconfigured(preconfiguredContracts[0].id);
@@ -421,7 +419,7 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
     [
       onSelectPreconfigured,
       preconfiguredContracts,
-      setAddress,
+      setInvokeTarget,
       onArtifactChange,
     ]
   );
@@ -447,37 +445,26 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
     (source: ContractSource) => {
       setDeploySource(source);
       setDeployArtifactMethod(null);
-      resetFormValues();
-      setSelectedConstructor(null);
       if (source === 'preconfigured' && deployableContracts.length > 0) {
-        setDeployableId(deployableContracts[0].id);
         const firstConstructor = deployableContracts[0].constructors[0];
-        if (firstConstructor) {
-          setSelectedConstructor(firstConstructor.name);
-        }
+        setDeployTarget(
+          deployableContracts[0].id,
+          firstConstructor?.name ?? null
+        );
       } else {
-        setDeployableId(null);
+        setDeployTarget(null, null);
         setCustomDeployArtifact('');
       }
     },
-    [
-      deployableContracts,
-      setDeployableId,
-      setSelectedConstructor,
-      resetFormValues,
-    ]
+    [deployableContracts, setDeployTarget]
   );
 
   const handleSelectDeployable = useCallback(
     (contract: DeployableContract) => {
       setDeploySource('preconfigured');
-      setDeployableId(contract.id);
-      if (contract.constructors.length > 0) {
-        setSelectedConstructor(contract.constructors[0].name);
-      }
-      resetFormValues();
+      setDeployTarget(contract.id, contract.constructors[0]?.name ?? null);
     },
-    [setDeployableId, setSelectedConstructor, resetFormValues]
+    [setDeployTarget]
   );
 
   const handleConstructorChange = useCallback(
@@ -503,7 +490,7 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
       (c) => c.address.toLowerCase() === normalizedAddress
     );
     if (existingSaved) {
-      onSelectExisting(`saved-${existingSaved.address}`);
+      onSelectExisting(toSidebarId(existingSaved.address));
       pushLog({
         level: 'info',
         title: 'Contract already loaded',
@@ -514,8 +501,7 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
 
     // Contract doesn't exist, load it (this saves to cache)
     onLoad();
-    // All loaded contracts use saved-${address} format
-    onContractLoaded(`saved-${address}`);
+    onContractLoaded(toSidebarId(address));
   }, [
     address,
     savedContracts,
@@ -558,13 +544,13 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
     });
 
     // Load the deployed contract
-    setAddress(result.address ?? '');
+    setInvokeTarget(result.address ?? '');
     resetFormValues();
 
     requestAnimationFrame(() => {
       loadArtifactWithData(
         result.address ?? '',
-        effectiveDeployable.artifactJson,
+        effectiveDeployable.artifactJson ?? '',
         deployedLabel
       )
         .then(() => {
@@ -587,7 +573,7 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
     formValues,
     deploy,
     pushLog,
-    setAddress,
+    setInvokeTarget,
     resetFormValues,
     loadArtifactWithData,
     setSidebarSelectedId,

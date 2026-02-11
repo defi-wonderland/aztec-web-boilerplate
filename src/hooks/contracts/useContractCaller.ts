@@ -1,10 +1,9 @@
 import { useCallback } from 'react';
 import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 import {
-  useContractTargetAddress,
   useContractActions,
   useFormValues,
-  useParsedArtifact,
+  useInvokeFlowData,
 } from '../../store';
 import {
   formatResultData,
@@ -35,9 +34,8 @@ export const useContractCaller = (
 ): UseContractCallerReturn => {
   const { grouped } = options;
 
-  const address = useContractTargetAddress();
+  const { address, parsedArtifact: parsed } = useInvokeFlowData();
   const formValues = useFormValues();
-  const parsed = useParsedArtifact();
   const { pushLog } = useContractActions();
 
   const {

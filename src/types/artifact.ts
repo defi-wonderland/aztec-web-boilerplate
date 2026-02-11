@@ -35,6 +35,7 @@ export interface ParsedField {
 export interface ParsedFunction {
   name: string;
   inputs: ParsedField[];
+  output: ParsedType | null;
   attributes: string[];
   isUnconstrained: boolean;
 }

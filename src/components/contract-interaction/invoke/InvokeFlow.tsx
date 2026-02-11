@@ -56,7 +56,7 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
     hasCache,
     contractName,
     artifactSummary,
-    parseError,
+    parseErrorMessage,
   } = useInvokeFlowData();
 
   const {
@@ -188,7 +188,7 @@ const InvokeFlow: React.FC<InvokeFlowProps> = ({
             onAddressChange={handleAddressChange}
             onArtifactChange={onArtifactChange}
             onLoad={handleLoad}
-            error={parseError}
+            error={parseErrorMessage}
             isValidAddress={!address || isValidAztecAddress(address)}
             isPreconfiguredMode={isPreconfiguredMode}
             isLoadingPreconfigured={isLoadingPreconfigured}

@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
-  useContractTargetAddress,
   useContractActions,
   useFormActions,
-  useArtifactInput,
-  useParsedArtifact,
-  useSavedContracts,
+  useInvokeFlowData,
   useArtifactActions,
 } from '../../store';
 import { formatFunctionSignature } from '../../utils/contractInteraction';
@@ -49,14 +46,14 @@ export const useContractInvoker = (
   const { networkName, filter = '' } = options;
 
   // Read from Zustand store
-  const address = useContractTargetAddress();
+  const {
+    address,
+    savedContracts,
+    parsedArtifact: parsed,
+    artifactInput,
+  } = useInvokeFlowData();
   const { setInvokeTarget } = useContractActions();
   const { reset: resetFormValues } = useFormActions();
-
-  // Artifact state from Zustand
-  const savedContracts = useSavedContracts();
-  const parsed = useParsedArtifact();
-  const artifactInput = useArtifactInput();
 
   const {
     setArtifactInput,

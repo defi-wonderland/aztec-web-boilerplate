@@ -1,17 +1,14 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useAztecWallet } from '../../../aztec-wallet';
-import { useContractInvoker } from '../../../hooks/contracts';
+import { useContractInvoker, useLoadArtifact } from '../../../hooks/contracts';
 import { usePreconfiguredContracts } from '../../../hooks/useInteractionContracts';
+import { getArtifactStorageService } from '../../../services/storage';
 import {
   useViewMode,
   useSidebarSelectedId,
   useLayoutActions,
   useContractCallLogs,
-  useSavedContracts,
-  useParsedArtifact,
-  useArtifactInput,
-  useParseError,
-  useIsLoadingPreconfigured,
+  useInvokeFlowData,
   useArtifactActions,
   useSelectedFunctionName,
   useFunctionFilter,
@@ -21,8 +18,11 @@ import {
   getContractInteractionStore,
 } from '../../../store';
 import { cn } from '../../../utils';
-import { resolveCachedArtifact } from '../../../utils/contractCache';
-import { formatParsedType } from '../../../utils/contractInteraction';
+import {
+  formatParsedType,
+  toSidebarId,
+  fromSidebarId,
+} from '../../../utils/contractInteraction';
 import ContractExplorerPanel from './ContractExplorerPanel';
 import ContractSetupPanel from './ContractSetupPanel';
 import ContractSidebar from './ContractSidebar';
@@ -40,11 +40,14 @@ export const ContractLayout: React.FC = () => {
   const sidebarSelectedId = useSidebarSelectedId();
   const { setViewMode, setSidebarSelectedId } = useLayoutActions();
   const logs = useContractCallLogs();
-  const savedContracts = useSavedContracts();
-  const parsedArtifact = useParsedArtifact();
-  const artifactInput = useArtifactInput();
-  const parseError = useParseError();
-  const isLoadingPreconfigured = useIsLoadingPreconfigured();
+  const {
+    savedContracts,
+    parsedArtifact,
+    artifactInput,
+    parseErrorMessage,
+    isLoadingPreconfigured,
+    contractName,
+  } = useInvokeFlowData();
   const { refreshSavedContracts, deleteSavedContract } = useArtifactActions();
   const { clearLogs, pushLog } = useContractActions();
 
@@ -62,10 +65,7 @@ export const ContractLayout: React.FC = () => {
     onLoad,
     onArtifactChange,
     onSelectPreconfigured,
-    loadArtifactWithData,
     groups,
-    contractName,
-    hasContract: _hasContract,
     status,
     error,
     onSimulate: invokerSimulate,
@@ -74,6 +74,8 @@ export const ContractLayout: React.FC = () => {
     networkName: currentConfig?.name,
     filter: functionFilter,
   });
+
+  const loadArtifactWithData = useLoadArtifact(currentConfig?.name);
 
   // Refresh saved contracts on mount
   useEffect(() => {
@@ -96,10 +98,8 @@ export const ContractLayout: React.FC = () => {
         return;
       }
 
-      // Extract address from sidebar ID (format: saved-${address})
-      if (!sidebarSelectedId.startsWith('saved-')) return;
-
-      const address = sidebarSelectedId.replace('saved-', '');
+      const address = fromSidebarId(sidebarSelectedId);
+      if (!address) return;
       const savedContract = savedContracts.find(
         (c) => c.address.toLowerCase() === address.toLowerCase()
       );
@@ -112,15 +112,18 @@ export const ContractLayout: React.FC = () => {
       }
 
       // Load artifact from cache
-      const result = await resolveCachedArtifact(savedContract);
+      const storage = getArtifactStorageService();
+      const artifact = savedContract.artifactKey
+        ? await storage.get(savedContract.artifactKey)
+        : null;
 
       // Check if cancelled during async operation
       if (cancelled) return;
 
-      if (result.found) {
+      if (artifact) {
         await loadArtifactWithData(
           savedContract.address,
-          result.artifact,
+          artifact,
           savedContract.label
         );
       } else {
@@ -156,7 +159,7 @@ export const ContractLayout: React.FC = () => {
   // Preconfigured contracts are available in "Select Contract Source" options
   const sidebarContracts: SidebarContract[] = useMemo(() => {
     return savedContracts.map((contract) => ({
-      id: `saved-${contract.address}`,
+      id: toSidebarId(contract.address),
       name: contract.label ?? 'Custom Contract',
       address: contract.address,
       type: 'saved' as const,
@@ -176,18 +179,20 @@ export const ContractLayout: React.FC = () => {
       setViewMode('explorer');
       setSelectedFunctionName(null);
 
-      // All sidebar contracts are saved contracts (format: saved-${address})
-      if (id.startsWith('saved-')) {
-        const address = id.replace('saved-', '');
+      const address = fromSidebarId(id);
+      if (address) {
         const savedContract = savedContracts.find(
           (c) => c.address.toLowerCase() === address.toLowerCase()
         );
         if (savedContract) {
-          const result = await resolveCachedArtifact(savedContract);
-          if (result.found) {
+          const storage = getArtifactStorageService();
+          const artifact = savedContract.artifactKey
+            ? await storage.get(savedContract.artifactKey)
+            : null;
+          if (artifact) {
             await loadArtifactWithData(
               savedContract.address,
-              result.artifact,
+              artifact,
               savedContract.label
             );
           }
@@ -278,7 +283,6 @@ export const ContractLayout: React.FC = () => {
           (log) => log.level === 'success' && log.title.includes('Simulation')
         );
         if (successLog?.detail) {
-          // Find the function to get its return type
           const selectedFn = groups
             .flatMap((g) => g.items)
             .find((fn) => fn.name === functionName);
@@ -341,7 +345,7 @@ export const ContractLayout: React.FC = () => {
           preconfiguredContracts={preconfiguredContracts}
           savedContracts={savedContracts}
           artifactInput={artifactInput}
-          parseError={parseError}
+          parseError={parseErrorMessage}
           isLoadingPreconfigured={isLoadingPreconfigured}
           onLoad={onLoad}
           onArtifactChange={onArtifactChange}

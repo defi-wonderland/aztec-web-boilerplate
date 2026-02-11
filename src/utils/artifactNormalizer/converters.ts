@@ -105,6 +105,7 @@ export const normalizeRawFunction = (
   parameters: fn.abi?.parameters ?? [],
   attributes: fn.custom_attributes ?? [],
   isUnconstrained: Boolean(fn.is_unconstrained),
+  returnType: fn.abi?.return_type?.abi_type ?? null,
 });
 
 /**
@@ -117,4 +118,6 @@ export const normalizeProcessedFunction = (
   parameters: fn.parameters.map(convertParameter),
   attributes: reconstructAttributes(fn),
   isUnconstrained: deriveIsUnconstrained(fn),
+  returnType:
+    fn.returnTypes?.length === 1 ? convertParamType(fn.returnTypes[0]) : null,
 });

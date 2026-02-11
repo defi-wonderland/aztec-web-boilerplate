@@ -55,7 +55,8 @@ type Actions = {
     constructorName?: string | null
   ) => void;
   pushLog: (entry: Omit<LogEntry, 'id'>) => void;
-  reset: () => void;
+  clearLogs: () => void;
+  setSelectedConstructor: (constructorName: string | null) => void;
   // Artifact actions
   setArtifactInput: (input: string) => void;
   setSavedContracts: (contracts: CachedContract[]) => void;
@@ -134,9 +135,11 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
         ].slice(0, 50),
       })),
 
-    reset: () => {
+    clearLogs: () => set({ logs: [] }),
+
+    setSelectedConstructor: (constructorName) => {
       getFormStore().reset();
-      set(INITIAL_STATE);
+      set({ constructorName });
     },
 
     // Artifact actions
