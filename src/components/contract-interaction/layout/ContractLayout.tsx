@@ -7,12 +7,9 @@ import {
   useViewMode,
   useSidebarSelectedId,
   useLayoutActions,
-  useContractCallLogs,
   useInvokeFlowData,
   useArtifactActions,
-  useSelectedFunctionName,
   useFunctionFilter,
-  useSimulationResult,
   useExplorerActions,
   useContractActions,
   getContractInteractionStore,
@@ -39,24 +36,17 @@ export const ContractLayout: React.FC = () => {
   const viewMode = useViewMode();
   const sidebarSelectedId = useSidebarSelectedId();
   const { setViewMode, setSidebarSelectedId } = useLayoutActions();
-  const logs = useContractCallLogs();
   const {
     savedContracts,
     parsedArtifact,
     artifactInput,
     parseErrorMessage,
     isLoadingPreconfigured,
-    contractName,
   } = useInvokeFlowData();
   const { refreshSavedContracts, deleteSavedContract } = useArtifactActions();
-  const { clearLogs, pushLog } = useContractActions();
-
-  // Explorer state
-  const selectedFunctionName = useSelectedFunctionName();
+  const { pushLog } = useContractActions();
   const functionFilter = useFunctionFilter();
-  const simulationResult = useSimulationResult();
-  const { setSelectedFunctionName, setFunctionFilter, setSimulationResult } =
-    useExplorerActions();
+  const { setSelectedFunctionName, setSimulationResult } = useExplorerActions();
 
   const preconfiguredContracts = usePreconfiguredContracts(currentConfig?.name);
   const connectedAddress = account?.getAddress().toString() ?? '';
@@ -67,7 +57,6 @@ export const ContractLayout: React.FC = () => {
     onSelectPreconfigured,
     groups,
     status,
-    error,
     onSimulate: invokerSimulate,
     onExecute: invokerExecute,
   } = useContractInvoker({
@@ -83,12 +72,10 @@ export const ContractLayout: React.FC = () => {
   }, [currentConfig?.name, refreshSavedContracts]);
 
   // Auto-load artifact when we have a selected contract but no parsed artifact
-  // This handles the case when page is refreshed or state is restored without artifact
   useEffect(() => {
     let cancelled = false;
 
     const autoLoadArtifact = async () => {
-      // Only auto-load if we're in explorer mode with a selected contract but no artifact
       if (
         viewMode !== 'explorer' ||
         !sidebarSelectedId ||
@@ -105,19 +92,16 @@ export const ContractLayout: React.FC = () => {
       );
 
       if (!savedContract) {
-        // Contract not found in saved list, go back to setup
         setViewMode('setup');
         setSidebarSelectedId(null);
         return;
       }
 
-      // Load artifact from cache
       const storage = getArtifactStorageService();
       const artifact = savedContract.artifactKey
         ? await storage.get(savedContract.artifactKey)
         : null;
 
-      // Check if cancelled during async operation
       if (cancelled) return;
 
       if (artifact) {
@@ -127,8 +111,6 @@ export const ContractLayout: React.FC = () => {
           savedContract.label
         );
       } else {
-        // Artifact not found in cache, go back to setup
-        // User will need to re-load the artifact
         pushLog({
           level: 'info',
           title: 'Artifact not cached',
@@ -155,7 +137,7 @@ export const ContractLayout: React.FC = () => {
     pushLog,
   ]);
 
-  // Build sidebar contracts list - only saved contracts
+  // Build sidebar contracts list
   const sidebarContracts: SidebarContract[] = useMemo(() => {
     return savedContracts.map((contract) => ({
       id: toSidebarId(contract.address),
@@ -228,20 +210,6 @@ export const ContractLayout: React.FC = () => {
     [setSidebarSelectedId, setViewMode, setSelectedFunctionName]
   );
 
-  const handleSelectFunction = useCallback(
-    (name: string) => {
-      setSelectedFunctionName(name);
-    },
-    [setSelectedFunctionName]
-  );
-
-  const handleFilterChange = useCallback(
-    (filter: string) => {
-      setFunctionFilter(filter);
-    },
-    [setFunctionFilter]
-  );
-
   const handleDeleteContract = useCallback(
     async (contract: SidebarContract) => {
       await deleteSavedContract(contract.address, currentConfig?.name);
@@ -252,7 +220,6 @@ export const ContractLayout: React.FC = () => {
         detail: `${contract.name} has been removed from your saved contracts.`,
       });
 
-      // If the deleted contract was selected, go back to setup
       if (sidebarSelectedId === contract.id) {
         setSidebarSelectedId(null);
         setViewMode('setup');
@@ -272,9 +239,6 @@ export const ContractLayout: React.FC = () => {
   const handleSimulate = useCallback(
     async (functionName: string) => {
       await invokerSimulate(functionName);
-      // After simulation, check the latest log for the result
-      // The result will be captured from the log detail
-      // Use a small timeout to allow the store to update
       setTimeout(() => {
         const store = getContractInteractionStore();
         const latestLogs = store.logs;
@@ -308,33 +272,20 @@ export const ContractLayout: React.FC = () => {
     [invokerExecute]
   );
 
-  const handleClearLogs = useCallback(() => {
-    clearLogs();
-    setSimulationResult(null);
-  }, [clearLogs, setSimulationResult]);
-
   // Don't render if not connected
   if (!isConnected || !isPXEInitialized) {
     return null;
   }
 
-  const isSetupSelected = viewMode === 'setup';
-
   return (
     <div className={styles.layout}>
       <ContractSidebar
         contracts={sidebarContracts}
-        selectedContractId={sidebarSelectedId}
         selectedContract={selectedContract}
-        isSetupSelected={isSetupSelected}
         functionGroups={groups}
-        selectedFunctionName={selectedFunctionName}
-        functionFilter={functionFilter}
         onBack={handleBack}
         onAddContract={handleAddContract}
         onSelectContract={handleSelectContract}
-        onSelectFunction={handleSelectFunction}
-        onFilterChange={handleFilterChange}
         onDeleteContract={handleDeleteContract}
       />
 
@@ -356,18 +307,11 @@ export const ContractLayout: React.FC = () => {
 
       {viewMode === 'explorer' && (
         <ContractExplorerPanel
-          networkName={currentConfig?.name}
           connectedAddress={connectedAddress}
-          contractName={contractName}
           groups={groups}
-          selectedFunctionName={selectedFunctionName}
-          simulationResult={simulationResult}
-          logs={logs}
           status={status}
-          error={error}
           onSimulate={handleSimulate}
           onExecute={handleExecute}
-          onClearLogs={handleClearLogs}
         />
       )}
     </div>

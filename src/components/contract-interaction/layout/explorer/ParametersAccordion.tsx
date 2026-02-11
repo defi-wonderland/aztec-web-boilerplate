@@ -1,15 +1,14 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Circle } from 'lucide-react';
+import { useFormValues, useFormActions } from '../../../../store';
 import { cn, iconSize, toTitleCase } from '../../../../utils';
 import { formatParsedType } from '../../../../utils/contractInteraction';
 import type { ParsedField } from '../../../../types';
 
 interface ParametersAccordionProps {
   inputs: ParsedField[];
-  formValues: Record<string, string>;
   connectedAddress: string;
   isBusy: boolean;
-  onFormValueChange: (path: string, value: string) => void;
 }
 
 const styles = {
@@ -65,11 +64,19 @@ const styles = {
 
 export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
   inputs,
-  formValues,
   connectedAddress,
   isBusy,
-  onFormValueChange,
 }) => {
+  const formValues = useFormValues();
+  const { setValue: setFormValue } = useFormActions();
+
+  const handleChange = useCallback(
+    (path: string, value: string) => {
+      setFormValue(path, value);
+    },
+    [setFormValue]
+  );
+
   const requiredCount = inputs.filter(
     (input) => !input.path.includes('?')
   ).length;
@@ -121,9 +128,7 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
                     type="text"
                     className={styles.paramInput}
                     value={value}
-                    onChange={(e) =>
-                      onFormValueChange(input.path, e.target.value)
-                    }
+                    onChange={(e) => handleChange(input.path, e.target.value)}
                     placeholder={`Enter ${toTitleCase(input.path)} value...`}
                     disabled={isBusy}
                   />
@@ -131,9 +136,7 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
                     <button
                       type="button"
                       className={styles.paramHelper}
-                      onClick={() =>
-                        onFormValueChange(input.path, connectedAddress)
-                      }
+                      onClick={() => handleChange(input.path, connectedAddress)}
                     >
                       <span className={styles.paramHelperText}>Use wallet</span>
                     </button>

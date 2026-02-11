@@ -1,13 +1,9 @@
 import React, { useCallback } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { useCopyToClipboard } from '../../../../hooks';
+import { useSimulationResult } from '../../../../store';
 import { cn, iconSize } from '../../../../utils';
 import { formatDisplayValue, formatRelativeTime } from './explorer-utils';
-import type { SimulationResult } from '../../../../store';
-
-interface SimulationResultCardProps {
-  simulationResult: SimulationResult;
-}
 
 const styles = {
   resultCard: cn(
@@ -47,16 +43,28 @@ const styles = {
   ),
 } as const;
 
+interface SimulationResultCardProps {
+  selectedFunctionName: string | null;
+}
+
 export const SimulationResultCard: React.FC<SimulationResultCardProps> = ({
-  simulationResult,
+  selectedFunctionName,
 }) => {
+  const simulationResult = useSimulationResult();
   const { copied: resultCopied, copy } = useCopyToClipboard();
 
   const handleCopyResult = useCallback(() => {
-    if (simulationResult.value) {
+    if (simulationResult?.value) {
       copy(formatDisplayValue(simulationResult.value));
     }
   }, [simulationResult, copy]);
+
+  if (
+    !simulationResult ||
+    simulationResult.functionName !== selectedFunctionName
+  ) {
+    return null;
+  }
 
   return (
     <div className={styles.resultCard}>

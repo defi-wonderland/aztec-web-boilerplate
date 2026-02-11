@@ -1,18 +1,13 @@
 import React, { useCallback, useMemo } from 'react';
 import { Play, Zap } from 'lucide-react';
-import {
-  useFormValues,
-  useFormActions,
-  type SimulationResult,
-} from '../../../store';
+import { useSelectedFunctionName } from '../../../store';
 import { cn, iconSize } from '../../../utils';
 import { analyzeFunctionCapabilities } from '../../../utils/contractInteraction';
 import { ExecutionHistoryCard } from './explorer/ExecutionHistoryCard';
 import { FunctionHeader } from './explorer/FunctionHeader';
 import { ParametersAccordion } from './explorer/ParametersAccordion';
 import { SimulationResultCard } from './explorer/SimulationResultCard';
-import type { AztecNetwork } from '../../../config/networks/constants';
-import type { InvokeStatus, LogEntry, FunctionGroup } from '../types';
+import type { InvokeStatus, FunctionGroup } from '../types';
 
 const styles = {
   // Main panel container - scrollable with proper flex
@@ -52,35 +47,21 @@ const styles = {
 } as const;
 
 interface ContractExplorerPanelProps {
-  networkName?: AztecNetwork;
   connectedAddress: string;
-  contractName?: string;
   groups: FunctionGroup[];
-  selectedFunctionName: string | null;
-  simulationResult: SimulationResult | null;
-  logs: LogEntry[];
   status: InvokeStatus;
-  error: string | null;
   onSimulate: (functionName: string) => void;
   onExecute: (functionName: string) => void;
-  onClearLogs: () => void;
 }
 
 export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
   connectedAddress,
-  contractName,
   groups,
-  selectedFunctionName,
-  simulationResult,
-  logs,
   status,
-  error: _error,
   onSimulate,
   onExecute,
-  onClearLogs,
 }) => {
-  const formValues = useFormValues();
-  const { setValue: setFormValue } = useFormActions();
+  const selectedFunctionName = useSelectedFunctionName();
 
   // Find the selected function
   const selectedFn = useMemo(() => {
@@ -108,13 +89,6 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
 
   const simulateDisabled = !selectedFn || isBusy || !capabilities.canSimulate;
   const executeDisabled = !selectedFn || isBusy || !capabilities.isExecutable;
-
-  const handleFormValueChange = useCallback(
-    (path: string, value: string) => {
-      setFormValue(path, value);
-    },
-    [setFormValue]
-  );
 
   const handleSimulate = useCallback(() => {
     if (selectedFunctionName) {
@@ -146,17 +120,14 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
   return (
     <div className={styles.panel}>
       <FunctionHeader
-        contractName={contractName}
         selectedFn={selectedFn}
         isPrivate={capabilities.isPrivate}
       />
 
       <ParametersAccordion
         inputs={selectedFn.inputs}
-        formValues={formValues}
         connectedAddress={connectedAddress}
         isBusy={isBusy}
-        onFormValueChange={handleFormValueChange}
       />
 
       {/* Actions Row */}
@@ -181,12 +152,9 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
         </button>
       </div>
 
-      {simulationResult &&
-        simulationResult.functionName === selectedFunctionName && (
-          <SimulationResultCard simulationResult={simulationResult} />
-        )}
+      <SimulationResultCard selectedFunctionName={selectedFunctionName} />
 
-      <ExecutionHistoryCard logs={logs} onClearLogs={onClearLogs} />
+      <ExecutionHistoryCard />
     </div>
   );
 };

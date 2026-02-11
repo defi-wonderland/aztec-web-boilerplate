@@ -8,6 +8,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { useCopyToClipboard } from '../../../../hooks';
+import { useContractCallLogs, useContractActions } from '../../../../store';
 import { cn, iconSize } from '../../../../utils';
 import {
   Dialog,
@@ -21,11 +22,6 @@ import {
   DETAIL_TRUNCATE_THRESHOLD,
 } from './explorer-utils';
 import type { LogEntry } from '../../types';
-
-interface ExecutionHistoryCardProps {
-  logs: LogEntry[];
-  onClearLogs: () => void;
-}
 
 const styles = {
   historyCard: cn(
@@ -122,10 +118,10 @@ const styles = {
   emptyEntries: 'px-5 py-8 text-center text-sm text-muted',
 } as const;
 
-export const ExecutionHistoryCard: React.FC<ExecutionHistoryCardProps> = ({
-  logs,
-  onClearLogs,
-}) => {
+export const ExecutionHistoryCard: React.FC = () => {
+  const logs = useContractCallLogs();
+  const { clearLogs } = useContractActions();
+
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
   const [modalLog, setModalLog] = useState<LogEntry | null>(null);
   const { copied: copySuccess, copy } = useCopyToClipboard();
@@ -171,7 +167,7 @@ export const ExecutionHistoryCard: React.FC<ExecutionHistoryCardProps> = ({
             <button
               type="button"
               className={styles.historyClear}
-              onClick={onClearLogs}
+              onClick={clearLogs}
             >
               Clear all
             </button>

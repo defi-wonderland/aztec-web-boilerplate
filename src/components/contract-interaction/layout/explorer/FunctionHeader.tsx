@@ -1,10 +1,10 @@
 import React from 'react';
 import { Circle } from 'lucide-react';
+import { useInvokeFlowData } from '../../../../store';
 import { cn, toTitleCase } from '../../../../utils';
 import type { ParsedFunction } from '../../../../types';
 
 interface FunctionHeaderProps {
-  contractName?: string;
   selectedFn: ParsedFunction;
   isPrivate: boolean;
 }
@@ -34,10 +34,11 @@ const styles = {
 } as const;
 
 export const FunctionHeader: React.FC<FunctionHeaderProps> = ({
-  contractName,
   selectedFn,
   isPrivate,
 }) => {
+  const { contractName } = useInvokeFlowData();
+
   return (
     <div className={styles.functionHeader}>
       {/* Breadcrumb */}

@@ -12,6 +12,13 @@ import {
   Check,
 } from 'lucide-react';
 import { useCopyToClipboard } from '../../../hooks';
+import {
+  useViewMode,
+  useSidebarSelectedId,
+  useSelectedFunctionName,
+  useFunctionFilter,
+  useExplorerActions,
+} from '../../../store';
 import { cn, iconSize, truncateAddress } from '../../../utils';
 import type { FunctionGroup } from '../types';
 
@@ -190,35 +197,31 @@ export interface SidebarContract {
 
 interface ContractSidebarProps {
   contracts: SidebarContract[];
-  selectedContractId: string | null;
   selectedContract: SidebarContract | null;
-  isSetupSelected: boolean;
   functionGroups: FunctionGroup[];
-  selectedFunctionName: string | null;
-  functionFilter: string;
   onBack: () => void;
   onAddContract: () => void;
   onSelectContract: (id: string) => void;
-  onSelectFunction: (name: string) => void;
-  onFilterChange: (filter: string) => void;
   onDeleteContract?: (contract: SidebarContract) => void;
 }
 
 export const ContractSidebar: React.FC<ContractSidebarProps> = ({
   contracts,
-  selectedContractId,
   selectedContract,
-  isSetupSelected,
   functionGroups,
-  selectedFunctionName,
-  functionFilter,
   onBack,
   onAddContract,
   onSelectContract,
-  onSelectFunction,
-  onFilterChange,
   onDeleteContract,
 }) => {
+  const viewMode = useViewMode();
+  const sidebarSelectedId = useSidebarSelectedId();
+  const selectedFunctionName = useSelectedFunctionName();
+  const functionFilter = useFunctionFilter();
+  const { setSelectedFunctionName, setFunctionFilter } = useExplorerActions();
+
+  const isSetupSelected = viewMode === 'setup';
+
   // Count functions in each group
   const groupCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -273,7 +276,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
         {/* Contracts List */}
         <div className={styles.contractsList}>
           {contracts.map((contract) => {
-            const isSelected = selectedContractId === contract.id;
+            const isSelected = sidebarSelectedId === contract.id;
             const canDelete = onDeleteContract !== undefined;
             return (
               <button
@@ -327,7 +330,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
             type="button"
             className={cn(
               styles.addContractBtn,
-              selectedContractId === null
+              sidebarSelectedId === null
                 ? styles.addContractBtnSelected
                 : styles.addContractBtnDefault
             )}
@@ -401,7 +404,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
             className={styles.searchInput}
             placeholder="Search functions..."
             value={functionFilter}
-            onChange={(e) => onFilterChange(e.target.value)}
+            onChange={(e) => setFunctionFilter(e.target.value)}
           />
         </div>
       </div>
@@ -443,7 +446,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                             ? styles.functionItemSelected
                             : styles.functionItemDefault
                         )}
-                        onClick={() => onSelectFunction(fn.name)}
+                        onClick={() => setSelectedFunctionName(fn.name)}
                         title={fn.name}
                       >
                         <Circle
