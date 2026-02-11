@@ -122,9 +122,10 @@ export const useDeployTab = (options: UseDeployTabOptions) => {
   // Auto-select first constructor when custom artifact is parsed
   const prevCustomConstructorsLength = useRef(0);
   useEffect(() => {
-    const currentLength = customDeployable.contract?.constructors.length ?? 0;
+    const constructors = customDeployable.contract?.constructors ?? [];
+    const currentLength = constructors.length;
     if (currentLength > 0 && prevCustomConstructorsLength.current === 0) {
-      setSelectedConstructor(customDeployable.contract!.constructors[0].name);
+      setSelectedConstructor(constructors[0].name);
     }
     prevCustomConstructorsLength.current = currentLength;
   }, [customDeployable.contract, setSelectedConstructor]);

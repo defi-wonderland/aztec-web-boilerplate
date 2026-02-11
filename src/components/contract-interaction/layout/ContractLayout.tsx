@@ -12,6 +12,7 @@ import {
   useFunctionFilter,
   useExplorerActions,
   useContractActions,
+  getContractInteractionStore,
 } from '../../../store';
 import { cn } from '../../../utils';
 import {
@@ -70,7 +71,12 @@ export const ContractLayout: React.FC = () => {
       const address = fromSidebarId(sidebarId);
       if (!address) return false;
 
-      const savedContract = savedContracts.find(
+      // Read savedContracts from the store snapshot to avoid closing over
+      // the array reference, which would recreate this callback (and the
+      // auto-load effect) every time the list changes.
+      const currentSavedContracts =
+        getContractInteractionStore().savedContracts;
+      const savedContract = currentSavedContracts.find(
         (c) => c.address.toLowerCase() === address.toLowerCase()
       );
       if (!savedContract) return false;
@@ -96,7 +102,7 @@ export const ContractLayout: React.FC = () => {
       });
       return false;
     },
-    [savedContracts, loadArtifactWithData, pushLog]
+    [loadArtifactWithData, pushLog]
   );
 
   // Refresh saved contracts on mount
@@ -109,11 +115,14 @@ export const ContractLayout: React.FC = () => {
     let cancelled = false;
 
     const autoLoadArtifact = async () => {
+      const hasSavedContracts =
+        getContractInteractionStore().savedContracts.length > 0;
+
       if (
         viewMode !== 'explorer' ||
         !sidebarSelectedId ||
         parsedArtifact !== null ||
-        savedContracts.length === 0
+        !hasSavedContracts
       ) {
         return;
       }
@@ -139,7 +148,6 @@ export const ContractLayout: React.FC = () => {
     viewMode,
     sidebarSelectedId,
     parsedArtifact,
-    savedContracts,
     loadSavedContractArtifact,
     setViewMode,
     setSidebarSelectedId,

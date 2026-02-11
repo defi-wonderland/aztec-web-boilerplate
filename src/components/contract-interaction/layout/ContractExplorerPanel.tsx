@@ -65,7 +65,8 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
     () =>
       analyzeFunctionCapabilities(
         selectedFn?.attributes ?? [],
-        selectedFn?.inputs
+        selectedFn?.inputs,
+        selectedFn?.isUnconstrained
       ),
     [selectedFn]
   );
