@@ -1,9 +1,9 @@
 import React, { useCallback } from 'react';
 import { Copy, Check } from 'lucide-react';
-import { useCopyToClipboard } from '../../../hooks';
-import { cn, iconSize } from '../../../utils';
+import { useCopyToClipboard } from '../../../../hooks';
+import { cn, iconSize } from '../../../../utils';
 import { formatDisplayValue, formatRelativeTime } from './explorer-utils';
-import type { SimulationResult } from '../../../store';
+import type { SimulationResult } from '../../../../store';
 
 interface SimulationResultCardProps {
   simulationResult: SimulationResult;

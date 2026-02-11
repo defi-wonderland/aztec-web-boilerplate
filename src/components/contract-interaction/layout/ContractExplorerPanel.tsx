@@ -7,10 +7,10 @@ import {
 } from '../../../store';
 import { cn, iconSize } from '../../../utils';
 import { analyzeFunctionCapabilities } from '../../../utils/contractInteraction';
-import { ExecutionHistoryCard } from './ExecutionHistoryCard';
-import { FunctionHeader } from './FunctionHeader';
-import { ParametersAccordion } from './ParametersAccordion';
-import { SimulationResultCard } from './SimulationResultCard';
+import { ExecutionHistoryCard } from './explorer/ExecutionHistoryCard';
+import { FunctionHeader } from './explorer/FunctionHeader';
+import { ParametersAccordion } from './explorer/ParametersAccordion';
+import { SimulationResultCard } from './explorer/SimulationResultCard';
 import type { AztecNetwork } from '../../../config/networks/constants';
 import type { InvokeStatus, LogEntry, FunctionGroup } from '../types';
 

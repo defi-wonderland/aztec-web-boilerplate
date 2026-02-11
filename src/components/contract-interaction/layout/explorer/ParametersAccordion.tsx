@@ -1,8 +1,8 @@
 import React from 'react';
 import { Circle } from 'lucide-react';
-import { cn, iconSize, toTitleCase } from '../../../utils';
-import { formatParsedType } from '../../../utils/contractInteraction';
-import type { ParsedField } from '../../../types';
+import { cn, iconSize, toTitleCase } from '../../../../utils';
+import { formatParsedType } from '../../../../utils/contractInteraction';
+import type { ParsedField } from '../../../../types';
 
 interface ParametersAccordionProps {
   inputs: ParsedField[];

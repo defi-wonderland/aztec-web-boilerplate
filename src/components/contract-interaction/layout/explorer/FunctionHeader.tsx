@@ -1,7 +1,7 @@
 import React from 'react';
 import { Circle } from 'lucide-react';
-import { cn, toTitleCase } from '../../../utils';
-import type { ParsedFunction } from '../../../types';
+import { cn, toTitleCase } from '../../../../utils';
+import type { ParsedFunction } from '../../../../types';
 
 interface FunctionHeaderProps {
   contractName?: string;

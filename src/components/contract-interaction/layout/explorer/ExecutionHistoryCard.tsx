@@ -7,20 +7,20 @@ import {
   ChevronRight,
   Maximize2,
 } from 'lucide-react';
-import { useCopyToClipboard } from '../../../hooks';
-import { cn, iconSize } from '../../../utils';
+import { useCopyToClipboard } from '../../../../hooks';
+import { cn, iconSize } from '../../../../utils';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '../../ui/Dialog';
+} from '../../../ui/Dialog';
 import {
   prettifyJson,
   formatTime,
   DETAIL_TRUNCATE_THRESHOLD,
 } from './explorer-utils';
-import type { LogEntry } from '../types';
+import type { LogEntry } from '../../types';
 
 interface ExecutionHistoryCardProps {
   logs: LogEntry[];
