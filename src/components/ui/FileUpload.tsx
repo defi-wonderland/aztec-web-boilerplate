@@ -43,6 +43,8 @@ const styles = {
     'hover:bg-surface-secondary transition-colors',
     'cursor-pointer'
   ),
+  // Hidden input
+  hiddenInput: 'hidden',
   // Error/helper styles
   error: 'text-sm text-error',
   helperText: 'text-sm text-muted',
@@ -210,7 +212,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [file?.content]);
+  }, [file]);
 
   const handleDownload = useCallback(() => {
     if (!file) return;
@@ -239,7 +241,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         type="file"
         accept={acceptString}
         onChange={handleFileInputChange}
-        className="hidden"
+        className={styles.hiddenInput}
         disabled={disabled}
       />
 

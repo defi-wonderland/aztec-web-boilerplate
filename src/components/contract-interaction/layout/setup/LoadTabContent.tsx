@@ -35,6 +35,7 @@ const styles = {
     'absolute inset-0 flex items-center justify-center gap-2',
     'bg-surface/80 rounded-xl text-muted'
   ),
+  loadingSpinner: 'animate-spin',
   hintError: 'text-sm text-error',
   actionsRow: 'flex gap-4 pt-2',
 } as const;
@@ -142,7 +143,10 @@ export const LoadTabContent: React.FC<LoadTabContentProps> = ({
               />
               {artifact.isLoadingPreconfigured && (
                 <div className={styles.loadingOverlay}>
-                  <Loader2 size={iconSize()} className="animate-spin" />
+                  <Loader2
+                    size={iconSize()}
+                    className={styles.loadingSpinner}
+                  />
                   <span>Loading artifact...</span>
                 </div>
               )}

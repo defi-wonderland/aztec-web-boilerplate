@@ -20,6 +20,7 @@ import {
   useExplorerActions,
 } from '../../../store';
 import { cn, iconSize, truncateAddress } from '../../../utils';
+import { Button, Input } from '../../ui';
 import type { FunctionGroup } from '../types';
 
 /**
@@ -131,6 +132,9 @@ const styles = {
   functionName: 'text-xs font-medium font-mono truncate',
   functionNameDefault: 'text-muted',
   functionNameSelected: 'text-accent',
+
+  // Empty group text
+  emptyGroupText: 'pl-7 py-2 text-xs text-muted',
 
   // Empty state
   emptyState: cn(
@@ -302,24 +306,19 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                   </span>
                 </div>
                 {canDelete && (
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <Button
+                    variant="icon"
+                    size="icon"
                     className={styles.contractItemDelete}
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteContract(contract);
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.stopPropagation();
-                        onDeleteContract(contract);
-                      }
-                    }}
+                    aria-label="Remove contract"
                     title="Remove contract"
                   >
                     <Trash2 size={14} />
-                  </span>
+                  </Button>
                 )}
               </button>
             );
@@ -399,8 +398,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
       <div className={styles.searchSection}>
         <div className={styles.searchBox}>
           <Search size={iconSize()} className={styles.searchIcon} />
-          <input
-            type="text"
+          <Input
             className={styles.searchInput}
             placeholder="Search functions..."
             value={functionFilter}
@@ -474,7 +472,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                   })}
 
                   {group.items.length === 0 && (
-                    <div className="pl-7 py-2 text-xs text-muted">
+                    <div className={styles.emptyGroupText}>
                       No functions found
                     </div>
                   )}

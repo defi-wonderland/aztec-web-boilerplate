@@ -34,6 +34,7 @@ const styles = {
     'transition-colors cursor-pointer'
   ),
   resultCopyIcon: 'text-muted',
+  resultCopyBtnSuccess: 'text-success',
   resultType: 'flex items-center gap-2',
   resultTypeLabel: 'text-xs text-muted',
   resultTypeBadge: cn(
@@ -85,7 +86,10 @@ export const SimulationResultCard: React.FC<SimulationResultCardProps> = ({
           </span>
           <button
             type="button"
-            className={cn(styles.resultCopyBtn, resultCopied && 'text-success')}
+            className={cn(
+              styles.resultCopyBtn,
+              resultCopied && styles.resultCopyBtnSuccess
+            )}
             onClick={handleCopyResult}
             aria-label="Copy value"
           >

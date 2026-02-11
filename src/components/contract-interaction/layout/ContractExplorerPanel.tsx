@@ -3,6 +3,7 @@ import { Play, Zap } from 'lucide-react';
 import { useSelectedFunctionName } from '../../../store';
 import { cn, iconSize } from '../../../utils';
 import { analyzeFunctionCapabilities } from '../../../utils/contractInteraction';
+import { Button } from '../../ui';
 import { ExecutionHistoryCard } from './explorer/ExecutionHistoryCard';
 import { FunctionHeader } from './explorer/FunctionHeader';
 import { ParametersAccordion } from './explorer/ParametersAccordion';
@@ -132,24 +133,24 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
 
       {/* Actions Row */}
       <div className={styles.actionsRow}>
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           className={styles.simulateBtn}
           disabled={simulateDisabled}
           onClick={handleSimulate}
+          icon={<Play size={iconSize()} />}
         >
-          <Play size={iconSize()} />
-          <span>{simulateLabel}</span>
-        </button>
-        <button
-          type="button"
+          {simulateLabel}
+        </Button>
+        <Button
+          variant="primary"
           className={styles.executeBtn}
           disabled={executeDisabled}
           onClick={handleExecute}
+          icon={<Zap size={iconSize()} />}
         >
-          <Zap size={iconSize()} />
-          <span>{executeLabel}</span>
-        </button>
+          {executeLabel}
+        </Button>
       </div>
 
       <SimulationResultCard selectedFunctionName={selectedFunctionName} />

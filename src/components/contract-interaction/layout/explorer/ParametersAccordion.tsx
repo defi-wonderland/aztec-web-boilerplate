@@ -3,6 +3,7 @@ import { Circle } from 'lucide-react';
 import { useFormValues, useFormActions } from '../../../../store';
 import { cn, iconSize, toTitleCase } from '../../../../utils';
 import { formatParsedType } from '../../../../utils/contractInteraction';
+import { Button, Input } from '../../../ui';
 import type { ParsedField } from '../../../../types';
 
 interface ParametersAccordionProps {
@@ -124,8 +125,7 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
                   </span>
                 </div>
                 <div className={styles.paramInputWrapper}>
-                  <input
-                    type="text"
+                  <Input
                     className={styles.paramInput}
                     value={value}
                     onChange={(e) => handleChange(input.path, e.target.value)}
@@ -133,13 +133,14 @@ export const ParametersAccordion: React.FC<ParametersAccordionProps> = ({
                     disabled={isBusy}
                   />
                   {input.path === 'from' && connectedAddress && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className={styles.paramHelper}
                       onClick={() => handleChange(input.path, connectedAddress)}
                     >
                       <span className={styles.paramHelperText}>Use wallet</span>
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
