@@ -45,14 +45,7 @@ const styles = {
   paramRequired: 'text-error',
   paramType: 'text-xs font-mono text-muted',
   paramInputWrapper: 'flex items-center gap-2 w-full',
-  paramInput: cn(
-    'flex-1 h-12 px-4 rounded-[10px]',
-    'bg-surface border border-default',
-    'text-[13px] font-mono text-default',
-    'placeholder:text-muted',
-    'focus:outline-none focus:border-accent focus:border-2',
-    'transition-colors'
-  ),
+  paramInput: 'flex-1 rounded-[10px] text-[13px] font-mono',
   paramHelper: cn(
     'flex items-center gap-1.5',
     'px-3 py-2.5 rounded-lg',

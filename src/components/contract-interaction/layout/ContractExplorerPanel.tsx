@@ -29,22 +29,8 @@ const styles = {
 
   // Actions Row
   actionsRow: cn('flex items-center gap-4', 'pt-5'),
-  simulateBtn: cn(
-    'flex items-center justify-center gap-2.5',
-    'w-[260px] h-[54px] rounded-[14px]',
-    'bg-surface border-2 border-default',
-    'text-[15px] font-bold text-default',
-    'hover:bg-surface-secondary transition-colors',
-    'disabled:opacity-50 disabled:cursor-not-allowed'
-  ),
-  executeBtn: cn(
-    'flex items-center justify-center gap-2.5',
-    'w-[340px] h-[54px] rounded-[14px]',
-    'bg-accent text-white',
-    'text-[15px] font-bold cursor-pointer',
-    'hover:brightness-110 hover:shadow-lg transition-all',
-    'disabled:opacity-50 disabled:cursor-not-allowed'
-  ),
+  simulateBtn: 'w-[260px] h-[54px] rounded-[14px] text-[15px] font-bold',
+  executeBtn: 'w-[340px] h-[54px] rounded-[14px] text-[15px] font-bold',
 } as const;
 
 interface ContractExplorerPanelProps {
@@ -85,8 +71,8 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
   );
 
   const isBusy = status !== 'idle';
-  const simulateLabel = status === 'simulating' ? 'Simulating...' : 'Simulate';
-  const executeLabel = status === 'executing' ? 'Executing...' : 'Execute';
+  const isSimulating = status === 'simulating';
+  const isExecuting = status === 'executing';
 
   const simulateDisabled = !selectedFn || isBusy || !capabilities.canSimulate;
   const executeDisabled = !selectedFn || isBusy || !capabilities.isExecutable;
@@ -137,19 +123,23 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
           variant="secondary"
           className={styles.simulateBtn}
           disabled={simulateDisabled}
+          isLoading={isSimulating}
           onClick={handleSimulate}
           icon={<Play size={iconSize()} />}
+          aria-label="Simulate function"
         >
-          {simulateLabel}
+          Simulate
         </Button>
         <Button
           variant="primary"
           className={styles.executeBtn}
           disabled={executeDisabled}
+          isLoading={isExecuting}
           onClick={handleExecute}
           icon={<Zap size={iconSize()} />}
+          aria-label="Execute function"
         >
-          {executeLabel}
+          Execute
         </Button>
       </div>
 

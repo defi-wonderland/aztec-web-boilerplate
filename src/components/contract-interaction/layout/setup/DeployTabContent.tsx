@@ -89,7 +89,7 @@ export const DeployTabContent: React.FC<DeployTabContentProps> = ({
             key={contract.id}
             icon={Coins}
             title={contract.label}
-            description="ERC20-like token"
+            description={`${contract.constructors.length} constructor${contract.constructors.length !== 1 ? 's' : ''}`}
             isSelected={
               !source.isCustom &&
               source.selectedPreconfigured?.id === contract.id

@@ -202,15 +202,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = file.content;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      console.warn('Clipboard copy failed - requires secure context (HTTPS)');
     }
   }, [file]);
 

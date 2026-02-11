@@ -2,8 +2,8 @@ import React, { useCallback } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { useCopyToClipboard } from '../../../../hooks';
 import { useSimulationResult } from '../../../../store';
-import { cn, iconSize } from '../../../../utils';
-import { formatDisplayValue, formatRelativeTime } from './explorer-utils';
+import { cn, iconSize, formatRelativeTime } from '../../../../utils';
+import { formatDisplayValue } from './explorer-utils';
 
 const styles = {
   resultCard: cn(

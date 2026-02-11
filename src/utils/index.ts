@@ -14,6 +14,8 @@ export {
   formatBalance,
   formatFeeJuiceBalance,
   formatRelativeTime,
+  formatTime,
+  formatDate,
 } from './format';
 export { iconSize, type IconSize } from './iconSize';
 export { MinimalWallet } from './MinimalWallet';

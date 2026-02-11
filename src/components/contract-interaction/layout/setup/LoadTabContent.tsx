@@ -94,8 +94,16 @@ export const LoadTabContent: React.FC<LoadTabContentProps> = ({
         {source.preconfiguredContracts.length > 0 && (
           <ContractSourceCard
             icon={Coins}
-            title="Token Contract"
-            description="Wonderland Token (ERC20-like)"
+            title={
+              source.preconfiguredContracts.length === 1
+                ? source.preconfiguredContracts[0].label
+                : 'Pre-configured'
+            }
+            description={
+              source.preconfiguredContracts.length === 1
+                ? 'Pre-configured contract'
+                : `${source.preconfiguredContracts.length} contracts available`
+            }
             isSelected={source.selected === 'preconfigured'}
             onClick={() => source.onChange('preconfigured')}
             className={styles.card}

@@ -9,18 +9,14 @@ import {
 } from 'lucide-react';
 import { useCopyToClipboard } from '../../../../hooks';
 import { useContractCallLogs, useContractActions } from '../../../../store';
-import { cn, iconSize } from '../../../../utils';
+import { cn, iconSize, formatTime, formatDate } from '../../../../utils';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '../../../ui/Dialog';
-import {
-  prettifyJson,
-  formatTime,
-  DETAIL_TRUNCATE_THRESHOLD,
-} from './explorer-utils';
+import { prettifyJson, DETAIL_TRUNCATE_THRESHOLD } from './explorer-utils';
 import type { LogEntry } from '../../types';
 
 const styles = {
@@ -195,7 +191,9 @@ export const ExecutionHistoryCard: React.FC = () => {
                   <span className={styles.entryTime}>
                     {formatTime(timestamp)}
                   </span>
-                  <span className={styles.entryDate}>Today</span>
+                  <span className={styles.entryDate}>
+                    {formatDate(timestamp)}
+                  </span>
                 </div>
                 <div className={styles.entryContent}>
                   <div className={styles.entryHeader}>

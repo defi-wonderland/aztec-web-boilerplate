@@ -39,24 +39,3 @@ export const formatDisplayValue = (value: string): string => {
     return value;
   }
 };
-
-/** Format a Date to HH:MM:SS (24-hour). */
-export const formatTime = (date: Date): string => {
-  return date.toLocaleTimeString('en-US', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-};
-
-/** Format a Date as a human-friendly relative string. */
-export const formatRelativeTime = (date: Date): string => {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-
-  if (diffSec < 60) return `${diffSec} seconds ago`;
-  if (diffSec < 3600) return `${Math.floor(diffSec / 60)} minutes ago`;
-  return 'Today';
-};
