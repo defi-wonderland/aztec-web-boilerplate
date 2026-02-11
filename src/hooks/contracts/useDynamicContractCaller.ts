@@ -204,19 +204,22 @@ export const useDynamicContractCaller = (
             };
           }
 
-          // Get fee payment method from global store
+          // Get fee payment method from global store (undefined if FPC disabled)
           const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-            config: currentConfig?.feePaymentContracts ?? {},
+            config: currentConfig?.feePaymentContracts ?? {
+              enabled: false,
+              contracts: {},
+            },
             getSponsoredFeePaymentMethod: () =>
               connector.getSponsoredFeePaymentMethod(),
           });
 
           const tx = method(...args);
-          const sentTx = tx.send({
+          const receipt = await tx.send({
             from: account.getAddress(),
-            fee: { paymentMethod },
+            ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+            wait: { timeout: 900 },
           });
-          const receipt = await sentTx.wait({ timeout: 900 });
 
           return { success: true, data: receipt };
         }

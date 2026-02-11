@@ -1,12 +1,12 @@
-import { DefaultAccountInterface } from '@aztec/accounts/defaults';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type {
-  AccountContract,
-  AccountInterface,
-  AuthWitnessProvider,
-  ChainInfo,
+import {
+  BaseAccount,
+  type AccountContract,
+  type Account,
+  type AuthWitnessProvider,
 } from '@aztec/aztec.js/account';
 import type { CompleteAddress } from '@aztec/aztec.js/addresses';
+import { DefaultAccountEntrypoint } from '@aztec/entrypoints/account';
 import { EcdsaKEthSignerAccountContractArtifact } from '../../artifacts/EcdsaKEthSignerAccount';
 
 /**
@@ -73,16 +73,14 @@ export class EcdsaKEthSignerAccountContract implements AccountContract {
   }
 
   /**
-   * Returns the account interface for creating tx requests.
+   * Returns the account for creating tx requests.
    */
-  getInterface(
-    address: CompleteAddress,
-    chainInfo: ChainInfo
-  ): AccountInterface {
-    return new DefaultAccountInterface(
-      this.getAuthWitnessProvider(address),
-      address,
-      chainInfo
+  getAccount(address: CompleteAddress): Account {
+    const authWitnessProvider = this.getAuthWitnessProvider(address);
+    return new BaseAccount(
+      new DefaultAccountEntrypoint(address.address, authWitnessProvider),
+      authWitnessProvider,
+      address
     );
   }
 

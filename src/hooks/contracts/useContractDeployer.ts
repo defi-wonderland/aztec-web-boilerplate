@@ -127,29 +127,30 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        // Get fee payment method from global store
+        // Get fee payment method from global store (undefined if FPC disabled)
         const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-          config: currentConfig?.feePaymentContracts ?? {},
+          config: currentConfig?.feePaymentContracts ?? {
+            enabled: false,
+            contracts: {},
+          },
           getSponsoredFeePaymentMethod: () =>
             connector.getSponsoredFeePaymentMethod(),
         });
 
-        const receipt = await deployMethod
-          .send({
-            from: account.getAddress(),
-            contractAddressSalt: salt,
-            fee: { paymentMethod },
-            universalDeploy: true,
-            skipInitialization: false,
-          })
-          .wait({ timeout: 900 });
+        const contract = await deployMethod.send({
+          from: account.getAddress(),
+          contractAddressSalt: salt,
+          ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+          universalDeploy: true,
+          skipInitialization: false,
+          wait: { timeout: 900 },
+        });
 
-        const deployedAddress = receipt.contract.address.toString();
+        const deployedAddress = contract.address.toString();
 
         return {
           success: true,
           address: deployedAddress,
-          txHash: receipt.txHash?.toString(),
         };
       } catch (err) {
         const errorMsg =

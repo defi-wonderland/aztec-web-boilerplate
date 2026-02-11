@@ -179,6 +179,10 @@ export default defineConfig(({ command, mode }) => {
         '@aztec/circuits.js',
         '@aztec/stdlib',
         '@aztec/aztec.js',
+        '@aztec/entrypoints',
+        '@aztec/ethereum',
+        '@aztec/l1-artifacts',
+        '@aztec/protocol-contracts',
         '@noble/curves',
       ],
     },
@@ -236,7 +240,7 @@ export default defineConfig(({ command, mode }) => {
           inlineDynamicImports: false,
           interop: 'auto',
           assetFileNames: (assetInfo) => {
-            if ((assetInfo as any).name?.endsWith('.wasm')) {
+            if (assetInfo.names.some((name) => name.endsWith('.wasm'))) {
               return 'assets/[name]-[hash][extname]';
             }
             return 'assets/[name]-[hash][extname]';
@@ -267,6 +271,9 @@ export default defineConfig(({ command, mode }) => {
         '@aztec/accounts',
         '@aztec/stdlib',
         '@aztec/aztec.js',
+        '@aztec/entrypoints',
+        '@aztec/l1-artifacts',
+        '@aztec/protocol-contracts',
         '@defi-wonderland/aztec-standards',
         'noirc_abi_wasm',
       ],

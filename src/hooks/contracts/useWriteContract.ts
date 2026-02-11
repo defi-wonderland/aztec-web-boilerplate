@@ -167,9 +167,12 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          // Get fee payment method from global store
+          // Get fee payment method from global store (undefined if FPC disabled)
           const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-            config: currentConfig?.feePaymentContracts ?? {},
+            config: currentConfig?.feePaymentContracts ?? {
+              enabled: false,
+              contracts: {},
+            },
             getSponsoredFeePaymentMethod: () =>
               connector.getSponsoredFeePaymentMethod(),
           });
@@ -220,18 +223,15 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             };
           }
 
-          const sentTx = (
+          const result = await (
             tx as {
-              send: (opts: unknown) => {
-                wait: (opts: unknown) => Promise<unknown>;
-              };
+              send: (opts: unknown) => Promise<unknown>;
             }
           ).send({
             from: account.getAddress(),
-            fee: { paymentMethod },
+            ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+            wait: { timeout },
           });
-
-          const result = await sentTx.wait({ timeout });
 
           return {
             success: true,

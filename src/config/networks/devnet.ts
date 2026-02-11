@@ -34,11 +34,14 @@ export const DEVNET_CONFIG: NetworkConfig = {
     token: '0x1a89e73869a0969d6a14a8eb2ad8c981820302ff64c55b1225fbe29e4bfa99aa',
   },
   feePaymentContracts: {
-    metered: {
-      address:
-        '0x2a39ba8b469adc19bfc0f5c1a9d496f73b82e95fb113e020214c729ff9cd1ff4',
-      salt: '1337',
-      deployer: AztecAddress.ZERO.toString(),
+    enabled: import.meta.env.VITE_FPC_ENABLED !== 'false',
+    contracts: {
+      metered: {
+        address:
+          '0x2a39ba8b469adc19bfc0f5c1a9d496f73b82e95fb113e020214c729ff9cd1ff4',
+        salt: '1337',
+        deployer: AztecAddress.ZERO.toString(),
+      },
     },
   },
 };

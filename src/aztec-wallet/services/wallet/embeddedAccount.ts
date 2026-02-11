@@ -262,5 +262,12 @@ async function connectWithCredentials(
   );
   wallet.addAccount(account);
 
+  // Deploy account if not yet initialized (e.g., sandbox was restarted)
+  try {
+    await deployAccountIfNotExists(accountManager, pxeInstance);
+  } catch {
+    // Non-fatal: account may still work if already deployed
+  }
+
   return account;
 }

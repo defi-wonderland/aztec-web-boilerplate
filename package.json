@@ -8,13 +8,14 @@
   },
   "scripts": {
     "clean": "rm -rf dist src/target src/artifacts/*.json src/artifacts/*.js src/artifacts/*.d.ts contracts/*/target",
+    "build-standards": "tsx scripts/build-aztec-standards.ts chore/v4 --force",
     "build-contracts": "npx tsx scripts/build-contracts.ts --force",
     "deploy-contracts": "tsx scripts/deploy.ts --network sandbox",
     "dev": "vite",
     "build-app": "NODE_OPTIONS='--max-old-space-size=14336' vite build",
     "build-app:ci": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=6656' vite build",
-    "build": "yarn build-contracts && yarn build-app",
-    "build:ci": "yarn build-contracts && yarn build-app:ci",
+    "build": "yarn build-standards && yarn build-contracts && yarn build-app",
+    "build:ci": "yarn build-standards && yarn build-contracts && yarn build-app:ci",
     "serve": "vite preview --port ${PORT:-3000}",
     "prep-test": "PROVER_ENABLED=false yarn deploy-contracts && yarn build-app",
     "test": "vitest run",
@@ -30,16 +31,16 @@
   "dependencies": {
     "@azguardwallet/client": "0.7.0",
     "@azguardwallet/types": "0.7.0",
-    "@aztec/accounts": "3.0.0-devnet.6-patch.1",
-    "@aztec/aztec.js": "3.0.0-devnet.6-patch.1",
-    "@aztec/constants": "3.0.0-devnet.6-patch.1",
-    "@aztec/foundation": "3.0.0-devnet.6-patch.1",
-    "@aztec/kv-store": "3.0.0-devnet.6-patch.1",
-    "@aztec/noir-contracts.js": "3.0.0-devnet.6-patch.1",
-    "@aztec/pxe": "3.0.0-devnet.6-patch.1",
-    "@aztec/stdlib": "3.0.0-devnet.6-patch.1",
-    "@aztec/wallet-sdk": "3.0.0-devnet.6-patch.1",
-    "@defi-wonderland/aztec-fee-payment": "github:defi-wonderland/aztec-fee-payment#dev",
+    "@aztec/accounts": "4.0.0-nightly.20260204",
+    "@aztec/aztec.js": "4.0.0-nightly.20260204",
+    "@aztec/constants": "4.0.0-nightly.20260204",
+    "@aztec/foundation": "4.0.0-nightly.20260204",
+    "@aztec/kv-store": "4.0.0-nightly.20260204",
+    "@aztec/noir-contracts.js": "4.0.0-nightly.20260204",
+    "@aztec/pxe": "4.0.0-nightly.20260204",
+    "@aztec/stdlib": "4.0.0-nightly.20260204",
+    "@aztec/wallet-sdk": "4.0.0-nightly.20260204",
+    "@defi-wonderland/aztec-fee-payment": "github:defi-wonderland/aztec-fee-payment#chore/v4",
     "@defi-wonderland/aztec-standards": "0.0.0-11cd7319",
     "@radix-ui/react-dialog": "1.1.15",
     "@radix-ui/react-select": "2.2.6",
@@ -105,7 +106,7 @@
     "trailingComma": "es5"
   },
   "config": {
-    "aztecVersion": "3.0.0-devnet.6-patch.1"
+    "aztecVersion": "4.0.0-nightly.20260204"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "resolutions": {

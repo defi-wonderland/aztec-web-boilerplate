@@ -33,4 +33,8 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   proverEnabled: env.proverEnabled,
   isTestnet: false,
   artifactSource: 'local',
+  feePaymentContracts: {
+    enabled: import.meta.env.VITE_FPC_ENABLED !== 'false',
+    contracts: {},
+  },
 };

@@ -54,14 +54,13 @@ export async function deployAccountIfNotExists(
     const deployMethod = await accountManager.getDeployMethod();
     const paymentMethod = await pxeInstance.getSponsoredFeePaymentMethod();
 
-    await deployMethod
-      .send({
-        from: AztecAddress.ZERO,
-        fee: { paymentMethod },
-        skipClassPublication: opts.skipClassPublication,
-        skipInstancePublication: opts.skipInstancePublication,
-      })
-      .wait({ timeout: opts.timeout });
+    await deployMethod.send({
+      from: AztecAddress.ZERO,
+      fee: { paymentMethod },
+      skipClassPublication: opts.skipClassPublication,
+      skipInstancePublication: opts.skipInstancePublication,
+      wait: { timeout: opts.timeout },
+    });
 
     return { deployed: true, address: accountAddress };
   } catch (cause) {

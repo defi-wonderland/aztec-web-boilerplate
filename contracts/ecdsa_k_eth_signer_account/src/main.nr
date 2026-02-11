@@ -44,7 +44,7 @@ pub contract EcdsaKEthSignerAccount {
         // Safety: Comment from above applies here as well.
         unsafe { set_sender_for_tags(self.address) };
         self.storage.signing_public_key.initialize(pub_key_note).deliver(
-            MessageDelivery.CONSTRAINED_ONCHAIN,
+            MessageDelivery.ONCHAIN_CONSTRAINED,
         );
         // Safety: Comment from above applies here as well.
         unsafe { set_sender_for_tags(original_sender) };
