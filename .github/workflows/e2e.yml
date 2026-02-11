@@ -26,12 +26,6 @@ jobs:
 
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
-      # Pre-install foundry so the Aztec installer finds foundryup at
-      # $HOME/.foundry/bin/foundryup and skips its own broken curl install.
-      # The Aztec install script has a bug: its timeout() function does
-      # [ "${CI:-0}" -eq 1 ] but GitHub sets CI=true (string, not int),
-      # and the internal curl to foundry.paradigm.xyz fails to place
-      # foundryup at the expected path.
 
     - name: Install Aztec CLI
       run: |
@@ -40,23 +34,16 @@ jobs:
         curl -sL $INSTALL_URL > tmp.sh
         VERSION=${{ steps.aztec-version.outputs.version }} bash tmp.sh <<< yes "yes"
 
-    - name: Debug Aztec install location
+    - name: Update PATH
       run: |
-        echo "=== ~/.aztec contents ==="
-        find /home/runner/.aztec -type f -name "aztec*" 2>/dev/null || echo "Nothing found"
-        echo "=== ~/.aztec/bin ==="
-        ls -la /home/runner/.aztec/bin/ 2>/dev/null || echo "bin dir not found"
-        echo "=== Check shell profile ==="
-        grep -r "aztec" ~/.bashrc ~/.bash_profile ~/.profile 2>/dev/null || echo "No aztec in profiles"
-        echo "=== which/type ==="
-        source ~/.bashrc 2>/dev/null; type aztec 2>/dev/null || echo "aztec not found after sourcing bashrc"
-
-    - name: Update path
-      run: echo "/home/runner/.aztec/bin" >> $GITHUB_PATH
+        echo "current symlink:" && ls -la "$HOME/.aztec/current" 2>/dev/null || echo "NO current symlink!"
+        echo "node_modules/.bin/aztec:" && ls -la "$HOME/.aztec/current/node_modules/.bin/aztec" 2>/dev/null || echo "NOT found!"
+        echo "$HOME/.aztec/current/node_modules/.bin" >> $GITHUB_PATH
+        echo "$HOME/.aztec/bin" >> $GITHUB_PATH
 
     - name: Start local network
       run: |
-        source ~/.bashrc 2>/dev/null || true
+        which aztec
         aztec start --local-network &
 
     - name: Wait for sandbox to be ready
