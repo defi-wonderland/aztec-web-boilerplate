@@ -123,8 +123,10 @@ export async function createEmbeddedAccount(
 
     // Generate fresh credentials
     console.log('[embedded-account] Generating credentials...');
-    const salt = Fr.fromBuffer(randomBytes(32));
-    const secretKey = await poseidon2Hash([Fr.fromBuffer(randomBytes(32))]);
+    const salt = Fr.fromBufferReduce(randomBytes(32));
+    const secretKey = await poseidon2Hash([
+      Fr.fromBufferReduce(randomBytes(32)),
+    ]);
     const signingKey = Buffer.from(secretKey.toBuffer().subarray(0, 32));
     console.log('[embedded-account] Credentials generated');
 
