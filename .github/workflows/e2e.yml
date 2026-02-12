@@ -22,6 +22,7 @@ jobs:
       run: |
         AZTEC_VERSION=$(node -p "require('./package.json').config.aztecVersion")
         echo "version=$AZTEC_VERSION" >> "$GITHUB_OUTPUT"
+        echo "VERSION=$AZTEC_VERSION" >> "$GITHUB_ENV"
         echo "Aztec version is $AZTEC_VERSION"
 
     - name: Install Foundry
@@ -29,14 +30,14 @@ jobs:
 
     - name: Install Aztec CLI
       run: |
-        INSTALL_URL="https://install.aztec.network/${{ steps.aztec-version.outputs.version }}/"
-        echo "Installing from: $INSTALL_URL"
-        curl -sL $INSTALL_URL > tmp.sh
-        VERSION=${{ steps.aztec-version.outputs.version }} bash tmp.sh <<< yes "yes"
-
-    - name: Update PATH
-      run: |
+        NON_INTERACTIVE=1 SKIP_PULL=1 bash <(curl -fsSL https://install.aztec.network)
         echo "$HOME/.aztec/bin" >> $GITHUB_PATH
+
+    - name: Pull Aztec Docker image
+      run: docker pull aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }}
+
+    - name: Verify Aztec CLI
+      run: aztec --version
 
     - name: Start local network
       run: aztec start --local-network &
