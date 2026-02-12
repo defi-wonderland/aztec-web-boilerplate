@@ -3,7 +3,6 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { Fr } from '@aztec/aztec.js/fields';
 import { AccountManager } from '@aztec/aztec.js/wallet';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
-import { randomBytes } from '@aztec/foundation/crypto/random';
 import {
   getConfiguredAccountCredentials,
   hasConfiguredCredentials,
@@ -123,10 +122,8 @@ export async function createEmbeddedAccount(
 
     // Generate fresh credentials
     console.log('[embedded-account] Generating credentials...');
-    const salt = Fr.fromBufferReduce(randomBytes(32));
-    const secretKey = await poseidon2Hash([
-      Fr.fromBufferReduce(randomBytes(32)),
-    ]);
+    const salt = Fr.random();
+    const secretKey = await poseidon2Hash([Fr.random()]);
     const signingKey = Buffer.from(secretKey.toBuffer().subarray(0, 32));
     console.log('[embedded-account] Credentials generated');
 
