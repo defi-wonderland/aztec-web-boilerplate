@@ -99,13 +99,13 @@ export async function connectViaEmbeddedWallet(page: Page): Promise<void> {
   await embeddedGroup.click();
   console.log('Embedded Wallet clicked, waiting for account creation...');
 
-  await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
+  await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.TRANSACTION });
   console.log('Account created and connected');
 
   const accountSection = page
     .locator('[data-testid="connected-account"]:visible')
     .first();
   await expect(accountSection).toBeVisible({
-    timeout: TIMEOUTS.WALLET_OPERATION,
+    timeout: TIMEOUTS.TRANSACTION,
   });
 }
