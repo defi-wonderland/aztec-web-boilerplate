@@ -101,12 +101,17 @@ export async function createEmbeddedAccount(
 ): Promise<CreateEmbeddedAccountResult> {
   let pxeInstance: SharedPXEInstance;
 
+  console.log('[embedded-account] Starting account creation...');
+
   try {
+    console.log('[embedded-account] Initializing PXE...');
     pxeInstance = await SharedPXEService.getInstance(
       networkConfig.nodeUrl,
       networkConfig.name
     );
+    console.log('[embedded-account] PXE initialized');
   } catch (cause) {
+    console.error('[embedded-account] PXE init failed:', cause);
     throw new PXEInitError(
       `Failed to initialize PXE for network ${networkConfig.name}`,
       cause
@@ -117,11 +122,14 @@ export async function createEmbeddedAccount(
     const wallet = pxeInstance.wallet;
 
     // Generate fresh credentials
+    console.log('[embedded-account] Generating credentials...');
     const salt = Fr.fromBuffer(randomBytes(32));
     const secretKey = await poseidon2Hash([Fr.fromBuffer(randomBytes(32))]);
     const signingKey = Buffer.from(secretKey.toBuffer().subarray(0, 32));
+    console.log('[embedded-account] Credentials generated');
 
     // Create account manager
+    console.log('[embedded-account] Creating AccountManager...');
     const accountContract = new EcdsaRAccountContract(signingKey);
     const accountManager = await AccountManager.create(
       wallet,
@@ -129,26 +137,53 @@ export async function createEmbeddedAccount(
       accountContract,
       salt
     );
+    console.log(
+      '[embedded-account] AccountManager created, address:',
+      accountManager.address.toString()
+    );
 
     // Get account and register with PXE
+    console.log('[embedded-account] Getting account...');
     const account = await accountManager.getAccount();
+    console.log('[embedded-account] Getting instance and artifact...');
     const instance = accountManager.getInstance();
     const artifact = await accountManager
       .getAccountContract()
       .getContractArtifact();
+    console.log('[embedded-account] Registering contract with PXE...');
     await wallet.registerContract(
       instance,
       artifact,
       accountManager.getSecretKey()
     );
     wallet.addAccount(account);
+    console.log('[embedded-account] Account registered with PXE');
 
     // Deploy if needed (don't throw on deployment failure)
+    // Use a hard timeout because send() simulation can hang indefinitely
+    // and the SDK's wait.timeout only applies after the tx is actually sent.
+    const DEPLOY_HARD_TIMEOUT_MS = 90_000;
     let deployment: DeployAccountResult;
     try {
-      deployment = await deployAccountIfNotExists(accountManager, pxeInstance);
-    } catch {
-      // Account created but deployment failed - still usable
+      console.log('[embedded-account] Starting account deployment...');
+      deployment = await Promise.race([
+        deployAccountIfNotExists(accountManager, pxeInstance),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Account deployment timed out')),
+            DEPLOY_HARD_TIMEOUT_MS
+          )
+        ),
+      ]);
+      console.log(
+        '[embedded-account] Deployment result:',
+        deployment.deployed ? 'deployed' : 'already initialized'
+      );
+    } catch (err) {
+      console.warn(
+        '[embedded-account] Deployment failed or timed out, continuing without deployment:',
+        err instanceof Error ? err.message : err
+      );
       deployment = { deployed: false, address: accountManager.address };
     }
 
@@ -160,8 +195,13 @@ export async function createEmbeddedAccount(
       salt: salt.toString(),
     };
 
+    console.log('[embedded-account] Account creation complete');
     return { account, pxeInstance, deployment, credentials };
   } catch (cause) {
+    console.error(
+      '[embedded-account] Account creation failed:',
+      cause instanceof Error ? cause.message : cause
+    );
     if (cause instanceof PXEInitError) throw cause;
     throw new AccountCreationError('Failed to create embedded account', cause);
   }
@@ -263,9 +303,23 @@ async function connectWithCredentials(
   wallet.addAccount(account);
 
   // Deploy account if not yet initialized (e.g., sandbox was restarted)
+  // Hard timeout to prevent simulation from hanging indefinitely
+  const DEPLOY_HARD_TIMEOUT_MS = 90_000;
   try {
-    await deployAccountIfNotExists(accountManager, pxeInstance);
-  } catch {
+    await Promise.race([
+      deployAccountIfNotExists(accountManager, pxeInstance),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Account deployment timed out')),
+          DEPLOY_HARD_TIMEOUT_MS
+        )
+      ),
+    ]);
+  } catch (err) {
+    console.warn(
+      '[embedded-account] Deployment failed or timed out:',
+      err instanceof Error ? err.message : err
+    );
     // Non-fatal: account may still work if already deployed
   }
 

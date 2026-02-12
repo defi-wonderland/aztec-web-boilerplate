@@ -44,7 +44,7 @@ async function getPublicBalance(page: Page): Promise<bigint> {
 async function waitForBalanceSync(
   page: Page,
   expectedMinimum: bigint,
-  timeout = TIMEOUTS.TRANSACTION
+  timeout = TIMEOUTS.LONG
 ): Promise<bigint> {
   const startTime = Date.now();
 
@@ -76,7 +76,7 @@ async function mintToPublic(page: Page, amount: string): Promise<void> {
   const loadingSpinner = dripperContent.locator('.animate-spin');
   if (await loadingSpinner.isVisible()) {
     await expect(loadingSpinner).not.toBeVisible({
-      timeout: TIMEOUTS.WALLET_OPERATION,
+      timeout: TIMEOUTS.LONG,
     });
   }
 
@@ -112,7 +112,7 @@ async function mintToPublic(page: Page, amount: string): Promise<void> {
   }
 
   await expect(dripButton).toContainText('Drip to', {
-    timeout: TIMEOUTS.TRANSACTION,
+    timeout: TIMEOUTS.LONG,
   });
   console.log('Transaction completed');
 }

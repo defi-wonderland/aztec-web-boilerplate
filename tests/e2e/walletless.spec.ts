@@ -37,13 +37,13 @@ test.describe('Wallet Connection E2E', () => {
     await metamaskBtn.click();
     console.log('MetaMask button clicked, waiting for signature...');
 
-    await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
+    await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.LONG });
 
     const accountSection = page
       .locator('[data-testid="connected-account"]:visible')
       .first();
     await expect(accountSection).toBeVisible({
-      timeout: TIMEOUTS.WALLET_OPERATION,
+      timeout: TIMEOUTS.LONG,
     });
 
     const accountAddress = accountSection.locator(
