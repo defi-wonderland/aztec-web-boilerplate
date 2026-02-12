@@ -257,11 +257,12 @@ async function main() {
         run(`cd "${repoDir}" && npm install --no-audit --no-fund`);
       }
 
-      // 2) Compile sources: run `nargo compile` directly instead of the
-      //    repo's compile script, which may include post-processing steps
-      //    that reference Docker-internal paths (e.g. strip_aztec_nr_prefix.sh)
+      // 2) Compile sources: `aztec compile` runs nargo compile + bb aztec_process
+      //    in one step (transpile public bytecode and generate VKs).
+      //    We run this directly instead of the repo's compile script, which may
+      //    include post-processing steps that reference Docker-internal paths.
       console.log('\n🔨 Compiling contracts...');
-      if (!tryRun(`cd "${repoDir}" && nargo compile`)) {
+      if (!tryRun(`cd "${repoDir}" && aztec compile`)) {
         // Check if compilation partially succeeded (target/*.json files exist)
         const targetDir = path.join(repoDir, 'target');
         const hasArtifacts =
@@ -276,31 +277,12 @@ async function main() {
         }
       }
 
-      // 3) Postprocess: transpile public bytecode (ACIR → AVM) and generate VKs.
-      //    In v4, `aztec-nargo compile` only produces raw ACIR. `bb aztec_process`
-      //    transpiles public functions and sets `transpiled: true` in the JSON,
-      //    which `aztec codegen` requires.
-      console.log(
-        '\n🔧 Postprocessing contracts (transpile + VK generation)...'
-      );
-      {
-        // Use local bb binary from aztec-up installation
-        const bbCmd = [
-          `cd "${repoDir}"`,
-          `&& for f in target/*.json; do flags="$flags -i $f"; done;`,
-          `bb aztec_process $flags`,
-        ].join(' ');
-        if (!tryRun(bbCmd)) {
-          throw new Error('Postprocessing (bb aztec_process) failed');
-        }
-      }
-
-      // 4) Strip __aztec_nr_internals__ prefix from function names in artifact JSONs.
+      // 3) Strip __aztec_nr_internals__ prefix from function names in artifact JSONs.
       //    This replicates what strip_aztec_nr_prefix.sh (Docker-only) does.
       //    Without this, v4 SDK can't find 'constructor' (it's named __aztec_nr_internals__constructor).
       stripAztecNrPrefix(path.join(repoDir, 'target'));
 
-      // 5) Codegen - copies target/ → src/target/ then generates wrappers
+      // 4) Codegen - copies target/ → src/target/ then generates wrappers
       ensureDir(path.join(repoDir, ARTIFACTS_OUTPUT_DIR));
 
       try {
@@ -312,7 +294,7 @@ async function main() {
         throw error;
       }
 
-      // 6) Copy artifacts to ARTIFACTS_OUTPUT_DIR
+      // 5) Copy artifacts to ARTIFACTS_OUTPUT_DIR
       const targetArtifactsDir = path.join(process.cwd(), ARTIFACTS_OUTPUT_DIR);
       console.log(`\n📁 Copying artifacts to: ${targetArtifactsDir}`);
       copyFiles(
@@ -321,7 +303,7 @@ async function main() {
         forceOverwrite
       );
 
-      // 7) Copy target JSONs to TARGET_OUTPUT_DIR (src/target/)
+      // 6) Copy target JSONs to TARGET_OUTPUT_DIR (src/target/)
       const targetTargetDir = path.join(process.cwd(), TARGET_OUTPUT_DIR);
       console.log(`\n📁 Copying target to: ${targetTargetDir}`);
       copyFiles(
