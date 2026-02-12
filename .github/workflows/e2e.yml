@@ -41,8 +41,8 @@ jobs:
     - name: Verify Aztec CLI
       run: aztec --version
 
-    - name: Start local network
-      run: DOCKER_PULL_POLICY=missing aztec start --local-network &
+    - name: Start sandbox
+      run: DOCKER_PULL_POLICY=missing aztec start --sandbox &
 
     - name: Wait for sandbox to be ready
       run: |
