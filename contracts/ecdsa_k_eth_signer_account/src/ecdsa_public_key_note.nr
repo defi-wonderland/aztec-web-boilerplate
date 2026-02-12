@@ -1,4 +1,4 @@
-use dep::aztec::{
+use ::aztec::{
     protocol::traits::Packable,
     macros::notes::note
 };
