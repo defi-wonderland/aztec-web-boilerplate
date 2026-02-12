@@ -31,15 +31,15 @@
   "dependencies": {
     "@azguardwallet/client": "0.7.0",
     "@azguardwallet/types": "0.7.0",
-    "@aztec/accounts": "4.0.0-nightly.20260204",
-    "@aztec/aztec.js": "4.0.0-nightly.20260204",
-    "@aztec/constants": "4.0.0-nightly.20260204",
-    "@aztec/foundation": "4.0.0-nightly.20260204",
-    "@aztec/kv-store": "4.0.0-nightly.20260204",
-    "@aztec/noir-contracts.js": "4.0.0-nightly.20260204",
-    "@aztec/pxe": "4.0.0-nightly.20260204",
-    "@aztec/stdlib": "4.0.0-nightly.20260204",
-    "@aztec/wallet-sdk": "4.0.0-nightly.20260204",
+    "@aztec/accounts": "4.0.0-devnet.1-patch.0",
+    "@aztec/aztec.js": "4.0.0-devnet.1-patch.0",
+    "@aztec/constants": "4.0.0-devnet.1-patch.0",
+    "@aztec/foundation": "4.0.0-devnet.1-patch.0",
+    "@aztec/kv-store": "4.0.0-devnet.1-patch.0",
+    "@aztec/noir-contracts.js": "4.0.0-devnet.1-patch.0",
+    "@aztec/pxe": "4.0.0-devnet.1-patch.0",
+    "@aztec/stdlib": "4.0.0-devnet.1-patch.0",
+    "@aztec/wallet-sdk": "4.0.0-devnet.1-patch.0",
     "@defi-wonderland/aztec-fee-payment": "github:defi-wonderland/aztec-fee-payment#chore/v4",
     "@defi-wonderland/aztec-standards": "0.0.0-11cd7319",
     "@radix-ui/react-dialog": "1.1.15",
@@ -106,7 +106,7 @@
     "trailingComma": "es5"
   },
   "config": {
-    "aztecVersion": "4.0.0-nightly.20260204"
+    "aztecVersion": "4.0.0-devnet.1-patch.0"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "resolutions": {
