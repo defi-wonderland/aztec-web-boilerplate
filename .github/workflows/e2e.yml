@@ -41,8 +41,11 @@ jobs:
     - name: Verify Aztec CLI
       run: aztec --version
 
-    - name: Start sandbox
-      run: DOCKER_PULL_POLICY=missing aztec start --sandbox &
+    - name: Start Anvil (L1)
+      run: anvil --host 0.0.0.0 --port 8545 --silent &
+
+    - name: Start Aztec local network
+      run: DOCKER_PULL_POLICY=missing aztec start --local-network --l1-rpc-urls http://localhost:8545 &
 
     - name: Wait for sandbox to be ready
       run: |
