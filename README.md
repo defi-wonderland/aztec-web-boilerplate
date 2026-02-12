@@ -21,6 +21,7 @@ A starter template for building privacy-preserving web applications on Aztec Net
 - Node.js >= 22.0.0
 - Yarn package manager
 - [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Foundry](https://book.getfoundry.sh/getting-started/installation) (for Anvil, the local L1 chain)
 
 ### Installation
 
@@ -29,29 +30,70 @@ A starter template for building privacy-preserving web applications on Aztec Net
 git clone https://github.com/defi-wonderland/aztec-web-boilerplate.git
 cd aztec-web-boilerplate
 
-# Install Aztec toolchain (v4.0.0-nightly.20260204)
-bash -i <(curl -s https://install.aztec.network)
-aztec-up -v 4.0.0-nightly.20260204
-
 # Install dependencies
 yarn install
 ```
 
 ### Start Sandbox & Deploy
 
-```bash
-# Terminal 1: Start Anvil (local L1)
-anvil
+The Aztec v4 sandbox runs as a Docker container and requires a separate Anvil instance as its L1 chain.
 
-# Terminal 2: Start the Aztec local network
-aztec start --local-network --l1-rpc-urls http://localhost:8545
+**Option A: Docker (recommended)**
+
+```bash
+# Terminal 1: Start Anvil (local L1 chain)
+anvil --host 0.0.0.0 -p 8545 --block-time 12
+
+# Terminal 2: Start the Aztec v4 sandbox (Docker)
+docker pull aztecprotocol/aztec:4.0.0-nightly.20260204
+docker run -d --name aztec-sandbox \
+  -p 8080:8080 -p 8880:8880 \
+  -e ETHEREUM_HOSTS=http://host.docker.internal:8545 \
+  aztecprotocol/aztec:4.0.0-nightly.20260204 start --local-network
+
+# Wait for the sandbox to be ready (check logs)
+docker logs -f aztec-sandbox
+# Look for: "Aztec Node started on port 8080" or block production logs
 
 # Terminal 3: Build and deploy everything
-yarn build           # Builds standards + contracts + app
+yarn build            # Builds standards + contracts + app
 yarn deploy-contracts # Deploy to local sandbox
 
 # Start the development server
 yarn dev
+```
+
+**Option B: Native CLI (via aztec-up)**
+
+```bash
+# Install the Aztec version manager
+bash -i <(curl -s https://install.aztec.network)
+
+# Install the specific version
+aztec-up install 4.0.0-nightly.20260204
+
+# Terminal 1: Start Anvil (local L1 chain)
+anvil --host 0.0.0.0 -p 8545 --block-time 12
+
+# Terminal 2: Start the Aztec local network
+aztec start --local-network --l1-rpc-urls http://localhost:8545
+
+# Terminal 3: Build, deploy, and run
+yarn build && yarn deploy-contracts && yarn dev
+```
+
+> **Note:** The native CLI install requires Foundry to not be running during installation.
+> If `aztec-up install` fails with "anvil is currently running", stop anvil first,
+> install, then restart anvil.
+
+### Stopping the Sandbox
+
+```bash
+# Docker approach
+docker stop aztec-sandbox && docker rm aztec-sandbox
+
+# Also stop Anvil (Ctrl+C in its terminal, or)
+pkill -f anvil
 ```
 
 The application will be available at **http://localhost:3000**

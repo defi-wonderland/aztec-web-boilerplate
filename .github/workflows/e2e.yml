@@ -36,15 +36,10 @@ jobs:
 
     - name: Update PATH
       run: |
-        echo "current symlink:" && ls -la "$HOME/.aztec/current" 2>/dev/null || echo "NO current symlink!"
-        echo "node_modules/.bin/aztec:" && ls -la "$HOME/.aztec/current/node_modules/.bin/aztec" 2>/dev/null || echo "NOT found!"
-        echo "$HOME/.aztec/current/node_modules/.bin" >> $GITHUB_PATH
         echo "$HOME/.aztec/bin" >> $GITHUB_PATH
 
     - name: Start local network
-      run: |
-        which aztec
-        aztec start --local-network &
+      run: aztec start --local-network &
 
     - name: Wait for sandbox to be ready
       run: |
@@ -65,14 +60,11 @@ jobs:
       working-directory: ./
       run: yarn playwright install --with-deps
 
-    - name: Build contracts
-      run: yarn build-contracts
+    - name: Build standards and contracts
+      run: yarn build:ci
 
     - name: Deploy contracts
       run: yarn deploy-contracts
-
-    - name: Build app
-      run: yarn build-app:ci
 
     - name: Run Playwright E2E tests
       run: yarn playwright test --project=chromium
