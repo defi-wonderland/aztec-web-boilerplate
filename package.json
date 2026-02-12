@@ -8,7 +8,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist src/target src/artifacts/*.json src/artifacts/*.js src/artifacts/*.d.ts contracts/*/target",
-    "build-standards": "tsx scripts/build-aztec-standards.ts chore/v4 --force",
+    "build-standards": "tsx scripts/build-aztec-standards.ts feat/upgrade-devnet.1-patch.0 --force",
     "build-contracts": "npx tsx scripts/build-contracts.ts --force",
     "deploy-contracts": "tsx scripts/deploy.ts --network sandbox",
     "dev": "vite",

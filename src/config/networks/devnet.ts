@@ -15,7 +15,7 @@ export const DEVNET_CONFIG: NetworkConfig = {
   name: 'devnet',
   displayName: 'Devnet',
   description: 'Public development network for testing with real tokens',
-  nodeUrl: 'https://next.devnet.aztec-labs.com/',
+  nodeUrl: 'https://v4-devnet-1.aztec-labs.com',
   dripperContractAddress:
     '0x02bc708c7f88a6bacefb7133eaf97a55d28980717c72bbd63d36d516536d9c21',
   tokenContractAddress:

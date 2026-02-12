@@ -257,11 +257,11 @@ async function main() {
         run(`cd "${repoDir}" && npm install --no-audit --no-fund`);
       }
 
-      // 2) Compile sources: run `aztec-nargo compile` directly instead of the
+      // 2) Compile sources: run `nargo compile` directly instead of the
       //    repo's compile script, which may include post-processing steps
       //    that reference Docker-internal paths (e.g. strip_aztec_nr_prefix.sh)
       console.log('\n🔨 Compiling contracts...');
-      if (!tryRun(`cd "${repoDir}" && aztec-nargo compile`)) {
+      if (!tryRun(`cd "${repoDir}" && nargo compile`)) {
         // Check if compilation partially succeeded (target/*.json files exist)
         const targetDir = path.join(repoDir, 'target');
         const hasArtifacts =
@@ -280,18 +280,15 @@ async function main() {
       //    In v4, `aztec-nargo compile` only produces raw ACIR. `bb aztec_process`
       //    transpiles public functions and sets `transpiled: true` in the JSON,
       //    which `aztec codegen` requires.
-      console.log('\n🔧 Postprocessing contracts (transpile + VK generation)...');
+      console.log(
+        '\n🔧 Postprocessing contracts (transpile + VK generation)...'
+      );
       {
-        // Build -i flags for each JSON artifact (bb directory scan has a bug,
-        // so we pass files individually via shell glob)
+        // Use local bb binary from aztec-up installation
         const bbCmd = [
           `cd "${repoDir}"`,
-          `&& docker run --rm --user $(id -u):$(id -g)`,
-          `-v $HOME:$HOME -e HOME=$HOME`,
-          `--workdir="${repoDir}" --entrypoint=""`,
-          `aztecprotocol/aztec /bin/sh -c`,
-          `'for f in target/*.json; do flags="$flags -i $f"; done;`,
-          `/usr/src/barretenberg/ts/build/*/bb aztec_process $flags'`,
+          `&& for f in target/*.json; do flags="$flags -i $f"; done;`,
+          `bb aztec_process $flags`,
         ].join(' ');
         if (!tryRun(bbCmd)) {
           throw new Error('Postprocessing (bb aztec_process) failed');
