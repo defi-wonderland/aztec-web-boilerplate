@@ -35,14 +35,23 @@ interface UseFeePayerAddressReturn {
 /**
  * Creates a stable hash from the fee payment config for use in query keys.
  */
+/**
+ * Creates a stable hash from the fee payment config for use in query keys.
+ * Uses sorted keys to ensure consistent serialization regardless of property order.
+ */
 const getConfigHash = (
   config: FeePaymentContractsConfig | undefined
 ): string => {
   if (!config) return '';
-  return JSON.stringify({
-    enabled: config.enabled,
-    contracts: config.contracts,
-  });
+  const sortedKeys = Object.keys(config).sort();
+  const sortedConfig = sortedKeys.reduce(
+    (acc, key) => {
+      acc[key] = config[key as keyof FeePaymentContractsConfig];
+      return acc;
+    },
+    {} as Record<string, unknown>
+  );
+  return JSON.stringify(sortedConfig);
 };
 
 /**
@@ -55,7 +64,6 @@ export const useFeePayerAddress = ({
   enabled = true,
 }: UseFeePayerAddressOptions): UseFeePayerAddressReturn => {
   const configHash = getConfigHash(feePaymentConfig);
-  const isFpcEnabled = feePaymentConfig?.enabled !== false;
 
   const query = useQuery({
     queryKey: queryKeys.feePayer.address(selectedMethod, configHash),
@@ -65,18 +73,14 @@ export const useFeePayerAddress = ({
       }
 
       const method = await createFeePaymentMethod(selectedMethod, {
-        config: feePaymentConfig ?? { enabled: false, contracts: {} },
+        config: feePaymentConfig ?? {},
         getSponsoredFeePaymentMethod: () =>
           connector.getSponsoredFeePaymentMethod(),
       });
 
-      if (!method) {
-        throw new Error('FPC is disabled for this network');
-      }
-
       return method.getFeePayer();
     },
-    enabled: enabled && connector !== null && isFpcEnabled,
+    enabled: enabled && connector !== null,
     staleTime: 60_000, // Fee payer addresses rarely change
   });
 

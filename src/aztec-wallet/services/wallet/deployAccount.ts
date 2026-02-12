@@ -11,8 +11,6 @@ export interface DeployAccountOptions {
   skipClassPublication?: boolean;
   /** Skip instance publication during deployment */
   skipInstancePublication?: boolean;
-  /** Whether to use sponsored fee payment (defaults to true) */
-  useFeePayment?: boolean;
 }
 
 export interface DeployAccountResult {
@@ -26,7 +24,6 @@ const DEFAULT_OPTIONS: Required<DeployAccountOptions> = {
   timeout: 120,
   skipClassPublication: true,
   skipInstancePublication: true,
-  useFeePayment: true,
 };
 
 /**
@@ -56,18 +53,11 @@ export async function deployAccountIfNotExists(
     }
 
     const deployMethod = await accountManager.getDeployMethod();
-
-    const feeOpts = opts.useFeePayment
-      ? {
-          fee: {
-            paymentMethod: await pxeInstance.getSponsoredFeePaymentMethod(),
-          },
-        }
-      : {};
+    const paymentMethod = await pxeInstance.getSponsoredFeePaymentMethod();
 
     await deployMethod.send({
       from: AztecAddress.ZERO,
-      ...feeOpts,
+      fee: { paymentMethod },
       skipClassPublication: opts.skipClassPublication,
       skipInstancePublication: opts.skipInstancePublication,
       wait: { timeout: opts.timeout, waitForStatus: TxStatus.PROPOSED },

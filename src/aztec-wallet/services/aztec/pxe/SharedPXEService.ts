@@ -181,16 +181,10 @@ class SharedPXEServiceClass {
 
     const wallet = new MinimalWallet(pxe, aztecNode);
 
-    // Register fee payment contracts if FPC is enabled for this network
+    // Register fee payment contracts (look up config by network name)
     const feePaymentConfig = this.getFeePaymentConfig(networkName);
-    if (feePaymentConfig?.enabled !== false) {
-      const feePaymentRegister = new FeePaymentRegister();
-      await feePaymentRegister.registerAll(pxe, feePaymentConfig?.contracts);
-    } else {
-      logger.info(
-        `FPC disabled for ${networkName} — skipping FPC registration`
-      );
-    }
+    const feePaymentRegister = new FeePaymentRegister();
+    await feePaymentRegister.registerAll(pxe, feePaymentConfig);
 
     // Initialize storage service
     const storageService = new AztecStorageService();

@@ -15,15 +15,9 @@ export interface DeployedContractConfig {
 }
 
 /**
- * Fee Payment Contracts configuration.
- * Contains an enabled flag and a map of contract names to their deployment configs.
+ * Fee Payment Contracts configuration - a map of contract names to their deployment configs.
  */
-export interface FeePaymentContractsConfig {
-  /** Whether FPC is enabled. When false, transactions are sent without fee payment. */
-  enabled: boolean;
-  /** Contract deployment configs keyed by name (e.g., 'metered') */
-  contracts: Record<string, DeployedContractConfig>;
-}
+export type FeePaymentContractsConfig = Record<string, DeployedContractConfig>;
 
 export interface NetworkConfig {
   name: AztecNetwork;
@@ -40,6 +34,6 @@ export interface NetworkConfig {
   artifactSource: ArtifactSource;
   artifactRegistryUrl?: string;
   classIds?: Record<string, string>;
-  /** Fee payment contracts configuration */
-  feePaymentContracts: FeePaymentContractsConfig;
+  /** Fee payment contracts configuration (keyed by contract name, e.g., 'metered') */
+  feePaymentContracts?: Record<string, DeployedContractConfig>;
 }

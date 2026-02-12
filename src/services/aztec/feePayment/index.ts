@@ -18,36 +18,31 @@ export interface FeePaymentContext {
 
 /**
  * Creates a fee payment method instance based on the specified type.
- * Returns undefined if FPC is disabled via `config.enabled`.
  */
 export async function createFeePaymentMethod(
   type: FeePaymentMethodType,
   context: FeePaymentContext
-): Promise<FeePaymentMethod | undefined> {
+): Promise<FeePaymentMethod> {
   const { config, getSponsoredFeePaymentMethod } = context;
-
-  if (!config.enabled) {
-    return undefined;
-  }
 
   switch (type) {
     case 'sponsored':
       return getSponsoredFeePaymentMethod();
 
     case 'metered':
-      if (!config.contracts.metered?.address) {
+      if (!config.metered?.address) {
         throw new Error('Metered FPC not configured for this network');
       }
       return new MeteredFeePaymentMethod(
-        AztecAddress.fromString(config.contracts.metered.address)
+        AztecAddress.fromString(config.metered.address)
       );
 
     case 'meteredExact':
-      if (!config.contracts.metered?.address) {
+      if (!config.metered?.address) {
         throw new Error('Metered FPC not configured for this network');
       }
       return new MeteredExactFeePaymentMethod(
-        AztecAddress.fromString(config.contracts.metered.address)
+        AztecAddress.fromString(config.metered.address)
       );
 
     default:

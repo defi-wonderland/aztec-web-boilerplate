@@ -128,12 +128,8 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        // Get fee payment method from global store (undefined if FPC disabled)
         const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-          config: currentConfig?.feePaymentContracts ?? {
-            enabled: false,
-            contracts: {},
-          },
+          config: currentConfig?.feePaymentContracts ?? {},
           getSponsoredFeePaymentMethod: () =>
             connector.getSponsoredFeePaymentMethod(),
         });

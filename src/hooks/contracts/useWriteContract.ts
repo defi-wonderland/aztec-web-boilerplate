@@ -168,12 +168,8 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          // Get fee payment method from global store (undefined if FPC disabled)
           const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-            config: currentConfig?.feePaymentContracts ?? {
-              enabled: false,
-              contracts: {},
-            },
+            config: currentConfig?.feePaymentContracts ?? {},
             getSponsoredFeePaymentMethod: () =>
               connector.getSponsoredFeePaymentMethod(),
           });
