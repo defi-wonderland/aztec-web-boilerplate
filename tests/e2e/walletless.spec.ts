@@ -7,17 +7,12 @@
 
 import { test, expect } from './fixtures/walletless';
 import {
-  clearBrowserStorage,
   switchToSandbox,
   openConnectModal,
   TIMEOUTS,
 } from './utils/test-helpers';
 
 test.describe('Wallet Connection E2E', () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserStorage(page);
-  });
-
   test('should connect MetaMask wallet via walletless', async ({
     page,
     walletless,

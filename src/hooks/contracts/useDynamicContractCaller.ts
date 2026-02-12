@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   hasAppManagedPXE,
@@ -218,7 +219,7 @@ export const useDynamicContractCaller = (
           const receipt = await tx.send({
             from: account.getAddress(),
             ...(paymentMethod ? { fee: { paymentMethod } } : {}),
-            wait: { timeout: 900 },
+            wait: { timeout: 900, waitForStatus: TxStatus.PROPOSED },
           });
 
           return { success: true, data: receipt };

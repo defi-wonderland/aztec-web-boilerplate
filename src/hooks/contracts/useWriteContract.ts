@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   isBrowserWalletConnector,
@@ -230,7 +231,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           ).send({
             from: account.getAddress(),
             ...(paymentMethod ? { fee: { paymentMethod } } : {}),
-            wait: { timeout },
+            wait: { timeout, waitForStatus: TxStatus.PROPOSED },
           });
 
           return {

@@ -13,23 +13,9 @@ export const TIMEOUTS = {
   DEFAULT: 30000,
   LONG: 60000,
   WALLET_OPERATION: 120000,
+  /** Extended timeout for on-chain transactions (simulation + proving + mining) */
+  TRANSACTION: 240000,
 } as const;
-
-/**
- * Clears all browser storage (IndexedDB, localStorage, sessionStorage)
- * Call this before tests to ensure a clean state.
- */
-export async function clearBrowserStorage(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.evaluate(async () => {
-    const dbs = await indexedDB.databases();
-    for (const db of dbs) {
-      if (db.name) indexedDB.deleteDatabase(db.name);
-    }
-    localStorage.clear();
-    sessionStorage.clear();
-  });
-}
 
 /**
  * Switches the app to Sandbox network via the network picker.

@@ -11,7 +11,6 @@
 import { test as baseTest } from '@playwright/test';
 import { test, expect } from './fixtures/walletless';
 import {
-  clearBrowserStorage,
   connectViaEVMWallet,
   connectViaEmbeddedWallet,
   TIMEOUTS,
@@ -45,7 +44,7 @@ async function getPublicBalance(page: Page): Promise<bigint> {
 async function waitForBalanceSync(
   page: Page,
   expectedMinimum: bigint,
-  timeout = TIMEOUTS.WALLET_OPERATION
+  timeout = TIMEOUTS.TRANSACTION
 ): Promise<bigint> {
   const startTime = Date.now();
 
@@ -113,7 +112,7 @@ async function mintToPublic(page: Page, amount: string): Promise<void> {
   }
 
   await expect(dripButton).toContainText('Drip to', {
-    timeout: TIMEOUTS.WALLET_OPERATION,
+    timeout: TIMEOUTS.TRANSACTION,
   });
   console.log('Transaction completed');
 }
@@ -153,10 +152,6 @@ async function runMintToPublicTest(
 }
 
 test.describe('Mint to Public - Walletless (MetaMask)', () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserStorage(page);
-  });
-
   test('should mint tokens to public balance via walletless MetaMask', async ({
     page,
     walletless,
@@ -173,10 +168,6 @@ test.describe('Mint to Public - Walletless (MetaMask)', () => {
 baseTest.describe(
   'Mint to Public - Embedded Wallet (Create New Account)',
   () => {
-    baseTest.beforeEach(async ({ page }) => {
-      await clearBrowserStorage(page);
-    });
-
     baseTest(
       'should mint tokens to public balance via embedded wallet',
       async ({ page }) => {

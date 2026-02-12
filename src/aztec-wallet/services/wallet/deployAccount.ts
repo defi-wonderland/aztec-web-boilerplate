@@ -1,5 +1,6 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { AccountManager } from '@aztec/aztec.js/wallet';
+import { TxStatus } from '@aztec/stdlib/tx';
 import { AccountDeploymentError } from './errors';
 import type { SharedPXEInstance } from '../aztec/pxe';
 
@@ -69,7 +70,7 @@ export async function deployAccountIfNotExists(
       ...feeOpts,
       skipClassPublication: opts.skipClassPublication,
       skipInstancePublication: opts.skipInstancePublication,
-      wait: { timeout: opts.timeout },
+      wait: { timeout: opts.timeout, waitForStatus: TxStatus.PROPOSED },
     });
 
     return { deployed: true, address: accountAddress };

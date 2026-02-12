@@ -6,6 +6,7 @@ import {
 import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   hasAppManagedPXE,
@@ -143,7 +144,7 @@ export const useContractDeployer = () => {
           ...(paymentMethod ? { fee: { paymentMethod } } : {}),
           universalDeploy: true,
           skipInitialization: false,
-          wait: { timeout: 900 },
+          wait: { timeout: 900, waitForStatus: TxStatus.PROPOSED },
         });
 
         const deployedAddress = deployed.address.toString();
