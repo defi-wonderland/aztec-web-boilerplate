@@ -276,12 +276,34 @@ async function main() {
         }
       }
 
-      // 3) Strip __aztec_nr_internals__ prefix from function names in artifact JSONs.
+      // 3) Postprocess: transpile public bytecode (ACIR → AVM) and generate VKs.
+      //    In v4, `aztec-nargo compile` only produces raw ACIR. `bb aztec_process`
+      //    transpiles public functions and sets `transpiled: true` in the JSON,
+      //    which `aztec codegen` requires.
+      console.log('\n🔧 Postprocessing contracts (transpile + VK generation)...');
+      {
+        // Build -i flags for each JSON artifact (bb directory scan has a bug,
+        // so we pass files individually via shell glob)
+        const bbCmd = [
+          `cd "${repoDir}"`,
+          `&& docker run --rm --user $(id -u):$(id -g)`,
+          `-v $HOME:$HOME -e HOME=$HOME`,
+          `--workdir="${repoDir}" --entrypoint=""`,
+          `aztecprotocol/aztec /bin/sh -c`,
+          `'for f in target/*.json; do flags="$flags -i $f"; done;`,
+          `/usr/src/barretenberg/ts/build/*/bb aztec_process $flags'`,
+        ].join(' ');
+        if (!tryRun(bbCmd)) {
+          throw new Error('Postprocessing (bb aztec_process) failed');
+        }
+      }
+
+      // 4) Strip __aztec_nr_internals__ prefix from function names in artifact JSONs.
       //    This replicates what strip_aztec_nr_prefix.sh (Docker-only) does.
       //    Without this, v4 SDK can't find 'constructor' (it's named __aztec_nr_internals__constructor).
       stripAztecNrPrefix(path.join(repoDir, 'target'));
 
-      // 4) Codegen - copies target/ → src/target/ then generates wrappers
+      // 5) Codegen - copies target/ → src/target/ then generates wrappers
       ensureDir(path.join(repoDir, ARTIFACTS_OUTPUT_DIR));
 
       try {
@@ -293,7 +315,7 @@ async function main() {
         throw error;
       }
 
-      // 5) Copy artifacts to ARTIFACTS_OUTPUT_DIR
+      // 6) Copy artifacts to ARTIFACTS_OUTPUT_DIR
       const targetArtifactsDir = path.join(process.cwd(), ARTIFACTS_OUTPUT_DIR);
       console.log(`\n📁 Copying artifacts to: ${targetArtifactsDir}`);
       copyFiles(
@@ -302,7 +324,7 @@ async function main() {
         forceOverwrite
       );
 
-      // 6) Copy target JSONs to TARGET_OUTPUT_DIR (src/target/)
+      // 7) Copy target JSONs to TARGET_OUTPUT_DIR (src/target/)
       const targetTargetDir = path.join(process.cwd(), TARGET_OUTPUT_DIR);
       console.log(`\n📁 Copying target to: ${targetTargetDir}`);
       copyFiles(

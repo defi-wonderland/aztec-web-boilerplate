@@ -153,6 +153,30 @@ function compileLocalContracts(
 
   console.log('   ✅ Contracts compiled successfully');
 
+  // Postprocess: transpile public bytecode (ACIR → AVM) and generate VKs.
+  // In v4, `aztec-nargo compile` only produces raw ACIR. `bb aztec_process`
+  // transpiles public functions and sets `transpiled: true` in the JSON,
+  // which `aztec codegen` requires.
+  console.log('   🔧 Postprocessing contracts (transpile + VK generation)...');
+  {
+    // Build -i flags for each JSON artifact (bb directory scan has a bug,
+    // so we pass files individually via shell glob)
+    const bbCmd = [
+      `cd "${projectRoot}"`,
+      `&& docker run --rm --user $(id -u):$(id -g)`,
+      `-v $HOME:$HOME -e HOME=$HOME`,
+      `--workdir="${projectRoot}" --entrypoint=""`,
+      `aztecprotocol/aztec /bin/sh -c`,
+      `'for f in target/*.json; do flags="$flags -i $f"; done;`,
+      `/usr/src/barretenberg/ts/build/*/bb aztec_process $flags'`,
+    ].join(' ');
+    if (!tryRun(bbCmd)) {
+      console.error('   ❌ Failed to postprocess contracts');
+      return false;
+    }
+  }
+  console.log('   ✅ Contracts postprocessed successfully');
+
   // Strip __aztec_nr_internals__ prefix from function names (replicates Docker-only script)
   stripAztecNrPrefix(compiledTarget);
 
