@@ -137,10 +137,9 @@ export default defineConfig(({ command, mode }) => {
     assetsInclude: ['**/*.wasm'],
     define: {
       global: 'globalThis',
-      // In dev: use proxy path. In prod: use real URL from env
-      'import.meta.env.VITE_ARTIFACT_REGISTRY_URL': JSON.stringify(
-        command === 'serve' ? '/artifact-registry' : artifactRegistryUrl
-      ),
+      // Proxied via Vite (dev) and Vercel rewrite (prod) to avoid CORS
+      'import.meta.env.VITE_ARTIFACT_REGISTRY_URL':
+        JSON.stringify('/artifact-registry'),
     },
     worker: {
       format: 'es',

@@ -62,6 +62,12 @@
   --navbar-bg: rgba(238, 237, 241, 0.95);
   --button-text: #eeedf1;
 
+  /* Surface hierarchy */
+  --bg-page: #f8f7fa;
+  --bg-card: #ffffff;
+  --bg-interactive: #f3f4f6;
+  --bg-interactive-hover: #e5e7eb;
+
   /* Semantic colors */
   --success: #10b981;
   --error: #ef4444;
@@ -71,26 +77,32 @@
 
 .dark {
   /* Background colors */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #2a2a2a;
-  --bg-gradient-start: #1a1a1a;
-  --bg-gradient-end: #0a0a0a;
+  --bg-primary: #121218;
+  --bg-secondary: #1e1e24;
+  --bg-tertiary: #2a2a32;
+  --bg-gradient-start: #121218;
+  --bg-gradient-end: #121218;
 
   /* Text colors */
   --text-primary: #ffffff;
   --text-secondary: #e0e0e0;
-  --text-muted: #a0a0a0;
+  --text-muted: #9ca3af;
 
-  /* Accent colors - swapped for dark mode */
-  --accent-primary: #eda1ff;
+  /* Accent colors - purple from Pencil design */
+  --accent-primary: #a78bfa;
   --accent-secondary: #8c7eff;
 
   /* UI colors */
-  --border-color: #333333;
+  --border-color: #3a3a44;
   --shadow-color: rgba(0, 0, 0, 0.5);
-  --navbar-bg: rgba(26, 26, 26, 0.95);
+  --navbar-bg: rgba(30, 30, 36, 0.95);
   --button-text: #000000;
+
+  /* Surface hierarchy */
+  --bg-page: #121218;
+  --bg-card: #1e1e24;
+  --bg-interactive: #3a3a44;
+  --bg-interactive-hover: #4a4a54;
 }
 
 /* =============================================================================
@@ -138,6 +150,15 @@ body {
 .bg-accent-secondary {
   background-color: var(--accent-secondary);
 }
+.bg-page {
+  background-color: var(--bg-page);
+}
+.bg-card {
+  background-color: var(--bg-card);
+}
+.bg-interactive {
+  background-color: var(--bg-interactive);
+}
 
 /* --- Hover variants for backgrounds --- */
 .hover\:bg-surface:hover {
@@ -151,6 +172,12 @@ body {
 }
 .hover\:bg-accent:hover {
   background-color: var(--accent-primary);
+}
+.hover\:bg-interactive:hover {
+  background-color: var(--bg-interactive);
+}
+.hover\:bg-interactive-hover:hover {
+  background-color: var(--bg-interactive-hover);
 }
 
 /* --- Data state variants for backgrounds (Radix UI) --- */

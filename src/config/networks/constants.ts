@@ -50,7 +50,7 @@ export const CHAIN_IDS: Record<AztecNetwork, AztecChainId> = {
  * Display names for each network
  */
 export const NETWORK_NAMES: Record<AztecNetwork, string> = {
-  sandbox: 'Sandbox',
+  sandbox: 'Local Network',
   devnet: 'Devnet',
 };
 

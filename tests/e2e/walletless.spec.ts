@@ -44,12 +44,16 @@ test.describe('Wallet Connection E2E', () => {
 
     await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
 
-    const accountSection = page.locator('[data-testid="connected-account"]');
+    const accountSection = page
+      .locator('[data-testid="connected-account"]:visible')
+      .first();
     await expect(accountSection).toBeVisible({
       timeout: TIMEOUTS.WALLET_OPERATION,
     });
 
-    const accountAddress = page.locator('[data-testid="account-address"]');
+    const accountAddress = accountSection.locator(
+      '[data-testid="account-address"]'
+    );
     const displayedAddress = await accountAddress.textContent();
     console.log('Connected:', displayedAddress);
 
