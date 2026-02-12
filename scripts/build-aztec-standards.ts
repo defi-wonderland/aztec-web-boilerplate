@@ -257,11 +257,11 @@ async function main() {
         run(`cd "${repoDir}" && npm install --no-audit --no-fund`);
       }
 
-      // 2) Compile sources: run `aztec compile` directly instead of the
+      // 2) Compile sources: run `aztec-nargo compile` directly instead of the
       //    repo's compile script, which may include post-processing steps
       //    that reference Docker-internal paths (e.g. strip_aztec_nr_prefix.sh)
       console.log('\n🔨 Compiling contracts...');
-      if (!tryRun(`cd "${repoDir}" && aztec compile`)) {
+      if (!tryRun(`cd "${repoDir}" && aztec-nargo compile`)) {
         // Check if compilation partially succeeded (target/*.json files exist)
         const targetDir = path.join(repoDir, 'target');
         const hasArtifacts =

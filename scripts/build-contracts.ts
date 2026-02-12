@@ -139,9 +139,9 @@ function compileLocalContracts(
   }
 
   // Compile all contracts from workspace root
-  // Note: aztec compile may exit non-zero due to strip_aztec_nr_prefix.sh (Docker-only script),
-  // so we check if artifacts were actually generated instead of relying on exit code
-  tryRun(`cd "${projectRoot}" && aztec compile`);
+  // Note: In v4, compilation is done via aztec-nargo (nargo inside Docker).
+  // aztec compile was removed — use aztec-nargo compile instead.
+  tryRun(`cd "${projectRoot}" && aztec-nargo compile`);
   const compiledTarget = path.join(projectRoot, 'target');
   const hasArtifacts =
     fs.existsSync(compiledTarget) &&

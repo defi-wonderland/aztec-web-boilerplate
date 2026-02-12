@@ -46,7 +46,7 @@ jobs:
 
     - name: Start Aztec local network
       run: |
-        docker run -d \
+        docker run \
           --name aztec-sandbox \
           -p 8080:8080 \
           --add-host host.docker.internal:host-gateway \
@@ -54,12 +54,12 @@ jobs:
           aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }} \
           node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start \
             --local-network \
-            --l1-rpc-urls http://host.docker.internal:8545
+            --l1-rpc-urls http://host.docker.internal:8545 &
 
     - name: Wait for sandbox to be ready
       run: |
         echo "Waiting for Aztec sandbox at http://localhost:8080..."
-        timeout 60 bash -c '
+        timeout 120 bash -c '
           while true; do
             if curl -s -o /dev/null http://localhost:8080 2>/dev/null; then
               break
