@@ -30,17 +30,19 @@ jobs:
 
     - name: Install Aztec CLI
       run: |
-        NON_INTERACTIVE=1 SKIP_PULL=1 bash <(curl -fsSL https://install.aztec.network)
+        VERSION=latest NON_INTERACTIVE=1 SKIP_PULL=1 bash <(curl -fsSL https://install.aztec.network)
         echo "$HOME/.aztec/bin" >> $GITHUB_PATH
 
     - name: Pull Aztec Docker image
-      run: docker pull aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }}
+      run: |
+        docker pull aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }}
+        docker tag aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }} aztecprotocol/aztec:latest
 
     - name: Verify Aztec CLI
       run: aztec --version
 
     - name: Start local network
-      run: aztec start --local-network &
+      run: DOCKER_PULL_POLICY=missing aztec start --local-network &
 
     - name: Wait for sandbox to be ready
       run: |
