@@ -17,7 +17,7 @@
     "build": "yarn build-standards && yarn build-contracts && yarn build-app",
     "build:ci": "yarn build-standards && yarn build-contracts && yarn build-app:ci",
     "serve": "vite preview --port ${PORT:-3000}",
-    "prep-test": "PROVER_ENABLED=false yarn deploy-contracts && yarn build-app",
+    "prep-test": "VITE_PROVER_ENABLED=false yarn deploy-contracts && yarn build-app",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

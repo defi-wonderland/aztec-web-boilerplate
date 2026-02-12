@@ -137,7 +137,7 @@ export const useContractDeployer = () => {
             connector.getSponsoredFeePaymentMethod(),
         });
 
-        const contract = await deployMethod.send({
+        const deployed = await deployMethod.send({
           from: account.getAddress(),
           contractAddressSalt: salt,
           ...(paymentMethod ? { fee: { paymentMethod } } : {}),
@@ -146,7 +146,7 @@ export const useContractDeployer = () => {
           wait: { timeout: 900 },
         });
 
-        const deployedAddress = contract.address.toString();
+        const deployedAddress = deployed.address.toString();
 
         return {
           success: true,
