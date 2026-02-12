@@ -45,13 +45,30 @@ jobs:
       run: anvil --host 0.0.0.0 --port 8545 --silent &
 
     - name: Start Aztec local network
-      run: DOCKER_PULL_POLICY=missing aztec start --local-network --l1-rpc-urls http://localhost:8545 &
+      run: |
+        docker run -d \
+          --name aztec-sandbox \
+          -p 8080:8080 \
+          --add-host host.docker.internal:host-gateway \
+          --entrypoint "" \
+          aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }} \
+          node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start \
+            --local-network \
+            --l1-rpc-urls http://host.docker.internal:8545
 
     - name: Wait for sandbox to be ready
       run: |
         echo "Waiting for Aztec sandbox at http://localhost:8080..."
-        timeout 300 bash -c '
-          until curl -sf -o /dev/null http://localhost:8080 2>/dev/null; do
+        timeout 60 bash -c '
+          while true; do
+            if curl -s -o /dev/null http://localhost:8080 2>/dev/null; then
+              break
+            fi
+            if ! docker ps --format "{{.Names}}" | grep -q aztec-sandbox; then
+              echo "ERROR: Container stopped unexpectedly!"
+              docker logs aztec-sandbox 2>&1 | tail -100
+              exit 1
+            fi
             echo "  Still waiting..."
             sleep 5
           done
