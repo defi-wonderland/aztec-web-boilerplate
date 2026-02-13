@@ -42,7 +42,6 @@
     "@aztec/stdlib": "4.0.0-devnet.1-patch.0",
     "@aztec/wallet-sdk": "4.0.0-devnet.1-patch.0",
     "@defi-wonderland/aztec-fee-payment": "github:defi-wonderland/aztec-fee-payment#chore/v4",
-    "@defi-wonderland/aztec-standards": "0.0.0-11cd7319",
     "@radix-ui/react-dialog": "1.1.15",
     "@radix-ui/react-select": "2.2.6",
     "@radix-ui/react-slot": "1.2.4",
