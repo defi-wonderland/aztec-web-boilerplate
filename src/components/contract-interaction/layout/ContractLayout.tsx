@@ -32,6 +32,7 @@ const styles = {
 export const ContractLayout: React.FC = () => {
   const { isConnected, isPXEInitialized, account, currentConfig } =
     useAztecWallet();
+  const networkName = currentConfig?.name;
 
   const viewMode = useViewMode();
   const sidebarSelectedId = useSidebarSelectedId();
@@ -48,7 +49,7 @@ export const ContractLayout: React.FC = () => {
   const functionFilter = useFunctionFilter();
   const { setSelectedFunctionName, setSimulationResult } = useExplorerActions();
 
-  const preconfiguredContracts = usePreconfiguredContracts(currentConfig?.name);
+  const preconfiguredContracts = usePreconfiguredContracts(networkName);
   const connectedAddress = account?.getAddress().toString() ?? '';
 
   const {
@@ -60,11 +61,11 @@ export const ContractLayout: React.FC = () => {
     onSimulate: invokerSimulate,
     onExecute: invokerExecute,
   } = useContractInvoker({
-    networkName: currentConfig?.name,
+    networkName: networkName,
     filter: functionFilter,
   });
 
-  const loadArtifactWithData = useLoadArtifact(currentConfig?.name);
+  const loadArtifactWithData = useLoadArtifact(networkName);
 
   const loadSavedContractArtifact = useCallback(
     async (sidebarId: string): Promise<boolean> => {
@@ -107,8 +108,8 @@ export const ContractLayout: React.FC = () => {
 
   // Refresh saved contracts on mount
   useEffect(() => {
-    refreshSavedContracts(currentConfig?.name);
-  }, [currentConfig?.name, refreshSavedContracts]);
+    refreshSavedContracts(networkName);
+  }, [networkName, refreshSavedContracts]);
 
   // Auto-load artifact when we have a selected contract but no parsed artifact
   useEffect(() => {
@@ -176,13 +177,25 @@ export const ContractLayout: React.FC = () => {
       setViewMode('explorer');
       setSelectedFunctionName(null);
 
-      await loadSavedContractArtifact(id);
+      try {
+        await loadSavedContractArtifact(id);
+      } catch (err) {
+        pushLog({
+          level: 'error',
+          title: 'Failed to load contract',
+          detail:
+            err instanceof Error ? err.message : 'An unexpected error occurred',
+        });
+        setViewMode('setup');
+        setSidebarSelectedId(null);
+      }
     },
     [
       setSidebarSelectedId,
       setViewMode,
       setSelectedFunctionName,
       loadSavedContractArtifact,
+      pushLog,
     ]
   );
 
@@ -209,22 +222,31 @@ export const ContractLayout: React.FC = () => {
 
   const handleDeleteContract = useCallback(
     async (contract: SidebarContract) => {
-      await deleteSavedContract(contract.address, currentConfig?.name);
+      try {
+        await deleteSavedContract(contract.address, networkName);
 
-      pushLog({
-        level: 'success',
-        title: 'Contract removed',
-        detail: `${contract.name} has been removed from your saved contracts.`,
-      });
+        pushLog({
+          level: 'success',
+          title: 'Contract removed',
+          detail: `${contract.name} has been removed from your saved contracts.`,
+        });
 
-      if (sidebarSelectedId === contract.id) {
-        setSidebarSelectedId(null);
-        setViewMode('setup');
+        if (sidebarSelectedId === contract.id) {
+          setSidebarSelectedId(null);
+          setViewMode('setup');
+        }
+      } catch (err) {
+        pushLog({
+          level: 'error',
+          title: 'Failed to delete contract',
+          detail:
+            err instanceof Error ? err.message : 'An unexpected error occurred',
+        });
       }
     },
     [
       deleteSavedContract,
-      currentConfig?.name,
+      networkName,
       sidebarSelectedId,
       setSidebarSelectedId,
       setViewMode,
@@ -235,31 +257,49 @@ export const ContractLayout: React.FC = () => {
   // Wrap simulate to capture result
   const handleSimulate = useCallback(
     async (functionName: string) => {
-      const result = await invokerSimulate(functionName);
-      if (result) {
-        const selectedFn = groups
-          .flatMap((g) => g.items)
-          .find((fn) => fn.name === functionName);
-        const returnType = selectedFn?.output
-          ? formatParsedType(selectedFn.output)
-          : 'void';
+      try {
+        const result = await invokerSimulate(functionName);
+        if (result) {
+          const selectedFn = groups
+            .flatMap((g) => g.items)
+            .find((fn) => fn.name === functionName);
+          const returnType = selectedFn?.output
+            ? formatParsedType(selectedFn.output)
+            : 'void';
 
-        setSimulationResult({
-          value: result,
-          type: returnType,
-          timestamp: Date.now(),
-          functionName,
+          setSimulationResult({
+            value: result,
+            type: returnType,
+            timestamp: Date.now(),
+            functionName,
+          });
+        }
+      } catch (err) {
+        pushLog({
+          level: 'error',
+          title: 'Simulation failed',
+          detail:
+            err instanceof Error ? err.message : 'An unexpected error occurred',
         });
       }
     },
-    [invokerSimulate, setSimulationResult, groups]
+    [invokerSimulate, setSimulationResult, groups, pushLog]
   );
 
   const handleExecute = useCallback(
     async (functionName: string) => {
-      await invokerExecute(functionName);
+      try {
+        await invokerExecute(functionName);
+      } catch (err) {
+        pushLog({
+          level: 'error',
+          title: 'Execution failed',
+          detail:
+            err instanceof Error ? err.message : 'An unexpected error occurred',
+        });
+      }
     },
-    [invokerExecute]
+    [invokerExecute, pushLog]
   );
 
   // Don't render if not connected
@@ -281,7 +321,7 @@ export const ContractLayout: React.FC = () => {
 
       {viewMode === 'setup' && (
         <ContractSetupPanel
-          networkName={currentConfig?.name}
+          networkName={networkName}
           preconfiguredContracts={preconfiguredContracts}
           savedContracts={savedContracts}
           artifactInput={artifactInput}
