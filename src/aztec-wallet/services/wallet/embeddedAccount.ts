@@ -117,8 +117,8 @@ export async function createEmbeddedAccount(
     const wallet = pxeInstance.wallet;
 
     // Generate fresh credentials
-    const salt = Fr.fromBuffer(randomBytes(32));
-    const secretKey = await poseidon2Hash([Fr.fromBuffer(randomBytes(32))]);
+    const salt = Fr.random();
+    const secretKey = Fr.random();
     const signingKey = Buffer.from(secretKey.toBuffer().subarray(0, 32));
 
     // Create account manager
