@@ -140,7 +140,12 @@ export const ContractLayout: React.FC = () => {
 
       if (cancelled) return;
 
-      const loaded = await loadSavedContractArtifact(sidebarSelectedId);
+      let loaded = false;
+      try {
+        loaded = await loadSavedContractArtifact(sidebarSelectedId);
+      } catch (err) {
+        console.error('[ContractLayout] autoLoadArtifact failed:', err);
+      }
 
       if (cancelled) return;
 
