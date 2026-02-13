@@ -93,9 +93,8 @@ export const SimulationResultCard: React.FC<SimulationResultCardProps> = ({
             onClick={handleCopyResult}
             aria-label="Copy value"
           >
-            {resultCopied ? (
-              <Check size={iconSize()} />
-            ) : (
+            {resultCopied && <Check size={iconSize()} />}
+            {!resultCopied && (
               <Copy size={iconSize()} className={styles.resultCopyIcon} />
             )}
           </button>

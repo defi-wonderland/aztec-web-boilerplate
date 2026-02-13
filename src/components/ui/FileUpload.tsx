@@ -262,7 +262,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               </span>
             </div>
           </div>
-          {readOnly ? (
+          {readOnly && (
             <div className={styles.actionsRow}>
               <button
                 type="button"
@@ -271,13 +271,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   styles.actionBtn,
                   copied && styles.actionBtnSuccess
                 )}
-                title={copied ? 'Copied!' : 'Copy to clipboard'}
+                title={(copied && 'Copied!') || 'Copy to clipboard'}
               >
-                {copied ? (
-                  <Check size={iconSize()} />
-                ) : (
-                  <Copy size={iconSize()} />
-                )}
+                {copied && <Check size={iconSize()} />}
+                {!copied && <Copy size={iconSize()} />}
               </button>
               <button
                 type="button"
@@ -288,7 +285,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 <Download size={iconSize()} />
               </button>
             </div>
-          ) : (
+          )}
+          {!readOnly && (
             <button
               type="button"
               onClick={handleRemoveFile}
