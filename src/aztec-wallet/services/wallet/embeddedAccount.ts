@@ -2,8 +2,6 @@ import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa/lazy';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { Fr } from '@aztec/aztec.js/fields';
 import { AccountManager } from '@aztec/aztec.js/wallet';
-import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
-import { randomBytes } from '@aztec/foundation/crypto/random';
 import {
   getConfiguredAccountCredentials,
   hasConfiguredCredentials,

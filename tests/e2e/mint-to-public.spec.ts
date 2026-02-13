@@ -25,6 +25,71 @@ const MINT_AMOUNT = '1';
  */
 async function getPublicBalance(page: Page): Promise<bigint> {
   const balanceCard = page.locator('[data-testid="token-balance-card"]');
+
+  // Diagnostic: log page state if balance card isn't immediately found
+  const isVisible = await balanceCard.isVisible().catch(() => false);
+  if (!isVisible) {
+    console.log(
+      '[getPublicBalance] token-balance-card NOT visible yet, diagnosing...'
+    );
+
+    const url = page.url();
+    console.log('[getPublicBalance] Current URL:', url);
+
+    const dripperCard = page.locator('[data-testid="dripper-form"]');
+    const dripperVisible = await dripperCard.isVisible().catch(() => false);
+    console.log('[getPublicBalance] dripper-form visible:', dripperVisible);
+
+    const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
+    const connectBtnVisible = await connectBtn.isVisible().catch(() => false);
+    console.log(
+      '[getPublicBalance] connect-wallet-button visible:',
+      connectBtnVisible
+    );
+
+    const connectedAccount = page.locator('[data-testid="connected-account"]');
+    const connectedVisible = await connectedAccount
+      .isVisible()
+      .catch(() => false);
+    console.log(
+      '[getPublicBalance] connected-account visible:',
+      connectedVisible
+    );
+
+    const contractError = page.locator('text=Contract Registration Failed');
+    const contractErrorVisible = await contractError
+      .isVisible()
+      .catch(() => false);
+    console.log(
+      '[getPublicBalance] contract-error visible:',
+      contractErrorVisible
+    );
+
+    const loadingSpinner = page.locator('.animate-spin');
+    const spinnerCount = await loadingSpinner.count();
+    console.log('[getPublicBalance] loading spinners on page:', spinnerCount);
+
+    // Capture any console errors from the browser
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+    await page.waitForTimeout(1000);
+    if (consoleErrors.length > 0) {
+      console.log('[getPublicBalance] Browser console errors:', consoleErrors);
+    }
+
+    // Log the body's visible text (truncated) for context
+    const bodyText = await page
+      .locator('body')
+      .innerText()
+      .catch(() => '<failed to read>');
+    console.log(
+      '[getPublicBalance] Page body text (first 500 chars):',
+      bodyText.slice(0, 500)
+    );
+  }
+
   await expect(balanceCard).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
 
   const loadingSpinner = page.locator('[data-testid="balance-loading"]');

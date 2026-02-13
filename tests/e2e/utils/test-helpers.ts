@@ -122,4 +122,22 @@ export async function connectViaEmbeddedWallet(page: Page): Promise<void> {
   await expect(accountSection).toBeVisible({
     timeout: TIMEOUTS.WALLET_OPERATION,
   });
+  console.log('[connectViaEmbeddedWallet] Connected account section visible');
+
+  // Wait for DripperCard to fully render (requires PXE init + contracts)
+  const dripperForm = page.locator('[data-testid="dripper-form"]');
+  const dripperVisible = await dripperForm.isVisible().catch(() => false);
+  console.log(
+    '[connectViaEmbeddedWallet] dripper-form visible after connect:',
+    dripperVisible
+  );
+  if (!dripperVisible) {
+    console.log(
+      '[connectViaEmbeddedWallet] Waiting for dripper-form to appear...'
+    );
+    await expect(dripperForm).toBeVisible({
+      timeout: TIMEOUTS.WALLET_OPERATION,
+    });
+    console.log('[connectViaEmbeddedWallet] dripper-form now visible');
+  }
 }
