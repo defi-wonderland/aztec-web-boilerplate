@@ -355,14 +355,15 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
         </button>
         <div className={styles.titleRow}>
           <span className={styles.sidebarTitle}>Explorer</span>
-          <button
-            type="button"
+          <Button
+            variant="icon"
+            size="icon"
             className={styles.addBtn}
             onClick={onAddContract}
             aria-label="Add contract"
           >
             <Plus size={iconSize()} className={styles.addIcon} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -381,8 +382,9 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
           <span className={styles.contractAddr}>
             {truncateAddress(selectedContract.address, 14, 6)}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="icon"
+            size="icon"
             className={cn(
               styles.contractCopyBtn,
               addressCopied && styles.contractCopySuccess
@@ -392,7 +394,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
             title="Copy address"
           >
             {addressCopied ? <Check size={12} /> : <Copy size={12} />}
-          </button>
+          </Button>
         </div>
       </div>
 

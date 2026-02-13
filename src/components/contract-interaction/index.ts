@@ -1,4 +1,3 @@
-// Layout components (V2 UI)
 export {
   ContractLayout,
   ContractSidebar,

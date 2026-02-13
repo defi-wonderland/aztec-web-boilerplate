@@ -10,6 +10,7 @@ import {
 import { useCopyToClipboard } from '../../../../hooks';
 import { useContractCallLogs, useContractActions } from '../../../../store';
 import { cn, iconSize, formatTime, formatDate } from '../../../../utils';
+import { Button } from '../../../ui';
 import {
   Dialog,
   DialogContent,
@@ -160,13 +161,13 @@ export const ExecutionHistoryCard: React.FC = () => {
             </span>
           </div>
           {logs.length > 0 && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               className={styles.historyClear}
               onClick={clearLogs}
             >
               Clear all
-            </button>
+            </Button>
           )}
         </div>
         <div className={styles.historyEntries}>
@@ -237,15 +238,16 @@ export const ExecutionHistoryCard: React.FC = () => {
                               : `→ ${log.detail!.slice(0, DETAIL_TRUNCATE_THRESHOLD)}...`}
                           </span>
                         </button>
-                        <button
-                          type="button"
+                        <Button
+                          variant="icon"
+                          size="icon"
                           className={styles.entryExpandBtn}
                           onClick={() => handleOpenModal(log)}
                           aria-label="Open full view"
                           title="Open full view"
                         >
                           <Maximize2 size={iconSize('xs')} />
-                        </button>
+                        </Button>
                       </div>
                       {isExpanded && (
                         <div className={styles.entryExpandedContent}>
@@ -287,8 +289,8 @@ export const ExecutionHistoryCard: React.FC = () => {
           <DialogHeader>
             <div className={styles.logModalHeader}>
               <DialogTitle>{modalLog?.title ?? 'Log Detail'}</DialogTitle>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
                 className={cn(
                   styles.logModalCopyBtn,
                   copySuccess && styles.logModalCopySuccess
@@ -307,7 +309,7 @@ export const ExecutionHistoryCard: React.FC = () => {
                     Copy
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </DialogHeader>
           <div className={styles.logModalContent}>

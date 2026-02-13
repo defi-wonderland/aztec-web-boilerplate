@@ -3,6 +3,7 @@ import { Copy, Check } from 'lucide-react';
 import { useCopyToClipboard } from '../../../../hooks';
 import { useSimulationResult } from '../../../../store';
 import { cn, iconSize, formatRelativeTime } from '../../../../utils';
+import { Button } from '../../../ui';
 import { formatDisplayValue } from './explorer-utils';
 
 const styles = {
@@ -84,8 +85,9 @@ export const SimulationResultCard: React.FC<SimulationResultCardProps> = ({
           <span className={styles.resultValue}>
             {formatDisplayValue(simulationResult.value)}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="icon"
+            size="icon"
             className={cn(
               styles.resultCopyBtn,
               resultCopied && styles.resultCopyBtnSuccess
@@ -97,7 +99,7 @@ export const SimulationResultCard: React.FC<SimulationResultCardProps> = ({
             {!resultCopied && (
               <Copy size={iconSize()} className={styles.resultCopyIcon} />
             )}
-          </button>
+          </Button>
         </div>
         <div className={styles.resultType}>
           <span className={styles.resultTypeLabel}>Type:</span>
