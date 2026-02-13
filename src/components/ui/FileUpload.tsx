@@ -249,6 +249,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* Hidden file input */}
       <input
+        id={id}
         ref={fileInputRef}
         type="file"
         accept={acceptString}
