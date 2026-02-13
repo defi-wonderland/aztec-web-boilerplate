@@ -247,7 +247,7 @@ export const ContractLayout: React.FC = () => {
         setSimulationResult({
           value: result,
           type: returnType,
-          timestamp: new Date(),
+          timestamp: Date.now(),
           functionName,
         });
       }

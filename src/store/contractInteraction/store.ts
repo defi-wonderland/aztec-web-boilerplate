@@ -20,7 +20,7 @@ type ViewMode = 'setup' | 'explorer';
 export interface SimulationResult {
   value: string;
   type: string;
-  timestamp: Date;
+  timestamp: number;
   functionName: string;
 }
 
