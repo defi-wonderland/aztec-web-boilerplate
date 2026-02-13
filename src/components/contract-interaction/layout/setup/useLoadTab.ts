@@ -70,6 +70,7 @@ export const useLoadTab = (options: UseLoadTabOptions) => {
     loadSource === 'custom'
       ? Boolean(address && artifactInput && isValidAddress && !parseError)
       : loadSource === 'preconfigured' &&
+        Boolean(address && isValidAddress) &&
         selectedPreconfigured &&
         !isLoadingPreconfigured;
 
@@ -111,6 +112,15 @@ export const useLoadTab = (options: UseLoadTabOptions) => {
   );
 
   const handleLoad = useCallback(() => {
+    if (!address) {
+      pushLog({
+        level: 'error',
+        title: 'Missing address',
+        detail: 'Cannot load contract without a valid address.',
+      });
+      return;
+    }
+
     const normalizedAddress = address.toLowerCase();
 
     const existingSaved = savedContracts.find(
