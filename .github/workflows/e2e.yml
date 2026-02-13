@@ -10,78 +10,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-node@v4
+    - name: Setup Aztec environment
+      uses: defi-wonderland/aztec-ci-actions/actions/setup-aztec@main
       with:
-        node-version: lts/*
+        start-pxe: 'true'
+        run-compile: 'false'
+        run-codegen: 'false'
 
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
-
-    - name: Detect Aztec version
-      id: aztec-version
-      run: |
-        AZTEC_VERSION=$(node -p "require('./package.json').config.aztecVersion")
-        echo "version=$AZTEC_VERSION" >> "$GITHUB_OUTPUT"
-        echo "VERSION=$AZTEC_VERSION" >> "$GITHUB_ENV"
-        echo "Aztec version is $AZTEC_VERSION"
-
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-
-    - name: Install Aztec CLI
-      run: |
-        VERSION=latest NON_INTERACTIVE=1 SKIP_PULL=1 bash <(curl -fsSL https://install.aztec.network)
-        echo "$HOME/.aztec/bin" >> $GITHUB_PATH
-
-    - name: Pull Aztec Docker image
-      run: |
-        docker pull aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }}
-        docker tag aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }} aztecprotocol/aztec:latest
-
-    - name: Verify Aztec CLI
-      run: aztec --version
-
-    - name: Start Anvil (L1)
-      run: anvil --host 0.0.0.0 --port 8545 --silent &
-
-    - name: Start Aztec local network
-      run: |
-        docker run \
-          --name aztec-sandbox \
-          -p 8080:8080 \
-          --add-host host.docker.internal:host-gateway \
-          --entrypoint "" \
-          aztecprotocol/aztec:${{ steps.aztec-version.outputs.version }} \
-          node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start \
-            --local-network \
-            --l1-rpc-urls http://host.docker.internal:8545 &
+    - name: Install Playwright Browsers
+      run: yarn playwright install --with-deps
 
     - name: Wait for sandbox to be ready
       run: |
         echo "Waiting for Aztec sandbox at http://localhost:8080..."
         timeout 120 bash -c '
-          while true; do
-            if curl -s -o /dev/null http://localhost:8080 2>/dev/null; then
-              break
-            fi
-            if ! docker ps --format "{{.Names}}" | grep -q aztec-sandbox; then
-              echo "ERROR: Container stopped unexpectedly!"
-              docker logs aztec-sandbox 2>&1 | tail -100
-              exit 1
-            fi
+          while ! curl -s -o /dev/null http://localhost:8080 2>/dev/null; do
             echo "  Still waiting..."
             sleep 5
           done
         '
         echo "Sandbox is ready!"
-
-    - name: Install dependencies
-      working-directory: ./
-      run: npm install -g yarn && yarn
-
-    - name: Install Playwright Browsers
-      working-directory: ./
-      run: yarn playwright install --with-deps
 
     - name: Build standards and contracts
       run: yarn build:ci
