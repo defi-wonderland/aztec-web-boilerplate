@@ -21,7 +21,7 @@ interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
  * Automatically triggers registration for unregistered contracts.
  *
  * This hook only checks STATUS - it does NOT return contract instances.
- * Use `useContract` to get callable contract instances.
+ * Use `useContractRegistration` to get callable contract instances.
  *
  * @example
  * ```tsx
@@ -38,16 +38,6 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
   const { walletType, isConnected } = useAztecWallet();
   const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
 
-  // Stabilize contractNames by contents, not reference identity.
-  // Callers typically pass inline arrays (e.g. ['dripper', 'token']),
-  // which creates a new reference on every render.
-  const contractNamesKey = contractNames.join(',');
-  const stableContractNames = useMemo(
-    () => contractNames,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [contractNamesKey]
-  );
-
   const {
     subscribe,
     registerMany,
@@ -58,31 +48,31 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
   // Get snapshot of current statuses (serialized for comparison)
   const getSnapshot = (): string => {
     const statuses = Object.fromEntries(
-      stableContractNames.map((name) => [name, getStatus(name)])
+      contractNames.map((name) => [name, getStatus(name)])
     );
     return JSON.stringify(statuses);
   };
 
   // React will re-render when snapshot changes
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   // Trigger registration when registry is ready
   useEffect(() => {
-    if (registryStatus !== 'ready' || stableContractNames.length === 0) {
+    if (registryStatus !== 'ready' || contractNames.length === 0) {
       return;
     }
 
-    registerMany([...stableContractNames]).catch((err) => {
+    registerMany([...contractNames]).catch((err) => {
       console.error('[useRequiredContracts] Registration failed:', err);
     });
-  }, [stableContractNames, registerMany, registryStatus]);
+  }, [contractNames, registerMany, registryStatus]);
 
   // Compute derived state
   return useMemo(() => {
     // For browser wallets, contracts are always "ready" since useContractRegistration
     // handles them with proxies - no PXE registration needed on app side
     if (isBrowserWallet && isConnected) {
-      const statuses = stableContractNames.reduce((acc, name) => {
+      const statuses = contractNames.reduce((acc, name) => {
         acc[name as T[number]] = 'ready';
         return acc;
       }, {} as ContractStatusMap<T>);
@@ -97,22 +87,22 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
       };
     }
 
-    const statuses = stableContractNames.reduce((acc, name) => {
+    const statuses = contractNames.reduce((acc, name) => {
       acc[name as T[number]] = getStatus(name);
       return acc;
     }, {} as ContractStatusMap<T>);
 
-    const pendingContracts = stableContractNames.filter((name) => {
+    const pendingContracts = contractNames.filter((name) => {
       const status = statuses[name as T[number]];
       return status === 'idle' || status === 'registering';
     }) as T[number][];
 
-    const failedContracts = stableContractNames.filter(
+    const failedContracts = contractNames.filter(
       (name) => statuses[name as T[number]] === 'error'
     ) as T[number][];
 
     return {
-      isReady: stableContractNames.every(
+      isReady: contractNames.every(
         (name) => statuses[name as T[number]] === 'ready'
       ),
       isLoading: pendingContracts.length > 0,
@@ -121,6 +111,5 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
       pendingContracts,
       statuses,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stableContractNames, getStatus, isBrowserWallet, isConnected, snapshot]);
+  }, [contractNames, getStatus, isBrowserWallet, isConnected]);
 }

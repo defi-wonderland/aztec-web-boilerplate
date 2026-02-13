@@ -33,12 +33,9 @@ export async function clearBrowserStorage(page: Page): Promise<void> {
 
 /**
  * Switches the app to Sandbox network via the network picker.
- * Uses :visible filter because the Header renders separate desktop/mobile layouts.
  */
 export async function switchToSandbox(page: Page): Promise<void> {
-  const networkPicker = page
-    .locator('[data-testid="network-picker"]:visible')
-    .first();
+  const networkPicker = page.locator('[data-testid="network-picker"]');
   await expect(networkPicker).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
   await networkPicker.click();
 
@@ -56,13 +53,10 @@ export async function switchToSandbox(page: Page): Promise<void> {
 
 /**
  * Opens the wallet connect modal.
- * Uses :visible filter because the Header renders separate desktop/mobile ConnectButtons.
  * @returns The modal locator for further interactions
  */
 export async function openConnectModal(page: Page) {
-  const connectBtn = page
-    .locator('[data-testid="connect-wallet-button"]:visible')
-    .first();
+  const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
   await expect(connectBtn).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
   await connectBtn.click();
 
@@ -92,9 +86,7 @@ export async function connectViaEVMWallet(page: Page): Promise<void> {
   await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
   console.log('Wallet connected');
 
-  const accountSection = page
-    .locator('[data-testid="connected-account"]:visible')
-    .first();
+  const accountSection = page.locator('[data-testid="connected-account"]');
   await expect(accountSection).toBeVisible({
     timeout: TIMEOUTS.WALLET_OPERATION,
   });
@@ -116,70 +108,8 @@ export async function connectViaEmbeddedWallet(page: Page): Promise<void> {
   await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
   console.log('Account created and connected');
 
-  const accountSection = page
-    .locator('[data-testid="connected-account"]:visible')
-    .first();
+  const accountSection = page.locator('[data-testid="connected-account"]');
   await expect(accountSection).toBeVisible({
     timeout: TIMEOUTS.WALLET_OPERATION,
   });
-  console.log('[connectViaEmbeddedWallet] Connected account section visible');
-
-  // Wait for DripperCard to fully render (requires PXE init + contracts)
-  const dripperForm = page.locator('[data-testid="dripper-form"]');
-  const dripperVisible = await dripperForm.isVisible().catch(() => false);
-  console.log(
-    '[connectViaEmbeddedWallet] dripper-form visible after connect:',
-    dripperVisible
-  );
-  if (!dripperVisible) {
-    // Log what the DripperCard is currently showing
-    const loadingText = await page
-      .locator('text=Loading contracts')
-      .first()
-      .textContent()
-      .catch(() => null);
-    console.log(
-      '[connectViaEmbeddedWallet] Contract loading text:',
-      loadingText ?? '(none)'
-    );
-
-    const cardTitle = await page
-      .locator('text=Dripper - Mint Tokens')
-      .isVisible()
-      .catch(() => false);
-    console.log(
-      '[connectViaEmbeddedWallet] DripperCard title visible:',
-      cardTitle
-    );
-
-    console.log(
-      '[connectViaEmbeddedWallet] Waiting for dripper-form to appear...'
-    );
-
-    // Poll state every 10s while waiting
-    const pollInterval = setInterval(async () => {
-      const formNow = await dripperForm.isVisible().catch(() => false);
-      const loadNow = await page
-        .locator('text=Loading contracts')
-        .first()
-        .textContent()
-        .catch(() => null);
-      const errorNow = await page
-        .locator('text=Contract Registration Failed')
-        .isVisible()
-        .catch(() => false);
-      console.log(
-        `[connectViaEmbeddedWallet:poll] form=${formNow}, loading="${loadNow ?? 'none'}", error=${errorNow}`
-      );
-    }, 10000);
-
-    try {
-      await expect(dripperForm).toBeVisible({
-        timeout: TIMEOUTS.WALLET_OPERATION,
-      });
-    } finally {
-      clearInterval(pollInterval);
-    }
-    console.log('[connectViaEmbeddedWallet] dripper-form now visible');
-  }
 }
