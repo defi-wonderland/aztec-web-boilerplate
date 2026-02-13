@@ -64,7 +64,7 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
   };
 
   // React will re-render when snapshot changes
-  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   // Trigger registration when registry is ready
   useEffect(() => {
@@ -121,5 +121,6 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
       pendingContracts,
       statuses,
     };
-  }, [stableContractNames, getStatus, isBrowserWallet, isConnected]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stableContractNames, getStatus, isBrowserWallet, isConnected, snapshot]);
 }

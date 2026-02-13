@@ -132,12 +132,54 @@ export async function connectViaEmbeddedWallet(page: Page): Promise<void> {
     dripperVisible
   );
   if (!dripperVisible) {
+    // Log what the DripperCard is currently showing
+    const loadingText = await page
+      .locator('text=Loading contracts')
+      .first()
+      .textContent()
+      .catch(() => null);
+    console.log(
+      '[connectViaEmbeddedWallet] Contract loading text:',
+      loadingText ?? '(none)'
+    );
+
+    const cardTitle = await page
+      .locator('text=Dripper - Mint Tokens')
+      .isVisible()
+      .catch(() => false);
+    console.log(
+      '[connectViaEmbeddedWallet] DripperCard title visible:',
+      cardTitle
+    );
+
     console.log(
       '[connectViaEmbeddedWallet] Waiting for dripper-form to appear...'
     );
-    await expect(dripperForm).toBeVisible({
-      timeout: TIMEOUTS.WALLET_OPERATION,
-    });
+
+    // Poll state every 10s while waiting
+    const pollInterval = setInterval(async () => {
+      const formNow = await dripperForm.isVisible().catch(() => false);
+      const loadNow = await page
+        .locator('text=Loading contracts')
+        .first()
+        .textContent()
+        .catch(() => null);
+      const errorNow = await page
+        .locator('text=Contract Registration Failed')
+        .isVisible()
+        .catch(() => false);
+      console.log(
+        `[connectViaEmbeddedWallet:poll] form=${formNow}, loading="${loadNow ?? 'none'}", error=${errorNow}`
+      );
+    }, 10000);
+
+    try {
+      await expect(dripperForm).toBeVisible({
+        timeout: TIMEOUTS.WALLET_OPERATION,
+      });
+    } finally {
+      clearInterval(pollInterval);
+    }
     console.log('[connectViaEmbeddedWallet] dripper-form now visible');
   }
 }

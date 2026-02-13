@@ -21,6 +21,45 @@ import type { Page } from '@playwright/test';
 const MINT_AMOUNT = '1';
 
 /**
+ * Helper to dump the current page state for debugging
+ */
+async function logPageState(page: Page, tag: string): Promise<void> {
+  const checks = {
+    'dripper-form': '[data-testid="dripper-form"]',
+    'token-balance-card': '[data-testid="token-balance-card"]',
+    'connect-wallet-button': '[data-testid="connect-wallet-button"]:visible',
+    'connected-account': '[data-testid="connected-account"]:visible',
+    'contract-error': 'text=Contract Registration Failed',
+    'loading-contracts': 'text=Loading contracts',
+  };
+
+  const results: Record<string, boolean> = {};
+  for (const [name, selector] of Object.entries(checks)) {
+    results[name] = await page
+      .locator(selector)
+      .first()
+      .isVisible()
+      .catch(() => false);
+  }
+  console.log(`[${tag}] Element visibility:`, JSON.stringify(results));
+
+  // Capture loading text if present
+  const loadingText = await page
+    .locator('text=Loading contracts')
+    .first()
+    .textContent()
+    .catch(() => null);
+  if (loadingText) {
+    console.log(`[${tag}] Loading text: "${loadingText}"`);
+  }
+
+  const spinnerCount = await page.locator('.animate-spin').count();
+  if (spinnerCount > 0) {
+    console.log(`[${tag}] Active spinners: ${spinnerCount}`);
+  }
+}
+
+/**
  * Helper to get current public balance from the UI
  */
 async function getPublicBalance(page: Page): Promise<bigint> {
@@ -32,52 +71,14 @@ async function getPublicBalance(page: Page): Promise<bigint> {
     console.log(
       '[getPublicBalance] token-balance-card NOT visible yet, diagnosing...'
     );
+    console.log('[getPublicBalance] Current URL:', page.url());
 
-    const url = page.url();
-    console.log('[getPublicBalance] Current URL:', url);
+    await logPageState(page, 'getPublicBalance');
 
-    const dripperCard = page.locator('[data-testid="dripper-form"]');
-    const dripperVisible = await dripperCard.isVisible().catch(() => false);
-    console.log('[getPublicBalance] dripper-form visible:', dripperVisible);
-
-    const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
-    const connectBtnVisible = await connectBtn.isVisible().catch(() => false);
-    console.log(
-      '[getPublicBalance] connect-wallet-button visible:',
-      connectBtnVisible
-    );
-
-    const connectedAccount = page.locator('[data-testid="connected-account"]');
-    const connectedVisible = await connectedAccount
-      .isVisible()
-      .catch(() => false);
-    console.log(
-      '[getPublicBalance] connected-account visible:',
-      connectedVisible
-    );
-
-    const contractError = page.locator('text=Contract Registration Failed');
-    const contractErrorVisible = await contractError
-      .isVisible()
-      .catch(() => false);
-    console.log(
-      '[getPublicBalance] contract-error visible:',
-      contractErrorVisible
-    );
-
-    const loadingSpinner = page.locator('.animate-spin');
-    const spinnerCount = await loadingSpinner.count();
-    console.log('[getPublicBalance] loading spinners on page:', spinnerCount);
-
-    // Capture any console errors from the browser
-    const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-    });
-    await page.waitForTimeout(1000);
-    if (consoleErrors.length > 0) {
-      console.log('[getPublicBalance] Browser console errors:', consoleErrors);
-    }
+    // Poll every 5s to track state changes while waiting
+    const pollInterval = setInterval(async () => {
+      await logPageState(page, 'getPublicBalance:poll').catch(() => {});
+    }, 5000);
 
     // Log the body's visible text (truncated) for context
     const bodyText = await page
@@ -88,8 +89,17 @@ async function getPublicBalance(page: Page): Promise<bigint> {
       '[getPublicBalance] Page body text (first 500 chars):',
       bodyText.slice(0, 500)
     );
+
+    try {
+      await expect(balanceCard).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
+    } finally {
+      clearInterval(pollInterval);
+    }
+  } else {
+    console.log('[getPublicBalance] token-balance-card already visible');
   }
 
+  // If we got here without the early return above, the card is now visible
   await expect(balanceCard).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
 
   const loadingSpinner = page.locator('[data-testid="balance-loading"]');
@@ -191,10 +201,39 @@ async function runMintToPublicTest(
 ): Promise<void> {
   console.log(`\n=== E2E: ${testName} ===\n`);
 
+  // Capture browser console logs for contract registry debugging
+  const browserLogs: string[] = [];
+  page.on('console', (msg) => {
+    const text = msg.text();
+    // Capture registry, contract, and error logs
+    if (
+      msg.type() === 'error' ||
+      text.includes('Contract') ||
+      text.includes('contract') ||
+      text.includes('Registry') ||
+      text.includes('registry') ||
+      text.includes('PXE') ||
+      text.includes('📦') ||
+      text.includes('🆕') ||
+      text.includes('💾') ||
+      text.includes('❌') ||
+      text.includes('⏳')
+    ) {
+      const logLine = `[browser:${msg.type()}] ${text}`;
+      browserLogs.push(logLine);
+      console.log(logLine);
+    }
+  });
+
   await page.goto('/');
   await page.waitForLoadState('networkidle');
 
   await connectFn(page);
+
+  console.log(`[${testName}] Post-connect browser logs (${browserLogs.length}):`);
+  browserLogs.forEach((log) => console.log(`  ${log}`));
+
+  await logPageState(page, `${testName}:post-connect`);
 
   const initialBalance = await getPublicBalance(page);
   console.log('Initial public balance:', initialBalance.toString());
