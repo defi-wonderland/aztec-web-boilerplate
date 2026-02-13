@@ -39,7 +39,9 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
       requestPersistentStorage();
 
       const result = loadAndSetArtifact(loadArtifactJson, loadAddress);
-      if (!result.success) return;
+      if (!result.success) {
+        throw new Error(result.error?.message ?? 'Failed to parse artifact');
+      }
 
       const { parsed, address: resolvedAddress, contractLabel } = result;
       const address = resolvedAddress ?? '';

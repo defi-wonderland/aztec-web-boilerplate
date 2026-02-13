@@ -206,9 +206,17 @@ export const useDeployTab = (options: UseDeployTabOptions) => {
     resetFormValues();
 
     try {
+      const artifactJson = effectiveDeployable.artifactJson;
+      if (!artifactJson) {
+        throw new Error(
+          `No artifact JSON available for "${effectiveDeployable.label}". ` +
+            'Registry-based contracts must be resolved before deployment.'
+        );
+      }
+
       await loadArtifactWithData(
         result.address ?? '',
-        effectiveDeployable.artifactJson ?? '',
+        artifactJson,
         deployedLabel
       );
       setSidebarSelectedId(toSidebarId(result.address ?? ''));

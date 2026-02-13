@@ -88,12 +88,22 @@ export const ContractLayout: React.FC = () => {
         : null;
 
       if (artifact) {
-        await loadArtifactWithData(
-          savedContract.address,
-          artifact,
-          savedContract.label
-        );
-        return true;
+        try {
+          await loadArtifactWithData(
+            savedContract.address,
+            artifact,
+            savedContract.label
+          );
+          return true;
+        } catch (err) {
+          pushLog({
+            level: 'error',
+            title: 'Failed to load cached artifact',
+            detail:
+              err instanceof Error ? err.message : 'Artifact data is corrupt',
+          });
+          return false;
+        }
       }
 
       pushLog({

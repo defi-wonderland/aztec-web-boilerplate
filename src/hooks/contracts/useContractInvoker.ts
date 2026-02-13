@@ -106,7 +106,11 @@ export const useContractInvoker = (
   // Wrapper for load artifact
   const handleLoadArtifact = useCallback(async () => {
     resetFormValues();
-    await loadArtifactWithData(address, artifactInput);
+    try {
+      await loadArtifactWithData(address, artifactInput);
+    } catch {
+      // Parse error is already surfaced via store state (artifactError)
+    }
   }, [address, artifactInput, loadArtifactWithData, resetFormValues]);
 
   // Initialize saved contracts on mount or network change
