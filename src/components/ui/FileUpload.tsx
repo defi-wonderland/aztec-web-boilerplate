@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Upload, FileText, X, Copy, Download, Check } from 'lucide-react';
-import { cn, getMimeType, iconSize } from '../../utils';
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
+import { cn, downloadAsFile, iconSize } from '../../utils';
 
 const styles = {
   container: 'flex flex-col gap-2',
@@ -110,7 +111,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   readOnly = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -215,28 +216,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     onFileChange(null);
   }, [onFileChange]);
 
-  const handleCopy = useCallback(async () => {
+  const handleCopy = useCallback(() => {
     if (!file?.content) return;
-    try {
-      await navigator.clipboard.writeText(file.content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      console.warn('Clipboard copy failed - requires secure context (HTTPS)');
-    }
-  }, [file]);
+    copy(file.content);
+  }, [file, copy]);
 
   const handleDownload = useCallback(() => {
     if (!file) return;
-    const blob = new Blob([file.content], { type: getMimeType(file.name) });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadAsFile(file.content, file.name);
   }, [file]);
 
   return (

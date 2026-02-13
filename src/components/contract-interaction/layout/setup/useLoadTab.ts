@@ -48,20 +48,18 @@ export const useLoadTab = (options: UseLoadTabOptions) => {
   );
 
   // Build preloaded file for preconfigured contracts
+  // Use embedded artifactJson when available, otherwise fall back to
+  // the store's artifactInput (fetched via classId from the registry)
   const preloadedArtifactFile = useMemo(() => {
     if (loadSource !== 'preconfigured' || !selectedPreconfigured) return null;
-    const artifactJson = selectedPreconfigured.artifactJson;
-    if (artifactJson == null) return null;
-    const content =
-      typeof artifactJson === 'string'
-        ? artifactJson
-        : JSON.stringify(artifactJson, null, 2);
+    const content = selectedPreconfigured.artifactJson ?? artifactInput;
+    if (!content) return null;
     return {
       name: `${selectedPreconfigured.label.replace(/\s+/g, '-').toLowerCase()}.json`,
       size: new Blob([content]).size,
       content,
     };
-  }, [loadSource, selectedPreconfigured]);
+  }, [loadSource, selectedPreconfigured, artifactInput]);
 
   // Validation
   const isValidAddress = !address || isValidAztecAddress(address);
