@@ -46,6 +46,6 @@ export const contractsConfig = createContractConfig({
       ],
       constructorArtifact: 'constructor_with_minter',
     }),
-    lazyRegister: true,
+    lazyRegister: false,
   },
 });
