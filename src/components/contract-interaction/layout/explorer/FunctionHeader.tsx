@@ -1,7 +1,7 @@
 import React from 'react';
 import { Circle } from 'lucide-react';
 import { useInvokeFlowData } from '../../../../store';
-import { cn, toTitleCase } from '../../../../utils';
+import { cn, toTitleCase, iconSize } from '../../../../utils';
 import type { ParsedFunction } from '../../../../types';
 
 interface FunctionHeaderProps {
@@ -59,7 +59,11 @@ export const FunctionHeader: React.FC<FunctionHeaderProps> = ({
             isPrivate ? styles.badgePrivate : styles.badgePublic
           )}
         >
-          <Circle size={8} fill="currentColor" className={styles.badgeIcon} />
+          <Circle
+            size={iconSize('xxs')}
+            fill="currentColor"
+            className={styles.badgeIcon}
+          />
           <span className={styles.badgeText}>
             {isPrivate ? 'Private' : 'Public'}
           </span>
