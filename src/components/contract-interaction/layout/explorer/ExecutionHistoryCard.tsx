@@ -64,6 +64,7 @@ const styles = {
   entryStatus: cn('px-2 py-0.5 rounded', 'text-[10px] font-semibold'),
   entryStatusSuccess: 'bg-success-soft text-success',
   entryStatusError: 'bg-error-soft text-error',
+  entryStatusInfo: 'bg-surface-tertiary text-muted',
   entryFn: 'text-xs font-semibold text-default font-mono',
   entryResult: 'text-xs font-mono truncate',
   entryResultSuccess: 'text-success',
@@ -203,7 +204,7 @@ export const ExecutionHistoryCard: React.FC = () => {
                         styles.entryStatus,
                         isSuccess && styles.entryStatusSuccess,
                         isError && styles.entryStatusError,
-                        !isSuccess && !isError && styles.entryStatusSuccess
+                        !isSuccess && !isError && styles.entryStatusInfo
                       )}
                     >
                       {isSuccess ? 'OK' : isError ? 'ERR' : 'INFO'}
