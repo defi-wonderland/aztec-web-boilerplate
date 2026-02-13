@@ -82,28 +82,28 @@ export const ContractLayout: React.FC = () => {
       );
       if (!savedContract) return false;
 
-      const storage = getArtifactStorageService();
-      const artifact = savedContract.artifactKey
-        ? await storage.get(savedContract.artifactKey)
-        : null;
+      try {
+        const storage = getArtifactStorageService();
+        const artifact = savedContract.artifactKey
+          ? await storage.get(savedContract.artifactKey)
+          : null;
 
-      if (artifact) {
-        try {
+        if (artifact) {
           await loadArtifactWithData(
             savedContract.address,
             artifact,
             savedContract.label
           );
           return true;
-        } catch (err) {
-          pushLog({
-            level: 'error',
-            title: 'Failed to load cached artifact',
-            detail:
-              err instanceof Error ? err.message : 'Artifact data is corrupt',
-          });
-          return false;
         }
+      } catch (err) {
+        pushLog({
+          level: 'error',
+          title: 'Failed to load cached artifact',
+          detail:
+            err instanceof Error ? err.message : 'Artifact data is corrupt',
+        });
+        return false;
       }
 
       pushLog({
@@ -144,7 +144,12 @@ export const ContractLayout: React.FC = () => {
       try {
         loaded = await loadSavedContractArtifact(sidebarSelectedId);
       } catch (err) {
-        console.error('[ContractLayout] autoLoadArtifact failed:', err);
+        pushLog({
+          level: 'error',
+          title: 'Auto-load artifact failed',
+          detail:
+            err instanceof Error ? err.message : 'An unexpected error occurred',
+        });
       }
 
       if (cancelled) return;
@@ -167,6 +172,7 @@ export const ContractLayout: React.FC = () => {
     loadSavedContractArtifact,
     setViewMode,
     setSidebarSelectedId,
+    pushLog,
   ]);
 
   // Build sidebar contracts list
