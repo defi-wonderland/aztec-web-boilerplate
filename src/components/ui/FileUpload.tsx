@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Upload, FileText, X, Copy, Download, Check } from 'lucide-react';
-import { cn, iconSize } from '../../utils';
+import { cn, getMimeType, iconSize } from '../../utils';
 
 const styles = {
   container: 'flex flex-col gap-2',
@@ -228,7 +228,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleDownload = useCallback(() => {
     if (!file) return;
-    const blob = new Blob([file.content], { type: 'application/json' });
+    const blob = new Blob([file.content], { type: getMimeType(file.name) });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
