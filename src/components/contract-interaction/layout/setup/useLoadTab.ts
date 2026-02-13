@@ -51,6 +51,7 @@ export const useLoadTab = (options: UseLoadTabOptions) => {
   const preloadedArtifactFile = useMemo(() => {
     if (loadSource !== 'preconfigured' || !selectedPreconfigured) return null;
     const artifactJson = selectedPreconfigured.artifactJson;
+    if (artifactJson == null) return null;
     const content =
       typeof artifactJson === 'string'
         ? artifactJson
