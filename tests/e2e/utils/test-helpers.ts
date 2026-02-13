@@ -35,7 +35,10 @@ export async function clearBrowserStorage(page: Page): Promise<void> {
  * Switches the app to Sandbox network via the network picker.
  */
 export async function switchToSandbox(page: Page): Promise<void> {
-  const networkPicker = page.locator('[data-testid="network-picker"]');
+  // Header renders desktop + mobile layouts; use :visible to target the active one
+  const networkPicker = page
+    .locator('[data-testid="network-picker"]:visible')
+    .first();
   await expect(networkPicker).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
   await networkPicker.click();
 
@@ -56,7 +59,9 @@ export async function switchToSandbox(page: Page): Promise<void> {
  * @returns The modal locator for further interactions
  */
 export async function openConnectModal(page: Page) {
-  const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
+  const connectBtn = page
+    .locator('[data-testid="connect-wallet-button"]:visible')
+    .first();
   await expect(connectBtn).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
   await connectBtn.click();
 
@@ -86,7 +91,9 @@ export async function connectViaEVMWallet(page: Page): Promise<void> {
   await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
   console.log('Wallet connected');
 
-  const accountSection = page.locator('[data-testid="connected-account"]');
+  const accountSection = page
+    .locator('[data-testid="connected-account"]:visible')
+    .first();
   await expect(accountSection).toBeVisible({
     timeout: TIMEOUTS.WALLET_OPERATION,
   });
@@ -108,7 +115,9 @@ export async function connectViaEmbeddedWallet(page: Page): Promise<void> {
   await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
   console.log('Account created and connected');
 
-  const accountSection = page.locator('[data-testid="connected-account"]');
+  const accountSection = page
+    .locator('[data-testid="connected-account"]:visible')
+    .first();
   await expect(accountSection).toBeVisible({
     timeout: TIMEOUTS.WALLET_OPERATION,
   });
