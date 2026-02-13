@@ -48,6 +48,9 @@ export const ArtifactInput: React.FC<ArtifactInputProps> = ({
   inputMethod,
 }) => {
   const [loadedFile, setLoadedFile] = useState<LoadedFile | null>(null);
+  const isCleared = value === '';
+  const displayedFile = isCleared ? null : loadedFile;
+  const fileKey = isCleared ? 'cleared' : 'loaded';
 
   const handleFileChange = useCallback(
     (file: LoadedFile | null) => {
@@ -102,7 +105,8 @@ export const ArtifactInput: React.FC<ArtifactInputProps> = ({
         )}
         <FileUpload
           id={`${id}-file`}
-          file={loadedFile}
+          key={fileKey}
+          file={displayedFile}
           onFileChange={handleFileChange}
           accept={['.json']}
           dropText="Drop JSON file here or click to browse"
@@ -155,7 +159,8 @@ export const ArtifactInput: React.FC<ArtifactInputProps> = ({
       <div className={styles.inputWrapper}>
         <FileUpload
           id={`${id}-file`}
-          file={loadedFile}
+          key={fileKey}
+          file={displayedFile}
           onFileChange={handleFileChange}
           accept={['.json']}
           dropText="Drop JSON file here or click to browse"
@@ -164,7 +169,7 @@ export const ArtifactInput: React.FC<ArtifactInputProps> = ({
         />
 
         {/* Divider and textarea - only show when no file is loaded */}
-        {!loadedFile && (
+        {!displayedFile && (
           <>
             <div className={styles.divider}>
               <div className={styles.dividerLine} />
