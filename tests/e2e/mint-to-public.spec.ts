@@ -77,7 +77,7 @@ async function getPublicBalance(page: Page): Promise<bigint> {
 
     // Poll every 5s to track state changes while waiting
     const pollInterval = setInterval(async () => {
-      await logPageState(page, 'getPublicBalance:poll').catch(() => {});
+      await logPageState(page, 'getPublicBalance:poll').catch(() => { });
     }, 5000);
 
     // Log the body's visible text (truncated) for context
@@ -101,16 +101,23 @@ async function getPublicBalance(page: Page): Promise<bigint> {
 
   // If we got here without the early return above, the card is now visible
   await expect(balanceCard).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
+  console.log('[getPublicBalance] balance card confirmed visible');
 
   const loadingSpinner = page.locator('[data-testid="balance-loading"]');
-  if (await loadingSpinner.isVisible()) {
+  const spinnerVisible = await loadingSpinner.isVisible().catch(() => false);
+  console.log('[getPublicBalance] balance-loading spinner visible:', spinnerVisible);
+  if (spinnerVisible) {
+    console.log('[getPublicBalance] Waiting for balance to finish loading...');
     await expect(loadingSpinner).not.toBeVisible({ timeout: TIMEOUTS.LONG });
+    console.log('[getPublicBalance] Balance loading complete');
   }
 
   const balanceValue = page.locator('[data-testid="balance-value-public"]');
+  console.log('[getPublicBalance] Waiting for balance-value-public...');
   await expect(balanceValue).toBeVisible({ timeout: 10000 });
 
   const balanceText = await balanceValue.textContent();
+  console.log('[getPublicBalance] Raw balance text:', JSON.stringify(balanceText));
   return BigInt(balanceText?.trim() || '0');
 }
 
@@ -122,10 +129,17 @@ async function waitForBalanceSync(
   expectedMinimum: bigint,
   timeout = TIMEOUTS.LONG
 ): Promise<bigint> {
+  console.log(`[waitForBalanceSync] Waiting for balance >= ${expectedMinimum} (timeout: ${timeout}ms)`);
   const startTime = Date.now();
+  let iteration = 0;
 
   while (Date.now() - startTime < timeout) {
+    iteration++;
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    console.log(`[waitForBalanceSync] Iteration ${iteration} (${elapsed}s elapsed)`);
+
     const balance = await getPublicBalance(page);
+    console.log(`[waitForBalanceSync] Current balance: ${balance}`);
     if (balance >= expectedMinimum) {
       return balance;
     }
@@ -133,6 +147,7 @@ async function waitForBalanceSync(
 
     const refetchBadge = page.locator('[data-testid="balance-syncing"]');
     if (await refetchBadge.isVisible()) {
+      console.log('[waitForBalanceSync] Balance syncing badge visible, waiting...');
       await expect(refetchBadge).not.toBeVisible({ timeout: TIMEOUTS.DEFAULT });
     }
   }
@@ -146,11 +161,14 @@ async function waitForBalanceSync(
  * Helper to mint tokens to public balance
  */
 async function mintToPublic(page: Page, amount: string): Promise<void> {
+  console.log('[mintToPublic] Starting...');
   const dripperContent = page.locator('[data-testid="dripper-form"]');
   await expect(dripperContent).toBeVisible({ timeout: TIMEOUTS.LONG });
+  console.log('[mintToPublic] dripper-form visible');
 
   const loadingSpinner = dripperContent.locator('.animate-spin');
   if (await loadingSpinner.isVisible()) {
+    console.log('[mintToPublic] Waiting for form spinner to clear...');
     await expect(loadingSpinner).not.toBeVisible({
       timeout: TIMEOUTS.WALLET_OPERATION,
     });
@@ -160,6 +178,7 @@ async function mintToPublic(page: Page, amount: string): Promise<void> {
   await expect(amountInput).toBeVisible({ timeout: 10000 });
   await expect(amountInput).toBeEnabled({ timeout: 10000 });
   await amountInput.fill(amount);
+  console.log('[mintToPublic] Amount filled:', amount);
 
   const dripTypeTrigger = page.locator('#drip-type');
   await expect(dripTypeTrigger).toBeEnabled({ timeout: 10000 });
@@ -168,27 +187,40 @@ async function mintToPublic(page: Page, amount: string): Promise<void> {
     .locator('[role="option"]')
     .filter({ hasText: 'Public' });
   await publicOption.click();
+  console.log('[mintToPublic] Drip type set to Public');
 
   const dripButton = page.locator('[data-testid="drip-button"]');
   await expect(dripButton).toBeVisible({ timeout: 10000 });
+  const buttonText = await dripButton.textContent();
+  console.log('[mintToPublic] Drip button text:', JSON.stringify(buttonText));
+
+  const isEnabled = await dripButton.isEnabled();
+  console.log('[mintToPublic] Drip button enabled:', isEnabled);
+  if (!isEnabled) {
+    console.log('[mintToPublic] Waiting for drip button to become enabled...');
+  }
   await expect(dripButton).toBeEnabled({ timeout: TIMEOUTS.DEFAULT });
+  console.log('[mintToPublic] Drip button enabled, clicking...');
 
   await dripButton.click();
-  console.log('Drip button clicked');
+  console.log('[mintToPublic] Drip button clicked');
 
   await page.waitForTimeout(100);
 
   try {
     await expect(dripButton).toContainText('Processing', { timeout: 2000 });
-    console.log('Transaction processing...');
+    console.log('[mintToPublic] Transaction processing...');
   } catch {
+    const currentText = await dripButton.textContent().catch(() => 'unknown');
     console.log(
-      'Processing state too fast to catch, checking if already done...'
+      '[mintToPublic] Processing state not caught, button text:',
+      JSON.stringify(currentText)
     );
   }
 
+  console.log('[mintToPublic] Waiting for transaction to complete (up to 60s)...');
   await expect(dripButton).toContainText('Drip to', { timeout: TIMEOUTS.LONG });
-  console.log('Transaction completed');
+  console.log('[mintToPublic] Transaction completed');
 }
 
 /**
