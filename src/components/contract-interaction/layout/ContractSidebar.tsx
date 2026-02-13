@@ -283,7 +283,6 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
         <div className={styles.contractsList}>
           {contracts.map((contract) => {
             const isSelected = sidebarSelectedId === contract.id;
-            const canDelete = onDeleteContract !== undefined;
             return (
               <button
                 key={contract.id}
@@ -307,7 +306,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                     {truncateAddress(contract.address)}
                   </span>
                 </div>
-                {canDelete && (
+                {onDeleteContract && (
                   <Button
                     variant="icon"
                     size="icon"
