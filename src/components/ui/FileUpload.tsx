@@ -80,7 +80,7 @@ export interface FileUploadProps {
   error?: string;
   /** Helper text to display */
   helperText?: string;
-  /** Maximum file size in bytes (default: 10MB) */
+  /** Maximum file size in bytes (default: 30MB) */
   maxSize?: number;
   /** Custom class name for the container */
   className?: string;
@@ -107,7 +107,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   error,
   helperText,
   className,
-  maxSize = 10 * 1024 * 1024, // 10MB default
+  maxSize = 30 * 1024 * 1024, // 30MB default
   readOnly = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
