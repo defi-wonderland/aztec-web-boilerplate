@@ -76,7 +76,7 @@ export const ArtifactInput: React.FC<ArtifactInputProps> = ({
     return (
       <div className={styles.container}>
         {label && (
-          <label htmlFor={id} className={styles.label}>
+          <label htmlFor={`${id}-file`} className={styles.label}>
             {label}
           </label>
         )}
@@ -99,7 +99,7 @@ export const ArtifactInput: React.FC<ArtifactInputProps> = ({
     return (
       <div className={styles.container}>
         {label && (
-          <label htmlFor={id} className={styles.label}>
+          <label htmlFor={`${id}-file`} className={styles.label}>
             {label}
           </label>
         )}
