@@ -147,6 +147,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           content,
         });
       };
+      reader.onerror = () => {
+        const message =
+          reader.error?.message ||
+          'An unknown error occurred while reading the file';
+        console.error('FileReader error:', reader.error);
+        setValidationError(`Failed to read file: ${message}`);
+      };
       reader.readAsText(inputFile);
     },
     [isValidFile, maxSize, onFileChange, accept]

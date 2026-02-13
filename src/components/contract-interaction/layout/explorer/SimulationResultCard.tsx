@@ -38,7 +38,8 @@ const styles = {
   resultCopyBtnSuccess: 'text-success',
   // Complex value rendering
   resultValueComplexWrapper: 'flex-1 min-w-0',
-  resultValueComplex: 'text-sm font-mono text-default whitespace-pre-wrap break-all',
+  resultValueComplex:
+    'text-sm font-mono text-default whitespace-pre-wrap break-all',
   resultValueClamped: 'max-h-40 overflow-auto',
   resultValueExpanded: 'max-h-96 overflow-auto',
   expandToggle: cn(

@@ -77,7 +77,7 @@ async function getPublicBalance(page: Page): Promise<bigint> {
 
     // Poll every 5s to track state changes while waiting
     const pollInterval = setInterval(async () => {
-      await logPageState(page, 'getPublicBalance:poll').catch(() => {});
+      await logPageState(page, 'getPublicBalance:poll').catch(() => { });
     }, 5000);
 
     // Log the body's visible text (truncated) for context
