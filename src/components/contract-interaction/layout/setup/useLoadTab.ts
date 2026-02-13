@@ -68,7 +68,7 @@ export const useLoadTab = (options: UseLoadTabOptions) => {
 
   const canLoadContract =
     loadSource === 'custom'
-      ? Boolean(address && artifactInput && isValidAddress)
+      ? Boolean(address && artifactInput && isValidAddress && !parseError)
       : loadSource === 'preconfigured' &&
         selectedPreconfigured &&
         !isLoadingPreconfigured;
