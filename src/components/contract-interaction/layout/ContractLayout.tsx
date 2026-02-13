@@ -296,6 +296,7 @@ export const ContractLayout: React.FC = () => {
           });
         }
       } catch (err) {
+        setSimulationResult(null);
         pushLog({
           level: 'error',
           title: 'Simulation failed',
