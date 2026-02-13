@@ -77,7 +77,7 @@ async function getPublicBalance(page: Page): Promise<bigint> {
 
     // Poll every 5s to track state changes while waiting
     const pollInterval = setInterval(async () => {
-      await logPageState(page, 'getPublicBalance:poll').catch(() => { });
+      await logPageState(page, 'getPublicBalance:poll').catch(() => {});
     }, 5000);
 
     // Log the body's visible text (truncated) for context
@@ -203,7 +203,7 @@ async function runMintToPublicTest(
 
   // Capture browser console logs for contract registry debugging
   const browserLogs: string[] = [];
-  page.on('console', (msg) => {
+  const consoleHandler = (msg: import('@playwright/test').ConsoleMessage) => {
     const text = msg.text();
     // Capture registry, contract, and error logs
     if (
@@ -223,35 +223,42 @@ async function runMintToPublicTest(
       browserLogs.push(logLine);
       console.log(logLine);
     }
-  });
+  };
+  page.on('console', consoleHandler);
 
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  try {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
 
-  await connectFn(page);
+    await connectFn(page);
 
-  console.log(`[${testName}] Post-connect browser logs (${browserLogs.length}):`);
-  browserLogs.forEach((log) => console.log(`  ${log}`));
+    console.log(
+      `[${testName}] Post-connect browser logs (${browserLogs.length}):`
+    );
+    browserLogs.forEach((log) => console.log(`  ${log}`));
 
-  await logPageState(page, `${testName}:post-connect`);
+    await logPageState(page, `${testName}:post-connect`);
 
-  const initialBalance = await getPublicBalance(page);
-  console.log('Initial public balance:', initialBalance.toString());
+    const initialBalance = await getPublicBalance(page);
+    console.log('Initial public balance:', initialBalance.toString());
 
-  console.log(`Minting ${MINT_AMOUNT} tokens to public balance...`);
-  await mintToPublic(page, MINT_AMOUNT);
-  console.log('Mint transaction submitted');
+    console.log(`Minting ${MINT_AMOUNT} tokens to public balance...`);
+    await mintToPublic(page, MINT_AMOUNT);
+    console.log('Mint transaction submitted');
 
-  const expectedMinBalance = initialBalance + BigInt(MINT_AMOUNT);
-  const finalBalance = await waitForBalanceSync(page, expectedMinBalance);
-  console.log('Final public balance:', finalBalance.toString());
+    const expectedMinBalance = initialBalance + BigInt(MINT_AMOUNT);
+    const finalBalance = await waitForBalanceSync(page, expectedMinBalance);
+    console.log('Final public balance:', finalBalance.toString());
 
-  expect(finalBalance).toBeGreaterThanOrEqual(expectedMinBalance);
-  console.log(
-    `Balance increased by ${(finalBalance - initialBalance).toString()} tokens`
-  );
+    expect(finalBalance).toBeGreaterThanOrEqual(expectedMinBalance);
+    console.log(
+      `Balance increased by ${(finalBalance - initialBalance).toString()} tokens`
+    );
 
-  console.log('\n=== TEST PASSED ===\n');
+    console.log('\n=== TEST PASSED ===\n');
+  } finally {
+    page.off('console', consoleHandler);
+  }
 }
 
 test.describe('Mint to Public - Walletless (MetaMask)', () => {
