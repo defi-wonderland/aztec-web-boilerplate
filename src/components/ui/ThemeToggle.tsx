@@ -39,5 +39,3 @@ export const ThemeToggle: React.FC = () => {
     </Tooltip>
   );
 };
-
-export default ThemeToggle;

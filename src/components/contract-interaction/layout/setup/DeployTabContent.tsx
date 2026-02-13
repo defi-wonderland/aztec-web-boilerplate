@@ -2,10 +2,10 @@ import React from 'react';
 import { Rocket, FileEdit, Coins, ArrowLeft } from 'lucide-react';
 import { cn, iconSize } from '../../../../utils';
 import { Button } from '../../../ui';
-import ArtifactInput from '../../ArtifactInput';
-import ContractSourceCard from '../ContractSourceCard';
-import ArtifactMethodSelector from './ArtifactMethodSelector';
-import ConstructorParamsCard from './ConstructorParamsCard';
+import { ArtifactInput } from '../../ArtifactInput';
+import { ContractSourceCard } from '../ContractSourceCard';
+import { ArtifactMethodSelector } from './ArtifactMethodSelector';
+import { ConstructorParamsCard } from './ConstructorParamsCard';
 import type {
   ArtifactInputMethod,
   ContractSource,
@@ -183,5 +183,3 @@ export const DeployTabContent: React.FC<DeployTabContentProps> = ({
     </div>
   );
 };
-
-export default DeployTabContent;

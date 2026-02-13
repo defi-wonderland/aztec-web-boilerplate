@@ -37,5 +37,3 @@ export const FeePaymentInfo: React.FC<FeePaymentInfoProps> = ({
     </div>
   );
 };
-
-export default FeePaymentInfo;

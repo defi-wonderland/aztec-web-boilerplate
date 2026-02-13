@@ -8,7 +8,7 @@ export {
 export type { SidebarContract } from './layout';
 
 // Shared components
-export { default as ParameterInputs } from './ParameterInputs';
+export { ParameterInputs } from './ParameterInputs';
 export type { ParameterInputsProps, ParameterInput } from './ParameterInputs';
 
 // Shared utilities

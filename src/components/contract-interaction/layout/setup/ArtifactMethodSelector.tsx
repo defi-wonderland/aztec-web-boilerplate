@@ -55,5 +55,3 @@ export const ArtifactMethodSelector: React.FC<ArtifactMethodSelectorProps> = ({
     </>
   );
 };
-
-export default ArtifactMethodSelector;

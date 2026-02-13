@@ -4,9 +4,9 @@ import { useInvokeFlowData, useContractActions } from '../../../../store';
 import { cn, iconSize } from '../../../../utils';
 import { isValidAztecAddress } from '../../../../utils/contractInteraction';
 import { Button, Input } from '../../../ui';
-import ArtifactInput from '../../ArtifactInput';
-import ContractSourceCard from '../ContractSourceCard';
-import ArtifactMethodSelector from './ArtifactMethodSelector';
+import { ArtifactInput } from '../../ArtifactInput';
+import { ContractSourceCard } from '../ContractSourceCard';
+import { ArtifactMethodSelector } from './ArtifactMethodSelector';
 import type { ArtifactInputMethod, ContractSource } from './setup-utils';
 import type { PreconfiguredContract } from '../../../../config/preconfiguredContracts';
 
@@ -198,5 +198,3 @@ export const LoadTabContent: React.FC<LoadTabContentProps> = ({
     </div>
   );
 };
-
-export default LoadTabContent;

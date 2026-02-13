@@ -495,5 +495,3 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
     </aside>
   );
 };
-
-export default ContractSidebar;

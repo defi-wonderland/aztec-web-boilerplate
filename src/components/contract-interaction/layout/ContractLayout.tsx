@@ -20,9 +20,9 @@ import {
   toSidebarId,
   fromSidebarId,
 } from '../../../utils/contractInteraction';
-import ContractExplorerPanel from './ContractExplorerPanel';
-import ContractSetupPanel from './ContractSetupPanel';
-import ContractSidebar from './ContractSidebar';
+import { ContractExplorerPanel } from './ContractExplorerPanel';
+import { ContractSetupPanel } from './ContractSetupPanel';
+import { ContractSidebar } from './ContractSidebar';
 import type { SidebarContract } from './ContractSidebar';
 
 const styles = {
@@ -307,5 +307,3 @@ export const ContractLayout: React.FC = () => {
     </div>
   );
 };
-
-export default ContractLayout;

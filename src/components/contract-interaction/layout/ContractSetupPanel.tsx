@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Download, Rocket } from 'lucide-react';
 import { cn, iconSize } from '../../../utils';
 import { Tabs, TabsList, TabsTrigger } from '../../ui';
-import DeployTabContent from './setup/DeployTabContent';
-import LoadTabContent from './setup/LoadTabContent';
+import { DeployTabContent } from './setup/DeployTabContent';
+import { LoadTabContent } from './setup/LoadTabContent';
 import { useDeployTab } from './setup/useDeployTab';
 import { useLoadTab } from './setup/useLoadTab';
 import type { SetupTab } from './setup/setup-utils';
@@ -92,5 +92,3 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
     </div>
   );
 };
-
-export default ContractSetupPanel;

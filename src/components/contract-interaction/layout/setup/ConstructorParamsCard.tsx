@@ -13,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
 } from '../../../ui';
-import ParameterInputs from '../../ParameterInputs';
+import { ParameterInputs } from '../../ParameterInputs';
 import type {
   ContractConstructor,
   DeployableContract,
@@ -120,5 +120,3 @@ export const ConstructorParamsCard: React.FC<ConstructorParamsCardProps> = ({
     </>
   );
 };
-
-export default ConstructorParamsCard;

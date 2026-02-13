@@ -68,5 +68,3 @@ export const ContractSourceCard: React.FC<ContractSourceCardProps> = ({
     </button>
   );
 };
-
-export default ContractSourceCard;

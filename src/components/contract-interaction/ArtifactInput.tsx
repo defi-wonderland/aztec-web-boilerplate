@@ -191,5 +191,3 @@ export const ArtifactInput: React.FC<ArtifactInputProps> = ({
     </div>
   );
 };
-
-export default ArtifactInput;

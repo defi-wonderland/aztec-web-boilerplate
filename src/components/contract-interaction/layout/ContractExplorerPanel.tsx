@@ -150,5 +150,3 @@ export const ContractExplorerPanel: React.FC<ContractExplorerPanelProps> = ({
     </div>
   );
 };
-
-export default ContractExplorerPanel;
