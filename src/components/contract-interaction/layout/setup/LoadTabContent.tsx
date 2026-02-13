@@ -121,7 +121,7 @@ export const LoadTabContent: React.FC<LoadTabContentProps> = ({
               className={styles.detailsBackBtn}
               onClick={() => artifact.onMethodChange(null)}
             >
-              <ArrowLeft size={12} />
+              <ArrowLeft size={iconSize('xs')} />
               Change method
             </button>
           )}

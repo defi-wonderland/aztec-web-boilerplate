@@ -15,9 +15,7 @@ const styles = {
     'border-zinc-300 bg-surface-tertiary/30',
     'hover:border-accent hover:bg-accent/5'
   ),
-  cardSelected: 'border-accent bg-accent/10',
   icon: 'text-muted',
-  iconSelected: 'text-accent',
   title: 'text-sm font-semibold text-default',
   desc: 'text-xs text-muted text-center',
 } as const;

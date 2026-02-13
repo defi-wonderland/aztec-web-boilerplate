@@ -111,7 +111,7 @@ export const DeployTabContent: React.FC<DeployTabContentProps> = ({
                 className={styles.detailsBackBtn}
                 onClick={() => customArtifact.onMethodChange(null)}
               >
-                <ArrowLeft size={12} />
+                <ArrowLeft size={iconSize('xs')} />
                 Change method
               </button>
             )}
