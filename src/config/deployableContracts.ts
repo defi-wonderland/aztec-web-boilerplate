@@ -2,8 +2,8 @@
  * Deployable Contracts Configuration.
  * See docs/contract-ui.md for documentation.
  */
-import dripperSandbox from '../target/dripper-Dripper.json';
-import tokenSandbox from '../target/token_contract-Token.json';
+import dripperSandbox from '@defi-wonderland/aztec-standards/target/dripper-Dripper.json';
+import tokenSandbox from '@defi-wonderland/aztec-standards/target/token_contract-Token.json';
 import {
   loadDeployableContracts,
   type DeployableContractConfig,
