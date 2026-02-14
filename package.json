@@ -8,11 +8,11 @@
   },
   "scripts": {
     "clean": "rm -rf dist src/target src/artifacts/*.json src/artifacts/*.js src/artifacts/*.d.ts contracts/*/target target",
-    "build:standards": "T=$(mktemp -d -p $HOME) && git clone --depth 1 -b feat/upgrade-devnet.1-patch.0 https://github.com/defi-wonderland/aztec-standards.git $T && cd $T && aztec compile && mkdir -p $OLDPWD/src/target && cp target/*.json $OLDPWD/src/target/ && rm -rf $T",
     "build:contracts": "aztec compile && mkdir -p src/target && cp target/*.json src/target/",
+    "copy:standards": "mkdir -p src/target && cp node_modules/@defi-wonderland/aztec-standards/target/*.json src/target/",
     "codegen": "aztec codegen src/target --outdir src/artifacts -f",
-    "build": "yarn build:standards && yarn build:contracts && yarn codegen && yarn build-app",
-    "build:ci": "yarn build:standards && yarn build:contracts && yarn codegen && yarn build-app:ci",
+    "build": "yarn build:contracts && yarn copy:standards && yarn codegen && yarn build-app",
+    "build:ci": "yarn build:contracts && yarn copy:standards && yarn codegen && yarn build-app:ci",
     "deploy-contracts": "tsx scripts/deploy.ts --network sandbox",
     "dev": "vite",
     "build-app": "NODE_OPTIONS='--max-old-space-size=14336' vite build",
@@ -41,7 +41,8 @@
     "@aztec/pxe": "4.0.0-devnet.1-patch.0",
     "@aztec/stdlib": "4.0.0-devnet.1-patch.0",
     "@aztec/wallet-sdk": "4.0.0-devnet.1-patch.0",
-    "@defi-wonderland/aztec-fee-payment": "github:defi-wonderland/aztec-fee-payment#chore/v4",
+    "@defi-wonderland/aztec-fee-payment": "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-3cda7fa/defi-wonderland-aztec-fee-payment-4.0.0-devnet.1-patch.0-prerelease.3cda7fa.tgz",
+    "@defi-wonderland/aztec-standards": "https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-81f5ec2/defi-wonderland-aztec-standards-4.0.0-devnet.1-patch.0-prerelease.81f5ec2.tgz",
     "@radix-ui/react-dialog": "1.1.15",
     "@radix-ui/react-select": "2.2.6",
     "@radix-ui/react-slot": "1.2.4",
@@ -110,7 +111,6 @@
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "resolutions": {
-    "systeminformation": "5.27.14",
-    "**/viem": "2.41.2"
+    "systeminformation": "5.27.14"
   }
 }
