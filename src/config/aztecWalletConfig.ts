@@ -34,7 +34,8 @@ export const aztecWalletConfig = createAztecWalletConfig({
   walletGroups: {
     embedded: true,
     aztecWallets: ['azguard'],
-    evmWallets: ['metamask', 'rabby'],
+    // TODO: Re-enable when EcdsaKEthSignerAccount contract can be compiled in CI
+    // evmWallets: ['metamask', 'rabby'],
   },
 
   // Show network picker in header ('full' | 'compact' | undefined)

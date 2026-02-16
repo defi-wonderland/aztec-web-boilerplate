@@ -4,7 +4,7 @@
  * Handles registration of fee payment contracts with PXE.
  */
 
-import { MeteredContractArtifact } from '@defi-wonderland/aztec-fee-payment/src/ts/dist/artifacts/Metered';
+import { MeteredContractArtifact } from '@defi-wonderland/aztec-fee-payment/artifacts';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
@@ -12,7 +12,7 @@ import { createLogger } from '@aztec/aztec.js/log';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import type { PXE } from '@aztec/pxe/server';
-import type { FeePaymentContractsConfig } from '../../../config/networks/types';
+import type { DeployedContractConfig } from '../../../config/networks/types';
 
 const logger = createLogger('fee-payment-register');
 
@@ -38,7 +38,7 @@ export class FeePaymentRegister {
 
   async registerAll(
     pxe: PXE,
-    feePaymentConfig?: FeePaymentContractsConfig
+    feePaymentConfig?: Record<string, DeployedContractConfig>
   ): Promise<RegisteredFPC[]> {
     this.registeredFPCs = [];
 

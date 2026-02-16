@@ -32,8 +32,7 @@ export class MinimalWallet extends BaseWallet {
     let account: Account | undefined;
 
     if (address.equals(AztecAddress.ZERO)) {
-      const chainInfo = await this.getChainInfo();
-      account = new SignerlessAccount(chainInfo);
+      account = new SignerlessAccount();
     } else {
       account = this.addressToAccount.get(address.toString());
     }

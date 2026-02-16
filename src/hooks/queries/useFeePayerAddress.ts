@@ -34,13 +34,15 @@ interface UseFeePayerAddressReturn {
 
 /**
  * Creates a stable hash from the fee payment config for use in query keys.
+ */
+/**
+ * Creates a stable hash from the fee payment config for use in query keys.
  * Uses sorted keys to ensure consistent serialization regardless of property order.
  */
 const getConfigHash = (
   config: FeePaymentContractsConfig | undefined
 ): string => {
   if (!config) return '';
-  // Sort keys for stable serialization
   const sortedKeys = Object.keys(config).sort();
   const sortedConfig = sortedKeys.reduce(
     (acc, key) => {
@@ -61,6 +63,10 @@ export const useFeePayerAddress = ({
   feePaymentConfig,
   enabled = true,
 }: UseFeePayerAddressOptions): UseFeePayerAddressReturn => {
+  const isMeteredConfigured =
+    feePaymentConfig != null && feePaymentConfig.metered?.address != null;
+  const needsMeteredConfig =
+    selectedMethod === 'metered' || selectedMethod === 'meteredExact';
   const configHash = getConfigHash(feePaymentConfig);
 
   const query = useQuery({
@@ -78,7 +84,10 @@ export const useFeePayerAddress = ({
 
       return method.getFeePayer();
     },
-    enabled: enabled && connector !== null,
+    enabled:
+      enabled &&
+      connector !== null &&
+      (!needsMeteredConfig || isMeteredConfigured),
     staleTime: 60_000, // Fee payer addresses rarely change
   });
 
