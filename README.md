@@ -224,9 +224,6 @@ VITE_AZTEC_NODE_URL=http://localhost:8080
 # Disable prover for faster development
 VITE_PROVER_ENABLED=false
 
-# Disable FPC if SponsoredFPC is not available (default: enabled)
-FPC_ENABLED=false
-
 # Embedded wallet credentials (optional - auto-generated if not provided)
 VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE="my secret"
 VITE_EMBEDDED_ACCOUNT_SECRET_KEY="0x..."

@@ -63,6 +63,10 @@ export const useFeePayerAddress = ({
   feePaymentConfig,
   enabled = true,
 }: UseFeePayerAddressOptions): UseFeePayerAddressReturn => {
+  const isMeteredConfigured =
+    feePaymentConfig != null && feePaymentConfig.metered?.address != null;
+  const needsMeteredConfig =
+    selectedMethod === 'metered' || selectedMethod === 'meteredExact';
   const configHash = getConfigHash(feePaymentConfig);
 
   const query = useQuery({
@@ -80,7 +84,10 @@ export const useFeePayerAddress = ({
 
       return method.getFeePayer();
     },
-    enabled: enabled && connector !== null,
+    enabled:
+      enabled &&
+      connector !== null &&
+      (!needsMeteredConfig || isMeteredConfigured),
     staleTime: 60_000, // Fee payer addresses rarely change
   });
 
