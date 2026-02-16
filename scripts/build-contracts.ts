@@ -139,9 +139,8 @@ function compileLocalContracts(
   }
 
   // Compile all contracts from workspace root
-  // Note: In v4, compilation is done via aztec-nargo (nargo inside Docker).
-  // aztec compile was removed — use aztec-nargo compile instead.
-  tryRun(`cd "${projectRoot}" && aztec-nargo compile`);
+  // Note: In v4, nargo is installed directly via aztec-up (no longer Docker-based).
+  tryRun(`cd "${projectRoot}" && nargo compile`);
   const compiledTarget = path.join(projectRoot, 'target');
   const hasArtifacts =
     fs.existsSync(compiledTarget) &&
@@ -159,16 +158,11 @@ function compileLocalContracts(
   // which `aztec codegen` requires.
   console.log('   🔧 Postprocessing contracts (transpile + VK generation)...');
   {
-    // Build -i flags for each JSON artifact (bb directory scan has a bug,
-    // so we pass files individually via shell glob)
+    // Use local bb binary from aztec-up installation
     const bbCmd = [
       `cd "${projectRoot}"`,
-      `&& docker run --rm --user $(id -u):$(id -g)`,
-      `-v $HOME:$HOME -e HOME=$HOME`,
-      `--workdir="${projectRoot}" --entrypoint=""`,
-      `aztecprotocol/aztec /bin/sh -c`,
-      `'for f in target/*.json; do flags="$flags -i $f"; done;`,
-      `/usr/src/barretenberg/ts/build/*/bb aztec_process $flags'`,
+      `&& for f in target/*.json; do flags="$flags -i $f"; done;`,
+      `bb aztec_process $flags`,
     ].join(' ');
     if (!tryRun(bbCmd)) {
       console.error('   ❌ Failed to postprocess contracts');

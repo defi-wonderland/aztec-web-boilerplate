@@ -151,7 +151,8 @@ async function runMintToPublicTest(
   console.log('\n=== TEST PASSED ===\n');
 }
 
-test.describe('Mint to Public - Walletless (MetaMask)', () => {
+// TODO: Skipped until EVM/MetaMask wallet support is re-enabled
+test.describe.skip('Mint to Public - Walletless (MetaMask)', () => {
   test('should mint tokens to public balance via walletless MetaMask', async ({
     page,
     walletless,

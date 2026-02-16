@@ -22,8 +22,8 @@ export interface DeployAccountResult {
 
 const DEFAULT_OPTIONS: Required<DeployAccountOptions> = {
   timeout: 120,
-  skipClassPublication: true,
-  skipInstancePublication: true,
+  skipClassPublication: false,
+  skipInstancePublication: false,
 };
 
 /**

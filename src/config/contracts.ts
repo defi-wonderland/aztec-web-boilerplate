@@ -1,7 +1,7 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import { DripperContract } from '../artifacts/Dripper.js';
-import { TokenContract } from '../artifacts/Token.js';
+import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
+import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
 import { createContractConfig, getDeployerAddress } from '../contract-registry';
 
 /**

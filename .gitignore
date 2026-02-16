@@ -29,6 +29,9 @@ scripts/.store*
 ./wallet-info.json
 
 contracts/target
+target/
+src/target/
+src/artifacts/
 codegenCache.json
 
 # Playwright

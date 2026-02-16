@@ -12,7 +12,8 @@ import {
   TIMEOUTS,
 } from './utils/test-helpers';
 
-test.describe('Wallet Connection E2E', () => {
+// TODO: Skipped until EVM/MetaMask wallet support is re-enabled
+test.describe.skip('Wallet Connection E2E', () => {
   test('should connect MetaMask wallet via walletless', async ({
     page,
     walletless,

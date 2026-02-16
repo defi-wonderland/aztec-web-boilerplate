@@ -4,7 +4,7 @@
  * Handles registration of fee payment contracts with PXE.
  */
 
-import { MeteredContractArtifact } from '@defi-wonderland/aztec-fee-payment/src/ts/dist/artifacts/Metered';
+import { MeteredContractArtifact } from '@defi-wonderland/aztec-fee-payment/artifacts';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';

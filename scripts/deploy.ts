@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { DripperContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
+import { TokenContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
 import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa';
 import {
   type AccountWithSecretKey,
@@ -27,8 +29,6 @@ import { createPXE } from '@aztec/pxe/server';
 import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
 import fs from 'fs';
 import path from 'path';
-import { DripperContractArtifact } from '../src/artifacts/Dripper';
-import { TokenContractArtifact } from '../src/artifacts/Token';
 import {
   NETWORK_URLS,
   type NetworkType,

@@ -1,4 +1,4 @@
-import tokenSandbox from '../artifacts/sandbox/token_contract-Token.json';
+import tokenSandbox from '@defi-wonderland/aztec-standards/target/token_contract-Token.json';
 import type { AztecNetwork } from './networks/constants';
 
 export type PreconfiguredContract = {
