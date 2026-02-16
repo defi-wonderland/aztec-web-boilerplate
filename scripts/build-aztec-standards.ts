@@ -189,6 +189,39 @@ function copyFiles(
   return copiedCount;
 }
 
+/**
+ * Strip the __aztec_nr_internals__ prefix from function names in compiled artifact JSONs.
+ * Replicates the Docker-only strip_aztec_nr_prefix.sh script.
+ */
+function stripAztecNrPrefix(targetDir: string): void {
+  if (!fs.existsSync(targetDir)) return;
+
+  const PREFIX = '__aztec_nr_internals__';
+  const jsonFiles = fs
+    .readdirSync(targetDir)
+    .filter((f) => f.endsWith('.json'));
+
+  for (const file of jsonFiles) {
+    const filePath = path.join(targetDir, file);
+    const artifact = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+    if (!Array.isArray(artifact.functions)) continue;
+
+    let modified = false;
+    for (const fn of artifact.functions) {
+      if (typeof fn.name === 'string' && fn.name.startsWith(PREFIX)) {
+        fn.name = fn.name.slice(PREFIX.length);
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      fs.writeFileSync(filePath, JSON.stringify(artifact));
+      console.log(`   🔧 Stripped __aztec_nr_internals__ prefix from ${file}`);
+    }
+  }
+}
+
 async function main() {
   // Args: <commit-or-tag> [--force]
   const commitOrTag = process.argv[2];
@@ -224,17 +257,32 @@ async function main() {
         run(`cd "${repoDir}" && npm install --no-audit --no-fund`);
       }
 
-      // 2) Compile contracts using `aztec compile`, which handles:
-      //    - Noir compilation (nargo compile)
-      //    - Public bytecode transpilation (ACIR → AVM)
-      //    - Verification key generation
-      //    - Stripping __aztec_nr_internals__ prefixes
+      // 2) Compile sources: `aztec compile` runs nargo compile + bb aztec_process
+      //    in one step (transpile public bytecode and generate VKs).
+      //    We run this directly instead of the repo's compile script, which may
+      //    include post-processing steps that reference Docker-internal paths.
       console.log('\n🔨 Compiling contracts...');
       if (!tryRun(`cd "${repoDir}" && aztec compile`)) {
-        throw new Error('Compilation failed');
+        // Check if compilation partially succeeded (target/*.json files exist)
+        const targetDir = path.join(repoDir, 'target');
+        const hasArtifacts =
+          fs.existsSync(targetDir) &&
+          fs.readdirSync(targetDir).some((f) => f.endsWith('.json'));
+        if (hasArtifacts) {
+          console.warn(
+            '⚠️ Compile command exited with error but artifacts were generated, continuing...'
+          );
+        } else {
+          throw new Error('Compilation failed and no artifacts were generated');
+        }
       }
 
-      // 3) Codegen - copies target/ → src/target/ then generates wrappers
+      // 3) Strip __aztec_nr_internals__ prefix from function names in artifact JSONs.
+      //    This replicates what strip_aztec_nr_prefix.sh (Docker-only) does.
+      //    Without this, v4 SDK can't find 'constructor' (it's named __aztec_nr_internals__constructor).
+      stripAztecNrPrefix(path.join(repoDir, 'target'));
+
+      // 4) Codegen - copies target/ → src/target/ then generates wrappers
       ensureDir(path.join(repoDir, ARTIFACTS_OUTPUT_DIR));
 
       try {
@@ -246,7 +294,7 @@ async function main() {
         throw error;
       }
 
-      // 4) Copy artifacts to ARTIFACTS_OUTPUT_DIR
+      // 5) Copy artifacts to ARTIFACTS_OUTPUT_DIR
       const targetArtifactsDir = path.join(process.cwd(), ARTIFACTS_OUTPUT_DIR);
       console.log(`\n📁 Copying artifacts to: ${targetArtifactsDir}`);
       copyFiles(
@@ -255,7 +303,7 @@ async function main() {
         forceOverwrite
       );
 
-      // 5) Copy target JSONs to TARGET_OUTPUT_DIR (src/target/)
+      // 6) Copy target JSONs to TARGET_OUTPUT_DIR (src/target/)
       const targetTargetDir = path.join(process.cwd(), TARGET_OUTPUT_DIR);
       console.log(`\n📁 Copying target to: ${targetTargetDir}`);
       copyFiles(

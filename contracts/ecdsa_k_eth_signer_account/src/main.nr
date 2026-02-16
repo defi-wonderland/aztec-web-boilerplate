@@ -3,15 +3,15 @@
 // personal_sign signatures using keccak256 with the standard Ethereum message prefix.
 //
 // This enables MetaMask to be used as an external signer without exposing private keys to the browser.
-use dep::aztec::macros::aztec;
+use ::aztec::macros::aztec;
 
 #[aztec]
 pub contract EcdsaKEthSignerAccount {
-    use dep::aztec::{
+    use ::aztec::{
         authwit::{account::AccountActions, entrypoint::app::AppPayload},
         context::PrivateContext,
         macros::{
-            functions::{external, initializer, noinitcheck, nophasecheck, view},
+            functions::{allow_phase_change, external, initializer, noinitcheck, view},
             storage::storage,
         },
         messages::message_delivery::MessageDelivery,
@@ -53,7 +53,7 @@ pub contract EcdsaKEthSignerAccount {
     // Main entrypoint for executing transactions
     #[external("private")]
     #[noinitcheck]
-    #[nophasecheck]
+    #[allow_phase_change]
     fn entrypoint(app_payload: AppPayload, fee_payment_method: u8, cancellable: bool) {
         // Safety: The sender for tags is only used to compute unconstrained shared secrets for emitting logs.
         // Since this value is only used for unconstrained tagging and not for any constrained logic,

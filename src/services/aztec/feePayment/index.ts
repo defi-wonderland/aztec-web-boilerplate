@@ -5,7 +5,7 @@
 import {
   MeteredFeePaymentMethod,
   MeteredExactFeePaymentMethod,
-} from '@defi-wonderland/aztec-fee-payment/src/ts/dist/fee-payment-methods';
+} from '@defi-wonderland/aztec-fee-payment/fee-payment-methods';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { FeePaymentMethodType } from '../../../config/feePaymentContracts';

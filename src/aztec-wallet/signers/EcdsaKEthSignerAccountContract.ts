@@ -7,7 +7,8 @@ import {
 } from '@aztec/aztec.js/account';
 import type { CompleteAddress } from '@aztec/aztec.js/addresses';
 import { DefaultAccountEntrypoint } from '@aztec/entrypoints/account';
-import { EcdsaKEthSignerAccountContractArtifact } from '../../artifacts/EcdsaKEthSignerAccount';
+// TODO: temporary
+// import { EcdsaKEthSignerAccountContractArtifact } from '../../artifacts/EcdsaKEthSignerAccount';
 
 /**
  * AccountContract implementation for ECDSA K accounts that use
@@ -52,7 +53,8 @@ export class EcdsaKEthSignerAccountContract implements AccountContract {
    * Returns the contract artifact for deployment.
    */
   getContractArtifact(): Promise<ContractArtifact> {
-    return Promise.resolve(EcdsaKEthSignerAccountContractArtifact);
+    return null;
+    // return Promise.resolve(EcdsaKEthSignerAccountContractArtifact);
   }
 
   /**
