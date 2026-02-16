@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // Run with: tsx scripts/build-contracts.ts [--force]
 // This script copies artifacts from @defi-wonderland/aztec-standards and compiles local contracts
 
@@ -8,11 +7,7 @@ import path from 'node:path';
 
 // Output directory for artifacts (TypeScript wrappers)
 const ARTIFACTS_OUTPUT_DIR = 'src/artifacts';
-// Output directory for target JSONs (relative to src/, used by wrappers)
-const TARGET_OUTPUT_DIR = 'src/target';
-// Local contracts directory
-const LOCAL_CONTRACTS_DIR = 'contracts';
-// NPM package path
+// NPM package path — used to remove stale v3 artifacts before compiling
 const NPM_PACKAGE_PATH = 'node_modules/@defi-wonderland/aztec-standards';
 
 /**
@@ -78,73 +73,52 @@ function copyFiles(
     copiedCount++;
   }
 
-  console.log(`   📊 Copied ${copiedCount} items, skipped ${skippedCount} existing items`);
+  console.log(
+    `   📊 Copied ${copiedCount} items, skipped ${skippedCount} existing items`
+  );
   return copiedCount;
 }
 
 /**
- * Remove old .ts wrapper files (not .d.ts) to prevent tsx resolution conflicts
- * When we copy .js files from npm, old .ts files can cause issues
+ * Strip the __aztec_nr_internals__ prefix from function names in compiled artifact JSONs.
+ * Replicates the Docker-only strip_aztec_nr_prefix.sh script.
  */
-function cleanOldTsWrappers(artifactsDir: string, contracts: string[]): void {
-  for (const contract of contracts) {
-    const tsFile = path.join(artifactsDir, `${contract}.ts`);
-    if (fs.existsSync(tsFile)) {
-      fs.unlinkSync(tsFile);
-      console.log(`   🗑️ Removed old ${contract}.ts (using .js instead)`);
+function stripAztecNrPrefix(targetDir: string): void {
+  if (!fs.existsSync(targetDir)) return;
+
+  const PREFIX = '__aztec_nr_internals__';
+  const jsonFiles = fs
+    .readdirSync(targetDir)
+    .filter((f) => f.endsWith('.json'));
+
+  for (const file of jsonFiles) {
+    const filePath = path.join(targetDir, file);
+    const artifact = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+    if (!Array.isArray(artifact.functions)) continue;
+
+    let modified = false;
+    for (const fn of artifact.functions) {
+      if (typeof fn.name === 'string' && fn.name.startsWith(PREFIX)) {
+        fn.name = fn.name.slice(PREFIX.length);
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      fs.writeFileSync(filePath, JSON.stringify(artifact));
+      console.log(`   🔧 Stripped __aztec_nr_internals__ prefix from ${file}`);
     }
   }
 }
 
 /**
- * Copy aztec-standards artifacts from node_modules
- */
-function copyAztecStandardsArtifacts(projectRoot: string, forceOverwrite: boolean): void {
-  console.log('\n📦 Copying aztec-standards artifacts from node_modules...');
-
-  const npmPackagePath = path.join(projectRoot, NPM_PACKAGE_PATH);
-
-  if (!fs.existsSync(npmPackagePath)) {
-    console.error(`❌ Package @defi-wonderland/aztec-standards not found at ${npmPackagePath}`);
-    console.error('   Run: yarn add @defi-wonderland/aztec-standards');
-    throw new Error('Missing aztec-standards package');
-  }
-
-  // Filter for Dripper and Token contracts only
-  const contractFilter = (file: string) =>
-    (file.includes('Dripper') || file.includes('Token')) && !file.endsWith('.bak');
-
-  // Copy TypeScript wrappers from artifacts/
-  const artifactsDir = path.join(projectRoot, ARTIFACTS_OUTPUT_DIR);
-
-  // Remove old .ts files first to avoid tsx resolution conflicts
-  cleanOldTsWrappers(artifactsDir, ['Dripper', 'Token']);
-
-  console.log(`\n   📁 Copying TypeScript wrappers to ${ARTIFACTS_OUTPUT_DIR}/`);
-  copyFiles(
-    path.join(npmPackagePath, 'artifacts'),
-    artifactsDir,
-    forceOverwrite,
-    contractFilter
-  );
-
-  // Copy JSON artifacts from target/
-  const targetDir = path.join(projectRoot, TARGET_OUTPUT_DIR);
-  console.log(`\n   📁 Copying JSON artifacts to ${TARGET_OUTPUT_DIR}/`);
-  copyFiles(
-    path.join(npmPackagePath, 'target'),
-    targetDir,
-    forceOverwrite,
-    contractFilter
-  );
-
-  console.log('\n✅ aztec-standards artifacts copied successfully');
-}
-
-/**
  * Compile local contracts using workspace Nargo.toml at root level
  */
-function compileLocalContracts(projectRoot: string, forceOverwrite: boolean): boolean {
+function compileLocalContracts(
+  projectRoot: string,
+  forceOverwrite: boolean
+): boolean {
   const workspaceNargo = path.join(projectRoot, 'Nargo.toml');
 
   if (!fs.existsSync(workspaceNargo)) {
@@ -154,14 +128,51 @@ function compileLocalContracts(projectRoot: string, forceOverwrite: boolean): bo
 
   console.log('\n🔨 Compiling contracts from workspace...');
 
+  // Remove stale v3 artifacts from node_modules that crash the v4 barretenberg
+  // post-processor (aztec compile scans all JSON artifacts recursively)
+  const staleTargetDir = path.join(projectRoot, NPM_PACKAGE_PATH, 'target');
+  if (fs.existsSync(staleTargetDir)) {
+    fs.rmSync(staleTargetDir, { recursive: true, force: true });
+    console.log(
+      '   🗑️ Removed stale artifacts from node_modules aztec-standards'
+    );
+  }
+
   // Compile all contracts from workspace root
-  if (!tryRun(`cd "${projectRoot}" && aztec compile`)) {
-    console.error('   ❌ Failed to compile contracts');
+  // Note: In v4, nargo is installed directly via aztec-up (no longer Docker-based).
+  tryRun(`cd "${projectRoot}" && nargo compile`);
+  const compiledTarget = path.join(projectRoot, 'target');
+  const hasArtifacts =
+    fs.existsSync(compiledTarget) &&
+    fs.readdirSync(compiledTarget).some((f) => f.endsWith('.json'));
+  if (!hasArtifacts) {
+    console.error('   ❌ Failed to compile contracts — no artifacts generated');
     return false;
   }
 
   console.log('   ✅ Contracts compiled successfully');
 
+  // Postprocess: transpile public bytecode (ACIR → AVM) and generate VKs.
+  // In v4, `aztec-nargo compile` only produces raw ACIR. `bb aztec_process`
+  // transpiles public functions and sets `transpiled: true` in the JSON,
+  // which `aztec codegen` requires.
+  console.log('   🔧 Postprocessing contracts (transpile + VK generation)...');
+  {
+    // Use local bb binary from aztec-up installation
+    const bbCmd = [
+      `cd "${projectRoot}"`,
+      `&& for f in target/*.json; do flags="$flags -i $f"; done;`,
+      `bb aztec_process $flags`,
+    ].join(' ');
+    if (!tryRun(bbCmd)) {
+      console.error('   ❌ Failed to postprocess contracts');
+      return false;
+    }
+  }
+  console.log('   ✅ Contracts postprocessed successfully');
+
+  // Strip __aztec_nr_internals__ prefix from function names (replicates Docker-only script)
+  stripAztecNrPrefix(compiledTarget);
 
   // TODO: This might not be needed because `yarn codegen` takes care of using a path relative to the target/
   // Copy artifacts from target/ to src/artifacts/
@@ -169,8 +180,11 @@ function compileLocalContracts(projectRoot: string, forceOverwrite: boolean): bo
   const artifactsDir = path.join(projectRoot, ARTIFACTS_OUTPUT_DIR);
 
   if (fs.existsSync(targetDir)) {
-    copyFiles(targetDir, artifactsDir, forceOverwrite, (file) =>
-      file.endsWith('.json') && !file.endsWith('.bak')
+    copyFiles(
+      targetDir,
+      artifactsDir,
+      forceOverwrite,
+      (file) => file.endsWith('.json') && !file.endsWith('.bak')
     );
   }
 
@@ -188,11 +202,16 @@ async function main() {
 `);
 
   try {
-    // 1) Copy aztec-standards artifacts from node_modules
+    // 1) aztec-standards artifacts are built by build-aztec-standards.ts
+    //    (invoked via `yarn build-standards` before this script)
     console.log('='.repeat(60));
-    console.log('📦 Step 1: Copy aztec-standards artifacts');
+    console.log(
+      '📦 Step 1: aztec-standards artifacts (built by build-standards)'
+    );
     console.log('='.repeat(60));
-    copyAztecStandardsArtifacts(projectRoot, forceOverwrite);
+    console.log(
+      '   ✅ Skipped — artifacts already built by yarn build-standards'
+    );
 
     // 2) Compile local contracts (e.g., ECDSA account contract)
     console.log('\n' + '='.repeat(60));
@@ -216,4 +235,3 @@ async function main() {
 }
 
 main();
-

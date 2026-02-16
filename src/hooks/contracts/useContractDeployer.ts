@@ -6,6 +6,7 @@ import {
 import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   hasAppManagedPXE,
@@ -127,29 +128,26 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        // Get fee payment method from global store
         const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
           config: currentConfig?.feePaymentContracts ?? {},
           getSponsoredFeePaymentMethod: () =>
             connector.getSponsoredFeePaymentMethod(),
         });
 
-        const receipt = await deployMethod
-          .send({
-            from: account.getAddress(),
-            contractAddressSalt: salt,
-            fee: { paymentMethod },
-            universalDeploy: true,
-            skipInitialization: false,
-          })
-          .wait({ timeout: 900 });
+        const deployed = await deployMethod.send({
+          from: account.getAddress(),
+          contractAddressSalt: salt,
+          ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+          universalDeploy: true,
+          skipInitialization: false,
+          wait: { timeout: 900, waitForStatus: TxStatus.PROPOSED },
+        });
 
-        const deployedAddress = receipt.contract.address.toString();
+        const deployedAddress = deployed.address.toString();
 
         return {
           success: true,
           address: deployedAddress,
-          txHash: receipt.txHash?.toString(),
         };
       } catch (err) {
         const errorMsg =

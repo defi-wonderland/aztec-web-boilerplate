@@ -7,17 +7,13 @@
 
 import { test, expect } from './fixtures/walletless';
 import {
-  clearBrowserStorage,
   switchToSandbox,
   openConnectModal,
   TIMEOUTS,
 } from './utils/test-helpers';
 
-test.describe('Wallet Connection E2E', () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserStorage(page);
-  });
-
+// TODO: Skipped until EVM/MetaMask wallet support is re-enabled
+test.describe.skip('Wallet Connection E2E', () => {
   test('should connect MetaMask wallet via walletless', async ({
     page,
     walletless,
@@ -42,13 +38,13 @@ test.describe('Wallet Connection E2E', () => {
     await metamaskBtn.click();
     console.log('MetaMask button clicked, waiting for signature...');
 
-    await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
+    await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.LONG });
 
     const accountSection = page
       .locator('[data-testid="connected-account"]:visible')
       .first();
     await expect(accountSection).toBeVisible({
-      timeout: TIMEOUTS.WALLET_OPERATION,
+      timeout: TIMEOUTS.LONG,
     });
 
     const accountAddress = accountSection.locator(

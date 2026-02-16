@@ -69,7 +69,7 @@ class SharedPXEServiceClass {
       if (existing.nodeUrl === normalizedNodeUrl) {
         return existing.instance;
       }
-      this.clearInstance(existing.nodeUrl, existing.networkName);
+      this.clearInstance(existing.networkName);
     }
 
     // Return in-progress initialization if exists
@@ -113,10 +113,7 @@ class SharedPXEServiceClass {
   /**
    * Get existing instance without initialization (returns null if not initialized)
    */
-  getExistingInstance(
-    nodeUrl: string,
-    networkName: AztecNetwork
-  ): SharedPXEInstance | null {
+  getExistingInstance(networkName: AztecNetwork): SharedPXEInstance | null {
     const key = this.getInstanceKey(networkName);
     return this.instances.get(key)?.instance ?? null;
   }
@@ -124,7 +121,7 @@ class SharedPXEServiceClass {
   /**
    * Clear a specific PXE instance (useful for network switching)
    */
-  clearInstance(nodeUrl: string, networkName: AztecNetwork): void {
+  clearInstance(networkName: AztecNetwork): void {
     const key = this.getInstanceKey(networkName);
     this.instances.delete(key);
     this.cachedPaymentMethods.delete(key);
@@ -180,7 +177,6 @@ class SharedPXEServiceClass {
 
     const pxe = await createPXE(aztecNode, config, {
       store: pxeStore,
-      useLogSuffix: false,
     });
 
     const wallet = new MinimalWallet(pxe, aztecNode);
@@ -241,6 +237,7 @@ class SharedPXEServiceClass {
           dataDirectory: 'pxe',
           dataStoreMapSizeKb: SharedPXEServiceClass.PERSISTED_STORE_KB,
         },
+        undefined,
         pxeLogger
       );
     } catch (error) {
@@ -257,6 +254,7 @@ class SharedPXEServiceClass {
           dataDirectory: 'pxe-tmp',
           dataStoreMapSizeKb: SharedPXEServiceClass.FALLBACK_STORE_KB,
         },
+        undefined,
         pxeLogger
       );
     }

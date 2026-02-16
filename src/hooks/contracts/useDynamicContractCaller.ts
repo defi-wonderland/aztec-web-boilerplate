@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   hasAppManagedPXE,
@@ -204,7 +205,6 @@ export const useDynamicContractCaller = (
             };
           }
 
-          // Get fee payment method from global store
           const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
             config: currentConfig?.feePaymentContracts ?? {},
             getSponsoredFeePaymentMethod: () =>
@@ -212,11 +212,11 @@ export const useDynamicContractCaller = (
           });
 
           const tx = method(...args);
-          const sentTx = tx.send({
+          const receipt = await tx.send({
             from: account.getAddress(),
-            fee: { paymentMethod },
+            ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+            wait: { timeout: 900, waitForStatus: TxStatus.PROPOSED },
           });
-          const receipt = await sentTx.wait({ timeout: 900 });
 
           return { success: true, data: receipt };
         }
