@@ -15,6 +15,9 @@ import type { SerializedArtifact } from '../../../types/artifactRegistry';
 const CACHE_VERSION = 'v1';
 const CACHE_PREFIX = `external:${CACHE_VERSION}`;
 
+/** Timeout for fetching a tgz package (30 seconds) */
+const TGZ_FETCH_TIMEOUT_MS = 30_000;
+
 /** In-flight tgz fetch+extract dedup map (keyed by tgz URL) */
 const inflightExtractions = new Map<
   string,
@@ -51,7 +54,7 @@ export async function loadExternalArtifact(
         (fn) => 'parameters' in fn
       );
       if (hasParameters) {
-        return { artifact: restored, sourceLabel: 'external:cached' };
+        return { artifact: restored, sourceLabel: 'external' };
       }
       console.warn(
         `[externalTgz] Stale cache for "${contractName}", re-fetching`
@@ -99,7 +102,9 @@ async function fetchAndExtractTgz(
 ): Promise<Map<string, ContractArtifact>> {
   let response: Response;
   try {
-    response = await fetch(tgzUrl);
+    response = await fetch(tgzUrl, {
+      signal: AbortSignal.timeout(TGZ_FETCH_TIMEOUT_MS),
+    });
   } catch (err) {
     throw ArtifactErrorFactory.tgzFetchFailed(tgzUrl, err);
   }

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CloudDownload, Database, Globe, HardDrive, Zap } from 'lucide-react';
+import { CloudDownload, Globe, HardDrive } from 'lucide-react';
 import { useAztecWallet } from '../aztec-wallet';
 import { contractsConfig } from '../config/contracts';
 import { ArtifactService } from '../services/aztec/artifact';
@@ -19,29 +19,13 @@ const SOURCE_TOAST_MAP: Record<
     description: 'Using bundled artifacts',
     icon: <HardDrive size={iconSize('md')} />,
   },
-  'external:cached': {
-    description: 'Loaded from browser cache (external package)',
-    icon: <Database size={iconSize('md')} />,
+  registry: {
+    description: 'Loaded from artifact registry',
+    icon: <CloudDownload size={iconSize('md')} />,
   },
   external: {
-    description: 'Fetched from external package',
+    description: 'Loaded from external package',
     icon: <Globe size={iconSize('md')} />,
-  },
-  memory: {
-    description: 'Loaded from memory cache',
-    icon: <Zap size={iconSize('md')} />,
-  },
-  indexeddb: {
-    description: 'Loaded from browser cache',
-    icon: <Database size={iconSize('md')} />,
-  },
-  registry: {
-    description: 'Fetched from external registry',
-    icon: <CloudDownload size={iconSize('md')} />,
-  },
-  network: {
-    description: 'Fetched from external registry',
-    icon: <CloudDownload size={iconSize('md')} />,
   },
 };
 

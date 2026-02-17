@@ -67,22 +67,21 @@ export class ArtifactService {
       })
     );
 
-    // Merge results
     const artifacts: ResolvedArtifacts = {};
-    const sourceLabels: string[] = [];
+    let sourceLabel = 'local';
 
     contractNames.forEach((name, i) => {
-      const { artifact, sourceLabel } = results[i];
-      artifacts[name] = artifact;
-      if (sourceLabel !== 'local' && !sourceLabels.includes(sourceLabel)) {
-        sourceLabels.push(sourceLabel);
+      const result = results[i];
+      artifacts[name] = result.artifact;
+      if (result.sourceLabel !== 'local') {
+        sourceLabel = result.sourceLabel;
       }
     });
 
     return {
       artifacts,
       elapsedMs: performance.now() - start,
-      sourceLabel: sourceLabels.length > 0 ? sourceLabels.join(', ') : 'local',
+      sourceLabel,
     };
   }
 
@@ -179,7 +178,7 @@ export class ArtifactService {
         ).getArtifact(classId);
         return {
           artifact: result.artifact,
-          sourceLabel: `registry:${result.source}`,
+          sourceLabel: 'registry',
         };
       }
       case 'external':
