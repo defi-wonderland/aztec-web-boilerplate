@@ -134,12 +134,13 @@ async function fetchWithRetry(tgzUrl: string): Promise<ArrayBuffer> {
       if (response.ok) {
         return await response.arrayBuffer();
       }
-      // 4xx errors are not retriable (except 429)
+      // 4xx errors (except 429) are not retriable – stop immediately
       if (response.status < 500 && response.status !== 429) {
-        throw ArtifactErrorFactory.fetchFailed(
+        lastError = ArtifactErrorFactory.fetchFailed(
           response.status,
           response.statusText
         );
+        break;
       }
       lastError = ArtifactErrorFactory.fetchFailed(
         response.status,
