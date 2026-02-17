@@ -132,7 +132,7 @@ async function fetchWithRetry(tgzUrl: string): Promise<ArrayBuffer> {
         signal: AbortSignal.timeout(TGZ_FETCH_TIMEOUT_MS),
       });
       if (response.ok) {
-        return response.arrayBuffer();
+        return await response.arrayBuffer();
       }
       // 4xx errors are not retriable (except 429)
       if (response.status < 500 && response.status !== 429) {
