@@ -218,6 +218,21 @@ export default defineConfig(({ mode }) => {
         'Cross-Origin-Embedder-Policy': 'credentialless',
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },
+      proxy: {
+        '/github-releases': {
+          target: 'https://github.com',
+          changeOrigin: true,
+          followRedirects: true,
+          rewrite: (path) => path.replace(/^\/github-releases/, ''),
+        },
+        ...(artifactRegistryUrl && {
+          '/artifact-registry': {
+            target: artifactRegistryUrl,
+            changeOrigin: true,
+            rewrite: (path: string) => path.replace(/^\/artifact-registry/, ''),
+          },
+        }),
+      },
     },
     build: {
       sourcemap: false, // Disable sourcemaps to reduce memory usage
