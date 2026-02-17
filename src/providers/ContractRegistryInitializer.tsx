@@ -26,23 +26,24 @@ const getInitialContracts = <T extends ContractConfigMap>(
     .map(([name]) => name);
 };
 
+// Hoist the cast outside the component so the reference is stable across renders
+const typedContractsConfig = contractsConfig as unknown as ContractConfigMap;
+
 interface ContractRegistryInitializerProps {
   showTimingToast?: boolean;
   children: ReactNode;
 }
 
-const createRegistry = <T extends ContractConfigMap>(
+const createRegistry = (
   pxe: PXE,
-  contracts: T,
+  contracts: ContractConfigMap,
   config: NetworkConfig,
   artifacts: ResolvedArtifacts
 ) => {
   return new ContractRegistry(pxe, contracts, config, artifacts);
 };
 
-export function ContractRegistryInitializer<
-  T extends ContractConfigMap = ContractConfigMap,
->({
+export function ContractRegistryInitializer({
   showTimingToast = true,
   children,
 }: ContractRegistryInitializerProps): React.ReactElement {
@@ -64,23 +65,21 @@ export function ContractRegistryInitializer<
   const isReady =
     isConnected && isPXEInitialized && pxe !== null && artifactsReady;
 
-  const contracts = contractsConfig as unknown as T;
-
   const initialContracts = useMemo(
-    () => getInitialContracts(contracts),
-    [contracts]
+    () => getInitialContracts(typedContractsConfig),
+    [typedContractsConfig]
   );
 
-  const registryRef = useRef<ContractRegistry<T> | null>(null);
+  const registryRef = useRef<ContractRegistry<ContractConfigMap> | null>(null);
   const initializingRef = useRef(false);
 
   const checkContractsCached = useMemo(
     () =>
       async (
         pxeInstance: PXE,
-        contractsList: ContractNames<T>[],
+        contractsList: ContractNames<ContractConfigMap>[],
         networkConfig: NetworkConfig,
-        contractsMap: T
+        contractsMap: ContractConfigMap
       ): Promise<boolean> => {
         if (contractsList.length === 0) return true;
         const results = await Promise.all(
@@ -111,7 +110,7 @@ export function ContractRegistryInitializer<
       try {
         const registry = createRegistry(
           pxe,
-          contracts,
+          typedContractsConfig,
           currentConfig,
           artifacts
         );
@@ -122,7 +121,7 @@ export function ContractRegistryInitializer<
           pxe,
           initialContracts,
           currentConfig,
-          contracts
+          typedContractsConfig
         );
         const start = performance.now();
         await registry.registerAll(initialContracts);
@@ -159,7 +158,6 @@ export function ContractRegistryInitializer<
   }, [
     addToast,
     artifacts,
-    contracts,
     currentConfig,
     initialContracts,
     isReady,
