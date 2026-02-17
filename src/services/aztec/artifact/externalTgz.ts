@@ -56,6 +56,9 @@ export async function loadExternalArtifact(
   contractName: string,
   classId?: string
 ): Promise<ExternalArtifactResult> {
+  // Normalize to match fetchAndExtractTgz which stores keys as lowercase
+  contractName = contractName.toLowerCase();
+
   // 1. Check cache
   const storage = getArtifactStorageService();
   const stored = await storage.get(cacheKey(tgzUrl, contractName, classId));
