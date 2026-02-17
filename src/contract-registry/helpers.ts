@@ -18,7 +18,7 @@ export const createContractConfig = <
         `Contract "${name}" is missing required "deployParams" function`
       );
     }
-    if (!config.artifactSources) {
+    if (typeof config.artifactSources !== 'function') {
       throw new Error(
         `Contract "${name}" is missing required "artifactSources" function`
       );
