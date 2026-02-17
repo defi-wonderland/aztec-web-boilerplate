@@ -3,6 +3,7 @@ import {
   type ContractArtifact,
   type NoirCompiledContract,
 } from '@aztec/aztec.js/abi';
+import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
 import { ArtifactErrorFactory } from '../../../utils/errors';
 import {
   prepareArtifactForStorage,
@@ -18,14 +19,25 @@ const CACHE_PREFIX = `external:${CACHE_VERSION}`;
 /** Timeout for fetching a tgz package (30 seconds) */
 const TGZ_FETCH_TIMEOUT_MS = 30_000;
 
+/** Maximum number of fetch attempts before giving up */
+const TGZ_MAX_ATTEMPTS = 2;
+
+/** Delay before retrying a failed fetch (ms) */
+const TGZ_RETRY_DELAY_MS = 1_500;
+
 /** In-flight tgz fetch+extract dedup map (keyed by tgz URL) */
 const inflightExtractions = new Map<
   string,
   Promise<Map<string, ContractArtifact>>
 >();
 
-function cacheKey(tgzUrl: string, contractName: string): string {
-  return `${CACHE_PREFIX}:${tgzUrl}:${contractName}`;
+function cacheKey(
+  tgzUrl: string,
+  contractName: string,
+  classId?: string
+): string {
+  const base = `${CACHE_PREFIX}:${tgzUrl}:${contractName}`;
+  return classId ? `${base}:${classId}` : base;
 }
 
 interface ExternalArtifactResult {
@@ -35,17 +47,18 @@ interface ExternalArtifactResult {
 
 /**
  * Load a single contract artifact from a tgz URL.
- * - Checks IndexedDB cache first
+ * - Checks IndexedDB cache first (keyed by url + name + classId)
  * - On miss: fetches tgz (deduped across concurrent calls), extracts all
  *   artifacts, eagerly caches all, returns the requested one
  */
 export async function loadExternalArtifact(
   tgzUrl: string,
-  contractName: string
+  contractName: string,
+  classId?: string
 ): Promise<ExternalArtifactResult> {
   // 1. Check cache
   const storage = getArtifactStorageService();
-  const stored = await storage.get(cacheKey(tgzUrl, contractName));
+  const stored = await storage.get(cacheKey(tgzUrl, contractName, classId));
   if (stored) {
     try {
       const parsed = JSON.parse(stored) as SerializedArtifact;
@@ -53,12 +66,17 @@ export async function loadExternalArtifact(
       const hasParameters = restored.functions.every(
         (fn) => 'parameters' in fn
       );
-      if (hasParameters) {
+      if (!hasParameters) {
+        console.warn(
+          `[externalTgz] Stale cache format for "${contractName}", re-fetching`
+        );
+      } else if (classId && !(await verifyClassId(restored, classId))) {
+        console.warn(
+          `[externalTgz] Cached classId mismatch for "${contractName}", re-fetching`
+        );
+      } else {
         return { artifact: restored, sourceLabel: 'external' };
       }
-      console.warn(
-        `[externalTgz] Stale cache for "${contractName}", re-fetching`
-      );
     } catch {
       // Corrupted cache — will re-fetch
     }
@@ -79,44 +97,75 @@ export async function loadExternalArtifact(
     }
   }
 
-  // 3. Eagerly cache ALL extracted artifacts
+  // 3. Eagerly cache ALL extracted artifacts (without classId — only the
+  //    specifically requested contract gets the classId-qualified key)
   for (const [name, art] of allArtifacts) {
     const serialized = JSON.stringify(prepareArtifactForStorage(art));
-    storage.save(cacheKey(tgzUrl, name), serialized).catch(() => {});
+    const key =
+      name === contractName
+        ? cacheKey(tgzUrl, name, classId)
+        : cacheKey(tgzUrl, name);
+    storage.save(key, serialized).catch(() => {});
   }
 
-  // 4. Return requested
+  // 4. Return requested (verify classId if provided)
   const artifact = allArtifacts.get(contractName);
   if (!artifact) {
     throw ArtifactErrorFactory.contractNotInPackage(contractName, tgzUrl);
   }
+  if (classId && !(await verifyClassId(artifact, classId))) {
+    const computed = await computeClassId(artifact);
+    throw ArtifactErrorFactory.classIdMismatch(classId, computed);
+  }
   return { artifact, sourceLabel: 'external' };
+}
+
+/** Fetch with a single retry on transient failures (network errors, 5xx). */
+async function fetchWithRetry(tgzUrl: string): Promise<ArrayBuffer> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= TGZ_MAX_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(tgzUrl, {
+        signal: AbortSignal.timeout(TGZ_FETCH_TIMEOUT_MS),
+      });
+      if (response.ok) {
+        return response.arrayBuffer();
+      }
+      // 4xx errors are not retriable (except 429)
+      if (response.status < 500 && response.status !== 429) {
+        throw ArtifactErrorFactory.fetchFailed(
+          response.status,
+          response.statusText
+        );
+      }
+      lastError = ArtifactErrorFactory.fetchFailed(
+        response.status,
+        response.statusText
+      );
+    } catch (err) {
+      lastError = err;
+    }
+    if (attempt < TGZ_MAX_ATTEMPTS) {
+      console.warn(
+        `[externalTgz] Fetch attempt ${attempt} failed, retrying in ${TGZ_RETRY_DELAY_MS}ms...`
+      );
+      await new Promise((r) => setTimeout(r, TGZ_RETRY_DELAY_MS));
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : ArtifactErrorFactory.tgzFetchFailed(tgzUrl, lastError);
 }
 
 /**
  * Fetch a tgz, extract, and parse all contract artifacts from it.
+ * Retries once on transient failures (network errors, 5xx).
  * Returns a Map of lowercase contract name → ContractArtifact.
  */
 async function fetchAndExtractTgz(
   tgzUrl: string
 ): Promise<Map<string, ContractArtifact>> {
-  let response: Response;
-  try {
-    response = await fetch(tgzUrl, {
-      signal: AbortSignal.timeout(TGZ_FETCH_TIMEOUT_MS),
-    });
-  } catch (err) {
-    throw ArtifactErrorFactory.tgzFetchFailed(tgzUrl, err);
-  }
-
-  if (!response.ok) {
-    throw ArtifactErrorFactory.fetchFailed(
-      response.status,
-      response.statusText
-    );
-  }
-
-  const buffer = await response.arrayBuffer();
+  const buffer = await fetchWithRetry(tgzUrl);
 
   let entries: TarEntry[];
   try {
@@ -162,4 +211,17 @@ async function fetchAndExtractTgz(
   }
 
   return artifacts;
+}
+
+async function computeClassId(artifact: ContractArtifact): Promise<string> {
+  const contractClass = await getContractClassFromArtifact(artifact);
+  return contractClass.id.toString();
+}
+
+async function verifyClassId(
+  artifact: ContractArtifact,
+  expectedClassId: string
+): Promise<boolean> {
+  const computed = await computeClassId(artifact);
+  return computed === expectedClassId;
 }

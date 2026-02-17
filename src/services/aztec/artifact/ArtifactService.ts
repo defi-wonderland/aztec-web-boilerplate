@@ -58,6 +58,7 @@ export class ArtifactService {
     const contractNames = Object.keys(contracts);
 
     // Load each contract with its own fallback chain, in parallel
+    // (registry sources without a classId are silently skipped)
     const results = await Promise.all(
       contractNames.map((name) => {
         const contractDef = contracts[name];
@@ -73,7 +74,7 @@ export class ArtifactService {
     contractNames.forEach((name, i) => {
       const result = results[i];
       artifacts[name] = result.artifact;
-      if (result.sourceLabel !== 'local') {
+      if (sourceLabel === 'local' && result.sourceLabel !== 'local') {
         sourceLabel = result.sourceLabel;
       }
     });
@@ -182,7 +183,7 @@ export class ArtifactService {
         };
       }
       case 'external':
-        return loadExternalArtifact(source.url, contractName);
+        return loadExternalArtifact(source.url, contractName, classId);
     }
   }
 }
