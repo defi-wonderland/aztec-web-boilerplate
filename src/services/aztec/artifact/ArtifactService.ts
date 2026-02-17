@@ -1,28 +1,38 @@
-import { ArtifactRegistryService } from '../artifactRegistry';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import {
+  normalizeArtifactSource,
+  type ArtifactSourceConfig,
+  type NormalizedArtifactSource,
+} from '../../../types/artifactSource';
+import {
+  RegistryArtifactProvider,
+  ExternalArtifactProvider,
+  type IArtifactProvider,
+} from './providers';
 import type { NetworkConfig } from '../../../config/networks/types';
-import type { ArtifactSource } from '../../../types/artifactRegistry';
-import type { ArtifactOverrides } from '../../../types/contractRegistry';
+import type { ContractConfigMap } from '../../../contract-registry/types';
 
-export type { ArtifactOverrides, ArtifactSource };
-
-export type LoadSource = 'local' | ArtifactSource;
+/** Resolved artifacts keyed by contract name */
+export type ResolvedArtifacts = Record<string, ContractArtifact>;
 
 export interface LoadArtifactsResult {
-  artifacts: ArtifactOverrides | null;
+  artifacts: ResolvedArtifacts;
   elapsedMs: number;
-  source: LoadSource;
+  sourceLabel: string;
+}
+
+interface ContractLoadResult {
+  artifact: ContractArtifact;
+  sourceLabel: string;
 }
 
 /**
- * Service for loading contract artifacts based on network configuration.
+ * Service for loading contract artifacts based on per-contract configuration.
  *
- * Responsibilities:
- * - Determines artifact source (local vs registry) from config
- * - Fetches artifacts from external registry when needed
- * - Delegates caching to ArtifactRegistryService
- *
- * For 'local' mode: Returns null (artifacts come from contractsConfig)
- * For 'registry' mode: Fetches from external registry using classIds
+ * Each contract defines its own ordered fallback chain of sources via
+ * `contractConfig.artifactSources(networkConfig)`. Sources are tried in order,
+ * first success wins. Every contract must have at least one source that
+ * resolves (typically a `{ local: artifact }` as the final fallback).
  */
 export class ArtifactService {
   private static instance: ArtifactService | null = null;
@@ -37,69 +47,143 @@ export class ArtifactService {
   }
 
   /**
-   * Load artifacts for a network configuration.
+   * Load artifacts for all contracts in the config map using per-contract sources.
+   * Each contract's fallback chain is tried independently in parallel.
    *
-   * @returns LoadArtifactsResult with artifacts (null for local mode)
-   * @throws Error if registry mode but missing required config
+   * @returns All resolved artifacts (every contract gets an artifact)
    */
-  async loadArtifacts(config: NetworkConfig): Promise<LoadArtifactsResult> {
+  async loadArtifacts(
+    config: NetworkConfig,
+    contracts: ContractConfigMap
+  ): Promise<LoadArtifactsResult> {
     const start = performance.now();
 
-    if (config.artifactSource === 'local') {
-      return {
-        artifacts: null,
-        elapsedMs: performance.now() - start,
-        source: 'local',
-      };
-    }
+    const contractNames = Object.keys(contracts);
 
-    const { artifacts, source } = await this.fetchFromRegistry(config);
+    // Load each contract with its own fallback chain, in parallel
+    const results = await Promise.all(
+      contractNames.map((name) => {
+        const contractDef = contracts[name];
+        const sources = contractDef.artifactSources(config);
+        const classId = contractDef.classId?.(config);
+        return this.loadWithFallback(name, sources, classId);
+      })
+    );
+
+    // Merge results
+    const artifacts: ResolvedArtifacts = {};
+    const sourceLabels: string[] = [];
+
+    contractNames.forEach((name, i) => {
+      const { artifact, sourceLabel } = results[i];
+      artifacts[name] = artifact;
+      if (sourceLabel !== 'local' && !sourceLabels.includes(sourceLabel)) {
+        sourceLabels.push(sourceLabel);
+      }
+    });
+
     return {
       artifacts,
       elapsedMs: performance.now() - start,
-      source,
+      sourceLabel: sourceLabels.length > 0 ? sourceLabels.join(', ') : 'local',
     };
   }
 
-  private async fetchFromRegistry(
-    config: NetworkConfig
-  ): Promise<{ artifacts: ArtifactOverrides; source: ArtifactSource }> {
-    const registryUrl = config.artifactRegistryUrl;
-    if (!registryUrl) {
+  /**
+   * Try each source in the fallback chain for a single contract.
+   * Returns on first success. All sources exhausted without success is an error.
+   */
+  private async loadWithFallback(
+    contractName: string,
+    sources: ArtifactSourceConfig[],
+    classId?: string
+  ): Promise<ContractLoadResult> {
+    if (sources.length === 0) {
       throw new Error(
-        `[ArtifactService] artifactRegistryUrl required for registry mode (${config.name})`
+        `Contract "${contractName}" has no artifact sources configured`
       );
     }
 
-    const classIds = config.classIds;
-    if (!classIds || Object.keys(classIds).length === 0) {
-      throw new Error(
-        `[ArtifactService] classIds required for registry mode (${config.name})`
+    const normalized = sources.map(normalizeArtifactSource);
+    const total = normalized.length;
+
+    for (let i = 0; i < total; i++) {
+      const source = normalized[i];
+      const step = i + 1;
+      const label = this.sourceLabel(source);
+
+      // Local source — return the bundled artifact directly
+      if (source.type === 'local') {
+        console.log(
+          `[ArtifactService] ${step}/${total} "${contractName}" — using bundled artifact`
+        );
+        return { artifact: source.artifact, sourceLabel: 'local' };
+      }
+
+      console.log(
+        `[ArtifactService] ${step}/${total} "${contractName}" — fetching from ${label}...`
       );
+
+      try {
+        const provider = this.createProvider(source, classId);
+        const result = await provider.loadArtifacts([contractName]);
+        const artifact = result.artifacts[contractName];
+        if (artifact) {
+          console.log(
+            `[ArtifactService] "${contractName}" — loaded from ${label}`
+          );
+          return { artifact, sourceLabel: result.sourceLabel };
+        }
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        const nextSource =
+          i + 1 < total ? this.sourceLabel(normalized[i + 1]) : null;
+        if (nextSource) {
+          console.warn(
+            `[ArtifactService] "${contractName}" — ${label} failed, falling back to ${nextSource}. Reason: ${error.message}`
+          );
+        } else {
+          console.error(
+            `[ArtifactService] "${contractName}" — ${label} failed, no more sources. Reason: ${error.message}`
+          );
+        }
+      }
     }
 
-    const registryService = ArtifactRegistryService.getInstance(registryUrl);
-    const entries = Object.entries(classIds);
-
-    const results = await Promise.all(
-      entries.map(([, classId]) => registryService.getArtifact(classId))
+    throw new Error(
+      `All artifact sources failed for contract "${contractName}"`
     );
+  }
 
-    const artifacts: ArtifactOverrides = {};
-    entries.forEach(([contractName], index) => {
-      artifacts[contractName] = results[index].artifact;
-    });
+  private sourceLabel(source: NormalizedArtifactSource): string {
+    switch (source.type) {
+      case 'registry':
+        return `registry (${source.url})`;
+      case 'external':
+        return `external (${source.url})`;
+      case 'local':
+        return 'bundled artifact';
+    }
+  }
 
-    const sourcePriority: Record<ArtifactSource, number> = {
-      memory: 0,
-      indexeddb: 1,
-      network: 2,
-    };
-    const sources = results.map((r) => r.source);
-    const aggregatedSource = sources.reduce((worst, current) =>
-      sourcePriority[current] > sourcePriority[worst] ? current : worst
-    );
-
-    return { artifacts, source: aggregatedSource };
+  /** Create the appropriate provider for a source config */
+  private createProvider(
+    source: Extract<
+      NormalizedArtifactSource,
+      { type: 'registry' | 'external' }
+    >,
+    classId?: string
+  ): IArtifactProvider {
+    switch (source.type) {
+      case 'registry':
+        if (!classId) {
+          throw new Error(
+            'Registry source requires a classId but none was provided'
+          );
+        }
+        return new RegistryArtifactProvider(source.url, classId);
+      case 'external':
+        return new ExternalArtifactProvider(source.url);
+    }
   }
 }

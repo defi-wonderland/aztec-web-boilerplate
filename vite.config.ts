@@ -101,7 +101,7 @@ const nodeBuiltinsShim = (): Plugin => ({
   },
 });
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const artifactRegistryUrl =
     env.VITE_ARTIFACT_REGISTRY_URL || DEFAULT_ARTIFACT_REGISTRY_URL;
@@ -195,15 +195,21 @@ export default defineConfig(({ command, mode }) => {
       fs: {
         allow: ['..'],
       },
-      proxy: artifactRegistryUrl
-        ? {
-            '/artifact-registry': {
-              target: artifactRegistryUrl,
-              changeOrigin: true,
-              rewrite: (path) => path.replace(/^\/artifact-registry/, ''),
-            },
-          }
-        : undefined,
+      proxy: {
+        '/github-releases': {
+          target: 'https://github.com',
+          changeOrigin: true,
+          followRedirects: true,
+          rewrite: (path) => path.replace(/^\/github-releases/, ''),
+        },
+        ...(artifactRegistryUrl && {
+          '/artifact-registry': {
+            target: artifactRegistryUrl,
+            changeOrigin: true,
+            rewrite: (path: string) => path.replace(/^\/artifact-registry/, ''),
+          },
+        }),
+      },
     },
     preview: {
       port: 3000,

@@ -6,7 +6,6 @@ import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
 import { contractsConfig } from '../config/contracts';
 import {
   ContractRegistry,
-  getContractsForConfig,
   type ContractConfigMap,
   type ContractNames,
 } from '../contract-registry';
@@ -14,6 +13,7 @@ import { useArtifacts, useToast } from '../hooks';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { iconSize } from '../utils';
 import type { NetworkConfig } from '../config/networks';
+import type { ResolvedArtifacts } from '../services/aztec/artifact';
 
 /**
  * Get contracts to load at initialization (lazyRegister !== true)
@@ -34,9 +34,10 @@ interface ContractRegistryInitializerProps {
 const createRegistry = <T extends ContractConfigMap>(
   pxe: PXE,
   contracts: T,
-  config: NetworkConfig
+  config: NetworkConfig,
+  artifacts: ResolvedArtifacts
 ) => {
-  return new ContractRegistry(pxe, contracts, config);
+  return new ContractRegistry(pxe, contracts, config, artifacts);
 };
 
 export function ContractRegistryInitializer<
@@ -63,15 +64,10 @@ export function ContractRegistryInitializer<
   const isReady =
     isConnected && isPXEInitialized && pxe !== null && artifactsReady;
 
-  const contracts = useMemo(() => {
-    if (!artifactsReady) return null;
-    return (artifacts
-      ? getContractsForConfig(contractsConfig, artifacts)
-      : contractsConfig) as unknown as T;
-  }, [artifacts, artifactsReady]);
+  const contracts = contractsConfig as unknown as T;
 
   const initialContracts = useMemo(
-    () => (contracts ? getInitialContracts(contracts) : []),
+    () => getInitialContracts(contracts),
     [contracts]
   );
 
@@ -105,7 +101,7 @@ export function ContractRegistryInitializer<
   );
 
   useEffect(() => {
-    if (!isReady || !contracts || !pxe || initializingRef.current) {
+    if (!isReady || !artifacts || !pxe || initializingRef.current) {
       return;
     }
 
@@ -113,7 +109,12 @@ export function ContractRegistryInitializer<
 
     const initializeRegistry = async () => {
       try {
-        const registry = createRegistry(pxe, contracts, currentConfig);
+        const registry = createRegistry(
+          pxe,
+          contracts,
+          currentConfig,
+          artifacts
+        );
         registryRef.current = registry;
         setRegistry(registry);
 
@@ -157,6 +158,7 @@ export function ContractRegistryInitializer<
     initializeRegistry();
   }, [
     addToast,
+    artifacts,
     contracts,
     currentConfig,
     initialContracts,

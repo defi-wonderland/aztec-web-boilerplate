@@ -3,7 +3,7 @@ import type {
   IContractRegistry,
   ContractConfigMap,
 } from '../../contract-registry';
-import type { ArtifactOverrides } from '../../services/aztec/artifact';
+import type { ResolvedArtifacts } from '../../services/aztec/artifact';
 import type {
   ContractRegistryStatus,
   ArtifactStatus,
@@ -12,14 +12,14 @@ import type {
 type State = {
   registry: IContractRegistry<ContractConfigMap> | null;
   status: ContractRegistryStatus;
-  artifacts: ArtifactOverrides | null;
+  artifacts: ResolvedArtifacts | null;
   artifactStatus: ArtifactStatus;
 };
 
 type Actions = {
   setRegistry: (registry: IContractRegistry<ContractConfigMap> | null) => void;
   setStatus: (status: ContractRegistryStatus) => void;
-  setArtifacts: (artifacts: ArtifactOverrides | null) => void;
+  setArtifacts: (artifacts: ResolvedArtifacts | null) => void;
   setArtifactStatus: (status: ArtifactStatus) => void;
   reset: () => void;
 };

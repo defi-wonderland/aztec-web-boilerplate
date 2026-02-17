@@ -1,7 +1,7 @@
 import { useRef, useLayoutEffect } from 'react';
+import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
 import { useWriteContract } from '../contracts/useWriteContract';

@@ -4,17 +4,14 @@ import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { contractsConfig } from '../config/contracts';
 import { getChainId, type AztecChainId } from '../config/networks/constants';
-import {
-  getContractsForConfig,
-  type ContractNames,
-} from '../contract-registry';
+import { type ContractNames } from '../contract-registry';
 import type { NetworkConfig } from '../config/networks';
-import type { ArtifactOverrides } from '../services/aztec/artifact';
+import type { ResolvedArtifacts } from '../services/aztec/artifact';
 import type { RegisterContractOp } from '../types/browserWallet';
 
 interface BuildRegisterContractOperationsOptions {
   config: NetworkConfig;
-  artifacts?: ArtifactOverrides | null;
+  artifacts: ResolvedArtifacts;
   chainOverride?: AztecChainId;
 }
 
@@ -30,24 +27,21 @@ export const buildRegisterContractOperations = async ({
 }: BuildRegisterContractOperationsOptions): Promise<RegisterContractOp[]> => {
   const chain = chainOverride ?? getChainId(config.name);
   const operations: RegisterContractOp[] = [];
-  const contracts = getContractsForConfig(
-    contractsConfig,
-    artifacts ?? undefined
-  );
 
-  const contractNames = Object.keys(contracts) as ContractNames<
+  const contractNames = Object.keys(contractsConfig) as ContractNames<
     typeof contractsConfig
   >[];
 
   for (const name of contractNames) {
-    const definition = contracts[name];
-    if (!definition) {
+    const definition = contractsConfig[name];
+    const artifact = artifacts[name];
+    if (!definition || !artifact) {
       continue;
     }
 
     const deployParams = definition.deployParams(config);
     const instance = await getContractInstanceFromInstantiationParams(
-      definition.artifact,
+      artifact,
       {
         salt: deployParams.salt,
         deployer: deployParams.deployer,
@@ -61,7 +55,7 @@ export const buildRegisterContractOperations = async ({
       chain,
       address: definition.address(config),
       instance,
-      artifact: definition.artifact,
+      artifact,
     });
   }
 

@@ -1,6 +1,7 @@
 export {
   ArtifactService,
-  type ArtifactOverrides,
+  type ResolvedArtifacts,
   type LoadArtifactsResult,
-  type LoadSource,
 } from './ArtifactService';
+
+export type { IArtifactProvider, ArtifactProviderResult } from './providers';

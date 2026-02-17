@@ -2,8 +2,9 @@ import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { Fr } from '@aztec/aztec.js/fields';
 import type { Wallet } from '@aztec/aztec.js/wallet';
-import type { ContractArtifact, FunctionAbi } from '@aztec/stdlib/abi';
+import type { FunctionAbi } from '@aztec/stdlib/abi';
 import type { NetworkConfig } from '../config/networks';
+import type { ArtifactSourceConfig } from '../types/artifactSource';
 
 /**
  * Status of a contract in the registry
@@ -38,16 +39,18 @@ export interface ContractConfigDefinition<
   TConfig = NetworkConfig,
   TContract = unknown,
 > {
-  /** The contract artifact containing ABI and bytecode */
-  artifact: ContractArtifact;
-  /** The contract class with static `at` method for creating callable instances */
-  contract: ContractClass<TContract>;
+  /** The contract class with static `at` method for creating callable instances (optional for external-only contracts) */
+  contract?: ContractClass<TContract>;
   /** Function to derive the expected contract address from app config */
   address: (config: TConfig) => string;
   /** Function to derive deployment parameters from app config */
   deployParams: (config: TConfig) => ContractDeployParams;
   /** If true, contract won't be registered at init (on-demand only). Default: false */
   lazyRegister?: boolean;
+  /** Ordered fallback chain of artifact sources for this contract (first success wins) */
+  artifactSources: (config: TConfig) => ArtifactSourceConfig[];
+  /** Class ID used by registry sources to look up this contract's artifact */
+  classId?: (config: TConfig) => string | undefined;
 }
 
 /**
@@ -120,8 +123,6 @@ export interface IContractRegistry<T extends ContractConfigMap> {
   getInstance(name: ContractNames<T>): ContractInstanceWithAddress | null;
   /** Get the status of a contract */
   getStatus(name: ContractNames<T>): ContractStatus;
-  /** Get the contract class for creating callable instances */
-  getContractClass(name: ContractNames<T>): ContractClass | null;
   /** Register a single contract (no-op if already registered) */
   register(name: ContractNames<T>): Promise<void>;
   /** Ensure contracts are registered (syncs from storage first, then registers missing) */

@@ -13,6 +13,11 @@ export const ArtifactErrorCode = {
   ARTIFACT_FETCH_FAILED: 'ARTIFACT_FETCH_FAILED',
   ARTIFACT_FETCH_TIMEOUT: 'ARTIFACT_FETCH_TIMEOUT',
 
+  // External/tgz errors
+  ARTIFACT_TGZ_FETCH_FAILED: 'ARTIFACT_TGZ_FETCH_FAILED',
+  ARTIFACT_TGZ_EXTRACT_FAILED: 'ARTIFACT_TGZ_EXTRACT_FAILED',
+  ARTIFACT_CONTRACT_NOT_IN_PACKAGE: 'ARTIFACT_CONTRACT_NOT_IN_PACKAGE',
+
   // Validation errors
   ARTIFACT_CLASS_ID_MISMATCH: 'ARTIFACT_CLASS_ID_MISMATCH',
   ARTIFACT_TOO_LARGE: 'ARTIFACT_TOO_LARGE',
@@ -105,6 +110,28 @@ export const ArtifactErrorFactory = {
     new ArtifactFetchError(
       `Timeout fetching artifact for classId: ${classId}`,
       ArtifactErrorCode.ARTIFACT_FETCH_TIMEOUT
+    ),
+
+  // External/tgz errors
+  tgzFetchFailed: (url: string, cause?: unknown): ArtifactFetchError =>
+    new ArtifactFetchError(
+      `Failed to fetch artifact package from: ${url}`,
+      ArtifactErrorCode.ARTIFACT_TGZ_FETCH_FAILED,
+      undefined,
+      cause
+    ),
+
+  tgzExtractFailed: (url: string, cause?: unknown): ArtifactError =>
+    new ArtifactError(
+      `Failed to extract artifact package from: ${url}`,
+      ArtifactErrorCode.ARTIFACT_TGZ_EXTRACT_FAILED,
+      cause
+    ),
+
+  contractNotInPackage: (contractName: string, url: string): ArtifactError =>
+    new ArtifactError(
+      `Contract "${contractName}" not found in package: ${url}`,
+      ArtifactErrorCode.ARTIFACT_CONTRACT_NOT_IN_PACKAGE
     ),
 
   // Validation errors

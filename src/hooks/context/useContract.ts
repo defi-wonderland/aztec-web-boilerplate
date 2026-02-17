@@ -9,7 +9,6 @@ import {
 } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
 import {
-  getContractsForConfig,
   type ContractConfigMap,
   type ContractStatus,
   type UseContractReturn,
@@ -66,15 +65,12 @@ export function useContract<K extends ContractName>(
   const [error, setError] = useState<Error | null>(null);
 
   const getContractDefinition = useCallback(() => {
-    const contracts = getContractsForConfig(
-      contractsConfig,
-      artifacts ?? undefined
-    );
     return (
-      (contracts as ContractConfigMap)[name as keyof typeof contractsConfig] ??
-      null
+      (contractsConfig as ContractConfigMap)[
+        name as keyof typeof contractsConfig
+      ] ?? null
     );
-  }, [artifacts, name]);
+  }, [name]);
 
   /**
    * For external wallets, we create a proxy marker instead of a real contract instance.
@@ -127,11 +123,12 @@ export function useContract<K extends ContractName>(
         const instance = registry.getInstance(name);
         const definition = getContractDefinition();
 
-        if (instance && definition) {
+        const resolvedArtifact = artifacts?.[name as string];
+        if (instance && definition && resolvedArtifact) {
           hasCreatedContract.current = true;
           try {
             const callableContract = await queuePxeCall(async () =>
-              Contract.at(instance.address, definition.artifact, wallet)
+              Contract.at(instance.address, resolvedArtifact, wallet)
             );
             console.log(
               `[useContract:${String(name)}] ✅ Callable contract created`
@@ -155,7 +152,14 @@ export function useContract<K extends ContractName>(
 
     const unsubscribe = registry.subscribe(updateState);
     return unsubscribe;
-  }, [registry, name, wallet, isBrowserWallet, getContractDefinition]);
+  }, [
+    registry,
+    name,
+    wallet,
+    isBrowserWallet,
+    getContractDefinition,
+    artifacts,
+  ]);
 
   useEffect(() => {
     if (!registry || registryStatus !== 'ready' || isBrowserWallet) {

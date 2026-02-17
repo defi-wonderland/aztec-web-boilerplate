@@ -32,5 +32,4 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   tokenDeploymentSalt: deployment.tokenContract.salt,
   proverEnabled: env.proverEnabled,
   isTestnet: false,
-  artifactSource: 'local',
 };
