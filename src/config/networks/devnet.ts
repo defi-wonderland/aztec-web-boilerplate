@@ -1,4 +1,5 @@
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
+import { getEnv } from '../../utils/env';
 import { DEFAULT_ARTIFACT_REGISTRY_URL } from './constants';
 import { NetworkConfig } from './types';
 
@@ -23,7 +24,7 @@ export const DEVNET_CONFIG: NetworkConfig = {
   deployerAddress: AztecAddress.ZERO.toString(),
   dripperDeploymentSalt: '1337',
   tokenDeploymentSalt: '1337',
-  proverEnabled: true,
+  proverEnabled: getEnv().proverEnabled,
   isTestnet: true,
   artifactSource: 'registry',
   artifactRegistryUrl:

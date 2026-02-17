@@ -26,7 +26,7 @@ export const getEnv = (): AppEnv => {
 
   return {
     aztecNodeUrl: raw.VITE_AZTEC_NODE_URL,
-    proverEnabled: raw.VITE_PROVER_ENABLED === 'true',
+    proverEnabled: raw.VITE_PROVER_ENABLED !== 'false',
     embeddedAccountSecretPhrase: raw.VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE,
     embeddedAccountSecretKey: raw.VITE_EMBEDDED_ACCOUNT_SECRET_KEY,
     commonSalt: raw.VITE_COMMON_SALT,
