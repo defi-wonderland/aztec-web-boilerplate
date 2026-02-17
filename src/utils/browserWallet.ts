@@ -34,9 +34,15 @@ export const buildRegisterContractOperations = async ({
 
   for (const name of contractNames) {
     const definition = contractsConfig[name];
-    const artifact = artifacts[name];
-    if (!definition || !artifact) {
+    if (!definition) {
       continue;
+    }
+    const artifact = artifacts[name];
+    if (!artifact) {
+      throw new Error(
+        `Missing resolved artifact for contract "${name}". ` +
+          `Ensure artifact sources are configured and resolved before registering.`
+      );
     }
 
     const deployParams = definition.deployParams(config);

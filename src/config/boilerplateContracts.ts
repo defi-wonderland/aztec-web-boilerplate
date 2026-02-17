@@ -64,6 +64,7 @@ export const boilerplateContracts = createContractConfig({
    * Dripper contract - Mints tokens to users
    */
   dripper: {
+    contract: DripperContract,
     address: (config) => config.dripperContractAddress,
     deployParams: (config) => ({
       salt: Fr.fromString(config.dripperDeploymentSalt),
@@ -81,6 +82,7 @@ export const boilerplateContracts = createContractConfig({
    * Token contract - WETH
    */
   token: {
+    contract: TokenContract,
     address: (config) => config.tokenContractAddress,
     deployParams: (config) => ({
       salt: Fr.fromString(config.tokenDeploymentSalt),

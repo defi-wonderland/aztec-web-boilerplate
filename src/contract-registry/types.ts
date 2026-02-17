@@ -1,6 +1,7 @@
 import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { Fr } from '@aztec/aztec.js/fields';
+import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { FunctionAbi } from '@aztec/stdlib/abi';
 import type { NetworkConfig } from '../config/networks';
 import type { ArtifactSourceConfig } from '../types/artifactSource';
@@ -25,9 +26,20 @@ export interface ContractDeployParams {
 }
 
 /**
+ * Contract class interface — any class with a static `at` method.
+ * Used purely for type inference so useContract() returns a typed instance.
+ */
+export interface ContractClass<TContract = unknown> {
+  at: (address: AztecAddress, wallet: Wallet) => TContract;
+}
+
+/**
  * Configuration for a single contract in the registry
  */
-export interface ContractConfigDefinition<TConfig = NetworkConfig> {
+export interface ContractConfigDefinition<
+  TConfig = NetworkConfig,
+  TContract = unknown,
+> {
   /** Function to derive the expected contract address from app config */
   address: (config: TConfig) => string;
   /** Function to derive deployment parameters from app config */
@@ -38,6 +50,8 @@ export interface ContractConfigDefinition<TConfig = NetworkConfig> {
   artifactSources: (config: TConfig) => ArtifactSourceConfig[];
   /** Class ID used by registry sources to look up this contract's artifact */
   classId?: (config: TConfig) => string | undefined;
+  /** Contract class for type inference. Provides typed instances via useContract(). */
+  contract?: ContractClass<TContract>;
 }
 
 /**
@@ -45,7 +59,7 @@ export interface ContractConfigDefinition<TConfig = NetworkConfig> {
  */
 export type ContractConfigMap<TConfig = NetworkConfig> = Record<
   string,
-  ContractConfigDefinition<TConfig>
+  ContractConfigDefinition<TConfig, unknown>
 >;
 
 /**
