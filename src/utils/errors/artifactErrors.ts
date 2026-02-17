@@ -58,6 +58,7 @@ export class ArtifactFetchError extends ArtifactError {
   ) {
     const isRetriable =
       code === ArtifactErrorCode.ARTIFACT_FETCH_TIMEOUT ||
+      code === ArtifactErrorCode.ARTIFACT_TGZ_FETCH_FAILED ||
       (statusCode !== undefined && statusCode >= 500);
     super(message, code, cause, isRetriable);
     this.name = 'ArtifactFetchError';
