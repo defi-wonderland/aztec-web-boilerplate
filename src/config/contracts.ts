@@ -11,7 +11,6 @@ import { boilerplateContracts } from './boilerplateContracts';
  *   artifactSources  — ordered fallback chain of artifact sources (first success wins)
  *
  * Optional fields:
- *   contract         — typed contract class (for TypeScript inference)
  *   classId          — class ID for registry lookups
  *   lazyRegister     — if true, register on-demand instead of at startup
  */
@@ -21,8 +20,8 @@ export const contractsConfig = createContractConfig({
 
   // Add your own contracts here:
   // myContract: {
-  //   contract: MyContract,
   //   address: (config) => config.myContractAddress,
   //   deployParams: (config) => ({ ... }),
+  //   artifactSources: (config) => [...],
   // },
 });

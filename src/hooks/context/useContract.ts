@@ -13,7 +13,6 @@ import {
   type ContractStatus,
   type UseContractReturn,
   type ContractName,
-  type ContractType,
 } from '../../contract-registry';
 import {
   useContractRegistryStore,
@@ -35,22 +34,20 @@ interface ExternalWalletContractProxy {
  * 2. Creating a callable contract instance using the wallet
  * 3. Status tracking and error handling
  *
- * Contract type is automatically inferred from the contract name.
+ * Pass a type parameter to get a typed contract instance.
  *
  * @example
  * ```typescript
- * const { contract, isReady } = useContract('dripper');
+ * const { contract, isReady } = useContract<DripperContract>('dripper');
  *
  * if (isReady) {
- *   // contract is typed as DripperContract
  *   await contract.methods.drip_to_public(amount).send();
  * }
  * ```
  */
-export function useContract<K extends ContractName>(
-  name: K
-): UseContractReturn<ContractType<K>> {
-  type TContract = ContractType<K>;
+export function useContract<TContract = unknown>(
+  name: ContractName
+): UseContractReturn<TContract> {
   const registry = useContractRegistryStore((state) => state.registry);
   const artifacts = useContractRegistryStore((state) => state.artifacts);
   const registryStatus = useContractRegistryStatus();

@@ -11,12 +11,7 @@ export type {
   IContractRegistry,
 } from './types';
 
-export type {
-  ContractsConfig,
-  ContractName,
-  ContractTypeMap,
-  ContractType,
-} from './contractTypes';
+export type { ContractsConfig, ContractName } from './contractTypes';
 
 export { createContractConfig, getDeployerAddress } from './helpers';
 
