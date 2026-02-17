@@ -4,11 +4,8 @@ import {
   type ArtifactSourceConfig,
   type NormalizedArtifactSource,
 } from '../../../types/artifactSource';
-import {
-  RegistryArtifactProvider,
-  ExternalArtifactProvider,
-  type IArtifactProvider,
-} from './providers';
+import { ArtifactRegistryService } from '../artifactRegistry';
+import { loadExternalArtifact } from './externalTgz';
 import type { NetworkConfig } from '../../../config/networks/types';
 import type { ContractConfigMap } from '../../../contract-registry/types';
 
@@ -125,15 +122,11 @@ export class ArtifactService {
       );
 
       try {
-        const provider = this.createProvider(source, classId);
-        const result = await provider.loadArtifacts([contractName]);
-        const artifact = result.artifacts[contractName];
-        if (artifact) {
-          console.log(
-            `[ArtifactService] "${contractName}" — loaded from ${label}`
-          );
-          return { artifact, sourceLabel: result.sourceLabel };
-        }
+        const result = await this.loadFromSource(contractName, source, classId);
+        console.log(
+          `[ArtifactService] "${contractName}" — loaded from ${label}`
+        );
+        return result;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         const nextSource =
@@ -166,24 +159,31 @@ export class ArtifactService {
     }
   }
 
-  /** Create the appropriate provider for a source config */
-  private createProvider(
-    source: Extract<
-      NormalizedArtifactSource,
-      { type: 'registry' | 'external' }
-    >,
+  /** Resolve a single contract from a normalized source */
+  private async loadFromSource(
+    contractName: string,
+    source: NormalizedArtifactSource,
     classId?: string
-  ): IArtifactProvider {
+  ): Promise<ContractLoadResult> {
     switch (source.type) {
-      case 'registry':
+      case 'local':
+        return { artifact: source.artifact, sourceLabel: 'local' };
+      case 'registry': {
         if (!classId) {
           throw new Error(
             'Registry source requires a classId but none was provided'
           );
         }
-        return new RegistryArtifactProvider(source.url, classId);
+        const result = await ArtifactRegistryService.getInstance(
+          source.url
+        ).getArtifact(classId);
+        return {
+          artifact: result.artifact,
+          sourceLabel: `registry:${result.source}`,
+        };
+      }
       case 'external':
-        return new ExternalArtifactProvider(source.url);
+        return loadExternalArtifact(source.url, contractName);
     }
   }
 }
