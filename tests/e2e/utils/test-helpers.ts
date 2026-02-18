@@ -12,6 +12,8 @@ export const TIMEOUTS = {
   SHORT: 5000,
   DEFAULT: 30000,
   LONG: 60000,
+  /** Extended timeout for operations that involve client-side proving */
+  PROVING: 300000,
 } as const;
 
 /**
@@ -112,7 +114,7 @@ export async function connectViaEmbeddedWallet(page: Page): Promise<void> {
   console.log('Embedded Wallet clicked, waiting for account creation...');
 
   try {
-    await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.LONG });
+    await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.PROVING });
   } catch {
     // Dump all captured browser logs on failure
     console.error('--- Browser logs (embedded-account) ---');
