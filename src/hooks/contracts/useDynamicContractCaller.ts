@@ -1,10 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { ContractBase } from '@aztec/aztec.js/contracts';
 import { useFeePayment } from '../../store/feePayment';
 import { useReadContract } from './useReadContract';
 import { useWriteContract } from './useWriteContract';
-import type { ContractClassFor } from '../../types/contractTypes';
 
 interface CallParams {
   address: string;
@@ -29,25 +27,11 @@ export const useDynamicContractCaller = (
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // readContract/writeContract expect a ContractClassFor<T> (i.e. a generated
-  // contract class like TokenContract with a real `at` factory). This hook only
-  // has a raw artifact, so we build a shim that provides:
-  //   - `artifact`: the real ABI, used at runtime by Contract.at(address, artifact, wallet)
-  //   - `at`: a dummy — only exists to satisfy the type shape. The typed hooks
-  //     never call it; they use the generic Contract.at() SDK factory instead.
-  const contractShim: ContractClassFor<ContractBase> | null = useMemo(() => {
-    if (!artifact) return null;
-    return {
-      artifact,
-      at: () => ({}),
-    } as unknown as ContractClassFor<ContractBase>;
-  }, [artifact]);
-
   const simulate = useCallback(
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
 
-      if (!contractShim) {
+      if (!artifact) {
         return { success: false, error: 'Artifact not loaded' };
       }
 
@@ -56,7 +40,7 @@ export const useDynamicContractCaller = (
 
       try {
         const result = await readContract({
-          contract: contractShim,
+          artifact,
           address,
           functionName,
           args,
@@ -76,14 +60,14 @@ export const useDynamicContractCaller = (
         setIsSimulating(false);
       }
     },
-    [contractShim, readContract]
+    [artifact, readContract]
   );
 
   const execute = useCallback(
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
 
-      if (!contractShim) {
+      if (!artifact) {
         return { success: false, error: 'Artifact not loaded' };
       }
 
@@ -92,7 +76,7 @@ export const useDynamicContractCaller = (
 
       try {
         const result = await writeContract({
-          contract: contractShim,
+          artifact,
           address,
           functionName,
           args,
@@ -117,7 +101,7 @@ export const useDynamicContractCaller = (
         setIsExecuting(false);
       }
     },
-    [contractShim, writeContract, feePaymentMethod]
+    [artifact, writeContract, feePaymentMethod]
   );
 
   return {

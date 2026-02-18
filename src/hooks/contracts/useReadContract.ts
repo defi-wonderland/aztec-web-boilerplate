@@ -7,7 +7,7 @@ import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../../aztec-wallet';
-import { getContractMethod } from './utils';
+import { getContractMethod, resolveArtifact } from './utils';
 import type {
   SimulateViewsOp,
   BrowserWalletOperationResult,
@@ -17,6 +17,7 @@ import type {
   MethodsOf,
   ReadContractConfig,
   ReadContractResult,
+  DynamicReadContractConfig,
 } from '../../types/contractTypes';
 
 export interface ReadContractParams<
@@ -26,6 +27,9 @@ export interface ReadContractParams<
   /** Contract class - used for type inference and artifact */
   contract: ContractClassFor<TContract>;
 }
+
+/** Params for a dynamic (untyped) read — passes artifact directly. */
+export interface DynamicReadContractParams extends DynamicReadContractConfig {}
 
 // ---- Wallet resolution (shared between readContract and readContracts) ----
 
@@ -134,12 +138,14 @@ export const useReadContract = () => {
       TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
       TResult = unknown,
     >(
-      params: ReadContractParams<TContract, TMethod>
+      params: ReadContractParams<TContract, TMethod> | DynamicReadContractParams
     ): Promise<ReadContractResult<TResult>> => {
       const ctx = resolveWallet();
       if (ctx.type === 'error') {
         return { success: false, error: ctx.error };
       }
+
+      const artifact = resolveArtifact(params);
 
       startPending();
       try {
@@ -177,7 +183,7 @@ export const useReadContract = () => {
         const contractAddress = AztecAddress.fromString(address);
         const contract = await Contract.at(
           contractAddress,
-          params.contract.artifact,
+          artifact,
           ctx.wallet
         );
 
@@ -211,10 +217,10 @@ export const useReadContract = () => {
    */
   const readContracts = useCallback(
     async <
-      const T extends ReadContractParams<
-        ContractBase,
-        MethodsOf<ContractBase>
-      >[],
+      const T extends (
+        | ReadContractParams<ContractBase, MethodsOf<ContractBase>>
+        | DynamicReadContractParams
+      )[],
     >(
       params: [...T]
     ): Promise<{ [K in keyof T]: ReadContractResult }> => {
@@ -282,13 +288,14 @@ export const useReadContract = () => {
         const contractCache = new Map<string, ContractBase>();
 
         for (const param of params) {
-          const cacheKey = `${param.address}:${param.contract.artifact.name}`;
+          const paramArtifact = resolveArtifact(param);
+          const cacheKey = `${param.address}:${paramArtifact.name}`;
           let contract = contractCache.get(cacheKey);
           if (!contract) {
             const contractAddress = AztecAddress.fromString(param.address);
             contract = await Contract.at(
               contractAddress,
-              param.contract.artifact,
+              paramArtifact,
               ctx.wallet
             );
             contractCache.set(cacheKey, contract);

@@ -10,13 +10,14 @@ import {
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
-import { getContractMethod } from './utils';
+import { getContractMethod, resolveArtifact } from './utils';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type {
   ContractClassFor,
   MethodsOf,
   WriteContractConfig,
   WriteContractResult,
+  DynamicWriteContractConfig,
 } from '../../types/contractTypes';
 
 interface UseWriteContractOptions {
@@ -29,15 +30,24 @@ interface UseWriteContractOptions {
   };
 }
 
-interface WriteContractParams<
-  TContract extends ContractBase,
-  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
-> extends WriteContractConfig<TContract, TMethod> {
-  /** Contract class - used for type inference and artifact */
-  contract: ContractClassFor<TContract>;
+interface WriteContractFeeOption {
   /** Fee payment method to use (defaults to DEFAULT_FEE_PAYMENT_METHOD) */
   feePaymentMethod?: FeePaymentMethodType;
 }
+
+interface WriteContractParams<
+  TContract extends ContractBase,
+  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
+> extends WriteContractConfig<TContract, TMethod>,
+    WriteContractFeeOption {
+  /** Contract class - used for type inference and artifact */
+  contract: ContractClassFor<TContract>;
+}
+
+/** Params for a dynamic (untyped) write — passes artifact directly. */
+export interface DynamicWriteContractParams
+  extends DynamicWriteContractConfig,
+    WriteContractFeeOption {}
 
 const getChainFromCaipAccount = (caipAccount: string): string => {
   const parts = caipAccount.split(':');
@@ -73,16 +83,17 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
       TContract extends ContractBase,
       TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
     >(
-      params: WriteContractParams<TContract, TMethod>
+      params:
+        | WriteContractParams<TContract, TMethod>
+        | DynamicWriteContractParams
     ): Promise<WriteContractResult> => {
       const {
-        contract,
         address,
         functionName,
         args,
         feePaymentMethod = DEFAULT_FEE_PAYMENT_METHOD,
       } = params;
-      const artifact = contract.artifact;
+      const artifact = resolveArtifact(params);
 
       if (!connector || !account) {
         return { success: false, error: 'Wallet not connected' };
