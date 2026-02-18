@@ -19,7 +19,10 @@ import type { AztecNetwork } from '../../../../config/networks/constants';
 
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
-const PROVER_ENABLED = getEnv().proverEnabled;
+const getProverEnabled = (networkName: AztecNetwork): boolean => {
+  const networkConfig = AVAILABLE_NETWORKS.find((n) => n.name === networkName);
+  return networkConfig?.proverEnabled ?? getEnv().proverEnabled;
+};
 
 export interface SharedPXEInstance {
   pxe: PXE;
@@ -173,7 +176,7 @@ class SharedPXEServiceClass {
 
     const config = getPXEConfig();
     config.l1Contracts = l1Contracts;
-    config.proverEnabled = PROVER_ENABLED;
+    config.proverEnabled = getProverEnabled(networkName);
 
     const pxe = await createPXE(aztecNode, config, {
       store: pxeStore,

@@ -24,7 +24,7 @@ export const DEVNET_CONFIG: NetworkConfig = {
   deployerAddress: AztecAddress.ZERO.toString(),
   dripperDeploymentSalt: '1337',
   tokenDeploymentSalt: '1337',
-  proverEnabled: getEnv().proverEnabled,
+  proverEnabled: true,
   isTestnet: true,
   artifactSource: 'registry',
   artifactRegistryUrl:
