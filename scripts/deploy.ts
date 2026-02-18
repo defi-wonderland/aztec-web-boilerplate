@@ -556,9 +556,13 @@ async function createAccountAndDeployContract() {
   }
 }
 
-createAccountAndDeployContract().catch((error) => {
-  console.error('❌ Deployment failed:', error);
-  process.exit(1);
-});
+createAccountAndDeployContract()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('❌ Deployment failed:', error);
+    process.exit(1);
+  });
 
 export { createAccountAndDeployContract };
