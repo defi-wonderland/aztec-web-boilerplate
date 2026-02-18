@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   isBrowserWalletConnector,
@@ -152,7 +153,6 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          // Get fee payment method from global store
           const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
             config: currentConfig?.feePaymentContracts ?? {},
             getSponsoredFeePaymentMethod: () =>
@@ -206,12 +206,11 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             };
           }
 
-          const sentTx = tx.send({
+          const result = await tx.send({
             from: account.getAddress(),
-            fee: { paymentMethod },
+            ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+            wait: { timeout, waitForStatus: TxStatus.PROPOSED },
           });
-
-          const result = await sentTx.wait({ timeout });
 
           return {
             success: true,

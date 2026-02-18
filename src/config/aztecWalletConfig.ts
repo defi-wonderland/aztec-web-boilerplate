@@ -8,7 +8,7 @@
  */
 
 import { createAztecWalletConfig } from '../aztec-wallet';
-import { NETWORK_URLS } from './networks';
+import { DEFAULT_NETWORK, NETWORK_URLS } from './networks';
 
 /**
  * Main AztecWallet configuration
@@ -22,15 +22,20 @@ export const aztecWalletConfig = createAztecWalletConfig({
   // Networks
   networks: [
     { name: 'devnet', displayName: 'Devnet', nodeUrl: NETWORK_URLS.devnet },
-    { name: 'sandbox', displayName: 'Sandbox', nodeUrl: NETWORK_URLS.sandbox },
+    {
+      name: 'sandbox',
+      displayName: 'Local Network',
+      nodeUrl: NETWORK_URLS.sandbox,
+    },
   ],
-  defaultNetwork: 'devnet',
+  defaultNetwork: DEFAULT_NETWORK,
 
   // Wallet groups - the single source of truth for which wallets to enable
   walletGroups: {
     embedded: true,
     aztecWallets: ['azguard'],
-    evmWallets: ['metamask', 'rabby'],
+    // TODO: Re-enable when EcdsaKEthSignerAccount contract can be compiled in CI
+    // evmWallets: ['metamask', 'rabby'],
   },
 
   // Show network picker in header ('full' | 'compact' | undefined)

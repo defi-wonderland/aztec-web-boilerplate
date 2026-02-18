@@ -6,10 +6,12 @@ import React, {
   useEffect,
 } from 'react';
 import { Rocket } from 'lucide-react';
-import { useDeployableContracts } from '../../../hooks/useInteractionContracts';
+import {
+  useDeployableContracts,
+  resolveDeployableArtifact,
+} from '../../../hooks/useInteractionContracts';
 import {
   useSelectedDeployable,
-  useSelectedConstructor,
   useIsCustomDeployable,
   useContractActions,
   useDeployFlowState,
@@ -17,12 +19,12 @@ import {
   useFormActions,
 } from '../../../store';
 import { iconSize } from '../../../utils';
-import { constants } from '../../../utils/contractCache';
+import { loadAndPrepareArtifact } from '../../../utils/contractInteraction';
 import {
-  loadAndPrepareArtifact,
-  type ParsedFunction,
-} from '../../../utils/contractInteraction';
-import { toTitleCase } from '../../../utils/string';
+  buildConstructorLabel,
+  type ContractConstructor,
+  type DeployableContract,
+} from '../../../utils/deployableContracts';
 import {
   Button,
   Textarea,
@@ -34,10 +36,7 @@ import {
 } from '../../ui';
 import ParameterInputs from '../ParameterInputs';
 import type { AztecNetwork } from '../../../config/networks/constants';
-import type {
-  ContractConstructor,
-  DeployableContract,
-} from '../../../utils/deployableContracts';
+import type { ParsedFunction } from '../../../types/artifact';
 
 const styles = {
   section: 'flex flex-col gap-4',
@@ -68,14 +67,6 @@ type CustomDeployableResult = {
   error: string | null;
 };
 
-const buildConstructorLabel = (name: string): string => {
-  const labelPart = name
-    .replace(/^constructor_?/, '')
-    .replace(/_/g, ' ')
-    .trim();
-  return labelPart ? toTitleCase(labelPart) : 'Default';
-};
-
 const buildCustomDeployableContract = (
   artifactInput: string
 ): CustomDeployableResult => {
@@ -84,13 +75,9 @@ const buildCustomDeployableContract = (
   }
 
   try {
-    const result = loadAndPrepareArtifact(
-      artifactInput,
-      '',
-      constants.MAX_CACHE_CHARS
-    );
+    const result = loadAndPrepareArtifact(artifactInput, '');
     if (!result.success) {
-      return { contract: null, error: result.error ?? 'Invalid artifact' };
+      return { contract: null, error: result.error.message };
     }
 
     const parsedArtifact = result.parsed;
@@ -135,41 +122,86 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
 }) => {
   const deployableContracts = useDeployableContracts(networkName);
   const selectedDeployable = useSelectedDeployable(networkName);
-  const selectedConstructor = useSelectedConstructor(networkName);
   const isCustomSelected = useIsCustomDeployable();
   const formValues = useFormValues();
   const { deployableId, constructorName } = useDeployFlowState();
-  const { setDeployableId, setSelectedConstructor } = useContractActions();
+  const { setDeployTarget } = useContractActions();
   const { setValue: setFormValue } = useFormActions();
 
   const [customArtifactInput, setCustomArtifactInput] = useState('');
+  const [resolvedDeployable, setResolvedDeployable] =
+    useState<DeployableContract | null>(null);
+  const [isResolvingArtifact, setIsResolvingArtifact] = useState(false);
 
   const customDeployable = useMemo(
     () => buildCustomDeployableContract(customArtifactInput),
     [customArtifactInput]
   );
 
-  const effectiveDeployable = isCustomSelected
-    ? customDeployable.contract
-    : selectedDeployable;
+  // Check if selected contract needs async resolution from registry
+  const needsAsyncResolution = useMemo(() => {
+    if (isCustomSelected || !selectedDeployable) return false;
+    // Has constructors - no need to fetch
+    if (selectedDeployable.constructors.length > 0) return false;
+    // No classId - can't fetch
+    if (!selectedDeployable.classId) return false;
+    return true;
+  }, [isCustomSelected, selectedDeployable]);
+
+  // Resolve artifact from registry for classId-based contracts
+  useEffect(() => {
+    if (!needsAsyncResolution || !selectedDeployable) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    (async () => {
+      setIsResolvingArtifact(true);
+      setResolvedDeployable(null);
+
+      try {
+        const resolved = await resolveDeployableArtifact(selectedDeployable);
+        if (!controller.signal.aborted) {
+          setResolvedDeployable(resolved);
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setResolvedDeployable(selectedDeployable);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsResolvingArtifact(false);
+        }
+      }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [needsAsyncResolution, selectedDeployable]);
+
+  const effectiveDeployable = useMemo(() => {
+    if (isCustomSelected) return customDeployable.contract;
+    if (!selectedDeployable) return null;
+    if (needsAsyncResolution) return resolvedDeployable;
+    return selectedDeployable;
+  }, [
+    isCustomSelected,
+    customDeployable.contract,
+    selectedDeployable,
+    needsAsyncResolution,
+    resolvedDeployable,
+  ]);
 
   const effectiveConstructor = useMemo(() => {
     if (!effectiveDeployable) return null;
-    if (isCustomSelected && customDeployable.contract) {
-      return (
-        customDeployable.contract.constructors.find(
-          (c) => c.name === constructorName
-        ) ?? null
-      );
-    }
-    return selectedConstructor;
-  }, [
-    effectiveDeployable,
-    isCustomSelected,
-    customDeployable.contract,
-    constructorName,
-    selectedConstructor,
-  ]);
+    return (
+      effectiveDeployable.constructors.find(
+        (c) => c.name === constructorName
+      ) ?? null
+    );
+  }, [effectiveDeployable, constructorName]);
 
   const constructorInputs = useMemo(
     () => effectiveConstructor?.inputs ?? [],
@@ -201,17 +233,17 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
 
   const handleDeployableChange = useCallback(
     (value: string) => {
-      setDeployableId(value === 'custom' ? null : value || null);
+      setDeployTarget(value === 'custom' ? null : value || null, null);
       setCustomArtifactInput('');
     },
-    [setDeployableId]
+    [setDeployTarget]
   );
 
   const handleConstructorChange = useCallback(
     (value: string) => {
-      setSelectedConstructor(value || null);
+      setDeployTarget(deployableId, value || null);
     },
-    [setSelectedConstructor]
+    [setDeployTarget, deployableId]
   );
 
   const handleParamChange = useCallback(
@@ -231,27 +263,28 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
   useEffect(() => {
     if (
       !isCustomSelected &&
-      selectedDeployable &&
+      effectiveDeployable &&
       !constructorName &&
-      selectedDeployable.constructors.length > 0
+      effectiveDeployable.constructors.length > 0
     ) {
-      setSelectedConstructor(selectedDeployable.constructors[0].name);
+      setDeployTarget(deployableId, effectiveDeployable.constructors[0].name);
     }
   }, [
     isCustomSelected,
-    selectedDeployable,
+    effectiveDeployable,
     constructorName,
-    setSelectedConstructor,
+    deployableId,
+    setDeployTarget,
   ]);
 
   const prevConstructorsLength = useRef(0);
   useEffect(() => {
     const currentLength = customDeployable.contract?.constructors.length ?? 0;
     if (currentLength > 0 && prevConstructorsLength.current === 0) {
-      setSelectedConstructor(customDeployable.contract!.constructors[0].name);
+      setDeployTarget(null, customDeployable.contract!.constructors[0].name);
     }
     prevConstructorsLength.current = currentLength;
-  }, [customDeployable.contract, setSelectedConstructor]);
+  }, [customDeployable.contract, setDeployTarget]);
 
   const handleDeploy = useCallback(() => {
     if (!effectiveDeployable || !effectiveConstructor) return;
@@ -301,6 +334,10 @@ const DeployFlow: React.FC<DeployFlowProps> = ({
               : undefined
           }
         />
+      )}
+
+      {isResolvingArtifact && (
+        <p className={styles.hint}>Loading contract artifact...</p>
       )}
 
       {effectiveDeployable && (

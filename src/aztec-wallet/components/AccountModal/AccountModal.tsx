@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Copy, Check, LogOut } from 'lucide-react';
 import {
   Dialog,
@@ -8,6 +8,7 @@ import {
   Button,
   VisuallyHidden,
 } from '../../../components/ui';
+import { useCopyToClipboard } from '../../../hooks';
 import { cn, iconSize, truncateAddress } from '../../../utils';
 import {
   getNetworkIcon,
@@ -141,17 +142,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   showNetwork = false,
   onDisconnect,
 }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy address:', err);
-    }
-  }, [address]);
+  const { copied, copy } = useCopyToClipboard();
 
   const handleDisconnect = useCallback(() => {
     onDisconnect?.();
@@ -188,7 +179,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 {truncateAddress(address, 10, 8)}
               </span>
               <button
-                onClick={handleCopy}
+                onClick={() => copy(address)}
                 className={cn(styles.copyButton, copied && styles.copySuccess)}
                 aria-label={copied ? 'Copied!' : 'Copy address'}
               >

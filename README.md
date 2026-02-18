@@ -12,14 +12,16 @@ A starter template for building privacy-preserving web applications on Aztec Net
 
 ---
 
-## Quick Start (Devnet)
+## Quick Start
 
-The boilerplate is configured to work with **Devnet** by default. No local node setup required!
+> **Note:** There is no public v4 devnet yet. Development currently targets the **local Sandbox**.
 
 ### Prerequisites
 
 - Node.js >= 22.0.0
 - Yarn package manager
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Foundry](https://book.getfoundry.sh/getting-started/installation) (for Anvil, the local L1 chain)
 
 ### Installation
 
@@ -30,9 +32,68 @@ cd aztec-web-boilerplate
 
 # Install dependencies
 yarn install
+```
+
+### Start Sandbox & Deploy
+
+The Aztec v4 sandbox runs as a Docker container and requires a separate Anvil instance as its L1 chain.
+
+**Option A: Docker (recommended)**
+
+```bash
+# Terminal 1: Start Anvil (local L1 chain)
+anvil --host 0.0.0.0 -p 8545 --block-time 12
+
+# Terminal 2: Start the Aztec v4 sandbox (Docker)
+docker pull aztecprotocol/aztec:4.0.0-devnet.1-patch.0
+docker run -d --name aztec-sandbox \
+  -p 8080:8080 -p 8880:8880 \
+  -e ETHEREUM_HOSTS=http://host.docker.internal:8545 \
+  aztecprotocol/aztec:4.0.0-devnet.1-patch.0 start --local-network
+
+# Wait for the sandbox to be ready (check logs)
+docker logs -f aztec-sandbox
+# Look for: "Aztec Node started on port 8080" or block production logs
+
+# Terminal 3: Build and deploy everything
+yarn build            # Builds standards + contracts + app
+yarn deploy-contracts # Deploy to local sandbox
 
 # Start the development server
 yarn dev
+```
+
+**Option B: Native CLI (via aztec-up)**
+
+```bash
+# Install the Aztec version manager
+bash -i <(curl -s https://install.aztec.network)
+
+# Install the specific version
+aztec-up install 4.0.0-devnet.1-patch.0
+
+# Terminal 1: Start Anvil (local L1 chain)
+anvil --host 0.0.0.0 -p 8545 --block-time 12
+
+# Terminal 2: Start the Aztec local network
+aztec start --local-network --l1-rpc-urls http://localhost:8545
+
+# Terminal 3: Build, deploy, and run
+yarn build && yarn deploy-contracts && yarn dev
+```
+
+> **Note:** The native CLI install requires Foundry to not be running during installation.
+> If `aztec-up install` fails with "anvil is currently running", stop anvil first,
+> install, then restart anvil.
+
+### Stopping the Sandbox
+
+```bash
+# Docker approach
+docker stop aztec-sandbox && docker rm aztec-sandbox
+
+# Also stop Anvil (Ctrl+C in its terminal, or)
+pkill -f anvil
 ```
 
 The application will be available at **http://localhost:3000**
@@ -133,49 +194,31 @@ This FPC address points to the public Sponsored FPC contract that enables gasles
 
 ---
 
-## Local Development (Sandbox)
+## Build & Deploy Details
 
-If you want to develop locally instead of using Devnet, you'll need to run the Aztec Sandbox.
-
-### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) installed and running
-
-### Install Aztec
+The full build pipeline has three stages:
 
 ```bash
-# Install Aztec toolchain
-bash -i <(curl -s https://install.aztec.network)
+yarn build-standards    # 1. Clone & compile @defi-wonderland/aztec-standards (Dripper, Token)
+yarn build-contracts    # 2. Compile local Noir contracts (ECDSA account)
+yarn build-app          # 3. Build the Vite app
+
+# Or run all three at once:
+yarn build
 ```
 
-```bash
-# Currently we use 3.0.0-devnet.20251212 version, make sure you have the right one
-aztec-up 3.0.0-devnet.20251212
-```
-
-### Start Sandbox
+After building, deploy contracts to your running sandbox:
 
 ```bash
-# Start the Aztec sandbox (in a separate terminal)
-aztec start --local-network
-```
-
-### Build & Deploy Contracts
-
-```bash
-# Build the Noir contracts
-yarn build-contracts
-
-# Deploy to local sandbox
-yarn deploy-contracts
+yarn deploy-contracts   # Deploy account + Dripper + Token to sandbox
 ```
 
 ### Environment Variables
 
-Copy `.env.example` to `.env` and configure for sandbox:
+Copy `.env.example` to `.env` to customize:
 
 ```bash
-# Aztec Node URL (point to local sandbox)
+# Aztec Node URL (default: http://localhost:8080 for sandbox)
 VITE_AZTEC_NODE_URL=http://localhost:8080
 
 # Disable prover for faster development
@@ -185,12 +228,6 @@ VITE_PROVER_ENABLED=false
 VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE="my secret"
 VITE_EMBEDDED_ACCOUNT_SECRET_KEY="0x..."
 VITE_COMMON_SALT="1337"
-```
-
-### Start Development Server
-
-```bash
-yarn dev
 ```
 
 ---
@@ -292,6 +329,13 @@ When you need a new UI component:
 ## Available Commands
 
 ### Contract Development
+
+```bash
+yarn build-standards          # Build aztec-standards artifacts (Dripper, Token)
+yarn build-contracts          # Compile local Noir contracts + generate TS bindings
+yarn deploy-contracts         # Deploy contracts to sandbox
+yarn build                    # Full build: standards + contracts + app
+```
 
 ### Testing & Quality
 
@@ -426,10 +470,10 @@ Make sure to properly export your adapter from:
 
 ## Network Information
 
-| Network | Node URL                         | Chain ID           |
-| ------- | -------------------------------- | ------------------ |
-| Devnet  | `https://devnet.aztec-labs.com/` | `aztec:1674512022` |
-| Sandbox | `http://localhost:8080`          | `aztec:0`          |
+| Network | Node URL                | Status                       |
+| ------- | ----------------------- | ---------------------------- |
+| Sandbox | `http://localhost:8080` | Local development (primary)  |
+| Devnet  | TBD                     | No public v4 devnet yet      |
 
 ---
 

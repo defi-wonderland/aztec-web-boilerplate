@@ -81,9 +81,7 @@ const SavedContractsList = ({
                   </div>
                   <div className={styles.address}>{contract.address}</div>
                   <div className={styles.meta}>
-                    {contract.artifact || contract.artifactKey
-                      ? 'Artifact cached'
-                      : 'Address only'}
+                    {contract.artifactKey ? 'Artifact cached' : 'Address only'}
                   </div>
                 </div>
                 <div className={styles.actions}>

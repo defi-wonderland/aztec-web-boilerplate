@@ -1,8 +1,12 @@
 import { useCallback, useState } from 'react';
-import { loadContractArtifact } from '@aztec/aztec.js/abi';
+import {
+  loadContractArtifact,
+  type ContractArtifact,
+} from '@aztec/aztec.js/abi';
 import { Contract, DeployMethod } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   hasAppManagedPXE,
@@ -11,11 +15,26 @@ import {
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { useFeePayment } from '../../store/feePayment';
 import { buildArgsFromInputs } from '../../utils/contractInteraction';
+import { restoreBytecodeBuffers } from '../../utils/storage';
 import type { DeployResult } from '../../components/contract-interaction/types';
+import type { SerializedArtifact } from '../../types/artifactRegistry';
 import type {
   DeployableContract,
   ContractConstructor,
 } from '../../utils/deployableContracts';
+
+/**
+ * Detect if parsed JSON is already a ContractArtifact (from registry)
+ * vs a NoirCompiledContract (from local build).
+ * ContractArtifact has functions with `isInitializer` boolean.
+ * NoirCompiledContract has functions with `custom_attributes` array.
+ */
+const isRegistryArtifact = (parsed: unknown): parsed is SerializedArtifact => {
+  if (!parsed || typeof parsed !== 'object') return false;
+  const obj = parsed as { functions?: Array<{ isInitializer?: boolean }> };
+  const firstFn = obj.functions?.[0];
+  return firstFn !== undefined && typeof firstFn.isInitializer === 'boolean';
+};
 
 export interface DeployParams {
   contract: DeployableContract;
@@ -81,8 +100,16 @@ export const useContractDeployer = () => {
           throw new Error('Wallet instance not available');
         }
 
-        const compiled = JSON.parse(contract.artifactJson);
-        const artifact = loadContractArtifact(compiled);
+        if (!contract.artifactJson) {
+          throw new Error('Contract artifact not available');
+        }
+
+        const parsed = JSON.parse(contract.artifactJson);
+        // Registry artifacts are already ContractArtifact format but need bytecode restoration,
+        // local artifacts need conversion via loadContractArtifact
+        const artifact: ContractArtifact = isRegistryArtifact(parsed)
+          ? restoreBytecodeBuffers(parsed)
+          : loadContractArtifact(parsed);
 
         const { args, errors } = buildArgsFromInputs(ctor.inputs, formValues);
         if (errors.length > 0) {
@@ -101,29 +128,26 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        // Get fee payment method from global store
         const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
           config: currentConfig?.feePaymentContracts ?? {},
           getSponsoredFeePaymentMethod: () =>
             connector.getSponsoredFeePaymentMethod(),
         });
 
-        const receipt = await deployMethod
-          .send({
-            from: account.getAddress(),
-            contractAddressSalt: salt,
-            fee: { paymentMethod },
-            universalDeploy: true,
-            skipInitialization: false,
-          })
-          .wait({ timeout: 900 });
+        const deployed = await deployMethod.send({
+          from: account.getAddress(),
+          contractAddressSalt: salt,
+          ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+          universalDeploy: true,
+          skipInitialization: false,
+          wait: { timeout: 900, waitForStatus: TxStatus.PROPOSED },
+        });
 
-        const deployedAddress = receipt.contract.address.toString();
+        const deployedAddress = deployed.address.toString();
 
         return {
           success: true,
           address: deployedAddress,
-          txHash: receipt.txHash?.toString(),
         };
       } catch (err) {
         const errorMsg =

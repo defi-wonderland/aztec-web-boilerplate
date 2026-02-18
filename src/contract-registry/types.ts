@@ -73,7 +73,7 @@ export interface RegisteredContract {
 }
 
 /**
- * Return type for useContractRegistration hook
+ * Return type for useContract hook
  */
 export interface UseContractReturn<TContract = unknown> {
   /** The callable contract instance if registered and ready */
@@ -108,8 +108,6 @@ export interface UseContractRegistryReturn<T extends ContractConfigMap> {
   subscribe: (callback: () => void) => () => void;
   /** Overall registry status */
   status: 'initializing' | 'ready' | 'error';
-  /** Error if registry initialization failed */
-  error?: Error;
 }
 
 /**

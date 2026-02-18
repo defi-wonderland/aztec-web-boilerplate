@@ -1,11 +1,8 @@
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
-import { DripperContract } from '../artifacts/Dripper.js';
-import { TokenContract } from '../artifacts/Token.js';
-import {
-  createContractConfig,
-  getDeployerAddress,
-  getTokenConstructorArgs,
-} from '../contract-registry';
+import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
+import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
+import { createContractConfig, getDeployerAddress } from '../contract-registry';
 
 /**
  * Edit this file to add/remove contracts for your application.
@@ -31,7 +28,7 @@ export const contractsConfig = createContractConfig({
   },
 
   /**
-   * Token contract - Yield Token (YT)
+   * Token contract - WETH
    */
   token: {
     artifact: TokenContract.artifact,
@@ -40,7 +37,13 @@ export const contractsConfig = createContractConfig({
     deployParams: (config) => ({
       salt: Fr.fromString(config.tokenDeploymentSalt),
       deployer: getDeployerAddress(config),
-      constructorArgs: [...getTokenConstructorArgs(config)],
+      constructorArgs: [
+        'WETH',
+        'WETH',
+        18,
+        AztecAddress.fromString(config.dripperContractAddress),
+        AztecAddress.ZERO,
+      ],
       constructorArtifact: 'constructor_with_minter',
     }),
     lazyRegister: true,

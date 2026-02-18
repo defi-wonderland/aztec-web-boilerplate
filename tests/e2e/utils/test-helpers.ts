@@ -12,30 +12,16 @@ export const TIMEOUTS = {
   SHORT: 5000,
   DEFAULT: 30000,
   LONG: 60000,
-  WALLET_OPERATION: 120000,
 } as const;
 
 /**
- * Clears all browser storage (IndexedDB, localStorage, sessionStorage)
- * Call this before tests to ensure a clean state.
- */
-export async function clearBrowserStorage(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.evaluate(async () => {
-    const dbs = await indexedDB.databases();
-    for (const db of dbs) {
-      if (db.name) indexedDB.deleteDatabase(db.name);
-    }
-    localStorage.clear();
-    sessionStorage.clear();
-  });
-}
-
-/**
  * Switches the app to Sandbox network via the network picker.
+ * Uses :visible filter because the Header renders separate desktop/mobile layouts.
  */
 export async function switchToSandbox(page: Page): Promise<void> {
-  const networkPicker = page.locator('[data-testid="network-picker"]');
+  const networkPicker = page
+    .locator('[data-testid="network-picker"]:visible')
+    .first();
   await expect(networkPicker).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
   await networkPicker.click();
 
@@ -53,10 +39,13 @@ export async function switchToSandbox(page: Page): Promise<void> {
 
 /**
  * Opens the wallet connect modal.
+ * Uses :visible filter because the Header renders separate desktop/mobile ConnectButtons.
  * @returns The modal locator for further interactions
  */
 export async function openConnectModal(page: Page) {
-  const connectBtn = page.locator('[data-testid="connect-wallet-button"]');
+  const connectBtn = page
+    .locator('[data-testid="connect-wallet-button"]:visible')
+    .first();
   await expect(connectBtn).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
   await connectBtn.click();
 
@@ -83,20 +72,37 @@ export async function connectViaEVMWallet(page: Page): Promise<void> {
   await metamaskBtn.click();
   console.log('MetaMask button clicked, waiting for wallet connection...');
 
-  await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
+  await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.LONG });
   console.log('Wallet connected');
 
-  const accountSection = page.locator('[data-testid="connected-account"]');
+  const accountSection = page
+    .locator('[data-testid="connected-account"]:visible')
+    .first();
   await expect(accountSection).toBeVisible({
-    timeout: TIMEOUTS.WALLET_OPERATION,
+    timeout: TIMEOUTS.LONG,
   });
 }
 
 /**
  * Connects via Embedded wallet after switching to Sandbox network.
+ * Forwards browser console logs to test output for CI debugging.
  */
 export async function connectViaEmbeddedWallet(page: Page): Promise<void> {
   await switchToSandbox(page);
+
+  // Forward browser console logs for debugging embedded account flow
+  const browserLogs: string[] = [];
+  const logListener = (msg: import('@playwright/test').ConsoleMessage) => {
+    const text = msg.text();
+    if (
+      text.includes('[embedded-account]') ||
+      text.includes('[deploy-account]')
+    ) {
+      console.log(`[browser] ${text}`);
+      browserLogs.push(text);
+    }
+  };
+  page.on('console', logListener);
 
   const modal = await openConnectModal(page);
 
@@ -105,11 +111,34 @@ export async function connectViaEmbeddedWallet(page: Page): Promise<void> {
   await embeddedGroup.click();
   console.log('Embedded Wallet clicked, waiting for account creation...');
 
-  await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.WALLET_OPERATION });
+  try {
+    await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.LONG });
+  } catch {
+    // Dump all captured browser logs on failure
+    console.error('--- Browser logs (embedded-account) ---');
+    browserLogs.forEach((log) => console.error(log));
+    console.error('--- End browser logs ---');
+
+    // Capture error displayed in modal
+    const errorEl = modal.locator('.text-red-500').first();
+    const errorText = await errorEl
+      .textContent({ timeout: 2000 })
+      .catch(() => null);
+    console.error('Modal error:', errorText ?? '(no error element found)');
+
+    throw new Error(
+      `Embedded wallet modal stayed open. Error: ${errorText ?? 'unknown'}. See browser logs above.`
+    );
+  } finally {
+    page.off('console', logListener);
+  }
+
   console.log('Account created and connected');
 
-  const accountSection = page.locator('[data-testid="connected-account"]');
+  const accountSection = page
+    .locator('[data-testid="connected-account"]:visible')
+    .first();
   await expect(accountSection).toBeVisible({
-    timeout: TIMEOUTS.WALLET_OPERATION,
+    timeout: TIMEOUTS.LONG,
   });
 }

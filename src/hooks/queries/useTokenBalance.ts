@@ -1,11 +1,11 @@
 import { useMemo, useCallback } from 'react';
+import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { TokenContract } from '../../artifacts/Token.js';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
 import { queuePxeCall } from '../../utils';
-import { useContractRegistration } from '../context/useContractRegistration';
+import { useContract } from '../context/useContract';
 import { useReadContract } from '../contracts/useReadContract';
 import { queryKeys } from './queryKeys';
 
@@ -45,7 +45,7 @@ interface UseTokenBalanceReturn {
 export const useTokenBalance = (
   options: UseTokenBalanceOptions = {}
 ): UseTokenBalanceReturn => {
-  const { isReady: isTokenReady } = useContractRegistration('token');
+  const { isReady: isTokenReady } = useContract('token');
 
   const {
     account,
@@ -138,27 +138,5 @@ export const useTokenBalance = (
     error: query.error,
     refetch,
     formattedBalances,
-  };
-};
-
-/**
- * Hook to manage token balance utilities.
- */
-export const useTokenWithAddress = () => {
-  const { contract: token } = useContractRegistration('token');
-
-  const queryClient = useQueryClient();
-
-  const tokenAddress = token?.address.toString() ?? '';
-
-  const invalidateAllBalances = useCallback(async () => {
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.token.balances(),
-    });
-  }, [queryClient]);
-
-  return {
-    tokenAddress,
-    invalidateAllBalances,
   };
 };

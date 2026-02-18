@@ -52,3 +52,21 @@ export const formatBalance = (
 export const formatFeeJuiceBalance = (balance: bigint): string => {
   return formatBalance(balance, 18, 4);
 };
+
+/**
+ * Format a relative time string (e.g., "2s ago", "1m ago")
+ */
+export const formatRelativeTime = (date: Date | null): string => {
+  if (!date) return 'N/A';
+
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
+  if (seconds < 5) return 'Now';
+  if (seconds < 60) return `${seconds}s ago`;
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+};

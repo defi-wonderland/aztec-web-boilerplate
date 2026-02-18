@@ -1,12 +1,16 @@
 import { create } from 'zustand';
-import { loadCachedContracts } from '../../utils/contractCache';
+import {
+  getArtifactStorageService,
+  type CachedContract,
+} from '../../services/storage';
 import { getFormStore } from '../form';
 import type {
   LogEntry,
   ArtifactLoaderMode,
 } from '../../components/contract-interaction/types';
-import type { CachedContract } from '../../utils/contractCache';
-import type { ParsedArtifact } from '../../utils/contractInteraction';
+import type { ParsedArtifact } from '../../types/artifact';
+import type { ArtifactStateUpdate } from '../../types/artifactRegistry';
+import type { ArtifactError } from '../../utils/errors';
 
 type State = {
   mode: ArtifactLoaderMode;
@@ -15,31 +19,30 @@ type State = {
   deployableId: string | null;
   constructorName: string | null;
   logs: LogEntry[];
-  // Artifact state (moved from useContractInvoker local state)
   artifactInput: string;
   parsedArtifact: ParsedArtifact | null;
-  parseError: string | null;
+  parseError: ArtifactError | null;
   savedContracts: CachedContract[];
   isLoadingPreconfigured: boolean;
 };
 
 type Actions = {
   setMode: (mode: ArtifactLoaderMode) => void;
-  setPreconfiguredId: (id: string | null) => void;
-  setAddress: (address: string) => void;
-  setDeployableId: (id: string | null) => void;
-  setSelectedConstructor: (name: string | null) => void;
+  // Invoke mode
+  setInvokeTarget: (address: string, preconfiguredId?: string | null) => void;
+  // Deploy mode
+  setDeployTarget: (
+    deployableId: string | null,
+    constructorName?: string | null
+  ) => void;
   pushLog: (entry: Omit<LogEntry, 'id'>) => void;
-  clearLogs: () => void;
   reset: () => void;
   // Artifact actions
   setArtifactInput: (input: string) => void;
-  setParsedArtifact: (artifact: ParsedArtifact | null) => void;
-  setParseError: (error: string | null) => void;
   setSavedContracts: (contracts: CachedContract[]) => void;
-  setIsLoadingPreconfigured: (loading: boolean) => void;
-  refreshSavedContracts: (networkName?: string) => void;
-  clearArtifactState: () => void;
+  refreshSavedContracts: (networkName?: string) => Promise<void>;
+  resetArtifact: () => void;
+  setArtifactState: (update: ArtifactStateUpdate) => void;
 };
 
 export type ContractInteractionStore = State & Actions;
@@ -79,21 +82,14 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
         return { mode };
       }),
 
-    setPreconfiguredId: (preconfiguredId) => {
+    setInvokeTarget: (address, preconfiguredId = null) => {
       getFormStore().reset();
-      set({ preconfiguredId });
+      set({ address, preconfiguredId });
     },
 
-    setAddress: (address) => set({ address }),
-
-    setDeployableId: (deployableId) => {
+    setDeployTarget: (deployableId, constructorName = null) => {
       getFormStore().reset();
-      set({ deployableId, constructorName: null });
-    },
-
-    setSelectedConstructor: (constructorName) => {
-      getFormStore().reset();
-      set({ constructorName });
+      set({ deployableId, constructorName });
     },
 
     pushLog: (entry) =>
@@ -104,8 +100,6 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
         ].slice(0, 50),
       })),
 
-    clearLogs: () => set({ logs: [] }),
-
     reset: () => {
       getFormStore().reset();
       set(INITIAL_STATE);
@@ -114,27 +108,26 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
     // Artifact actions
     setArtifactInput: (artifactInput) => set({ artifactInput }),
 
-    setParsedArtifact: (parsedArtifact) => set({ parsedArtifact }),
-
-    setParseError: (parseError) => set({ parseError }),
-
     setSavedContracts: (savedContracts) => set({ savedContracts }),
 
-    setIsLoadingPreconfigured: (isLoadingPreconfigured) =>
-      set({ isLoadingPreconfigured }),
-
-    refreshSavedContracts: (networkName) => {
-      const contracts = loadCachedContracts(networkName);
+    refreshSavedContracts: async (networkName) => {
+      const storage = getArtifactStorageService();
+      const contracts = await storage.getContracts(networkName);
       set({ savedContracts: contracts });
     },
 
-    clearArtifactState: () => {
+    resetArtifact: () => {
       getFormStore().reset();
-      set({
-        ...ARTIFACT_INITIAL_STATE,
-        address: '',
-        preconfiguredId: null,
-      });
+      set(ARTIFACT_INITIAL_STATE);
+    },
+
+    setArtifactState: (update) => {
+      const mapped: Partial<State> = {};
+      if ('parsed' in update) mapped.parsedArtifact = update.parsed;
+      if ('error' in update) mapped.parseError = update.error;
+      if ('isLoading' in update)
+        mapped.isLoadingPreconfigured = update.isLoading;
+      set(mapped);
     },
   })
 );
