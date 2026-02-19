@@ -1,6 +1,15 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 
-/** Describes how to fetch artifacts from a specific source */
+/**
+ * Describes how to fetch artifacts from a specific source.
+ *
+ * - `registry` — Fetch from an artifact registry by classId (verified).
+ * - `external` — Fetch a tgz package from a URL and match artifacts by name.
+ *   **Warning:** The tgz contents are trusted based on contract name match alone.
+ *   Unless a `classId` is configured for the contract, there is no integrity
+ *   verification. Only use URLs you trust (e.g. pinned GitHub release tags).
+ * - `local` — Use a bundled artifact directly (no network request).
+ */
 export type ArtifactSourceConfig =
   | { registry: string }
   | { external: string }

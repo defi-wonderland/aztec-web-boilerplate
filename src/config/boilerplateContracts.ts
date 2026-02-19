@@ -21,8 +21,17 @@ import type { NetworkConfig } from './networks/types';
 const registryUrl =
   import.meta.env.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL;
 
-const externalTgzUrl =
-  '/github-releases/defi-wonderland/aztec-standards/releases/download/prerelease-81f5ec2/defi-wonderland-aztec-standards-4.0.0-devnet.1-patch.0-prerelease.81f5ec2.tgz';
+const DEFAULT_EXTERNAL_TGZ_URL =
+  'https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-81f5ec2/defi-wonderland-aztec-standards-4.0.0-devnet.1-patch.0-prerelease.81f5ec2.tgz';
+
+/** Rewrite `https://github.com/` URLs to the CORS proxy path. */
+function toProxiedGithubUrl(url: string): string {
+  return url.replace(/^https:\/\/github\.com\//, '/github-releases/');
+}
+
+const externalTgzUrl = toProxiedGithubUrl(
+  import.meta.env.VITE_EXTERNAL_TGZ_URL ?? DEFAULT_EXTERNAL_TGZ_URL
+);
 
 const CLASS_IDS = {
   dripper: '0x2fe44c2f36062274537d51195e541a011125c920051092abbe2363b3ef09a948',

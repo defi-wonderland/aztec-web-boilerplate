@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CloudDownload, Globe, HardDrive } from 'lucide-react';
+import { CloudDownload, Globe, HardDrive, Zap } from 'lucide-react';
 import { useAztecWallet } from '../aztec-wallet';
 import { contractsConfig } from '../config/contracts';
 import { ArtifactService } from '../services/aztec/artifact';
@@ -26,6 +26,10 @@ const SOURCE_TOAST_MAP: Record<
   external: {
     description: 'Loaded from external package',
     icon: <Globe size={iconSize('md')} />,
+  },
+  cached: {
+    description: 'Loaded from cache',
+    icon: <Zap size={iconSize('md')} />,
   },
 };
 

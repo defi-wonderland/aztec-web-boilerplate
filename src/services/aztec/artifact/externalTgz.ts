@@ -5,16 +5,7 @@ import {
 } from '@aztec/aztec.js/abi';
 import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
 import { ArtifactErrorFactory } from '../../../utils/errors';
-import {
-  prepareArtifactForStorage,
-  restoreBytecodeBuffers,
-} from '../../../utils/storage';
 import { extractTgz, type TarEntry } from '../../../utils/tar';
-import { getArtifactStorageService } from '../../storage';
-import type { SerializedArtifact } from '../../../types/artifactRegistry';
-
-const CACHE_VERSION = 'v1';
-const CACHE_PREFIX = `external:${CACHE_VERSION}`;
 
 /** Timeout for fetching a tgz package (30 seconds) */
 const TGZ_FETCH_TIMEOUT_MS = 30_000;
@@ -31,15 +22,6 @@ const inflightExtractions = new Map<
   Promise<Map<string, ContractArtifact>>
 >();
 
-function cacheKey(
-  tgzUrl: string,
-  contractName: string,
-  classId?: string
-): string {
-  const base = `${CACHE_PREFIX}:${tgzUrl}:${contractName}`;
-  return classId ? `${base}:${classId}` : base;
-}
-
 interface ExternalArtifactResult {
   artifact: ContractArtifact;
   sourceLabel: string;
@@ -47,45 +29,18 @@ interface ExternalArtifactResult {
 
 /**
  * Load a single contract artifact from a tgz URL.
- * - Checks IndexedDB cache first (keyed by url + name + classId)
- * - On miss: fetches tgz (deduped across concurrent calls), extracts all
- *   artifacts, eagerly caches all, returns the requested one
+ * Fetches tgz (deduped across concurrent calls), extracts all artifacts,
+ * and returns the requested one. Caching is handled by the unified cache
+ * in ArtifactService.
  */
 export async function loadExternalArtifact(
   tgzUrl: string,
   contractName: string,
   classId?: string
 ): Promise<ExternalArtifactResult> {
-  // Normalize to match fetchAndExtractTgz which stores keys as lowercase
   contractName = contractName.toLowerCase();
 
-  // 1. Check cache
-  const storage = getArtifactStorageService();
-  const stored = await storage.get(cacheKey(tgzUrl, contractName, classId));
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored) as SerializedArtifact;
-      const restored = restoreBytecodeBuffers(parsed);
-      const hasParameters = restored.functions.every(
-        (fn) => 'parameters' in fn
-      );
-      if (!hasParameters) {
-        console.warn(
-          `[externalTgz] Stale cache format for "${contractName}", re-fetching`
-        );
-      } else if (classId && !(await verifyClassId(restored, classId))) {
-        console.warn(
-          `[externalTgz] Cached classId mismatch for "${contractName}", re-fetching`
-        );
-      } else {
-        return { artifact: restored, sourceLabel: 'external' };
-      }
-    } catch {
-      // Corrupted cache — will re-fetch
-    }
-  }
-
-  // 2. Fetch with dedup
+  // Fetch with dedup
   let allArtifacts: Map<string, ContractArtifact>;
   const inflight = inflightExtractions.get(tgzUrl);
   if (inflight) {
@@ -100,18 +55,7 @@ export async function loadExternalArtifact(
     }
   }
 
-  // 3. Eagerly cache ALL extracted artifacts (without classId — only the
-  //    specifically requested contract gets the classId-qualified key)
-  for (const [name, art] of allArtifacts) {
-    const serialized = JSON.stringify(prepareArtifactForStorage(art));
-    const key =
-      name === contractName
-        ? cacheKey(tgzUrl, name, classId)
-        : cacheKey(tgzUrl, name);
-    storage.save(key, serialized).catch(() => {});
-  }
-
-  // 4. Return requested (verify classId if provided)
+  // Return requested (verify classId if provided)
   const artifact = allArtifacts.get(contractName);
   if (!artifact) {
     throw ArtifactErrorFactory.contractNotInPackage(contractName, tgzUrl);

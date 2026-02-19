@@ -4,10 +4,18 @@ import {
   type ArtifactSourceConfig,
   type NormalizedArtifactSource,
 } from '../../../types/artifactSource';
+import {
+  prepareArtifactForStorage,
+  restoreBytecodeBuffers,
+} from '../../../utils/storage';
+import { getArtifactStorageService } from '../../storage/ArtifactStorageService';
 import { ArtifactRegistryService } from '../artifactRegistry';
 import { loadExternalArtifact } from './externalTgz';
 import type { NetworkConfig } from '../../../config/networks/types';
 import type { ContractConfigMap } from '../../../contract-registry/types';
+import type { SerializedArtifact } from '../../../types/artifactRegistry';
+
+const CACHE_PREFIX = 'cached:v1';
 
 /** Resolved artifacts keyed by contract name */
 export type ResolvedArtifacts = Record<string, ContractArtifact>;
@@ -33,6 +41,7 @@ interface ContractLoadResult {
  */
 export class ArtifactService {
   private static instance: ArtifactService | null = null;
+  private memoryCache = new Map<string, ContractArtifact>();
 
   private constructor() {}
 
@@ -101,6 +110,15 @@ export class ArtifactService {
       );
     }
 
+    // Unified cache check — content-addressed by classId, skipped for local-only
+    if (classId) {
+      const cached = await this.checkCache(classId);
+      if (cached) {
+        console.log(`[ArtifactService] "${contractName}" — unified cache hit`);
+        return { artifact: cached, sourceLabel: 'cached' };
+      }
+    }
+
     const normalized = sources.map(normalizeArtifactSource);
     const total = normalized.length;
 
@@ -126,6 +144,12 @@ export class ArtifactService {
         console.log(
           `[ArtifactService] "${contractName}" — loaded from ${label}`
         );
+
+        // Persist to unified cache for instant loads on refresh
+        if (classId) {
+          this.saveToCache(classId, result.artifact);
+        }
+
         return result;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -157,6 +181,52 @@ export class ArtifactService {
       case 'local':
         return 'bundled artifact';
     }
+  }
+
+  /** Check unified cache: memory first, then IndexedDB. */
+  private async checkCache(classId: string): Promise<ContractArtifact | null> {
+    const key = `${CACHE_PREFIX}:${classId}`;
+
+    // Memory cache (same session)
+    const memoryCached = this.memoryCache.get(key);
+    if (memoryCached) return memoryCached;
+
+    // IndexedDB cache (across sessions)
+    try {
+      const stored = await getArtifactStorageService().get(key);
+      if (!stored) return null;
+
+      const parsed = JSON.parse(stored) as SerializedArtifact;
+
+      // Validate format — stale entries may lack `parameters` on functions
+      const isValid = parsed.functions.every((fn) => 'parameters' in fn);
+      if (!isValid) {
+        console.warn(
+          `[ArtifactService] Stale unified cache entry for ${classId}, discarding`
+        );
+        getArtifactStorageService().delete(key);
+        return null;
+      }
+
+      const artifact = restoreBytecodeBuffers(parsed);
+      this.memoryCache.set(key, artifact);
+      return artifact;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Save artifact to unified cache (memory + IndexedDB, fire-and-forget). */
+  private saveToCache(classId: string, artifact: ContractArtifact): void {
+    const key = `${CACHE_PREFIX}:${classId}`;
+    this.memoryCache.set(key, artifact);
+
+    const serialized = JSON.stringify(prepareArtifactForStorage(artifact));
+    getArtifactStorageService()
+      .save(key, serialized)
+      .catch((err) => {
+        console.warn('[ArtifactService] Failed to persist unified cache:', err);
+      });
   }
 
   /** Resolve a single contract from a normalized source */
