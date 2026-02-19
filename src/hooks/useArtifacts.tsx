@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { CloudDownload, Database, Zap } from 'lucide-react';
+import { CloudDownload, Globe, HardDrive, Zap } from 'lucide-react';
 import { useAztecWallet } from '../aztec-wallet';
-import { ArtifactService, type LoadSource } from '../services/aztec/artifact';
+import { contractsConfig } from '../config/contracts';
+import { ArtifactService } from '../services/aztec/artifact';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { iconSize } from '../utils';
 import { useToast } from './context/useToast';
@@ -10,39 +11,42 @@ interface UseArtifactsOptions {
   showToast?: boolean;
 }
 
-function getSourceToastConfig(source: LoadSource): {
-  description: string;
-  icon: React.ReactNode;
-} {
-  switch (source) {
-    case 'memory':
-      return {
-        description: 'Loaded from memory cache',
-        icon: <Zap size={iconSize('md')} />,
-      };
-    case 'indexeddb':
-      return {
-        description: 'Loaded from browser cache',
-        icon: <Database size={iconSize('md')} />,
-      };
-    case 'network':
-      return {
-        description: 'Fetched from external registry',
-        icon: <CloudDownload size={iconSize('md')} />,
-      };
-    default:
-      return {
-        description: 'Artifacts loaded',
-        icon: <CloudDownload size={iconSize('md')} />,
-      };
-  }
+const SOURCE_TOAST_MAP: Record<
+  string,
+  { description: string; icon: React.ReactNode }
+> = {
+  local: {
+    description: 'Using bundled artifacts',
+    icon: <HardDrive size={iconSize('md')} />,
+  },
+  registry: {
+    description: 'Loaded from artifact registry',
+    icon: <CloudDownload size={iconSize('md')} />,
+  },
+  external: {
+    description: 'Loaded from external package',
+    icon: <Globe size={iconSize('md')} />,
+  },
+  cached: {
+    description: 'Loaded from cache',
+    icon: <Zap size={iconSize('md')} />,
+  },
+};
+
+const DEFAULT_TOAST_CONFIG = {
+  description: 'Artifacts loaded',
+  icon: <CloudDownload size={iconSize('md')} />,
+};
+
+function getSourceToastConfig(sourceLabel: string) {
+  return SOURCE_TOAST_MAP[sourceLabel] ?? DEFAULT_TOAST_CONFIG;
 }
 
 /**
  * Hook for loading contract artifacts based on network configuration.
  *
  * Responsibilities:
- * - Loads artifacts via ArtifactService
+ * - Loads artifacts via ArtifactService (config-driven source resolution)
  * - Stores artifacts in Zustand state
  * - Shows toast notifications on load/error
  *
@@ -61,15 +65,15 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
     setArtifactStatus('loading');
 
     ArtifactService.getInstance()
-      .loadArtifacts(currentConfig)
+      .loadArtifacts(currentConfig, contractsConfig)
       .then((result) => {
         if (abortController.signal.aborted) return;
 
         setArtifacts(result.artifacts);
         setArtifactStatus('ready');
 
-        if (showToast && result.source !== 'local') {
-          const toastConfig = getSourceToastConfig(result.source);
+        if (showToast && result.sourceLabel !== 'local') {
+          const toastConfig = getSourceToastConfig(result.sourceLabel);
           addToast({
             title: `Artifacts loaded in ${result.elapsedMs.toFixed(0)}ms`,
             description: toastConfig.description,

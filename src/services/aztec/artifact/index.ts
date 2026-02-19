@@ -1,6 +1,5 @@
 export {
   ArtifactService,
-  type ArtifactOverrides,
+  type ResolvedArtifacts,
   type LoadArtifactsResult,
-  type LoadSource,
 } from './ArtifactService';

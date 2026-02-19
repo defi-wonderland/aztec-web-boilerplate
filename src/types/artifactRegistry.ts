@@ -38,14 +38,14 @@ export interface CachedArtifact {
 /**
  * Source of an artifact: memory cache, IndexedDB cache, or network fetch.
  */
-export type ArtifactSource = 'memory' | 'indexeddb' | 'network';
+export type ArtifactCacheOrigin = 'memory' | 'indexeddb' | 'network';
 
 /**
  * Result of getting an artifact, includes the artifact and its source.
  */
 export interface ArtifactResult {
   artifact: ContractArtifact;
-  source: ArtifactSource;
+  source: ArtifactCacheOrigin;
 }
 
 /**

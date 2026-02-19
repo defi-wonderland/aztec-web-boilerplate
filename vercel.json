@@ -4,6 +4,10 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/github-releases/:path*",
+      "destination": "https://github.com/:path*"
+    },
+    {
       "source": "/artifact-registry/:path*",
       "destination": "https://devnet.aztec-registry.xyz/:path*"
     },
