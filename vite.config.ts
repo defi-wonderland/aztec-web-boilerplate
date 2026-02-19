@@ -188,18 +188,6 @@ export default defineConfig(({ mode }) => {
         'json-stringify-deterministic':
           'json-stringify-deterministic/lib/index.js',
       },
-      // Dedupe critical packages to prevent class identity issues
-      dedupe: [
-        '@aztec/foundation',
-        '@aztec/circuits.js',
-        '@aztec/stdlib',
-        '@aztec/aztec.js',
-        '@aztec/entrypoints',
-        '@aztec/ethereum',
-        '@aztec/l1-artifacts',
-        '@aztec/protocol-contracts',
-        '@noble/curves',
-      ],
     },
     server: {
       port: 3000,
@@ -268,23 +256,7 @@ export default defineConfig(({ mode }) => {
         'path-browserify',
         '@tanstack/react-query',
       ],
-      exclude: [
-        '@aztec/bb.js',
-        '@aztec/pxe',
-        '@aztec/pxe/client/lazy',
-        '@aztec/foundation',
-        '@aztec/circuits.js',
-        '@aztec/noir-contracts.js',
-        '@aztec/ethereum',
-        '@aztec/accounts',
-        '@aztec/stdlib',
-        '@aztec/aztec.js',
-        '@aztec/entrypoints',
-        '@aztec/l1-artifacts',
-        '@aztec/protocol-contracts',
-        '@defi-wonderland/aztec-standards',
-        'noirc_abi_wasm',
-      ],
+      exclude: ['@aztec/noir-acvm_js', '@aztec/noir-noirc_abi', '@aztec/bb.js'],
       esbuildOptions: {
         define: {
           global: 'globalThis',

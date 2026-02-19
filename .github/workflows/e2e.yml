@@ -7,6 +7,8 @@ jobs:
   test:
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    env:
+      VITE_PROVER_ENABLED: 'false'
     steps:
     - uses: actions/checkout@v4
 
