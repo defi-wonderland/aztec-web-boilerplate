@@ -12,7 +12,6 @@ import type { PXE } from '@aztec/pxe/server';
 import { AVAILABLE_NETWORKS } from '../../../../config/networks';
 import { FeePaymentRegister } from '../../../../services/aztec/feePayment/FeePaymentRegister';
 import { MinimalWallet } from '../../../../utils/MinimalWallet';
-import { getEnv } from '../../../../utils/env';
 import { NetworkService } from '../network';
 import { AztecStorageService } from '../storage';
 import type { AztecNetwork } from '../../../../config/networks/constants';
@@ -20,8 +19,8 @@ import type { AztecNetwork } from '../../../../config/networks/constants';
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
 const getProverEnabled = (networkName: AztecNetwork): boolean => {
-  const networkConfig = AVAILABLE_NETWORKS.find((n) => n.name === networkName);
-  return networkConfig?.proverEnabled ?? getEnv().proverEnabled;
+  const networkConfig = AVAILABLE_NETWORKS.find((n) => n.name === networkName)!;
+  return networkConfig.proverEnabled;
 };
 
 export interface SharedPXEInstance {
