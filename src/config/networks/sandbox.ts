@@ -30,7 +30,7 @@ export const SANDBOX_CONFIG: NetworkConfig = {
   deployerAddress: deployment.deployer,
   dripperDeploymentSalt: deployment.dripperContract.salt,
   tokenDeploymentSalt: deployment.tokenContract.salt,
-  proverEnabled: false, // Sandbox defaults to no prover
+  proverEnabled: false,
   isTestnet: false,
   artifactSource: 'local',
 };
