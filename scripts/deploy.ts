@@ -29,6 +29,7 @@ import { createPXE } from '@aztec/pxe/server';
 import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
 import fs from 'fs';
 import path from 'path';
+import { AVAILABLE_NETWORKS } from '../src/config/networks';
 import {
   NETWORK_URLS,
   type NetworkType,
@@ -95,10 +96,11 @@ const { network: NETWORK } = parseArgs();
 
 // Environment variable overrides
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || NETWORK_URLS[NETWORK];
+// Explicit env var wins (case-insensitive); otherwise reads from network config (false on sandbox, true on devnet)
 const PROVER_ENABLED =
   process.env.VITE_PROVER_ENABLED !== undefined
     ? process.env.VITE_PROVER_ENABLED.toLowerCase() === 'true'
-    : NETWORK !== 'sandbox';
+    : AVAILABLE_NETWORKS.find((n) => n.name === NETWORK)!.proverEnabled;
 const FPC_ENABLED = process.env.VITE_FPC_ENABLED !== 'false';
 
 const DEPLOY_TIMEOUT = 960;

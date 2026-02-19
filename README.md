@@ -221,7 +221,8 @@ Copy `.env.example` to `.env` to customize:
 # Aztec Node URL (default: http://localhost:8080 for sandbox)
 VITE_AZTEC_NODE_URL=http://localhost:8080
 
-# Disable prover for faster development
+# Enable/disable prover (case-insensitive: true/false)
+# Defaults to false on sandbox, true on devnet when not set
 VITE_PROVER_ENABLED=false
 
 # Embedded wallet credentials (optional - auto-generated if not provided)
