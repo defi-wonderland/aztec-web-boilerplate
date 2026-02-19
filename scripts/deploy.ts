@@ -95,7 +95,10 @@ const { network: NETWORK } = parseArgs();
 
 // Environment variable overrides
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || NETWORK_URLS[NETWORK];
-const PROVER_ENABLED = process.env.VITE_PROVER_ENABLED?.toLowerCase() !== 'false';
+const PROVER_ENABLED =
+  process.env.VITE_PROVER_ENABLED !== undefined
+    ? process.env.VITE_PROVER_ENABLED === 'true'
+    : NETWORK !== 'sandbox';
 const FPC_ENABLED = process.env.VITE_FPC_ENABLED !== 'false';
 
 const DEPLOY_TIMEOUT = 960;
