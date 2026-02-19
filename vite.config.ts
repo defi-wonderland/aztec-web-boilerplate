@@ -101,10 +101,26 @@ const nodeBuiltinsShim = (): Plugin => ({
   },
 });
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const artifactRegistryUrl =
     env.VITE_ARTIFACT_REGISTRY_URL || DEFAULT_ARTIFACT_REGISTRY_URL;
+
+  const proxyConfig = {
+    '/github-releases': {
+      target: 'https://github.com',
+      changeOrigin: true,
+      followRedirects: true,
+      rewrite: (path: string) => path.replace(/^\/github-releases/, ''),
+    },
+    ...(artifactRegistryUrl && {
+      '/artifact-registry': {
+        target: artifactRegistryUrl,
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/artifact-registry/, ''),
+      },
+    }),
+  };
 
   return {
     plugins: [
@@ -172,18 +188,6 @@ export default defineConfig(({ command, mode }) => {
         'json-stringify-deterministic':
           'json-stringify-deterministic/lib/index.js',
       },
-      // Dedupe critical packages to prevent class identity issues
-      dedupe: [
-        '@aztec/foundation',
-        '@aztec/circuits.js',
-        '@aztec/stdlib',
-        '@aztec/aztec.js',
-        '@aztec/entrypoints',
-        '@aztec/ethereum',
-        '@aztec/l1-artifacts',
-        '@aztec/protocol-contracts',
-        '@noble/curves',
-      ],
     },
     server: {
       port: 3000,
@@ -195,15 +199,7 @@ export default defineConfig(({ command, mode }) => {
       fs: {
         allow: ['..'],
       },
-      proxy: artifactRegistryUrl
-        ? {
-            '/artifact-registry': {
-              target: artifactRegistryUrl,
-              changeOrigin: true,
-              rewrite: (path) => path.replace(/^\/artifact-registry/, ''),
-            },
-          }
-        : undefined,
+      proxy: proxyConfig,
     },
     preview: {
       port: 3000,
@@ -212,6 +208,7 @@ export default defineConfig(({ command, mode }) => {
         'Cross-Origin-Embedder-Policy': 'credentialless',
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },
+      proxy: proxyConfig,
     },
     build: {
       sourcemap: false, // Disable sourcemaps to reduce memory usage
@@ -259,23 +256,7 @@ export default defineConfig(({ command, mode }) => {
         'path-browserify',
         '@tanstack/react-query',
       ],
-      exclude: [
-        '@aztec/bb.js',
-        '@aztec/pxe',
-        '@aztec/pxe/client/lazy',
-        '@aztec/foundation',
-        '@aztec/circuits.js',
-        '@aztec/noir-contracts.js',
-        '@aztec/ethereum',
-        '@aztec/accounts',
-        '@aztec/stdlib',
-        '@aztec/aztec.js',
-        '@aztec/entrypoints',
-        '@aztec/l1-artifacts',
-        '@aztec/protocol-contracts',
-        '@defi-wonderland/aztec-standards',
-        'noirc_abi_wasm',
-      ],
+      exclude: ['@aztec/noir-acvm_js', '@aztec/noir-noirc_abi', '@aztec/bb.js'],
       esbuildOptions: {
         define: {
           global: 'globalThis',

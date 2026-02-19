@@ -1,11 +1,7 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { getContractClassFromArtifact } from '@aztec/aztec.js/contracts';
 import { ArtifactErrorFactory } from '../../../utils/errors';
-import {
-  prepareArtifactForStorage,
-  restoreBytecodeBuffers,
-} from '../../../utils/storage';
-import { getArtifactStorageService } from '../../storage';
+import { restoreBytecodeBuffers } from '../../../utils/storage';
 import type {
   ArtifactResult,
   GetArtifactOptions,
@@ -77,31 +73,8 @@ export class ArtifactRegistryService {
     classId: string,
     options: GetArtifactOptions = {}
   ): Promise<ArtifactResult> {
-    const { skipValidation = false } = options;
-    const storage = getArtifactStorageService();
-
-    const stored = await storage.get(classId);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as SerializedArtifact;
-        const restoredArtifact = restoreBytecodeBuffers(parsed);
-        if (!skipValidation) {
-          await this.validateArtifact(restoredArtifact, classId);
-        }
-        this.memoryCache.set(classId, restoredArtifact);
-        return { artifact: restoredArtifact, source: 'indexeddb' };
-      } catch (err) {
-        console.warn(
-          `[ArtifactRegistry] Cached artifact for ${classId} is invalid, refetching:`,
-          err instanceof Error ? err.message : err
-        );
-      }
-    }
-
     const artifact = await this.fetchFromRegistry(classId, options);
     this.memoryCache.set(classId, artifact);
-    const serialized = JSON.stringify(prepareArtifactForStorage(artifact));
-    await storage.save(classId, serialized);
     return { artifact, source: 'network' };
   }
 

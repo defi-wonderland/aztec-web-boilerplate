@@ -96,7 +96,9 @@ const { network: NETWORK } = parseArgs();
 // Environment variable overrides
 const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL || NETWORK_URLS[NETWORK];
 const PROVER_ENABLED =
-  process.env.VITE_PROVER_ENABLED === 'true' ? true : false;
+  process.env.VITE_PROVER_ENABLED !== undefined
+    ? process.env.VITE_PROVER_ENABLED.toLowerCase() === 'true'
+    : NETWORK !== 'sandbox';
 const FPC_ENABLED = process.env.VITE_FPC_ENABLED !== 'false';
 
 const DEPLOY_TIMEOUT = 960;
@@ -556,9 +558,13 @@ async function createAccountAndDeployContract() {
   }
 }
 
-createAccountAndDeployContract().catch((error) => {
-  console.error('❌ Deployment failed:', error);
-  process.exit(1);
-});
+createAccountAndDeployContract()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('❌ Deployment failed:', error);
+    process.exit(1);
+  });
 
 export { createAccountAndDeployContract };
