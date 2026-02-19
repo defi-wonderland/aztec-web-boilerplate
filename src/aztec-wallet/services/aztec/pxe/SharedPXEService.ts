@@ -19,7 +19,10 @@ import type { AztecNetwork } from '../../../../config/networks/constants';
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
 const getProverEnabled = (networkName: AztecNetwork): boolean => {
-  const networkConfig = AVAILABLE_NETWORKS.find((n) => n.name === networkName)!;
+  const networkConfig = AVAILABLE_NETWORKS.find((n) => n.name === networkName);
+  if (!networkConfig) {
+    throw new Error(`Network configuration not found for: ${networkName}`);
+  }
   return networkConfig.proverEnabled;
 };
 
