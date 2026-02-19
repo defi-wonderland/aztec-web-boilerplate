@@ -40,6 +40,12 @@ export interface ContractConfigDefinition<
   TConfig = NetworkConfig,
   TContract = unknown,
 > {
+  /**
+   * Optional contract class for type inference.
+   * If provided, useContract() returns a fully typed instance with autocomplete for methods.
+   * If omitted, useContract() returns an untyped (`unknown`) instance with no autocomplete.
+   */
+  contract?: ContractClass<TContract>;
   /** Function to derive the expected contract address from app config */
   address: (config: TConfig) => string;
   /** Function to derive deployment parameters from app config */
@@ -50,8 +56,6 @@ export interface ContractConfigDefinition<
   artifactSources: (config: TConfig) => ArtifactSourceConfig[];
   /** Class ID used by registry sources to look up this contract's artifact */
   classId?: (config: TConfig) => string | undefined;
-  /** Contract class for type inference. Provides typed instances via useContract(). */
-  contract?: ContractClass<TContract>;
 }
 
 /**
