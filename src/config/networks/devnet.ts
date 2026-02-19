@@ -1,4 +1,5 @@
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
+import { getEnv } from '../../utils/env';
 import { DEFAULT_ARTIFACT_REGISTRY_URL } from './constants';
 import { NetworkConfig } from './types';
 
