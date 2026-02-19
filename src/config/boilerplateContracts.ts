@@ -12,7 +12,6 @@ import { Fr } from '@aztec/aztec.js/fields';
 import { createContractConfig, getDeployerAddress } from '../contract-registry';
 import { DEFAULT_ARTIFACT_REGISTRY_URL } from './networks/constants';
 import type { ArtifactSourceConfig } from '../types/artifactSource';
-import type { NetworkConfig } from './networks/types';
 
 // ---------------------------------------------------------------------------
 // Boilerplate-specific constants
@@ -42,26 +41,20 @@ const CLASS_IDS = {
 // Artifact source chains
 // ---------------------------------------------------------------------------
 
-function dripperArtifactSources(config: NetworkConfig): ArtifactSourceConfig[] {
-  if (config.name === 'devnet') {
-    return [
-      { registry: registryUrl },
-      { external: externalTgzUrl },
-      { local: DripperContract.artifact },
-    ];
-  }
-  return [{ local: DripperContract.artifact }];
+function dripperArtifactSources(): ArtifactSourceConfig[] {
+  return [
+    { registry: registryUrl },
+    { external: externalTgzUrl },
+    { local: DripperContract.artifact },
+  ];
 }
 
-function tokenArtifactSources(config: NetworkConfig): ArtifactSourceConfig[] {
-  if (config.name === 'devnet') {
-    return [
-      { registry: registryUrl },
-      { external: externalTgzUrl },
-      { local: TokenContract.artifact },
-    ];
-  }
-  return [{ local: TokenContract.artifact }];
+function tokenArtifactSources(): ArtifactSourceConfig[] {
+  return [
+    { registry: registryUrl },
+    { external: externalTgzUrl },
+    { local: TokenContract.artifact },
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -83,8 +76,7 @@ export const boilerplateContracts = createContractConfig({
     }),
     lazyRegister: false,
     artifactSources: dripperArtifactSources,
-    classId: (config) =>
-      config.name === 'devnet' ? CLASS_IDS.dripper : undefined,
+    classId: () => CLASS_IDS.dripper,
   },
 
   /**
@@ -107,7 +99,6 @@ export const boilerplateContracts = createContractConfig({
     }),
     lazyRegister: true,
     artifactSources: tokenArtifactSources,
-    classId: (config) =>
-      config.name === 'devnet' ? CLASS_IDS.token : undefined,
+    classId: () => CLASS_IDS.token,
   },
 });
