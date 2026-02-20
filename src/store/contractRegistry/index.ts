@@ -1,11 +1,7 @@
 export { useContractRegistryStore, getContractRegistryStore } from './store';
+export type { ContractRegistryStore } from './store';
 export type {
-  ContractRegistryStore,
   ContractRegistryStatus,
-  TimingInfo,
-} from './store';
-export {
-  useContractRegistryStatus,
-  useContractRegistryError,
-  useContractRegistryTimingInfo,
-} from './selectors';
+  ArtifactStatus,
+} from '../../types/artifactRegistry';
+export { useContractRegistryStatus } from './selectors';

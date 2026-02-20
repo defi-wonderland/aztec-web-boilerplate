@@ -1,48 +1,27 @@
-import { Fr } from '@aztec/aztec.js/fields';
-import { DripperContract } from '../artifacts/Dripper.js';
-import { TokenContract } from '../artifacts/Token.js';
-import {
-  createContractConfig,
-  getDeployerAddress,
-  getTokenConstructorArgs,
-} from '../contract-registry';
+import { createContractConfig } from '../contract-registry';
+import { boilerplateContracts } from './boilerplateContracts';
 
 /**
- * Edit this file to add/remove contracts for your application.
+ * Contract registry configuration.
  *
- * By default, all contracts are registered at initialization.
- * Set `lazyRegister: true` on a contract to only register it on-demand.
+ * The boilerplate ships with Dripper and Token (see boilerplateContracts.ts).
+ * Add your own contracts below — each entry needs:
+ *   address          — function returning the contract address
+ *   deployParams     — function returning deployment parameters
+ *   artifactSources  — ordered fallback chain of artifact sources (first success wins)
+ *
+ * Optional fields:
+ *   classId          — class ID for registry lookups
+ *   lazyRegister     — if true, register on-demand instead of at startup
  */
 export const contractsConfig = createContractConfig({
-  /**
-   * Dripper contract - Mints tokens to users
-   */
-  dripper: {
-    artifact: DripperContract.artifact,
-    contract: DripperContract,
-    address: (config) => config.dripperContractAddress,
-    deployParams: (config) => ({
-      salt: Fr.fromString(config.dripperDeploymentSalt),
-      deployer: getDeployerAddress(config),
-      constructorArgs: [],
-      constructorArtifact: 'constructor',
-    }),
-    lazyRegister: false,
-  },
+  // Boilerplate demo contracts (Dripper + Token)
+  ...boilerplateContracts,
 
-  /**
-   * Token contract - Yield Token (YT)
-   */
-  token: {
-    artifact: TokenContract.artifact,
-    contract: TokenContract,
-    address: (config) => config.tokenContractAddress,
-    deployParams: (config) => ({
-      salt: Fr.fromString(config.tokenDeploymentSalt),
-      deployer: getDeployerAddress(config),
-      constructorArgs: [...getTokenConstructorArgs(config)],
-      constructorArtifact: 'constructor_with_minter',
-    }),
-    lazyRegister: true,
-  },
+  // Add your own contracts here:
+  // myContract: {
+  //   address: (config) => config.myContractAddress,
+  //   deployParams: (config) => ({ ... }),
+  //   artifactSources: (config) => [...],
+  // },
 });

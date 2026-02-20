@@ -8,7 +8,7 @@ import { cn } from './utils';
 
 const styles = {
   container: 'min-h-screen',
-  bgSettings: 'bg-[#F8F8FA] dark:bg-[#121218]',
+  bgSettings: 'bg-page',
   bgDefault: 'bg-surface',
   main: 'flex flex-col',
   errorContainer: 'w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6',
@@ -47,7 +47,7 @@ const AppContent: React.FC = () => {
   );
 };
 
-function App() {
+export function App() {
   return (
     <AppProvider>
       <AppNavigationProvider>
@@ -56,5 +56,3 @@ function App() {
     </AppProvider>
   );
 }
-
-export default App;

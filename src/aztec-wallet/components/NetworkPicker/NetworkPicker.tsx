@@ -91,6 +91,7 @@ export const NetworkPicker: React.FC<NetworkPickerProps> = ({
         onClick={open}
         className={cn(styles.buttonCompact, className)}
         title={displayName}
+        data-testid="network-picker"
       >
         <div className={styles.iconContainer}>
           <NetworkIcon
@@ -108,6 +109,7 @@ export const NetworkPicker: React.FC<NetworkPickerProps> = ({
       type="button"
       onClick={open}
       className={cn(styles.buttonFull, className)}
+      data-testid="network-picker"
     >
       <div className={styles.iconContainer}>
         <NetworkIcon

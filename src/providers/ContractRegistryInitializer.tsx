@@ -4,17 +4,16 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { PXE } from '@aztec/pxe/server';
 import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
 import { contractsConfig } from '../config/contracts';
-import { getNetworkArtifacts } from '../config/networkArtifacts';
 import {
   ContractRegistry,
-  getContractsForConfig,
   type ContractConfigMap,
   type ContractNames,
 } from '../contract-registry';
-import { useToast } from '../hooks';
+import { useArtifacts, useToast } from '../hooks';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { iconSize } from '../utils';
 import type { NetworkConfig } from '../config/networks';
+import type { ResolvedArtifacts } from '../services/aztec/artifact';
 
 /**
  * Get contracts to load at initialization (lazyRegister !== true)
@@ -27,22 +26,24 @@ const getInitialContracts = <T extends ContractConfigMap>(
     .map(([name]) => name);
 };
 
+// Hoist the cast outside the component so the reference is stable across renders
+const typedContractsConfig = contractsConfig as unknown as ContractConfigMap;
+
 interface ContractRegistryInitializerProps {
   showTimingToast?: boolean;
   children: ReactNode;
 }
 
-const createRegistry = <T extends ContractConfigMap>(
+const createRegistry = (
   pxe: PXE,
-  contracts: T,
-  config: NetworkConfig
+  contracts: ContractConfigMap,
+  config: NetworkConfig,
+  artifacts: ResolvedArtifacts
 ) => {
-  return new ContractRegistry(pxe, contracts, config);
+  return new ContractRegistry(pxe, contracts, config, artifacts);
 };
 
-export function ContractRegistryInitializer<
-  T extends ContractConfigMap = ContractConfigMap,
->({
+export function ContractRegistryInitializer({
   showTimingToast = true,
   children,
 }: ContractRegistryInitializerProps): React.ReactElement {
@@ -50,42 +51,40 @@ export function ContractRegistryInitializer<
     useAztecWallet();
   const { addToast } = useToast();
 
+  // Load artifacts first
+  const { artifacts, isReady: artifactsReady } = useArtifacts({
+    showToast: showTimingToast,
+  });
+
   // Get PXE from the active connector (embedded or external signer)
   const pxe = hasAppManagedPXE(connector) ? connector.getPXE() : null;
 
-  // Only register contracts when wallet is connected and PXE is ready
-  const isReady = isConnected && isPXEInitialized && pxe !== null;
+  const { setStatus, setRegistry } = useContractRegistryStore();
 
-  const contracts = useMemo(
-    () =>
-      getContractsForConfig(
-        contractsConfig,
-        getNetworkArtifacts(currentConfig.name)
-      ) as unknown as T,
-    [currentConfig]
-  );
+  // Only register contracts when wallet is connected, PXE is ready, and artifacts are loaded
+  const isReady =
+    isConnected && isPXEInitialized && pxe !== null && artifactsReady;
 
   const initialContracts = useMemo(
-    () => getInitialContracts(contracts),
-    [contracts]
+    () => getInitialContracts(typedContractsConfig),
+    [typedContractsConfig]
   );
 
-  const { setStatus, setError, setRegistry } = useContractRegistryStore();
-
-  const registryRef = useRef<ContractRegistry<T> | null>(null);
+  const registryRef = useRef<ContractRegistry<ContractConfigMap> | null>(null);
   const initializingRef = useRef(false);
 
   const checkContractsCached = useMemo(
     () =>
       async (
         pxeInstance: PXE,
-        contractsList: ContractNames<T>[],
-        networkConfig: NetworkConfig
+        contractsList: ContractNames<ContractConfigMap>[],
+        networkConfig: NetworkConfig,
+        contractsMap: ContractConfigMap
       ): Promise<boolean> => {
         if (contractsList.length === 0) return true;
         const results = await Promise.all(
           contractsList.map(async (name) => {
-            const contractConfig = contracts[name];
+            const contractConfig = contractsMap[name];
             if (!contractConfig) return false;
             const expectedAddress = AztecAddress.fromString(
               contractConfig.address(networkConfig)
@@ -97,11 +96,11 @@ export function ContractRegistryInitializer<
         );
         return results.every(Boolean);
       },
-    [contracts]
+    []
   );
 
   useEffect(() => {
-    if (!isReady || initializingRef.current) {
+    if (!isReady || !artifacts || !pxe || initializingRef.current) {
       return;
     }
 
@@ -109,14 +108,20 @@ export function ContractRegistryInitializer<
 
     const initializeRegistry = async () => {
       try {
-        const registry = createRegistry(pxe, contracts, currentConfig);
+        const registry = createRegistry(
+          pxe,
+          typedContractsConfig,
+          currentConfig,
+          artifacts
+        );
         registryRef.current = registry;
         setRegistry(registry);
 
         const allCached = await checkContractsCached(
           pxe,
           initialContracts,
-          currentConfig
+          currentConfig,
+          typedContractsConfig
         );
         const start = performance.now();
         await registry.registerAll(initialContracts);
@@ -141,13 +146,9 @@ export function ContractRegistryInitializer<
         }
 
         setStatus('ready');
-        setError(undefined);
       } catch (err) {
-        const registrationError =
-          err instanceof Error ? err : new Error(String(err));
-        setError(registrationError);
         setStatus('error');
-        console.error('Contract registration failed:', registrationError);
+        console.error('Contract registration failed:', err);
       } finally {
         initializingRef.current = false;
       }
@@ -156,7 +157,7 @@ export function ContractRegistryInitializer<
     initializeRegistry();
   }, [
     addToast,
-    contracts,
+    artifacts,
     currentConfig,
     initialContracts,
     isReady,
@@ -164,7 +165,6 @@ export function ContractRegistryInitializer<
     showTimingToast,
     checkContractsCached,
     setStatus,
-    setError,
     setRegistry,
   ]);
 

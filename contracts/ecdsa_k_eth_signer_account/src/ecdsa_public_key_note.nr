@@ -1,5 +1,5 @@
-use dep::aztec::{
-    protocol_types::traits::Packable,
+use ::aztec::{
+    protocol::traits::Packable,
     macros::notes::note
 };
 

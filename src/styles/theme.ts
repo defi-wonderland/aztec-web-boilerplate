@@ -91,7 +91,7 @@ export const inputVariants = cva(
     'border border-default rounded-lg',
     'transition-all duration-200',
     'placeholder-muted',
-    'focus:outline-none focus-accent-soft',
+    'focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20',
     'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-surface-tertiary',
   ],
   {

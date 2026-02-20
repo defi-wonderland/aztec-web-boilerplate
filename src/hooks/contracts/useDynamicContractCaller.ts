@@ -2,11 +2,14 @@ import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../../aztec-wallet';
+import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { useFeePayment } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 import { getContractMethod } from './utils';
 import type { SimulateViewsOp } from '../../types';
@@ -27,7 +30,8 @@ interface CallResult {
 export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
-  const { connector, account } = useAztecWallet();
+  const { connector, account, currentConfig } = useAztecWallet();
+  const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,13 +205,18 @@ export const useDynamicContractCaller = (
             };
           }
 
-          const paymentMethod = await connector.getSponsoredFeePaymentMethod();
-          const tx = method(...args);
-          const sentTx = tx.send({
-            from: account.getAddress(),
-            fee: { paymentMethod },
+          const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
+            config: currentConfig?.feePaymentContracts ?? {},
+            getSponsoredFeePaymentMethod: () =>
+              connector.getSponsoredFeePaymentMethod(),
           });
-          const receipt = await sentTx.wait({ timeout: 900 });
+
+          const tx = method(...args);
+          const receipt = await tx.send({
+            from: account.getAddress(),
+            ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+            wait: { timeout: 900, waitForStatus: TxStatus.PROPOSED },
+          });
 
           return { success: true, data: receipt };
         }
@@ -221,7 +230,13 @@ export const useDynamicContractCaller = (
         setIsExecuting(false);
       }
     },
-    [account, artifact, connector]
+    [
+      account,
+      artifact,
+      connector,
+      feePaymentMethod,
+      currentConfig?.feePaymentContracts,
+    ]
   );
 
   return {

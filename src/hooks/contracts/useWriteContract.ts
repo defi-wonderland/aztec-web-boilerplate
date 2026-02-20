@@ -2,12 +2,16 @@ import { useState, useCallback } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
+import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   isBrowserWalletConnector,
   hasAppManagedPXE,
 } from '../../aztec-wallet';
+import { createFeePaymentMethod } from '../../services/aztec/feePayment';
+import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
+import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type {
   MethodsOf,
   ArgsOf,
@@ -46,6 +50,8 @@ interface WriteContractParams<
   functionName: TMethod;
   /** Method arguments */
   args: ArgsOf<TContract, TMethod>;
+  /** Fee payment method to use (defaults to DEFAULT_FEE_PAYMENT_METHOD) */
+  feePaymentMethod?: FeePaymentMethodType;
 }
 
 const getChainFromCaipAccount = (caipAccount: string): string => {
@@ -56,6 +62,7 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
 /**
  * Hook for executing write operations on Aztec contracts.
  * Handles both embedded and browser wallet flows automatically.
+ * Uses the global fee payment method from Settings.
  *
  * @example
  * ```tsx
@@ -72,7 +79,7 @@ const getChainFromCaipAccount = (caipAccount: string): string => {
  */
 export const useWriteContract = (options: UseWriteContractOptions = {}) => {
   const { timeout = 900, receiptPolling } = options;
-  const { connector, account } = useAztecWallet();
+  const { connector, account, currentConfig } = useAztecWallet();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +90,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
     >(
       params: WriteContractParams<TContract, TMethod>
     ): Promise<WriteContractResult> => {
-      const { contract, address, functionName, args } = params;
+      const {
+        contract,
+        address,
+        functionName,
+        args,
+        feePaymentMethod = DEFAULT_FEE_PAYMENT_METHOD,
+      } = params;
       const artifact = contract.artifact;
 
       if (!connector || !account) {
@@ -155,7 +168,12 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          const paymentMethod = await connector.getSponsoredFeePaymentMethod();
+          const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
+            config: currentConfig?.feePaymentContracts ?? {},
+            getSponsoredFeePaymentMethod: () =>
+              connector.getSponsoredFeePaymentMethod(),
+          });
+
           const contractAddress = AztecAddress.fromString(address);
 
           // Create contract instance
@@ -175,18 +193,42 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           }
 
           const tx = method(...(args as unknown[]));
-          const sentTx = (
+
+          // Simulate first to catch revert reasons before sending
+          console.log(
+            `[useWriteContract] Simulating ${String(functionName)}...`
+          );
+          try {
+            const simulateResult = await (
+              tx as { simulate: (opts: unknown) => Promise<unknown> }
+            ).simulate({ from: account.getAddress() });
+            console.log(
+              `[useWriteContract] Simulation successful:`,
+              simulateResult
+            );
+          } catch (simErr) {
+            const simErrorMsg =
+              simErr instanceof Error ? simErr.message : 'Simulation failed';
+            console.error(
+              `[useWriteContract] Simulation failed for ${String(functionName)}:`,
+              simErr
+            );
+            setError(simErrorMsg);
+            return {
+              success: false,
+              error: `Simulation failed: ${simErrorMsg}`,
+            };
+          }
+
+          const result = await (
             tx as {
-              send: (opts: unknown) => {
-                wait: (opts: unknown) => Promise<unknown>;
-              };
+              send: (opts: unknown) => Promise<unknown>;
             }
           ).send({
             from: account.getAddress(),
-            fee: { paymentMethod },
+            ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+            wait: { timeout, waitForStatus: TxStatus.PROPOSED },
           });
-
-          const result = await sentTx.wait({ timeout });
 
           return {
             success: true,
@@ -205,7 +247,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
         setIsPending(false);
       }
     },
-    [connector, account, timeout, receiptPolling]
+    [
+      connector,
+      account,
+      timeout,
+      currentConfig?.feePaymentContracts,
+      receiptPolling,
+    ]
   );
 
   const reset = useCallback(() => {

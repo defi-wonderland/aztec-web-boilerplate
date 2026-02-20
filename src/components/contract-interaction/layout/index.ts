@@ -1,4 +1,4 @@
-export { ContractLayout, default } from './ContractLayout';
+export { ContractLayout } from './ContractLayout';
 export { ContractSidebar } from './ContractSidebar';
 export type { SidebarContract } from './ContractSidebar';
 export { ContractSetupPanel } from './ContractSetupPanel';

@@ -9,15 +9,22 @@ import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/Sponsored
 import { createPXE } from '@aztec/pxe/client/bundle';
 import { getPXEConfig } from '@aztec/pxe/config';
 import type { PXE } from '@aztec/pxe/server';
+import { AVAILABLE_NETWORKS } from '../../../../config/networks';
+import { FeePaymentRegister } from '../../../../services/aztec/feePayment/FeePaymentRegister';
 import { MinimalWallet } from '../../../../utils/MinimalWallet';
-import { getEnv } from '../../../../utils/env';
 import { NetworkService } from '../network';
 import { AztecStorageService } from '../storage';
 import type { AztecNetwork } from '../../../../config/networks/constants';
 
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
-const PROVER_ENABLED = getEnv().proverEnabled;
+const getProverEnabled = (networkName: AztecNetwork): boolean => {
+  const networkConfig = AVAILABLE_NETWORKS.find((n) => n.name === networkName);
+  if (!networkConfig) {
+    throw new Error(`Network configuration not found for: ${networkName}`);
+  }
+  return networkConfig.proverEnabled;
+};
 
 export interface SharedPXEInstance {
   pxe: PXE;
@@ -67,7 +74,7 @@ class SharedPXEServiceClass {
       if (existing.nodeUrl === normalizedNodeUrl) {
         return existing.instance;
       }
-      this.clearInstance(existing.nodeUrl, existing.networkName);
+      this.clearInstance(existing.networkName);
     }
 
     // Return in-progress initialization if exists
@@ -95,7 +102,7 @@ class SharedPXEServiceClass {
   /**
    * Check if a PXE instance is initialized for a network
    */
-  isInitialized(nodeUrl: string, networkName: AztecNetwork): boolean {
+  isInitialized(networkName: AztecNetwork): boolean {
     const key = this.getInstanceKey(networkName);
     return this.instances.has(key);
   }
@@ -103,7 +110,7 @@ class SharedPXEServiceClass {
   /**
    * Check if initialization is in progress for a network
    */
-  isInitializing(nodeUrl: string, networkName: AztecNetwork): boolean {
+  isInitializing(networkName: AztecNetwork): boolean {
     const key = this.getInstanceKey(networkName);
     return this.initPromises.has(key);
   }
@@ -111,10 +118,7 @@ class SharedPXEServiceClass {
   /**
    * Get existing instance without initialization (returns null if not initialized)
    */
-  getExistingInstance(
-    nodeUrl: string,
-    networkName: AztecNetwork
-  ): SharedPXEInstance | null {
+  getExistingInstance(networkName: AztecNetwork): SharedPXEInstance | null {
     const key = this.getInstanceKey(networkName);
     return this.instances.get(key)?.instance ?? null;
   }
@@ -122,7 +126,7 @@ class SharedPXEServiceClass {
   /**
    * Clear a specific PXE instance (useful for network switching)
    */
-  clearInstance(nodeUrl: string, networkName: AztecNetwork): void {
+  clearInstance(networkName: AztecNetwork): void {
     const key = this.getInstanceKey(networkName);
     this.instances.delete(key);
     this.cachedPaymentMethods.delete(key);
@@ -138,8 +142,15 @@ class SharedPXEServiceClass {
     logger.info('Cleared all PXE instances');
   }
 
-  private getInstanceKey(networkName: AztecNetwork): string {
+  private getInstanceKey(networkName: AztecNetwork | string): string {
     return `${networkName}`;
+  }
+
+  private getFeePaymentConfig(networkName: string) {
+    const networkConfig = AVAILABLE_NETWORKS.find(
+      (n) => n.name === networkName
+    );
+    return networkConfig?.feePaymentContracts;
   }
 
   private normalizeNodeUrl(nodeUrl: string): string {
@@ -167,21 +178,18 @@ class SharedPXEServiceClass {
 
     const config = getPXEConfig();
     config.l1Contracts = l1Contracts;
-    config.proverEnabled = PROVER_ENABLED;
+    config.proverEnabled = getProverEnabled(networkName);
 
     const pxe = await createPXE(aztecNode, config, {
       store: pxeStore,
-      useLogSuffix: false,
     });
 
     const wallet = new MinimalWallet(pxe, aztecNode);
 
-    // Register SponsoredFPC contract
-    const sponsoredPFCInstance = await this.getSponsoredPFCContract(pxe);
-    await pxe.registerContract({
-      instance: sponsoredPFCInstance,
-      artifact: SponsoredFPCContractArtifact,
-    });
+    // Register fee payment contracts (look up config by network name)
+    const feePaymentConfig = this.getFeePaymentConfig(networkName);
+    const feePaymentRegister = new FeePaymentRegister();
+    await feePaymentRegister.registerAll(pxe, feePaymentConfig);
 
     // Initialize storage service
     const storageService = new AztecStorageService();
@@ -234,6 +242,7 @@ class SharedPXEServiceClass {
           dataDirectory: 'pxe',
           dataStoreMapSizeKb: SharedPXEServiceClass.PERSISTED_STORE_KB,
         },
+        undefined,
         pxeLogger
       );
     } catch (error) {
@@ -250,6 +259,7 @@ class SharedPXEServiceClass {
           dataDirectory: 'pxe-tmp',
           dataStoreMapSizeKb: SharedPXEServiceClass.FALLBACK_STORE_KB,
         },
+        undefined,
         pxeLogger
       );
     }
@@ -281,6 +291,7 @@ class SharedPXEServiceClass {
     const paymentMethod = new SponsoredFeePaymentMethod(
       sponsoredPFCContract.address
     );
+
     this.cachedPaymentMethods.set(key, paymentMethod);
 
     return paymentMethod;

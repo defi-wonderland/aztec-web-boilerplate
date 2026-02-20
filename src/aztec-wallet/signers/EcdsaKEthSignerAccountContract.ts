@@ -1,13 +1,14 @@
-import { DefaultAccountInterface } from '@aztec/accounts/defaults';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type {
-  AccountContract,
-  AccountInterface,
-  AuthWitnessProvider,
-  ChainInfo,
+import {
+  BaseAccount,
+  type AccountContract,
+  type Account,
+  type AuthWitnessProvider,
 } from '@aztec/aztec.js/account';
 import type { CompleteAddress } from '@aztec/aztec.js/addresses';
-import { EcdsaKEthSignerAccountContractArtifact } from '../../artifacts/EcdsaKEthSignerAccount';
+import { DefaultAccountEntrypoint } from '@aztec/entrypoints/account';
+// TODO: temporary
+// import { EcdsaKEthSignerAccountContractArtifact } from '../../artifacts/EcdsaKEthSignerAccount';
 
 /**
  * AccountContract implementation for ECDSA K accounts that use
@@ -52,7 +53,8 @@ export class EcdsaKEthSignerAccountContract implements AccountContract {
    * Returns the contract artifact for deployment.
    */
   getContractArtifact(): Promise<ContractArtifact> {
-    return Promise.resolve(EcdsaKEthSignerAccountContractArtifact);
+    return null;
+    // return Promise.resolve(EcdsaKEthSignerAccountContractArtifact);
   }
 
   /**
@@ -73,16 +75,14 @@ export class EcdsaKEthSignerAccountContract implements AccountContract {
   }
 
   /**
-   * Returns the account interface for creating tx requests.
+   * Returns the account for creating tx requests.
    */
-  getInterface(
-    address: CompleteAddress,
-    chainInfo: ChainInfo
-  ): AccountInterface {
-    return new DefaultAccountInterface(
-      this.getAuthWitnessProvider(address),
-      address,
-      chainInfo
+  getAccount(address: CompleteAddress): Account {
+    const authWitnessProvider = this.getAuthWitnessProvider(address);
+    return new BaseAccount(
+      new DefaultAccountEntrypoint(address.address, authWitnessProvider),
+      authWitnessProvider,
+      address
     );
   }
 

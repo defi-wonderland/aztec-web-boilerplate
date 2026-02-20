@@ -1,4 +1,6 @@
 import React from 'react';
+import { Settings, Link, FileText, Rocket } from 'lucide-react';
+import { iconSize } from '../../utils';
 import { ConfigSection } from './ConfigSection';
 import { ConfigValueRow } from './ConfigValueRow';
 import type { NetworkConfig } from '../../config/networks/types';
@@ -9,13 +11,13 @@ export interface ConfigPanelProps {
 
 const styles = {
   container:
-    'flex-1 flex flex-col gap-4 md:gap-7 bg-[#F8F8FA] dark:bg-[#121218] px-4 py-4 lg:px-10 lg:py-8',
+    'flex-1 flex flex-col gap-4 md:gap-7 bg-page px-4 py-4 lg:px-10 lg:py-8',
   header: 'flex items-center gap-3 md:gap-4',
   headerIcon:
-    'w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-[14px] flex items-center justify-center bg-[#8B5CF6]/20 dark:bg-[#a78bfa]/20 text-lg md:text-[22px]',
+    'w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-[14px] flex items-center justify-center bg-[var(--accent-primary)]/20 text-lg md:text-[22px]',
   headerContent: 'flex flex-col gap-0.5 md:gap-1',
-  headerTitle: 'text-xl md:text-2xl font-bold text-[#1A1A1A] dark:text-white',
-  headerSubtitle: 'text-xs md:text-sm text-[#6B7280] dark:text-[#9ca3af]',
+  headerTitle: 'text-xl md:text-2xl font-bold text-default',
+  headerSubtitle: 'text-xs md:text-sm text-muted',
   sectionsContainer: 'flex flex-col gap-4 md:gap-5',
   grid2Col: 'grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4',
   contractsGap: 'flex flex-col gap-3 md:gap-4',
@@ -25,7 +27,9 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config }) => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div className={styles.headerIcon}>⚙️</div>
+        <div className={styles.headerIcon}>
+          <Settings size={iconSize('lg')} />
+        </div>
         <div className={styles.headerContent}>
           <span className={styles.headerTitle}>
             {config.displayName} Configuration
@@ -38,7 +42,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config }) => {
 
       <div className={styles.sectionsContainer}>
         <ConfigSection
-          icon="🔗"
+          icon={<Link size={iconSize()} />}
           iconVariant="green"
           title="Connection"
           badge={{ text: 'Online', variant: 'online' }}
@@ -47,7 +51,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config }) => {
         </ConfigSection>
 
         <ConfigSection
-          icon="📄"
+          icon={<FileText size={iconSize()} />}
           iconVariant="purple"
           title="Smart Contracts"
           badge={{ text: '2 deployed', variant: 'count' }}
@@ -66,7 +70,11 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config }) => {
           </div>
         </ConfigSection>
 
-        <ConfigSection icon="🚀" iconVariant="amber" title="Deployment Info">
+        <ConfigSection
+          icon={<Rocket size={iconSize()} />}
+          iconVariant="amber"
+          title="Deployment Info"
+        >
           <div className={styles.contractsGap}>
             <ConfigValueRow label="Deployer" value={config.deployerAddress} />
             <div className={styles.grid2Col}>

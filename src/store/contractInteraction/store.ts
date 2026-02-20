@@ -1,17 +1,16 @@
 import { create } from 'zustand';
 import {
-  loadCachedContracts,
-  removeContract,
-  persistCachedContracts,
-  deleteArtifact,
-} from '../../utils/contractCache';
+  getArtifactStorageService,
+  type CachedContract,
+} from '../../services/storage';
 import { getFormStore } from '../form';
 import type {
   LogEntry,
   ArtifactLoaderMode,
 } from '../../components/contract-interaction/types';
-import type { CachedContract } from '../../utils/contractCache';
-import type { ParsedArtifact } from '../../utils/contractInteraction';
+import type { ParsedArtifact } from '../../types/artifact';
+import type { ArtifactStateUpdate } from '../../types/artifactRegistry';
+import type { ArtifactError } from '../../utils/errors';
 
 type ViewMode = 'setup' | 'explorer';
 
@@ -21,7 +20,7 @@ type ViewMode = 'setup' | 'explorer';
 export interface SimulationResult {
   value: string;
   type: string;
-  timestamp: Date;
+  timestamp: number;
   functionName: string;
 }
 
@@ -32,10 +31,9 @@ type State = {
   deployableId: string | null;
   constructorName: string | null;
   logs: LogEntry[];
-  // Artifact state (moved from useContractInvoker local state)
   artifactInput: string;
   parsedArtifact: ParsedArtifact | null;
-  parseError: string | null;
+  parseError: ArtifactError | null;
   savedContracts: CachedContract[];
   isLoadingPreconfigured: boolean;
   // UI layout state
@@ -49,22 +47,25 @@ type State = {
 
 type Actions = {
   setMode: (mode: ArtifactLoaderMode) => void;
-  setPreconfiguredId: (id: string | null) => void;
+  // Invoke mode
   setAddress: (address: string) => void;
-  setDeployableId: (id: string | null) => void;
-  setSelectedConstructor: (name: string | null) => void;
-  pushLog: (entry: Omit<LogEntry, 'id'>) => void;
+  setInvokeTarget: (address: string, preconfiguredId?: string | null) => void;
+  // Deploy mode
+  setDeployTarget: (
+    deployableId: string | null,
+    constructorName?: string | null
+  ) => void;
+  pushLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   clearLogs: () => void;
-  reset: () => void;
+  setSelectedConstructor: (constructorName: string | null) => void;
   // Artifact actions
   setArtifactInput: (input: string) => void;
-  setParsedArtifact: (artifact: ParsedArtifact | null) => void;
-  setParseError: (error: string | null) => void;
   setSavedContracts: (contracts: CachedContract[]) => void;
-  setIsLoadingPreconfigured: (loading: boolean) => void;
-  refreshSavedContracts: (networkName?: string) => void;
+  refreshSavedContracts: (networkName?: string) => Promise<void>;
   deleteSavedContract: (address: string, networkName?: string) => Promise<void>;
-  clearArtifactState: () => void;
+  reset: () => void;
+  resetArtifact: () => void;
+  setArtifactState: (update: ArtifactStateUpdate) => void;
   // UI layout actions
   setViewMode: (mode: ViewMode) => void;
   setSidebarSelectedId: (id: string | null) => void;
@@ -118,56 +119,49 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
         return { mode };
       }),
 
-    setPreconfiguredId: (preconfiguredId) => {
-      getFormStore().reset();
-      set({ preconfiguredId });
-    },
-
     setAddress: (address) => set({ address }),
 
-    setDeployableId: (deployableId) => {
+    setInvokeTarget: (address, preconfiguredId = null) => {
       getFormStore().reset();
-      set({ deployableId, constructorName: null });
+      set({ address, preconfiguredId });
     },
+
+    setDeployTarget: (deployableId, constructorName = null) => {
+      getFormStore().reset();
+      set({ deployableId, constructorName });
+    },
+
+    pushLog: (entry) =>
+      set((state) => {
+        const now = Date.now();
+        return {
+          logs: [
+            { ...entry, id: `${now}-${state.logs.length}-${Math.random().toString(36).substr(2, 9)}`, timestamp: now },
+            ...state.logs,
+          ].slice(0, 50),
+        };
+      }),
+
+    clearLogs: () => set({ logs: [] }),
 
     setSelectedConstructor: (constructorName) => {
       getFormStore().reset();
       set({ constructorName });
     },
 
-    pushLog: (entry) =>
-      set((state) => ({
-        logs: [
-          { ...entry, id: `${Date.now()}-${state.logs.length}` },
-          ...state.logs,
-        ].slice(0, 50),
-      })),
-
-    clearLogs: () => set({ logs: [] }),
-
-    reset: () => {
-      getFormStore().reset();
-      set(INITIAL_STATE);
-    },
-
     // Artifact actions
     setArtifactInput: (artifactInput) => set({ artifactInput }),
 
-    setParsedArtifact: (parsedArtifact) => set({ parsedArtifact }),
-
-    setParseError: (parseError) => set({ parseError }),
-
     setSavedContracts: (savedContracts) => set({ savedContracts }),
 
-    setIsLoadingPreconfigured: (isLoadingPreconfigured) =>
-      set({ isLoadingPreconfigured }),
-
-    refreshSavedContracts: (networkName) => {
-      const contracts = loadCachedContracts(networkName);
+    refreshSavedContracts: async (networkName) => {
+      const storage = getArtifactStorageService();
+      const contracts = await storage.getContracts(networkName);
       set({ savedContracts: contracts });
     },
 
     deleteSavedContract: async (address, networkName) => {
+      const storage = getArtifactStorageService();
       const state = useContractInteractionStore.getState();
       const contractToDelete = state.savedContracts.find(
         (c) => c.address.toLowerCase() === address.toLowerCase()
@@ -175,22 +169,34 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
 
       // Delete artifact from IndexedDB if stored there
       if (contractToDelete?.artifactKey) {
-        await deleteArtifact(contractToDelete.artifactKey);
+        await storage.delete(contractToDelete.artifactKey);
       }
 
       // Remove from list and persist
-      const updated = removeContract(state.savedContracts, address);
-      persistCachedContracts(updated, networkName);
+      const updated = state.savedContracts.filter(
+        (c) => c.address.toLowerCase() !== address.toLowerCase()
+      );
+      await storage.saveContracts(networkName, updated);
       set({ savedContracts: updated });
     },
 
-    clearArtifactState: () => {
+    reset: () => {
       getFormStore().reset();
-      set({
-        ...ARTIFACT_INITIAL_STATE,
-        address: '',
-        preconfiguredId: null,
-      });
+      set(INITIAL_STATE);
+    },
+
+    resetArtifact: () => {
+      getFormStore().reset();
+      set(ARTIFACT_INITIAL_STATE);
+    },
+
+    setArtifactState: (update) => {
+      const mapped: Partial<State> = {};
+      if ('parsed' in update) mapped.parsedArtifact = update.parsed;
+      if ('error' in update) mapped.parseError = update.error;
+      if ('isLoading' in update)
+        mapped.isLoadingPreconfigured = update.isLoading;
+      set(mapped);
     },
 
     // UI layout actions

@@ -7,13 +7,20 @@ import {
   Search,
   Circle,
   FileCode,
-  Coins,
-  Droplet,
   Trash2,
   Copy,
   Check,
 } from 'lucide-react';
+import { useCopyToClipboard } from '../../../hooks';
+import {
+  useViewMode,
+  useSidebarSelectedId,
+  useSelectedFunctionName,
+  useFunctionFilter,
+  useExplorerActions,
+} from '../../../store';
 import { cn, iconSize, truncateAddress } from '../../../utils';
+import { Button, Input } from '../../ui';
 import type { FunctionGroup } from '../types';
 
 /**
@@ -83,7 +90,9 @@ const styles = {
   ),
   searchIcon: 'text-muted flex-shrink-0',
   searchInput: cn(
-    'flex-1 bg-transparent border-none outline-none',
+    'flex-1 h-auto p-0',
+    'bg-transparent border-none shadow-none outline-none',
+    'ring-0 focus:ring-0 focus:border-none',
     'text-xs text-default placeholder:text-muted',
     'font-normal'
   ),
@@ -125,6 +134,9 @@ const styles = {
   functionName: 'text-xs font-medium font-mono truncate',
   functionNameDefault: 'text-muted',
   functionNameSelected: 'text-accent',
+
+  // Empty group text
+  emptyGroupText: 'pl-7 py-2 text-xs text-muted',
 
   // Empty state
   emptyState: cn(
@@ -191,35 +203,31 @@ export interface SidebarContract {
 
 interface ContractSidebarProps {
   contracts: SidebarContract[];
-  selectedContractId: string | null;
   selectedContract: SidebarContract | null;
-  isSetupSelected: boolean;
   functionGroups: FunctionGroup[];
-  selectedFunctionName: string | null;
-  functionFilter: string;
   onBack: () => void;
   onAddContract: () => void;
   onSelectContract: (id: string) => void;
-  onSelectFunction: (name: string) => void;
-  onFilterChange: (filter: string) => void;
   onDeleteContract?: (contract: SidebarContract) => void;
 }
 
 export const ContractSidebar: React.FC<ContractSidebarProps> = ({
   contracts,
-  selectedContractId,
   selectedContract,
-  isSetupSelected,
   functionGroups,
-  selectedFunctionName,
-  functionFilter,
   onBack,
   onAddContract,
   onSelectContract,
-  onSelectFunction,
-  onFilterChange,
   onDeleteContract,
 }) => {
+  const viewMode = useViewMode();
+  const sidebarSelectedId = useSidebarSelectedId();
+  const selectedFunctionName = useSelectedFunctionName();
+  const functionFilter = useFunctionFilter();
+  const { setSelectedFunctionName, setFunctionFilter } = useExplorerActions();
+
+  const isSetupSelected = viewMode === 'setup';
+
   // Count functions in each group
   const groupCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -246,41 +254,20 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
     });
   }, []);
 
-  // Track copy success state for contract address
-  const [addressCopied, setAddressCopied] = useState(false);
+  const { copied: addressCopied, copy: copyAddress } = useCopyToClipboard();
 
-  const handleCopyAddress = useCallback(async () => {
-    if (!selectedContract?.address) return;
-    try {
-      await navigator.clipboard.writeText(selectedContract.address);
-      setAddressCopied(true);
-      setTimeout(() => setAddressCopied(false), 2000);
-    } catch {
-      // Clipboard API failed silently
+  const handleCopyAddress = useCallback(() => {
+    if (selectedContract?.address) {
+      copyAddress(selectedContract.address);
     }
-  }, [selectedContract?.address]);
+  }, [selectedContract, copyAddress]);
 
-  // Helper to get icon for contract type based on name
   const getContractIcon = (contract: SidebarContract) => {
-    const name = contract.name.toLowerCase();
-    if (name.includes('token')) {
-      return (
-        <Coins size={18} className={styles.contractItemIconPreconfigured} />
-      );
-    }
-    if (name.includes('dripper')) {
-      return <Droplet size={18} className={styles.contractItemIconSaved} />;
-    }
-    return (
-      <FileCode
-        size={18}
-        className={
-          contract.type === 'preconfigured'
-            ? styles.contractItemIconPreconfigured
-            : styles.contractItemIconSaved
-        }
-      />
-    );
+    const iconClass =
+      contract.type === 'preconfigured'
+        ? styles.contractItemIconPreconfigured
+        : styles.contractItemIconSaved;
+    return <FileCode size={18} className={iconClass} />;
   };
 
   // If in setup mode, show contracts list sidebar
@@ -295,8 +282,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
         {/* Contracts List */}
         <div className={styles.contractsList}>
           {contracts.map((contract) => {
-            const isSelected = selectedContractId === contract.id;
-            const canDelete = onDeleteContract !== undefined;
+            const isSelected = sidebarSelectedId === contract.id;
             return (
               <button
                 key={contract.id}
@@ -320,25 +306,20 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                     {truncateAddress(contract.address)}
                   </span>
                 </div>
-                {canDelete && (
-                  <span
-                    role="button"
-                    tabIndex={0}
+                {onDeleteContract && (
+                  <Button
+                    variant="icon"
+                    size="icon"
                     className={styles.contractItemDelete}
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteContract(contract);
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.stopPropagation();
-                        onDeleteContract(contract);
-                      }
-                    }}
+                    aria-label="Remove contract"
                     title="Remove contract"
                   >
                     <Trash2 size={14} />
-                  </span>
+                  </Button>
                 )}
               </button>
             );
@@ -349,7 +330,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
             type="button"
             className={cn(
               styles.addContractBtn,
-              selectedContractId === null
+              sidebarSelectedId === null
                 ? styles.addContractBtnSelected
                 : styles.addContractBtnDefault
             )}
@@ -373,14 +354,15 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
         </button>
         <div className={styles.titleRow}>
           <span className={styles.sidebarTitle}>Explorer</span>
-          <button
-            type="button"
+          <Button
+            variant="icon"
+            size="icon"
             className={styles.addBtn}
             onClick={onAddContract}
             aria-label="Add contract"
           >
             <Plus size={iconSize()} className={styles.addIcon} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -399,8 +381,9 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
           <span className={styles.contractAddr}>
             {truncateAddress(selectedContract.address, 14, 6)}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="icon"
+            size="icon"
             className={cn(
               styles.contractCopyBtn,
               addressCopied && styles.contractCopySuccess
@@ -410,7 +393,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
             title="Copy address"
           >
             {addressCopied ? <Check size={12} /> : <Copy size={12} />}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -418,12 +401,11 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
       <div className={styles.searchSection}>
         <div className={styles.searchBox}>
           <Search size={iconSize()} className={styles.searchIcon} />
-          <input
-            type="text"
+          <Input
             className={styles.searchInput}
             placeholder="Search functions..."
             value={functionFilter}
-            onChange={(e) => onFilterChange(e.target.value)}
+            onChange={(e) => setFunctionFilter(e.target.value)}
           />
         </div>
       </div>
@@ -465,7 +447,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                             ? styles.functionItemSelected
                             : styles.functionItemDefault
                         )}
-                        onClick={() => onSelectFunction(fn.name)}
+                        onClick={() => setSelectedFunctionName(fn.name)}
                         title={fn.name}
                       >
                         <Circle
@@ -493,7 +475,7 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
                   })}
 
                   {group.items.length === 0 && (
-                    <div className="pl-7 py-2 text-xs text-muted">
+                    <div className={styles.emptyGroupText}>
                       No functions found
                     </div>
                   )}
@@ -512,5 +494,3 @@ export const ContractSidebar: React.FC<ContractSidebarProps> = ({
     </aside>
   );
 };
-
-export default ContractSidebar;

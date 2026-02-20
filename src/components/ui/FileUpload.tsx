@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Upload, FileText, X, Copy, Download, Check } from 'lucide-react';
-import { cn, iconSize } from '../../utils';
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
+import { cn, downloadAsFile, iconSize } from '../../utils';
 
 const styles = {
   container: 'flex flex-col gap-2',
@@ -43,6 +44,8 @@ const styles = {
     'hover:bg-surface-secondary transition-colors',
     'cursor-pointer'
   ),
+  // Hidden input
+  hiddenInput: 'hidden',
   // Error/helper styles
   error: 'text-sm text-error',
   helperText: 'text-sm text-muted',
@@ -77,6 +80,8 @@ export interface FileUploadProps {
   error?: string;
   /** Helper text to display */
   helperText?: string;
+  /** Maximum file size in bytes (default: 30MB) */
+  maxSize?: number;
   /** Custom class name for the container */
   className?: string;
   /** Read-only mode: shows copy/download actions instead of remove */
@@ -102,10 +107,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   error,
   helperText,
   className,
+  maxSize = 30 * 1024 * 1024, // 30MB default
   readOnly = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
+  const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const acceptString = accept.join(',');
@@ -121,9 +128,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const handleFileRead = useCallback(
     (inputFile: File) => {
       if (!isValidFile(inputFile.name)) {
+        setValidationError(`Invalid file type. Accepted: ${accept.join(', ')}`);
+        return;
+      }
+      if (maxSize && inputFile.size > maxSize) {
+        setValidationError(
+          `File too large (${formatFileSize(inputFile.size)}). Maximum: ${formatFileSize(maxSize)}`
+        );
         return;
       }
 
+      setValidationError(null);
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
@@ -133,9 +148,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           content,
         });
       };
+      reader.onerror = () => {
+        const message =
+          reader.error?.message ||
+          'An unknown error occurred while reading the file';
+        console.error('FileReader error:', reader.error);
+        setValidationError(`Failed to read file: ${message}`);
+      };
       reader.readAsText(inputFile);
     },
-    [isValidFile, onFileChange]
+    [isValidFile, maxSize, onFileChange, accept]
   );
 
   const handleDrop = useCallback(
@@ -190,39 +212,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   );
 
   const handleRemoveFile = useCallback(() => {
+    setValidationError(null);
     onFileChange(null);
   }, [onFileChange]);
 
-  const handleCopy = useCallback(async () => {
+  const handleCopy = useCallback(() => {
     if (!file?.content) return;
-    try {
-      await navigator.clipboard.writeText(file.content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = file.content;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }, [file?.content]);
+    copy(file.content);
+  }, [file, copy]);
 
   const handleDownload = useCallback(() => {
     if (!file) return;
-    const blob = new Blob([file.content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadAsFile(file.content, file.name);
   }, [file]);
 
   return (
@@ -235,11 +236,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* Hidden file input */}
       <input
+        id={id}
         ref={fileInputRef}
         type="file"
         accept={acceptString}
         onChange={handleFileInputChange}
-        className="hidden"
+        className={styles.hiddenInput}
         disabled={disabled}
       />
 
@@ -255,7 +257,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               </span>
             </div>
           </div>
-          {readOnly ? (
+          {readOnly && (
             <div className={styles.actionsRow}>
               <button
                 type="button"
@@ -264,13 +266,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   styles.actionBtn,
                   copied && styles.actionBtnSuccess
                 )}
-                title={copied ? 'Copied!' : 'Copy to clipboard'}
+                title={(copied && 'Copied!') || 'Copy to clipboard'}
               >
-                {copied ? (
-                  <Check size={iconSize()} />
-                ) : (
-                  <Copy size={iconSize()} />
-                )}
+                {copied && <Check size={iconSize()} />}
+                {!copied && <Copy size={iconSize()} />}
               </button>
               <button
                 type="button"
@@ -281,7 +280,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 <Download size={iconSize()} />
               </button>
             </div>
-          ) : (
+          )}
+          {!readOnly && (
             <button
               type="button"
               onClick={handleRemoveFile}
@@ -320,12 +320,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
 
-      {error && <p className={styles.error}>{error}</p>}
-      {helperText && !error && (
+      {(error || validationError) && (
+        <p className={styles.error}>{error || validationError}</p>
+      )}
+      {helperText && !error && !validationError && (
         <p className={styles.helperText}>{helperText}</p>
       )}
     </div>
   );
 };
-
-export default FileUpload;

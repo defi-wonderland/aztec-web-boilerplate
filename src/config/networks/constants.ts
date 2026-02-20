@@ -8,8 +8,14 @@
  */
 export const NETWORK_URLS = {
   sandbox: 'http://localhost:8080',
-  devnet: 'https://next.devnet.aztec-labs.com/',
+  devnet: 'https://v4-devnet-1.aztec-labs.com',
 } as const;
+
+/**
+ * Default artifact registry URL for fetching contract artifacts
+ */
+export const DEFAULT_ARTIFACT_REGISTRY_URL =
+  'https://devnet.aztec-registry.xyz';
 
 /**
  * Available network types
@@ -22,6 +28,11 @@ export type NetworkType = keyof typeof NETWORK_URLS;
 export type AztecNetwork = 'sandbox' | 'devnet';
 
 /**
+ * Default network used when none is specified
+ */
+export const DEFAULT_NETWORK: AztecNetwork = 'devnet';
+
+/**
  * Aztec chain ID type - follows CAIP-2 format
  */
 export type AztecChainId = `aztec:${number}`;
@@ -32,14 +43,14 @@ export type AztecChainId = `aztec:${number}`;
  */
 export const CHAIN_IDS: Record<AztecNetwork, AztecChainId> = {
   sandbox: 'aztec:0',
-  devnet: 'aztec:1654394782',
+  devnet: 'aztec:1647720761',
 };
 
 /**
  * Display names for each network
  */
 export const NETWORK_NAMES: Record<AztecNetwork, string> = {
-  sandbox: 'Sandbox',
+  sandbox: 'Local Network',
   devnet: 'Devnet',
 };
 
@@ -48,7 +59,7 @@ export const NETWORK_NAMES: Record<AztecNetwork, string> = {
  */
 export const CHAIN_ID_TO_NETWORK: Record<string, AztecNetwork> = {
   '0': 'sandbox',
-  '1654394782': 'devnet',
+  '1647720761': 'devnet',
 };
 
 /**

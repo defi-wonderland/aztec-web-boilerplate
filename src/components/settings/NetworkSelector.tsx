@@ -1,4 +1,6 @@
 import React from 'react';
+import { Lightbulb } from 'lucide-react';
+import { iconSize } from '../../utils';
 import { NetworkCard, type NetworkStatus } from './NetworkCard';
 import type { AztecNetwork } from '../../config/networks/constants';
 import type { AvailabilityStatus } from '../../hooks/useNetworkAvailability';
@@ -30,15 +32,15 @@ export interface NetworkSelectorProps {
 
 const styles = {
   container:
-    'w-full lg:w-[380px] flex flex-col gap-4 md:gap-5 shrink-0 bg-white dark:bg-[#1e1e24] p-4 md:p-6',
+    'w-full lg:w-[380px] flex flex-col gap-4 md:gap-5 shrink-0 bg-card p-4 md:p-6',
   sectionLabel:
-    'text-[11px] md:text-[13px] font-semibold text-[#9CA3AF] uppercase tracking-[1px]',
+    'text-[11px] md:text-[13px] font-semibold text-gray-400 uppercase tracking-[1px]',
   networksSection: 'flex flex-col gap-3',
-  tipCard: 'flex gap-3 rounded-xl bg-[#FEF3C7] dark:bg-[#422006]/30 p-3 md:p-4',
+  tipCard: 'flex gap-3 rounded-xl bg-amber-100 dark:bg-amber-950/30 p-3 md:p-4',
   tipIcon: 'text-base shrink-0',
   tipContent: 'flex flex-col gap-1',
-  tipTitle: 'text-[13px] font-semibold text-[#92400E] dark:text-[#fcd34d]',
-  tipText: 'text-xs text-[#A16207] dark:text-[#fde68a] leading-relaxed',
+  tipTitle: 'text-[13px] font-semibold text-amber-800 dark:text-amber-300',
+  tipText: 'text-xs text-amber-700 dark:text-amber-200 leading-relaxed',
 } as const;
 
 export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
@@ -101,12 +103,14 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
       </div>
 
       <div className={styles.tipCard}>
-        <span className={styles.tipIcon}>💡</span>
+        <span className={styles.tipIcon}>
+          <Lightbulb size={iconSize()} />
+        </span>
         <div className={styles.tipContent}>
           <span className={styles.tipTitle}>Quick Tip</span>
           <p className={styles.tipText}>
-            Use Sandbox for fast local testing. Switch to Devnet for production
-            testing.
+            Use Local Network for fast local testing. Switch to Devnet for
+            production testing.
           </p>
         </div>
       </div>

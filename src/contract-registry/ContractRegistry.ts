@@ -1,16 +1,20 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
-import { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
-import { createLogger } from '@aztec/foundation/log';
+import {
+  ContractInstanceWithAddress,
+  getContractInstanceFromInstantiationParams,
+} from '@aztec/aztec.js/contracts';
+import { createLogger } from '@aztec/aztec.js/log';
 import type { PXE } from '@aztec/pxe/server';
+import type { ContractArtifact } from '@aztec/stdlib/abi';
 import type {
   ContractConfigMap,
   ContractNames,
   ContractStatus,
-  ContractClass,
   IContractRegistry,
   RegisteredContract,
 } from './types';
 import type { NetworkConfig } from '../config/networks';
+import type { ResolvedArtifacts } from '../services/aztec/artifact';
 
 const logger = createLogger('contract-registry');
 
@@ -47,11 +51,24 @@ export class ContractRegistry<T extends ContractConfigMap>
   constructor(
     private readonly pxe: PXE,
     private readonly contracts: T,
-    private readonly config: NetworkConfig
+    private readonly config: NetworkConfig,
+    private readonly artifacts: ResolvedArtifacts
   ) {
     logger.info('ContractRegistry initialized', {
       contracts: Object.keys(contracts),
     });
+  }
+
+  /** Get the resolved artifact for a contract, or throw if missing */
+  private getArtifact(name: ContractNames<T>): ContractArtifact {
+    const artifact = this.artifacts[name as string];
+    if (!artifact) {
+      throw new Error(
+        `No resolved artifact for contract "${String(name)}". ` +
+          `Ensure artifact sources are configured.`
+      );
+    }
+    return artifact;
   }
 
   /**
@@ -75,17 +92,6 @@ export class ContractRegistry<T extends ContractConfigMap>
    */
   getStatus(name: ContractNames<T>): ContractStatus {
     return this.cache.get(name)?.status ?? 'idle';
-  }
-
-  /**
-   * Get the contract class for creating callable instances
-   */
-  getContractClass(name: ContractNames<T>): ContractClass | null {
-    const contractConfig = this.contracts[name];
-    if (!contractConfig) {
-      return null;
-    }
-    return contractConfig.contract;
   }
 
   /**
@@ -218,9 +224,10 @@ export class ContractRegistry<T extends ContractConfigMap>
         const isInStorage = await this.isRegisteredInStorage(expectedAddress);
 
         if (isInStorage) {
+          const artifact = this.getArtifact(name);
           const deployParams = contractConfig.deployParams(this.config);
           const instance = await getContractInstanceFromInstantiationParams(
-            contractConfig.artifact,
+            artifact,
             {
               salt: deployParams.salt,
               deployer: deployParams.deployer,
@@ -316,14 +323,11 @@ export class ContractRegistry<T extends ContractConfigMap>
     name: ContractNames<T>,
     contractConfig: T[ContractNames<T>]
   ): Promise<ContractInstanceWithAddress> {
+    const artifact = this.getArtifact(name);
     const deployParams = contractConfig.deployParams(this.config);
 
-    const { getContractInstanceFromInstantiationParams } = await import(
-      '@aztec/aztec.js/contracts'
-    );
-
     const instance = await getContractInstanceFromInstantiationParams(
-      contractConfig.artifact,
+      artifact,
       {
         salt: deployParams.salt,
         deployer: deployParams.deployer,
@@ -334,7 +338,7 @@ export class ContractRegistry<T extends ContractConfigMap>
 
     await this.pxe.registerContract({
       instance,
-      artifact: contractConfig.artifact,
+      artifact,
     });
 
     return instance;

@@ -5,11 +5,11 @@ import type { LucideIcon } from 'lucide-react';
 const styles = {
   card: cn(
     'flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer',
-    'bg-surface border transition-all duration-200',
+    'bg-surface transition-all duration-200',
     'hover:shadow-theme-hover'
   ),
   cardSelected: 'border-2 border-accent',
-  cardUnselected: 'border-default',
+  cardUnselected: 'border-2 border-default',
   iconWrapper: cn(
     'flex items-center justify-center w-9 h-9 rounded-lg flex-shrink-0',
     'transition-colors duration-200'
@@ -68,5 +68,3 @@ export const ContractSourceCard: React.FC<ContractSourceCardProps> = ({
     </button>
   );
 };
-
-export default ContractSourceCard;

@@ -128,28 +128,19 @@ export class ExternalSignerConnector implements ExternalSignerWalletConnector {
 
   getPXE(): PXE | null {
     const config = getNetworkStore().currentConfig;
-    const instance = SharedPXEService.getExistingInstance(
-      config.nodeUrl,
-      config.name
-    );
+    const instance = SharedPXEService.getExistingInstance(config.name);
     return instance?.pxe ?? null;
   }
 
   getWallet(): Wallet | null {
     const config = getNetworkStore().currentConfig;
-    const instance = SharedPXEService.getExistingInstance(
-      config.nodeUrl,
-      config.name
-    );
+    const instance = SharedPXEService.getExistingInstance(config.name);
     return instance?.wallet ?? null;
   }
 
   async getSponsoredFeePaymentMethod(): Promise<SponsoredFeePaymentMethod> {
     const config = getNetworkStore().currentConfig;
-    const instance = SharedPXEService.getExistingInstance(
-      config.nodeUrl,
-      config.name
-    );
+    const instance = SharedPXEService.getExistingInstance(config.name);
     if (!instance) {
       throw new Error('PXE not initialized');
     }

@@ -3,44 +3,51 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 jobs:
   test:
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    env:
+      VITE_PROVER_ENABLED: 'false'
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-node@v4
+    - name: Setup Aztec environment
+      uses: defi-wonderland/aztec-ci-actions/actions/setup-aztec@dev
       with:
-        node-version: lts/*
-
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
-
-    - name: Install Aztec CLI
-      run: |
-        curl -s https://install.aztec.network > tmp.sh
-        bash tmp.sh <<< yes "yes"
-
-    - name: Update path
-      run: echo "/home/runner/.aztec/bin" >> $GITHUB_PATH
-
-    - name: Set Aztec version and start sandbox
-      run: |
-        aztec-up 1.1.2
-        aztec start --sandbox &
-
-    - name: Install dependencies
-      working-directory: ./
-      run: npm install -g yarn && yarn
+        start-pxe: 'true'
+        run-compile: 'false'
+        run-codegen: 'false'
 
     - name: Install Playwright Browsers
-      working-directory: ./
       run: yarn playwright install --with-deps
 
-    - name: Build
-      run: yarn build
+    - name: Wait for sandbox to be ready
+      run: |
+        echo "Waiting for Aztec sandbox at http://localhost:8080..."
+        timeout 120 bash -c '
+          while ! curl -s -o /dev/null http://localhost:8080 2>/dev/null; do
+            echo "  Still waiting..."
+            sleep 5
+          done
+        '
+        echo "Sandbox is ready!"
 
-    - name: Run tests
-      run: yarn test
+    - name: Build standards and contracts
+      run: yarn build:ci
+
+    - name: Deploy contracts
+      run: yarn deploy-contracts
+
+    - name: Verify test discovery
+      run: |
+        count=$(yarn playwright test --list --project=chromium 2>&1 | grep -c 'test') || true
+        if [ "$count" -lt 1 ]; then
+          echo "::error::No tests discovered — likely a broken import chain"
+          yarn playwright test --list --project=chromium 2>&1 || true
+          exit 1
+        fi
+        echo "Discovered $count test(s)"
+
+    - name: Run Playwright E2E tests
+      run: yarn playwright test --project=chromium
