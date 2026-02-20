@@ -27,10 +27,16 @@ export default async function middleware(request: Request) {
   const targetUrl = `https://github.com/${path}`;
 
   try {
-    const upstream = await fetch(targetUrl, {
-      redirect: 'follow',
-      headers: { 'User-Agent': 'vercel-proxy' },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const upstream = await fetch(targetUrl, {
+        redirect: 'follow',
+        headers: { 'User-Agent': 'vercel-proxy' },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
 
     if (!upstream.ok) {
       return new Response(upstream.statusText, { status: upstream.status });
