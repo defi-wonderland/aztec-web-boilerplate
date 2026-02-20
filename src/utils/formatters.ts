@@ -16,31 +16,69 @@ export const formatNumberFull = (value: bigint | number): string => {
 
 /**
  * Compact number formatter with suffix (M, B, T, Q)
- * Only abbreviates numbers >= 1 million
+ * Only abbreviates numbers >= 1 million.
+ * Uses bigint arithmetic to avoid precision loss for large values.
  */
-export const formatNumberCompact = (
-  value: bigint | number
-): CompactNumberResult => {
-  const num = typeof value === 'bigint' ? Number(value) : value;
 
-  const suffixes = [
-    { threshold: 1e15, suffix: 'Q', divisor: 1e15 }, // Quadrillion
-    { threshold: 1e12, suffix: 'T', divisor: 1e12 }, // Trillion
-    { threshold: 1e9, suffix: 'B', divisor: 1e9 }, // Billion
-    { threshold: 1e6, suffix: 'M', divisor: 1e6 }, // Million
-  ];
+const BIGINT_SUFFIXES = [
+  {
+    threshold: 1_000_000_000_000_000n,
+    suffix: 'Q',
+    divisor: 1_000_000_000_000_000n,
+  },
+  { threshold: 1_000_000_000_000n, suffix: 'T', divisor: 1_000_000_000_000n },
+  { threshold: 1_000_000_000n, suffix: 'B', divisor: 1_000_000_000n },
+  { threshold: 1_000_000n, suffix: 'M', divisor: 1_000_000n },
+] as const;
 
-  for (const { threshold, suffix, divisor } of suffixes) {
-    if (num >= threshold) {
-      const divided = num / divisor;
-      // Show 2 decimal places for cleaner display
+const NUMBER_SUFFIXES = [
+  { threshold: 1e15, suffix: 'Q', divisor: 1e15 },
+  { threshold: 1e12, suffix: 'T', divisor: 1e12 },
+  { threshold: 1e9, suffix: 'B', divisor: 1e9 },
+  { threshold: 1e6, suffix: 'M', divisor: 1e6 },
+] as const;
+
+const formatCompactBigint = (value: bigint): CompactNumberResult => {
+  for (const { threshold, suffix, divisor } of BIGINT_SUFFIXES) {
+    if (value >= threshold) {
+      const integer = value / divisor;
+      const remainder = value % divisor;
+      // Scale remainder to get 2 decimal digits
+      const decimals = (remainder * 100n) / divisor;
+      const intNum = Number(integer);
+      const decNum = Number(decimals);
+
+      const formatted =
+        intNum >= 100
+          ? `${intNum}.${String(Math.round(decNum / 10)).padStart(1, '0')}`
+          : `${intNum}.${String(decNum).padStart(2, '0')}`;
+      return { value: `${formatted}${suffix}`, isCompact: true };
+    }
+  }
+
+  // Below 1M — safe to convert since value < 1_000_000
+  return { value: Number(value).toLocaleString(), isCompact: false };
+};
+
+const formatCompactNumber = (value: number): CompactNumberResult => {
+  for (const { threshold, suffix, divisor } of NUMBER_SUFFIXES) {
+    if (value >= threshold) {
+      const divided = value / divisor;
       const formatted =
         divided >= 100 ? divided.toFixed(1) : divided.toFixed(2);
       return { value: `${formatted}${suffix}`, isCompact: true };
     }
   }
 
-  return { value: num.toLocaleString(), isCompact: false };
+  return { value: value.toLocaleString(), isCompact: false };
+};
+
+export const formatNumberCompact = (
+  value: bigint | number
+): CompactNumberResult => {
+  return typeof value === 'bigint'
+    ? formatCompactBigint(value)
+    : formatCompactNumber(value);
 };
 
 /**
@@ -61,9 +99,8 @@ export const formatPercentage = (
   if (balance === 0n) return '0';
   // If balance equals total, show 100%
   if (balance === total) return '100';
-  // Otherwise, cap between <0.01% and >99.99%
-  const rounded = Math.round(percentage);
-  if (rounded >= 100) return '>99.99';
-  if (rounded <= 0) return '<0.01';
-  return rounded.toString();
+  // Cap between <0.01% and >99.99% using raw value before rounding
+  if (percentage >= 99.99) return '>99.99';
+  if (percentage <= 0.01) return '<0.01';
+  return Math.round(percentage).toString();
 };

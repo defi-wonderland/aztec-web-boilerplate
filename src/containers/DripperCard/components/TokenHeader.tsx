@@ -6,12 +6,16 @@ import { styles } from '../styles';
 
 interface TokenHeaderProps {
   address: string;
+  tokenName: string;
+  tokenSymbol: string;
   onCopy: () => void;
   isConnected: boolean;
 }
 
 export const TokenHeader: React.FC<TokenHeaderProps> = ({
   address,
+  tokenName,
+  tokenSymbol,
   onCopy,
   isConnected,
 }) => (
@@ -32,7 +36,9 @@ export const TokenHeader: React.FC<TokenHeaderProps> = ({
         )}
         {isConnected && (
           <>
-            <span className={styles.tokenName}>Test Token (TST)</span>
+            <span className={styles.tokenName}>
+              {tokenName} ({tokenSymbol})
+            </span>
             <button
               type="button"
               className={styles.tokenAddress}

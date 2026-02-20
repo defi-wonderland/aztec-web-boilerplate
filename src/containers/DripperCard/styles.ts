@@ -48,7 +48,7 @@ export const styles = {
   syncBadge: 'animate-pulse',
 
   // Divider
-  divider: 'h-px bg-default',
+  divider: 'h-px bg-surface-secondary',
 
   // Mint Section
   mintSection: 'p-6 space-y-5',

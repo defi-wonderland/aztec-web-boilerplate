@@ -18,7 +18,7 @@ const styles = {
   sidebarTitle: 'text-sm font-bold text-default font-display',
   contractsList: cn('flex flex-col gap-1.5', 'flex-1 overflow-hidden', 'p-4'),
   contractItem: cn('flex items-start gap-2.5', 'px-3 py-2.5 rounded-lg'),
-  contractIcon: 'w-[18px] h-[18px] flex-shrink-0 mt-[3px]',
+  contractIcon: 'w-[18px] h-[18px] flex-shrink-0 mt-[3px] rounded',
   contractInfo: 'flex flex-col gap-1 flex-1 min-w-0',
   addContractBtn: cn(
     'flex items-center gap-2',
@@ -76,6 +76,19 @@ const styles = {
   ),
   historyBody: 'px-5 py-8 flex items-center justify-center',
 
+  // Skeleton sizes
+  skeletonBreadcrumbSegment: 'h-3 w-12',
+  skeletonBreadcrumbSeparator: 'h-3 w-1',
+  skeletonBreadcrumbPath: 'h-3 w-40',
+  skeletonFnTitle: 'h-8 w-64',
+  skeletonFnDescription: 'h-3.5 w-96',
+  skeletonParamIcon: 'w-3.5 h-3.5 rounded-full',
+  skeletonParamLabel: 'h-4 w-20',
+  skeletonParamBadge: 'h-5 w-16 rounded-full',
+  skeletonHistoryIcon: 'w-4 h-4 rounded-full',
+  skeletonHistoryLabel: 'h-4 w-28',
+  skeletonHistoryEmpty: 'h-3.5 w-40',
+
   // Connect wallet overlay
   overlay: cn(
     'absolute inset-0',
@@ -92,19 +105,19 @@ const styles = {
   overlayDescription: 'text-sm text-muted',
 } as const;
 
-/** Skeleton contract items: name width + address width */
+/** Skeleton contract items: name + address skeleton classes */
 const SKELETON_CONTRACTS = [
-  { nameW: 'w-14', addrW: 'w-28' },
-  { nameW: 'w-20', addrW: 'w-24' },
-  { nameW: 'w-24', addrW: 'w-28' },
+  { name: 'h-3.5 w-14', addr: 'h-2.5 w-28' },
+  { name: 'h-3.5 w-20', addr: 'h-2.5 w-24' },
+  { name: 'h-3.5 w-24', addr: 'h-2.5 w-28' },
 ];
 
-/** Parameter input widths for variety */
+/** Parameter input skeleton classes for variety */
 const PARAM_ROWS = [
-  { labelW: 'w-10', typeW: 'w-20', hasHelper: true },
-  { labelW: 'w-7', typeW: 'w-20', hasHelper: true },
-  { labelW: 'w-12', typeW: 'w-8', hasHelper: false },
-  { labelW: 'w-12', typeW: 'w-8', hasHelper: false },
+  { label: 'h-3 w-10', type: 'h-3 w-20', hasHelper: true },
+  { label: 'h-3 w-7', type: 'h-3 w-20', hasHelper: true },
+  { label: 'h-3 w-12', type: 'h-3 w-8', hasHelper: false },
+  { label: 'h-3 w-12', type: 'h-3 w-8', hasHelper: false },
 ];
 
 export const ContractDisconnectedState: React.FC = () => {
@@ -123,17 +136,17 @@ export const ContractDisconnectedState: React.FC = () => {
         <div className={styles.contractsList}>
           {SKELETON_CONTRACTS.map((item, i) => (
             <div key={i} className={styles.contractItem}>
-              <Skeleton className={cn(styles.contractIcon, 'rounded')} />
+              <Skeleton className={styles.contractIcon} />
               <div className={styles.contractInfo}>
-                <Skeleton className={cn('h-3.5', item.nameW)} />
-                <Skeleton className={cn('h-2.5', item.addrW)} />
+                <Skeleton className={item.name} />
+                <Skeleton className={item.addr} />
               </div>
             </div>
           ))}
 
           {/* Add Contract button - disabled */}
           <div className={styles.addContractBtn}>
-            <Plus size={18} className={styles.addContractIcon} />
+            <Plus size={iconSize()} className={styles.addContractIcon} />
             <span className={styles.addContractText}>Add Contract</span>
           </div>
         </div>
@@ -146,30 +159,30 @@ export const ContractDisconnectedState: React.FC = () => {
           {/* Function header */}
           <div className={styles.headerSection}>
             <div className={styles.breadcrumbRow}>
-              <Skeleton className="h-3 w-12" />
-              <Skeleton className="h-3 w-1" />
-              <Skeleton className="h-3 w-40" />
+              <Skeleton className={styles.skeletonBreadcrumbSegment} />
+              <Skeleton className={styles.skeletonBreadcrumbSeparator} />
+              <Skeleton className={styles.skeletonBreadcrumbPath} />
             </div>
             <div className={styles.titleAndBadge}>
-              <Skeleton className="h-8 w-64" />
+              <Skeleton className={styles.skeletonFnTitle} />
               <div className={styles.badge} />
             </div>
-            <Skeleton className="h-3.5 w-96" />
+            <Skeleton className={styles.skeletonFnDescription} />
           </div>
 
           {/* Parameters card */}
           <div className={styles.paramsCard}>
             <div className={styles.paramsHeader}>
-              <Skeleton className="w-3.5 h-3.5 rounded-full" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className={styles.skeletonParamIcon} />
+              <Skeleton className={styles.skeletonParamLabel} />
+              <Skeleton className={styles.skeletonParamBadge} />
             </div>
             <div className={styles.paramsBody}>
               {PARAM_ROWS.map((param, i) => (
                 <div key={i} className={styles.paramRow}>
                   <div className={styles.paramLabelRow}>
-                    <Skeleton className={cn('h-3', param.labelW)} />
-                    <Skeleton className={cn('h-3', param.typeW)} />
+                    <Skeleton className={param.label} />
+                    <Skeleton className={param.type} />
                   </div>
                   <div className={styles.paramInputRow}>
                     <div className={styles.paramInput} />
@@ -189,11 +202,11 @@ export const ContractDisconnectedState: React.FC = () => {
           {/* Execution history */}
           <div className={styles.historyCard}>
             <div className={styles.historyHeader}>
-              <Skeleton className="w-4 h-4 rounded-full" />
-              <Skeleton className="h-4 w-28" />
+              <Skeleton className={styles.skeletonHistoryIcon} />
+              <Skeleton className={styles.skeletonHistoryLabel} />
             </div>
             <div className={styles.historyBody}>
-              <Skeleton className="h-3.5 w-40" />
+              <Skeleton className={styles.skeletonHistoryEmpty} />
             </div>
           </div>
         </div>

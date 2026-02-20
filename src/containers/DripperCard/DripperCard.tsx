@@ -18,7 +18,7 @@ export const DripperCard: React.FC = () => {
   const { account, isPXEInitialized, connectors, connector, currentConfig } =
     useAztecWallet();
   const { open: openConnectModal } = useConnectModal();
-  const { success, loading } = useToast();
+  const { success, error: toastError, loading } = useToast();
   const {
     formattedBalances,
     isLoading: balanceLoading,
@@ -100,8 +100,10 @@ export const DripperCard: React.FC = () => {
   };
 
   const handleCopyAddress = () => {
-    navigator.clipboard.writeText(currentConfig.tokenContractAddress);
-    success('Token address copied');
+    navigator.clipboard
+      .writeText(currentConfig.tokenContractAddress)
+      .then(() => success('Token address copied'))
+      .catch(() => toastError('Failed to copy address'));
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,6 +160,8 @@ export const DripperCard: React.FC = () => {
       {/* Token Header */}
       <TokenHeader
         address={currentConfig.tokenContractAddress}
+        tokenName="Test Token"
+        tokenSymbol="TST"
         onCopy={handleCopyAddress}
         isConnected={isWalletReady}
       />

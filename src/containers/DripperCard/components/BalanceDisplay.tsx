@@ -6,6 +6,10 @@ import {
 } from '../../../components/ui';
 import { formatNumberCompact, formatNumberFull } from '../../../utils';
 
+const styles = {
+  tooltipValue: 'font-mono',
+} as const;
+
 interface BalanceDisplayProps {
   balance: bigint;
   className?: string;
@@ -28,7 +32,7 @@ export const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
         <span className={className}>{value}</span>
       </TooltipTrigger>
       <TooltipContent>
-        <span className="font-mono">{fullValue} TST</span>
+        <span className={styles.tooltipValue}>{fullValue} TST</span>
       </TooltipContent>
     </Tooltip>
   );

@@ -75,7 +75,7 @@ export const SettingsCard: React.FC = () => {
       isLoading={isSwitching}
       onClick={() => handleSwitchNetwork(selectedNetwork)}
     >
-      {isSwitching ? 'Switching...' : `Switch to ${selectedConfig.displayName}`}
+      {`Switch to ${selectedConfig.displayName}`}
     </Button>
   );
 
