@@ -62,7 +62,7 @@ export const styles = {
   amountInputWrapper:
     'flex items-center justify-between h-12 px-4 rounded-xl bg-surface border border-default',
   amountInput:
-    'flex-1 bg-transparent border-none outline-none text-default font-normal',
+    'flex-1 bg-transparent border-0 outline-none text-default font-normal h-auto p-0 rounded-none shadow-none focus:ring-0 focus:border-transparent',
   amountUnit: 'text-sm text-muted font-medium',
   typeToggle: 'flex h-12 p-1 rounded-xl bg-surface border border-default',
   toggleButton: {

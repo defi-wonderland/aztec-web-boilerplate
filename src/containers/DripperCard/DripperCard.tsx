@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Droplets, AlertTriangle, Wallet } from 'lucide-react';
 import { useAztecWallet, useConnectModal } from '../../aztec-wallet';
-import { Button, Card, CardContent } from '../../components/ui';
+import { Button, Card, CardContent, Input } from '../../components/ui';
 import {
   useRequiredContracts,
   useToast,
@@ -193,7 +193,7 @@ export const DripperCard: React.FC = () => {
                 Amount
               </label>
               <div className={styles.amountInputWrapper}>
-                <input
+                <Input
                   id="mint-amount"
                   type="text"
                   inputMode="numeric"

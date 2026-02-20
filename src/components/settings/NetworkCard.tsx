@@ -34,12 +34,14 @@ const NETWORK_INFO = {
 
 const styles = {
   container:
-    'rounded-2xl p-4 md:p-6 flex flex-col gap-3 md:gap-4 cursor-pointer transition-all duration-500 ease-in-out border-l-[6px]',
+    'w-full text-left rounded-2xl p-4 md:p-6 flex flex-col gap-3 md:gap-4 cursor-pointer transition-all duration-500 ease-in-out border-l-[6px]',
   containerActive: 'bg-surface-tertiary border-l-[var(--accent-primary)]',
   containerSelected:
     'bg-interactive border-l-transparent ring-1 ring-[var(--accent-primary)]/30',
   containerInactive:
     'bg-surface-tertiary border-l-transparent hover:bg-interactive',
+  containerUnavailable:
+    'bg-surface-tertiary border-l-transparent opacity-50 cursor-not-allowed',
   header: 'flex items-center gap-3',
   iconBox:
     'w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center text-lg md:text-xl shrink-0 transition-colors duration-500 ease-in-out',
@@ -100,20 +102,21 @@ export const NetworkCard: React.FC<NetworkCardProps> = ({
 }) => {
   const { title, subtitle, icon } = NETWORK_INFO[network];
   const statusInfo = STATUS_CONFIG[status];
+  const isDisabled = status === 'unavailable';
 
   const getContainerStyle = () => {
+    if (isDisabled) return styles.containerUnavailable;
     if (isActive) return styles.containerActive;
     if (isSelected) return styles.containerSelected;
     return styles.containerInactive;
   };
 
   return (
-    <div
+    <button
+      type="button"
       className={cn(styles.container, getContainerStyle())}
       onClick={onSelect}
-      onKeyDown={(e) => e.key === 'Enter' && onSelect?.()}
-      role="button"
-      tabIndex={0}
+      disabled={isDisabled}
     >
       <div className={styles.header}>
         <div
@@ -152,6 +155,6 @@ export const NetworkCard: React.FC<NetworkCardProps> = ({
       </div>
 
       {isActive && healthMetrics && <NetworkHealthMetrics {...healthMetrics} />}
-    </div>
+    </button>
   );
 };

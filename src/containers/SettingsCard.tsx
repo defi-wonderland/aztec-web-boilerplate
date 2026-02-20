@@ -49,6 +49,7 @@ export const SettingsCard: React.FC = () => {
         }
         // Switch to the new network
         await switchNetwork(network);
+        setSelectedNetwork(network);
       } catch (error) {
         console.error('Failed to switch network:', error);
       } finally {

@@ -39,7 +39,7 @@ const styles = {
   headerSection: 'flex flex-col gap-2',
   breadcrumbRow: 'flex items-center gap-1.5',
   titleAndBadge: 'flex items-center justify-between mt-1',
-  badge: cn('h-7 w-20 rounded-full', 'bg-amber-500 opacity-10 '),
+  badge: cn('h-7 w-20 rounded-full', 'bg-amber-500 opacity-10'),
 
   // Parameters card
   paramsCard: cn(
@@ -56,19 +56,14 @@ const styles = {
   paramInputRow: 'flex items-center gap-3',
   paramInput: cn(
     'flex-1 h-10 rounded-[10px]',
-    'border border-default bg-surface-tertiary',
-    ''
+    'border border-default bg-surface-tertiary'
   ),
-  paramHelper: cn('h-10 w-20 rounded-lg', 'bg-surface-tertiary '),
+  paramHelper: cn('h-10 w-20 rounded-lg', 'bg-surface-tertiary'),
 
   // Action buttons
   actions: 'flex items-center gap-4 pt-2',
-  simulateBtn: cn(
-    'h-14 w-64 rounded-2xl',
-    'border border-default bg-surface',
-    ''
-  ),
-  executeBtn: cn('h-14 w-80 rounded-2xl', 'bg-surface-tertiary '),
+  simulateBtn: cn('h-14 w-64 rounded-2xl', 'border border-default bg-surface'),
+  executeBtn: cn('h-14 w-80 rounded-2xl', 'bg-surface-tertiary'),
 
   // Execution history
   historyCard: cn(

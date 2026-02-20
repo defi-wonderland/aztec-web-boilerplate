@@ -11,9 +11,6 @@ interface CompactNumberResult {
  * Format a number with full precision using locale string
  */
 export const formatNumberFull = (value: bigint | number): string => {
-  if (typeof value === 'bigint') {
-    return value.toLocaleString();
-  }
   return value.toLocaleString();
 };
 
