@@ -48,9 +48,15 @@ const formatCompactBigint = (value: bigint): CompactNumberResult => {
       const intNum = Number(integer);
       const decNum = Number(decimals);
 
+      let roundedDec = Math.round(decNum / 10);
+      let finalInt = intNum;
+      if (roundedDec === 10) {
+        finalInt += 1;
+        roundedDec = 0;
+      }
       const formatted =
         intNum >= 100
-          ? `${intNum}.${String(Math.round(decNum / 10)).padStart(1, '0')}`
+          ? `${finalInt}.${String(roundedDec).padStart(1, '0')}`
           : `${intNum}.${String(decNum).padStart(2, '0')}`;
       return { value: `${formatted}${suffix}`, isCompact: true };
     }
