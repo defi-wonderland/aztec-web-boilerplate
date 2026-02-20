@@ -31,7 +31,10 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
   if (isConnected && isLoading) {
     return (
       <div className={styles.balanceSection}>
-        <div className={styles.balanceLoadingContainer}>
+        <div
+          className={styles.balanceLoadingContainer}
+          data-testid="balance-loading"
+        >
           <div className={styles.balanceLoadingSpinner} />
           <span>Loading balance...</span>
         </div>
@@ -42,7 +45,7 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
   const showSkeleton = !isConnected;
 
   return (
-    <div className={styles.balanceSection}>
+    <div className={styles.balanceSection} data-testid="token-balance-card">
       {/* Total Balance Row */}
       <div className={styles.totalRow}>
         <div className={styles.totalLeft}>
@@ -59,7 +62,11 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
               </TooltipContent>
             </Tooltip>
             {isConnected && isFetching && (
-              <Badge variant="info" className={styles.syncBadge}>
+              <Badge
+                variant="info"
+                className={styles.syncBadge}
+                data-testid="balance-syncing"
+              >
                 Syncing
               </Badge>
             )}
@@ -79,7 +86,7 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
       {/* Private/Public Breakdown */}
       <div className={styles.breakdownRow}>
         {/* Private Balance Box */}
-        <div className={styles.balanceBox}>
+        <div className={styles.balanceBox} data-testid="balance-item-private">
           <div className={styles.balanceBoxLeft}>
             <Shield
               size={iconSize('md')}
@@ -96,6 +103,7 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
                 <BalanceDisplay
                   balance={privateBalance}
                   className={styles.balanceBoxValue}
+                  data-testid="balance-value-private"
                 />
                 {totalBalance > 0n && (
                   <span className={styles.balanceBoxPercent.private}>
@@ -113,7 +121,7 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
         </div>
 
         {/* Public Balance Box */}
-        <div className={styles.balanceBox}>
+        <div className={styles.balanceBox} data-testid="balance-item-public">
           <div className={styles.balanceBoxLeft}>
             <Globe
               size={iconSize('md')}
@@ -130,6 +138,7 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
                 <BalanceDisplay
                   balance={publicBalance}
                   className={styles.balanceBoxValue}
+                  data-testid="balance-value-public"
                 />
                 {totalBalance > 0n && (
                   <span className={styles.balanceBoxPercent.public}>

@@ -85,13 +85,9 @@ async function mintToPublic(page: Page, amount: string): Promise<void> {
   await expect(amountInput).toBeEnabled({ timeout: 10000 });
   await amountInput.fill(amount);
 
-  const dripTypeTrigger = page.locator('#drip-type');
-  await expect(dripTypeTrigger).toBeEnabled({ timeout: 10000 });
-  await dripTypeTrigger.click();
-  const publicOption = page
-    .locator('[role="option"]')
-    .filter({ hasText: 'Public' });
-  await publicOption.click();
+  const publicToggle = page.locator('[data-testid="drip-type-public"]');
+  await expect(publicToggle).toBeVisible({ timeout: 10000 });
+  await publicToggle.click();
 
   const dripButton = page.locator('[data-testid="drip-button"]');
   await expect(dripButton).toBeVisible({ timeout: 10000 });
@@ -111,7 +107,7 @@ async function mintToPublic(page: Page, amount: string): Promise<void> {
     );
   }
 
-  await expect(dripButton).toContainText('Drip to', {
+  await expect(dripButton).toContainText('Mint', {
     timeout: TIMEOUTS.LONG,
   });
   console.log('Transaction completed');

@@ -177,7 +177,7 @@ export const DripperCard: React.FC = () => {
       <div className={styles.divider} />
 
       {/* Mint Section */}
-      <div className={styles.mintSection}>
+      <div className={styles.mintSection} data-testid="dripper-form">
         {/* Mint Header */}
         <div className={styles.mintHeader}>
           <span className={styles.mintTitle}>Mint Tokens</span>
@@ -192,12 +192,12 @@ export const DripperCard: React.FC = () => {
           <div className={styles.inputsRow}>
             {/* Amount Field */}
             <div className={styles.inputField}>
-              <label htmlFor="mint-amount" className={styles.inputLabel}>
+              <label htmlFor="amount" className={styles.inputLabel}>
                 Amount
               </label>
               <div className={styles.amountInputWrapper}>
                 <Input
-                  id="mint-amount"
+                  id="amount"
                   type="text"
                   inputMode="numeric"
                   value={amount}
@@ -250,6 +250,7 @@ export const DripperCard: React.FC = () => {
               isLoading={isProcessing}
               icon={<Droplets size={iconSize()} />}
               className={styles.mintButton}
+              data-testid="drip-button"
             >
               {isWalletBusy
                 ? 'Wallet Busy...'

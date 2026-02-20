@@ -14,7 +14,7 @@ export const MintTypeToggle: React.FC<MintTypeToggleProps> = ({
   onChange,
   disabled,
 }) => (
-  <div className={styles.typeToggle}>
+  <div className={styles.typeToggle} id="drip-type">
     <button
       type="button"
       className={cn(
@@ -26,6 +26,7 @@ export const MintTypeToggle: React.FC<MintTypeToggleProps> = ({
       onClick={() => onChange('private')}
       disabled={disabled}
       aria-pressed={value === 'private'}
+      data-testid="drip-type-private"
     >
       <Shield size={iconSize('xs')} />
       <span>Private</span>
@@ -41,6 +42,7 @@ export const MintTypeToggle: React.FC<MintTypeToggleProps> = ({
       onClick={() => onChange('public')}
       disabled={disabled}
       aria-pressed={value === 'public'}
+      data-testid="drip-type-public"
     >
       <Globe size={iconSize('xs')} />
       <span>Public</span>
