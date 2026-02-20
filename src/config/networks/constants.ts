@@ -43,7 +43,7 @@ export type AztecChainId = `aztec:${number}`;
  */
 export const CHAIN_IDS: Record<AztecNetwork, AztecChainId> = {
   sandbox: 'aztec:0',
-  devnet: 'aztec:1654394782',
+  devnet: 'aztec:1647720761',
 };
 
 /**
@@ -59,7 +59,7 @@ export const NETWORK_NAMES: Record<AztecNetwork, string> = {
  */
 export const CHAIN_ID_TO_NETWORK: Record<string, AztecNetwork> = {
   '0': 'sandbox',
-  '1654394782': 'devnet',
+  '1647720761': 'devnet',
 };
 
 /**

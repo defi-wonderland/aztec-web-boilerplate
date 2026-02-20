@@ -37,7 +37,10 @@ export type RawParameter = {
  */
 export type RawFunction = {
   name: string;
-  abi?: { parameters?: RawParameter[] };
+  abi?: {
+    parameters?: RawParameter[];
+    return_type?: { abi_type?: RawParamType };
+  };
   custom_attributes?: string[];
   is_unconstrained?: boolean;
 };
@@ -99,4 +102,5 @@ export interface NormalizedFunctionData {
   parameters: RawParameter[];
   attributes: string[];
   isUnconstrained: boolean;
+  returnType: RawParamType | null;
 }

@@ -16,9 +16,9 @@ export const TIMEOUTS = {
 
 /**
  * Switches the app to Sandbox network via the network picker.
- * Uses :visible filter because the Header renders separate desktop/mobile layouts.
  */
 export async function switchToSandbox(page: Page): Promise<void> {
+  // Header renders desktop + mobile layouts; use :visible to target the active one
   const networkPicker = page
     .locator('[data-testid="network-picker"]:visible')
     .first();
@@ -39,7 +39,6 @@ export async function switchToSandbox(page: Page): Promise<void> {
 
 /**
  * Opens the wallet connect modal.
- * Uses :visible filter because the Header renders separate desktop/mobile ConnectButtons.
  * @returns The modal locator for further interactions
  */
 export async function openConnectModal(page: Page) {

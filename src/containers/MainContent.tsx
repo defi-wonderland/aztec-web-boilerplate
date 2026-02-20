@@ -1,8 +1,8 @@
 import React from 'react';
 import { useAztecWallet, isEmbeddedConnector } from '../aztec-wallet';
 import { SecurityWarning } from '../components';
+import { ContractLayout } from '../components/contract-interaction';
 import { useAppNavigation } from '../hooks';
-import { ContractInteractionCard } from './ContractInteractionCard';
 import { DripperCard } from './DripperCard';
 import { SettingsCard } from './SettingsCard';
 import { UIComponentsShowcase } from './UIComponentsShowcase';
@@ -11,6 +11,7 @@ const styles = {
   main: 'flex flex-col',
   contentWrapper:
     'w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6',
+  contractWrapper: 'w-full',
   settingsWrapper:
     'w-full max-w-[1400px] mx-auto px-0 lg:px-6 xl:px-10 py-0 lg:py-6',
 } as const;
@@ -34,9 +35,8 @@ export const MainContent: React.FC = () => {
         );
       case 'contract':
         return (
-          <div className={styles.contentWrapper}>
-            {showSecurityWarning && <SecurityWarning />}
-            <ContractInteractionCard />
+          <div className={styles.contractWrapper}>
+            <ContractLayout />
           </div>
         );
       case 'settings':

@@ -56,10 +56,11 @@ export const formatFeeJuiceBalance = (balance: bigint): string => {
 /**
  * Format a relative time string (e.g., "2s ago", "1m ago")
  */
-export const formatRelativeTime = (date: Date | null): string => {
-  if (!date) return 'N/A';
+export const formatRelativeTime = (date: Date | number | null): string => {
+  if (date == null) return 'N/A';
 
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  const ms = typeof date === 'number' ? date : date.getTime();
+  const seconds = Math.floor((Date.now() - ms) / 1000);
 
   if (seconds < 5) return 'Now';
   if (seconds < 60) return `${seconds}s ago`;
@@ -69,4 +70,27 @@ export const formatRelativeTime = (date: Date | null): string => {
 
   const hours = Math.floor(minutes / 60);
   return `${hours}h ago`;
+};
+
+/** Format a Date to HH:MM:SS (24-hour). */
+export const formatTime = (date: Date): string => {
+  return date.toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+};
+
+/** Format a Date as a short relative date label. */
+export const formatDate = (date: Date): string => {
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  if (isToday) return 'Today';
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };

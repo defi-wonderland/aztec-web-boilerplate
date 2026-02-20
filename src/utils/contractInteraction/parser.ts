@@ -123,6 +123,7 @@ const parseFunction = (fn: unknown): ParsedFunction => {
   return {
     name: normalized.name,
     inputs: flattenFields(inputs),
+    output: normalized.returnType ? normalizeType(normalized.returnType) : null,
     attributes: normalized.attributes,
     isUnconstrained: normalized.isUnconstrained,
   };
