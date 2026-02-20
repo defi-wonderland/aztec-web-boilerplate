@@ -157,7 +157,7 @@ export const DripperCard: React.FC = () => {
 
   return (
     <Card className={styles.card}>
-      {/* Token Header */}
+      {/* TODO: Add token name and symbol from a proper hook (useTokenMetadata)*/}
       <TokenHeader
         address={currentConfig.tokenContractAddress}
         tokenName="Test Token"
@@ -165,7 +165,6 @@ export const DripperCard: React.FC = () => {
         onCopy={handleCopyAddress}
         isConnected={isWalletReady}
       />
-
       {/* Balance Section */}
       <BalanceSection
         metrics={metrics}
