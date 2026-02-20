@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
 import { NetworkSelector, ConfigPanel } from '../components/settings';
@@ -30,6 +30,10 @@ export const SettingsCard: React.FC = () => {
   const activeNetwork = (networkName ?? 'sandbox') as AztecNetwork;
   const [selectedNetwork, setSelectedNetwork] =
     useState<AztecNetwork>(activeNetwork);
+
+  useEffect(() => {
+    setSelectedNetwork(activeNetwork);
+  }, [activeNetwork]);
 
   const handleSelectNetwork = useCallback((network: AztecNetwork) => {
     setSelectedNetwork(network);

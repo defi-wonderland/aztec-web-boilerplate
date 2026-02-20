@@ -48,16 +48,14 @@ const formatCompactBigint = (value: bigint): CompactNumberResult => {
       const intNum = Number(integer);
       const decNum = Number(decimals);
 
-      let roundedDec = Math.round(decNum / 10);
-      let finalInt = intNum;
-      if (roundedDec === 10) {
-        finalInt += 1;
-        roundedDec = 0;
+      let formatted: string;
+      if (intNum >= 100) {
+        const roundedDec = Math.round(decNum / 10);
+        formatted =
+          roundedDec >= 10 ? `${intNum + 1}.0` : `${intNum}.${roundedDec}`;
+      } else {
+        formatted = `${intNum}.${String(decNum).padStart(2, '0')}`;
       }
-      const formatted =
-        intNum >= 100
-          ? `${finalInt}.${String(roundedDec).padStart(1, '0')}`
-          : `${intNum}.${String(decNum).padStart(2, '0')}`;
       return { value: `${formatted}${suffix}`, isCompact: true };
     }
   }
@@ -108,5 +106,11 @@ export const formatPercentage = (
   // Cap between <0.01% and >99.99% using raw value before rounding
   if (percentage >= 99.99) return '>99.99';
   if (percentage <= 0.01) return '<0.01';
-  return Math.round(percentage).toString();
+
+  // Post-rounding guards: prevent Math.round from producing 0 or 100
+  // when the exact-match branches above already ruled those out
+  const rounded = Math.round(percentage);
+  if (rounded >= 100) return '99.99';
+  if (rounded <= 0) return '0.01';
+  return rounded.toString();
 };
