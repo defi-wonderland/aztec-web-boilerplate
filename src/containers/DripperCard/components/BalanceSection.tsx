@@ -2,6 +2,7 @@ import React from 'react';
 import { Info, Shield, Globe } from 'lucide-react';
 import {
   Badge,
+  Skeleton,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -15,17 +16,19 @@ interface BalanceSectionProps {
   metrics: BalanceMetrics;
   isLoading: boolean;
   isFetching: boolean;
+  isConnected: boolean;
 }
 
 export const BalanceSection: React.FC<BalanceSectionProps> = ({
   metrics,
   isLoading,
   isFetching,
+  isConnected,
 }) => {
   const { privateBalance, publicBalance, totalBalance, privatePercentage } =
     metrics;
 
-  if (isLoading) {
+  if (isConnected && isLoading) {
     return (
       <div className={styles.balanceSection}>
         <div className={styles.balanceLoadingContainer}>
@@ -35,6 +38,8 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
       </div>
     );
   }
+
+  const showSkeleton = !isConnected;
 
   return (
     <div className={styles.balanceSection}>
@@ -53,18 +58,22 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
                 amount.
               </TooltipContent>
             </Tooltip>
-            {isFetching && (
+            {isConnected && isFetching && (
               <Badge variant="info" className={styles.syncBadge}>
                 Syncing
               </Badge>
             )}
           </div>
-          <BalanceDisplay
-            balance={totalBalance}
-            className={styles.totalValue}
-          />
+          {showSkeleton && <Skeleton className={styles.skeleton.totalValue} />}
+          {!showSkeleton && (
+            <BalanceDisplay
+              balance={totalBalance}
+              className={styles.totalValue}
+            />
+          )}
         </div>
-        <span className={styles.totalUnit}>TST</span>
+        {showSkeleton && <Skeleton className={styles.skeleton.totalUnit} />}
+        {!showSkeleton && <span className={styles.totalUnit}>TST</span>}
       </div>
 
       {/* Private/Public Breakdown */}
@@ -79,19 +88,26 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
             <span className={styles.balanceBoxLabel}>Private</span>
           </div>
           <div className={styles.balanceBoxRight}>
-            <BalanceDisplay
-              balance={privateBalance}
-              className={styles.balanceBoxValue}
-            />
-            {totalBalance > 0n && (
-              <span className={styles.balanceBoxPercent.private}>
-                {formatPercentage(
-                  metrics.privatePercentage,
-                  privateBalance,
-                  totalBalance
+            {showSkeleton && (
+              <Skeleton className={styles.skeleton.balanceValue} />
+            )}
+            {!showSkeleton && (
+              <>
+                <BalanceDisplay
+                  balance={privateBalance}
+                  className={styles.balanceBoxValue}
+                />
+                {totalBalance > 0n && (
+                  <span className={styles.balanceBoxPercent.private}>
+                    {formatPercentage(
+                      metrics.privatePercentage,
+                      privateBalance,
+                      totalBalance
+                    )}
+                    %
+                  </span>
                 )}
-                %
-              </span>
+              </>
             )}
           </div>
         </div>
@@ -106,26 +122,34 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
             <span className={styles.balanceBoxLabel}>Public</span>
           </div>
           <div className={styles.balanceBoxRight}>
-            <BalanceDisplay
-              balance={publicBalance}
-              className={styles.balanceBoxValue}
-            />
-            {totalBalance > 0n && (
-              <span className={styles.balanceBoxPercent.public}>
-                {formatPercentage(
-                  metrics.publicPercentage,
-                  publicBalance,
-                  totalBalance
+            {showSkeleton && (
+              <Skeleton className={styles.skeleton.balanceValue} />
+            )}
+            {!showSkeleton && (
+              <>
+                <BalanceDisplay
+                  balance={publicBalance}
+                  className={styles.balanceBoxValue}
+                />
+                {totalBalance > 0n && (
+                  <span className={styles.balanceBoxPercent.public}>
+                    {formatPercentage(
+                      metrics.publicPercentage,
+                      publicBalance,
+                      totalBalance
+                    )}
+                    %
+                  </span>
                 )}
-                %
-              </span>
+              </>
             )}
           </div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      {totalBalance > 0n && (
+      {showSkeleton && <Skeleton className={styles.skeleton.progressBar} />}
+      {!showSkeleton && totalBalance > 0n && (
         <div className={styles.progressBar}>
           <div
             className={styles.progressFill}

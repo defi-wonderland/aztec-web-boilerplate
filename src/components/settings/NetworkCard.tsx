@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Loader2, Home, Globe } from 'lucide-react';
+import { Home, Globe } from 'lucide-react';
 import { AztecNetwork } from '../../config/networks/constants';
 import { cn, iconSize } from '../../utils';
 import {
@@ -17,8 +17,6 @@ export interface NetworkCardProps {
   proverEnabled: boolean;
   healthMetrics?: NetworkHealthMetricsProps;
   onSelect?: () => void;
-  onSwitch?: () => void;
-  isSwitching?: boolean;
 }
 
 const NETWORK_INFO = {
@@ -36,16 +34,17 @@ const NETWORK_INFO = {
 
 const styles = {
   container:
-    'rounded-2xl p-4 md:p-6 flex flex-col gap-3 md:gap-4 cursor-pointer transition-all',
-  containerActive:
-    'bg-[var(--accent-primary)]/10 dark:bg-[var(--accent-primary)]/15',
-  containerSelected: 'bg-surface-tertiary ring-2 ring-[var(--accent-primary)]',
-  containerInactive: 'bg-surface-tertiary hover:bg-interactive',
-  containerUnavailable: 'bg-surface-tertiary opacity-60 cursor-not-allowed',
+    'rounded-2xl p-4 md:p-6 flex flex-col gap-3 md:gap-4 cursor-pointer transition-all duration-500 ease-in-out border-l-[6px]',
+  containerActive: 'bg-surface-tertiary border-l-[var(--accent-primary)]',
+  containerSelected:
+    'bg-interactive border-l-transparent ring-1 ring-[var(--accent-primary)]/30',
+  containerInactive:
+    'bg-surface-tertiary border-l-transparent hover:bg-interactive',
   header: 'flex items-center gap-3',
   iconBox:
-    'w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center text-lg md:text-xl shrink-0',
-  iconBoxActive: 'bg-accent',
+    'w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center text-lg md:text-xl shrink-0 transition-colors duration-500 ease-in-out',
+  iconBoxActive:
+    'bg-[var(--accent-primary)]/30 dark:bg-[var(--accent-primary)]/25',
   iconBoxInactive: 'bg-interactive',
   titleGroup: 'flex flex-col gap-0.5 flex-1',
   title: 'text-[15px] md:text-base font-semibold text-default',
@@ -65,8 +64,6 @@ const styles = {
   statValueTextMuted: 'text-xs md:text-[13px] font-medium text-muted',
   statValueTextError:
     'text-xs md:text-[13px] font-medium text-red-500 dark:text-red-400',
-  switchButton:
-    'flex items-center justify-center gap-2 w-full py-2.5 md:py-3 px-4 rounded-[10px] bg-interactive text-xs md:text-[13px] font-semibold text-muted cursor-pointer hover:bg-interactive-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
 } as const;
 
 const STATUS_CONFIG = {
@@ -100,15 +97,11 @@ export const NetworkCard: React.FC<NetworkCardProps> = ({
   proverEnabled,
   healthMetrics,
   onSelect,
-  onSwitch,
-  isSwitching = false,
 }) => {
   const { title, subtitle, icon } = NETWORK_INFO[network];
-  const isDisabled = status === 'unavailable';
   const statusInfo = STATUS_CONFIG[status];
 
   const getContainerStyle = () => {
-    if (isDisabled) return styles.containerUnavailable;
     if (isActive) return styles.containerActive;
     if (isSelected) return styles.containerSelected;
     return styles.containerInactive;
@@ -117,11 +110,10 @@ export const NetworkCard: React.FC<NetworkCardProps> = ({
   return (
     <div
       className={cn(styles.container, getContainerStyle())}
-      onClick={isDisabled ? undefined : onSelect}
-      onKeyDown={(e) => e.key === 'Enter' && !isDisabled && onSelect?.()}
+      onClick={onSelect}
+      onKeyDown={(e) => e.key === 'Enter' && onSelect?.()}
       role="button"
-      tabIndex={isDisabled ? -1 : 0}
-      aria-disabled={isDisabled}
+      tabIndex={0}
     >
       <div className={styles.header}>
         <div
@@ -160,24 +152,6 @@ export const NetworkCard: React.FC<NetworkCardProps> = ({
       </div>
 
       {isActive && healthMetrics && <NetworkHealthMetrics {...healthMetrics} />}
-
-      {!isActive &&
-        onSwitch &&
-        status !== 'unavailable' &&
-        status !== 'checking' && (
-          <button
-            className={styles.switchButton}
-            onClick={onSwitch}
-            disabled={isSwitching}
-            type="button"
-          >
-            {isSwitching && (
-              <Loader2 size={iconSize()} className="animate-spin" />
-            )}
-            {!isSwitching && <RefreshCw size={iconSize()} />}
-            {isSwitching ? 'Switching...' : `Switch to ${title}`}
-          </button>
-        )}
     </div>
   );
 };

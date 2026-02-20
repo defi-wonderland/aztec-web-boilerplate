@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Droplets, AlertTriangle } from 'lucide-react';
-import { useAztecWallet } from '../../aztec-wallet';
+import { Droplets, AlertTriangle, Wallet } from 'lucide-react';
+import { useAztecWallet, useConnectModal } from '../../aztec-wallet';
 import { Button, Card, CardContent } from '../../components/ui';
 import {
   useRequiredContracts,
@@ -17,6 +17,7 @@ import { calculateBalanceMetrics } from './utils';
 export const DripperCard: React.FC = () => {
   const { account, isPXEInitialized, connectors, connector, currentConfig } =
     useAztecWallet();
+  const { open: openConnectModal } = useConnectModal();
   const { success, loading } = useToast();
   const {
     formattedBalances,
@@ -121,13 +122,9 @@ export const DripperCard: React.FC = () => {
   const isAnyWalletConnected =
     Boolean(account) ||
     connectors.some((conn) => conn.getStatus().status === 'connected');
-  const showDripForm = isAnyWalletConnected && isPXEInitialized;
+  const isWalletReady = isAnyWalletConnected && isPXEInitialized;
 
-  if (!showDripForm) {
-    return null;
-  }
-
-  if (contractsHasError) {
+  if (isWalletReady && contractsHasError) {
     return (
       <Card className={styles.card}>
         <CardContent className={styles.errorContainer}>
@@ -141,7 +138,7 @@ export const DripperCard: React.FC = () => {
     );
   }
 
-  if (contractsLoading) {
+  if (isWalletReady && contractsLoading) {
     return (
       <Card className={styles.card}>
         <CardContent>
@@ -162,6 +159,7 @@ export const DripperCard: React.FC = () => {
       <TokenHeader
         address={currentConfig.tokenContractAddress}
         onCopy={handleCopyAddress}
+        isConnected={isWalletReady}
       />
 
       {/* Balance Section */}
@@ -169,6 +167,7 @@ export const DripperCard: React.FC = () => {
         metrics={metrics}
         isLoading={balanceLoading}
         isFetching={isFetching}
+        isConnected={isWalletReady}
       />
 
       {/* Divider */}
@@ -219,29 +218,43 @@ export const DripperCard: React.FC = () => {
             </div>
           </div>
 
-          {/* Mint Button */}
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            onClick={handleDrip}
-            disabled={
-              !amount ||
-              isProcessing ||
-              isWalletBusy ||
-              !isReady ||
-              !contractsReady
-            }
-            isLoading={isProcessing}
-            icon={<Droplets size={iconSize()} />}
-            className={styles.mintButton}
-          >
-            {isWalletBusy
-              ? 'Wallet Busy...'
-              : isProcessing
-                ? 'Processing...'
-                : 'Mint'}
-          </Button>
+          {/* Mint / Connect Wallet Button */}
+          {!isWalletReady && (
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={openConnectModal}
+              icon={<Wallet size={iconSize()} />}
+              className={styles.mintButton}
+            >
+              Connect Wallet
+            </Button>
+          )}
+          {isWalletReady && (
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={handleDrip}
+              disabled={
+                !amount ||
+                isProcessing ||
+                isWalletBusy ||
+                !isReady ||
+                !contractsReady
+              }
+              isLoading={isProcessing}
+              icon={<Droplets size={iconSize()} />}
+              className={styles.mintButton}
+            >
+              {isWalletBusy
+                ? 'Wallet Busy...'
+                : isProcessing
+                  ? 'Processing...'
+                  : 'Mint'}
+            </Button>
+          )}
         </div>
       </div>
     </Card>
