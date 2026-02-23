@@ -7,7 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '../../../components/ui';
-import { formatPercentage, iconSize } from '../../../utils';
+import { cn, formatPercentage, iconSize } from '../../../utils';
 import { styles } from '../styles';
 import { BalanceDisplay } from './BalanceDisplay';
 import type { BalanceMetrics } from '../types';
@@ -28,21 +28,8 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
   const { privateBalance, publicBalance, totalBalance, privatePercentage } =
     metrics;
 
-  if (isConnected && isLoading) {
-    return (
-      <div className={styles.balanceSection}>
-        <div
-          className={styles.balanceLoadingContainer}
-          data-testid="balance-loading"
-        >
-          <div className={styles.balanceLoadingSpinner} />
-          <span>Loading balance...</span>
-        </div>
-      </div>
-    );
-  }
-
-  const showSkeleton = !isConnected;
+  const showSkeleton = !isConnected || isLoading;
+  const skeletonPulse = isConnected && isLoading;
 
   return (
     <div className={styles.balanceSection} data-testid="token-balance-card">
@@ -61,7 +48,7 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
                 amount.
               </TooltipContent>
             </Tooltip>
-            {isConnected && isFetching && (
+            {isConnected && isFetching && !isLoading && (
               <Badge
                 variant="info"
                 className={styles.syncBadge}
@@ -71,7 +58,14 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
               </Badge>
             )}
           </div>
-          {showSkeleton && <Skeleton className={styles.skeleton.totalValue} />}
+          {showSkeleton && (
+            <Skeleton
+              className={cn(
+                styles.skeleton.totalValue,
+                skeletonPulse && 'animate-pulse'
+              )}
+            />
+          )}
           {!showSkeleton && (
             <BalanceDisplay
               balance={totalBalance}
@@ -79,7 +73,14 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
             />
           )}
         </div>
-        {showSkeleton && <Skeleton className={styles.skeleton.totalUnit} />}
+        {showSkeleton && (
+          <Skeleton
+            className={cn(
+              styles.skeleton.totalUnit,
+              skeletonPulse && 'animate-pulse'
+            )}
+          />
+        )}
         {!showSkeleton && <span className={styles.totalUnit}>TST</span>}
       </div>
 
@@ -96,7 +97,12 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
           </div>
           <div className={styles.balanceBoxRight}>
             {showSkeleton && (
-              <Skeleton className={styles.skeleton.balanceValue} />
+              <Skeleton
+                className={cn(
+                  styles.skeleton.balanceValue,
+                  skeletonPulse && 'animate-pulse'
+                )}
+              />
             )}
             {!showSkeleton && (
               <>
@@ -131,7 +137,12 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
           </div>
           <div className={styles.balanceBoxRight}>
             {showSkeleton && (
-              <Skeleton className={styles.skeleton.balanceValue} />
+              <Skeleton
+                className={cn(
+                  styles.skeleton.balanceValue,
+                  skeletonPulse && 'animate-pulse'
+                )}
+              />
             )}
             {!showSkeleton && (
               <>
@@ -157,7 +168,14 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
       </div>
 
       {/* Progress Bar */}
-      {showSkeleton && <Skeleton className={styles.skeleton.progressBar} />}
+      {showSkeleton && (
+        <Skeleton
+          className={cn(
+            styles.skeleton.progressBar,
+            skeletonPulse && 'animate-pulse'
+          )}
+        />
+      )}
       {!showSkeleton && totalBalance > 0n && (
         <div className={styles.progressBar}>
           <div

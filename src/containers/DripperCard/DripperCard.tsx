@@ -27,11 +27,11 @@ export const DripperCard: React.FC = () => {
 
   const {
     isReady: contractsReady,
-    isLoading: contractsLoading,
     hasError: contractsHasError,
     failedContracts,
-    pendingContracts,
-  } = useRequiredContracts(['dripper', 'token'] as const);
+  } = useRequiredContracts(['dripper', 'token'] as const, {
+    showLoadingToast: true,
+  });
 
   const [amount, setAmount] = useState('');
   const [dripType, setDripType] = useState<'private' | 'public'>('private');
@@ -41,6 +41,13 @@ export const DripperCard: React.FC = () => {
     () => calculateBalanceMetrics(formattedBalances),
     [formattedBalances]
   );
+
+  const isAnyWalletConnected =
+    Boolean(account) ||
+    connectors.some((conn) => conn.getStatus().status === 'connected');
+  const isWalletReady = isAnyWalletConnected && isPXEInitialized;
+
+  const isDataLoading = isWalletReady && (!contractsReady || balanceLoading);
 
   const { dripToPrivate, dripToPublic, isReady } = useDripper({
     onDripToPrivateSuccess: () => {
@@ -121,11 +128,6 @@ export const DripperCard: React.FC = () => {
     }
   };
 
-  const isAnyWalletConnected =
-    Boolean(account) ||
-    connectors.some((conn) => conn.getStatus().status === 'connected');
-  const isWalletReady = isAnyWalletConnected && isPXEInitialized;
-
   if (isWalletReady && contractsHasError) {
     return (
       <Card className={styles.card}>
@@ -135,21 +137,6 @@ export const DripperCard: React.FC = () => {
           <p className={styles.errorText}>
             Failed to register: {failedContracts.join(', ')}
           </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isWalletReady && contractsLoading) {
-    return (
-      <Card className={styles.card}>
-        <CardContent>
-          <div className={styles.loadingContainer}>
-            <div className={styles.loadingSpinner} />
-            <p className={styles.loadingText}>
-              Loading contracts: {pendingContracts.join(', ')}...
-            </p>
-          </div>
         </CardContent>
       </Card>
     );
@@ -167,7 +154,7 @@ export const DripperCard: React.FC = () => {
       {/* Balance Section */}
       <BalanceSection
         metrics={metrics}
-        isLoading={balanceLoading}
+        isLoading={isDataLoading}
         isFetching={isFetching}
         isConnected={isWalletReady}
       />

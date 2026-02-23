@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CloudDownload, Globe, HardDrive, Zap } from 'lucide-react';
 import { useAztecWallet } from '../aztec-wallet';
 import { contractsConfig } from '../config/contracts';
@@ -59,7 +59,15 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
   const { artifacts, artifactStatus, setArtifacts, setArtifactStatus } =
     useContractRegistryStore();
 
+  // Track which network artifacts were loaded for to avoid duplicate loads
+  // when currentConfig object reference changes but network stays the same.
+  const loadedNetworkRef = useRef<string | null>(null);
+
+  const networkName = currentConfig.name;
+
   useEffect(() => {
+    if (loadedNetworkRef.current === networkName) return;
+
     const abortController = new AbortController();
 
     setArtifactStatus('loading');
@@ -69,6 +77,7 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
       .then((result) => {
         if (abortController.signal.aborted) return;
 
+        loadedNetworkRef.current = networkName;
         setArtifacts(result.artifacts);
         setArtifactStatus('ready');
 
@@ -100,7 +109,8 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
     return () => {
       abortController.abort();
     };
-  }, [currentConfig, showToast, addToast, setArtifacts, setArtifactStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [networkName, showToast, addToast, setArtifacts, setArtifactStatus]);
 
   return {
     artifacts,

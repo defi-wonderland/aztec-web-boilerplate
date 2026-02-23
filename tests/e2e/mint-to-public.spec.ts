@@ -26,13 +26,9 @@ async function getPublicBalance(page: Page): Promise<bigint> {
   const balanceCard = page.locator('[data-testid="token-balance-card"]');
   await expect(balanceCard).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
 
-  const loadingSpinner = page.locator('[data-testid="balance-loading"]');
-  if (await loadingSpinner.isVisible()) {
-    await expect(loadingSpinner).not.toBeVisible({ timeout: TIMEOUTS.LONG });
-  }
-
+  // Wait for balance value to appear (skeletons are shown until data loads)
   const balanceValue = page.locator('[data-testid="balance-value-public"]');
-  await expect(balanceValue).toBeVisible({ timeout: 10000 });
+  await expect(balanceValue).toBeVisible({ timeout: TIMEOUTS.LONG });
 
   const balanceText = await balanceValue.textContent();
   return BigInt(balanceText?.trim() || '0');
