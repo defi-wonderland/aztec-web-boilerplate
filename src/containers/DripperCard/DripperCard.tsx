@@ -163,7 +163,6 @@ export const DripperCard: React.FC = () => {
         tokenName="Test Token"
         tokenSymbol="TST"
         onCopy={handleCopyAddress}
-        isConnected={isWalletReady}
       />
       {/* Balance Section */}
       <BalanceSection

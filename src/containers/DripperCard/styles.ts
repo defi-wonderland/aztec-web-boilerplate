@@ -93,8 +93,6 @@ export const styles = {
 
   // Skeleton placeholders
   skeleton: {
-    tokenName: 'h-5 w-36 rounded-md',
-    tokenAddress: 'h-4 w-48 rounded-md',
     totalValue: 'h-12 w-32 rounded-md',
     totalUnit: 'h-5 w-10 rounded-md',
     balanceValue: 'h-5 w-16 rounded-md',
