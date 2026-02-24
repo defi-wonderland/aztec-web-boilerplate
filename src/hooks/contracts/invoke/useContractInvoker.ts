@@ -6,11 +6,11 @@ import {
   useArtifactActions,
 } from '../../../store';
 import { formatFunctionSignature } from '../../../utils/contractInteraction';
-import { useFunctionGroups } from '../../useFunctionGroups';
 import { useLoadArtifact } from '../artifact/useLoadArtifact';
 import { usePreconfiguredLoader } from '../artifact/usePreconfiguredLoader';
 import { useSavedContractManager } from '../artifact/useSavedContractManager';
 import { useContractCaller } from './useContractCaller';
+import { useFunctionGroups } from './useFunctionGroups';
 import type {
   FunctionGroup,
   InvokeStatus,

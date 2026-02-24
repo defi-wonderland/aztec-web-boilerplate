@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
-import { SharedPXEService } from '../aztec-wallet/services/aztec/pxe';
-import { getNetworkStore } from '../aztec-wallet/store/network';
+import { useAztecWallet, hasAppManagedPXE } from '../../aztec-wallet';
+import { SharedPXEService } from '../../aztec-wallet/services/aztec/pxe';
+import { getNetworkStore } from '../../aztec-wallet/store/network';
 
 const DEFAULT_REFRESH_INTERVAL = 30_000; // 30 seconds
 
