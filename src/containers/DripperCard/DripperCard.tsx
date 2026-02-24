@@ -47,7 +47,8 @@ export const DripperCard: React.FC = () => {
     connectors.some((conn) => conn.getStatus().status === 'connected');
   const isWalletReady = isAnyWalletConnected && isPXEInitialized;
 
-  const isDataLoading = isWalletReady && (!contractsReady || balanceLoading);
+  const isDataLoading =
+    isWalletReady && (!contractsReady || balanceLoading || !formattedBalances);
 
   const { dripToPrivate, dripToPublic, isReady } = useDripper({
     onDripToPrivateSuccess: () => {
