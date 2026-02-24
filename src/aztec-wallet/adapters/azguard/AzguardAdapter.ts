@@ -12,7 +12,7 @@ import {
   type AztecChainId,
   type AztecNetwork,
 } from '../../../config/networks/constants';
-import { parseAddressFromCaip } from '../../../utils/azguard';
+import { parseAddressFromCaip } from '../../../utils/caip';
 import { AzguardWalletService } from './AzguardWalletService';
 import type {
   IBrowserWalletAdapter,

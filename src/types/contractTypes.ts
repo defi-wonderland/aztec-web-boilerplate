@@ -1,4 +1,7 @@
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import type { ContractBase } from '@aztec/aztec.js/contracts';
 import type { ContractFunctionInteraction } from '@aztec/aztec.js/contracts';
+import type { FeePaymentMethodType } from '../config/feePaymentContracts';
 
 /**
  * Extract method names from a contract class.
@@ -29,6 +32,145 @@ export type ArgsOf<
 }
   ? A
   : never;
+
+/**
+ * Type helper to extract contract type from a contract class.
+ * Uses the static `at` method signature to infer the contract instance type.
+ */
+export type ContractClassFor<TContract extends ContractBase> = {
+  artifact: ContractArtifact;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  at: (...args: any[]) => Promise<TContract> | TContract;
+};
+
+// =============================================================================
+// useReadContract types
+// =============================================================================
+
+/**
+ * Parameters for the declarative useReadContract hook.
+ * Mirrors wagmi's useReadContract API with Aztec-specific extensions.
+ */
+export interface UseReadContractParams<
+  TContract extends ContractBase,
+  TMethod extends MethodsOf<TContract>,
+  TSelectData = unknown,
+> {
+  /** TanStack Query key — used for caching and invalidation */
+  queryKey: readonly unknown[];
+  /** Contract class — used for type inference and artifact */
+  contract: ContractClassFor<TContract>;
+  /** Contract address. Set to undefined to auto-disable the query. */
+  address: string | undefined;
+  /** Method name to simulate */
+  functionName: TMethod;
+  /** Method arguments. Set to undefined to auto-disable the query. */
+  args: ArgsOf<TContract, TMethod> | undefined;
+  /** Additional gate to enable/disable the query (default: true) */
+  enabled?: boolean;
+  /** Time in ms before data is considered stale */
+  staleTime?: number;
+  /** Time in ms before inactive query data is garbage collected */
+  gcTime?: number;
+  /** Polling interval in ms, or false to disable */
+  refetchInterval?: number | false;
+  /** Whether to refetch on window focus */
+  refetchOnWindowFocus?: boolean;
+  /** Transform the raw result before returning */
+  select?: (data: unknown) => TSelectData;
+  /** Retry count or boolean */
+  retry?: number | boolean;
+}
+
+/**
+ * Return type for the declarative useReadContract hook.
+ */
+export interface UseReadContractReturn<TData = unknown> {
+  data: TData | undefined;
+  error: Error | null;
+  /** True during first load when no cached data exists */
+  isLoading: boolean;
+  /** True while the query hasn't resolved yet */
+  isPending: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  /** True during any background fetch (including refetches) */
+  isFetching: boolean;
+  status: 'pending' | 'error' | 'success';
+  refetch: () => Promise<void>;
+}
+
+// =============================================================================
+// useWriteContract types
+// =============================================================================
+
+/**
+ * Data returned from a successful write operation.
+ */
+export interface WriteContractData {
+  txHash?: string;
+  result?: unknown;
+}
+
+/**
+ * Parameters passed per-call to writeContract / writeContractAsync.
+ */
+export interface WriteContractMutateParams<
+  TContract extends ContractBase,
+  TMethod extends MethodsOf<TContract>,
+> {
+  /** Contract class — used for type inference and artifact */
+  contract: ContractClassFor<TContract>;
+  /** Contract address */
+  address: string;
+  /** Method name to call */
+  functionName: TMethod;
+  /** Method arguments */
+  args: ArgsOf<TContract, TMethod>;
+  /** Fee payment method (Aztec-specific, defaults to store value) */
+  feePaymentMethod?: FeePaymentMethodType;
+}
+
+/**
+ * Options for the useWriteContract hook.
+ */
+export interface UseWriteContractOptions {
+  /** Timeout for transaction confirmation in ms (default: 900) */
+  timeout?: number;
+  /** Receipt polling options for browser wallet */
+  receiptPolling?: { intervalMs?: number; maxAttempts?: number };
+  /** Called on successful write */
+  onSuccess?: (data: WriteContractData) => void;
+  /** Called on write failure */
+  onError?: (error: Error) => void;
+  /** Called when mutation settles (success or error) */
+  onSettled?: (
+    data: WriteContractData | undefined,
+    error: Error | null
+  ) => void;
+}
+
+/**
+ * Return type for the useWriteContract hook.
+ */
+export interface UseWriteContractReturn {
+  /** Fire-and-forget write (errors go to isError/error) */
+  writeContract: <T extends ContractBase, M extends MethodsOf<T>>(
+    params: WriteContractMutateParams<T, M>
+  ) => void;
+  /** Async write that returns the result or throws */
+  writeContractAsync: <T extends ContractBase, M extends MethodsOf<T>>(
+    params: WriteContractMutateParams<T, M>
+  ) => Promise<WriteContractData>;
+  data: WriteContractData | undefined;
+  error: Error | null;
+  isPending: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  isIdle: boolean;
+  status: 'idle' | 'pending' | 'error' | 'success';
+  reset: () => void;
+}
 
 /**
  * Configuration for a contract write operation.

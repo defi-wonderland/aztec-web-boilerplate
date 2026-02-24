@@ -1,6 +1,5 @@
-import { useRef, useLayoutEffect } from 'react';
 import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
@@ -23,14 +22,9 @@ interface UseDripperOptions {
 }
 
 export const useDripper = (options: UseDripperOptions = {}) => {
-  // Use ref to avoid stale closures in mutation callbacks
-  const callbacksRef = useRef(options);
-  // Update ref in layout effect to ensure latest callbacks are available
-  useLayoutEffect(() => {
-    callbacksRef.current = options;
-  });
   const { account, currentConfig } = useAztecWallet();
-  const { writeContract } = useWriteContract();
+  const { writeContractAsync, isPending, isError, error, reset } =
+    useWriteContract();
   const queryClient = useQueryClient();
   const { invalidateAll: invalidateFeeJuiceBalances } =
     useFeeJuiceBalanceInvalidation();
@@ -53,17 +47,16 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     invalidateFeeJuiceBalances();
   };
 
-  const dripToPrivate = useMutation({
-    retry: false,
-    mutationFn: async ({ amount, feePaymentMethod }: DripParams) => {
-      if (!dripperAddress || !tokenAddress) {
-        throw new Error('Contract addresses not configured');
-      }
-      if (!account) {
-        throw new Error('Account not available');
-      }
+  const dripToPrivate = async ({ amount, feePaymentMethod }: DripParams) => {
+    if (!dripperAddress || !tokenAddress) {
+      throw new Error('Contract addresses not configured');
+    }
+    if (!account) {
+      throw new Error('Account not available');
+    }
 
-      const result = await writeContract({
+    try {
+      await writeContractAsync({
         contract: DripperContract,
         address: dripperAddress,
         functionName: 'drip_to_private',
@@ -71,36 +64,24 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         feePaymentMethod,
       });
 
-      if (!result.success) {
-        throw new Error(result.error ?? 'drip_to_private failed');
-      }
-
       invalidateAllBalances();
-    },
-    onSuccess: () => callbacksRef.current.onDripToPrivateSuccess?.(),
-    onError: (error: Error) =>
-      callbacksRef.current.onDripToPrivateError?.(error),
-  });
+      options.onDripToPrivateSuccess?.();
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      options.onDripToPrivateError?.(error);
+    }
+  };
 
-  const dripToPublic = useMutation({
-    retry: false,
-    mutationFn: async ({ amount, feePaymentMethod }: DripParams) => {
-      if (!dripperAddress || !tokenAddress) {
-        throw new Error('Contract addresses not configured');
-      }
-      if (!account) {
-        throw new Error('Account not available');
-      }
+  const dripToPublic = async ({ amount, feePaymentMethod }: DripParams) => {
+    if (!dripperAddress || !tokenAddress) {
+      throw new Error('Contract addresses not configured');
+    }
+    if (!account) {
+      throw new Error('Account not available');
+    }
 
-      // Simulate first to catch revert reasons before sending
-      console.log('[useDripper] Simulating drip_to_public...', {
-        dripperAddress,
-        tokenAddress,
-        amount: amount.toString(),
-        account: account.getAddress().toString(),
-      });
-
-      const result = await writeContract({
+    try {
+      await writeContractAsync({
         contract: DripperContract,
         address: dripperAddress,
         functionName: 'drip_to_public',
@@ -108,21 +89,21 @@ export const useDripper = (options: UseDripperOptions = {}) => {
         feePaymentMethod,
       });
 
-      if (!result.success) {
-        console.error('[useDripper] drip_to_public failed:', result.error);
-        throw new Error(result.error ?? 'drip_to_public failed');
-      }
-
       invalidateAllBalances();
-    },
-    onSuccess: () => callbacksRef.current.onDripToPublicSuccess?.(),
-    onError: (error: Error) =>
-      callbacksRef.current.onDripToPublicError?.(error),
-  });
+      options.onDripToPublicSuccess?.();
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      options.onDripToPublicError?.(error);
+    }
+  };
 
   return {
     dripToPrivate,
     dripToPublic,
+    isPending,
+    isError,
+    error,
+    reset,
     isReady,
   };
 };

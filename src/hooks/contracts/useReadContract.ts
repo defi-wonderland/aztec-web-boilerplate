@@ -1,177 +1,150 @@
-import { useState, useCallback } from 'react';
-import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import { useQuery } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import {
   useAztecWallet,
-  isEmbeddedConnector,
+  hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../../aztec-wallet';
-import { SimulateViewsOp } from '../../types';
 import { getContractMethod } from './utils';
+import type { SimulateViewsOp } from '../../types';
 import type {
   MethodsOf,
-  ArgsOf,
-  ReadContractResult,
+  UseReadContractParams,
+  UseReadContractReturn,
 } from '../../types/contractTypes';
 
 /**
- * Type helper to extract contract type from a contract class.
- * Uses the static `at` method signature to infer the contract instance type.
- */
-type ContractClassFor<TContract extends ContractBase> = {
-  artifact: ContractArtifact;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  at: (...args: any[]) => Promise<TContract>;
-};
-
-interface ReadContractParams<
-  TContract extends ContractBase,
-  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
-> {
-  /** Contract class - used for type inference and artifact */
-  contract: ContractClassFor<TContract>;
-  /** Contract address */
-  address: string;
-  /** Method name to call */
-  functionName: TMethod;
-  /** Method arguments */
-  args: ArgsOf<TContract, TMethod>;
-}
-
-/**
- * Hook for executing read/simulate operations on Aztec contracts.
- * Handles both embedded and browser wallet flows automatically.
+ * Declarative hook for reading/simulating Aztec contract methods.
+ *
+ * Mirrors wagmi's `useReadContract` API: pass params declaratively and the
+ * hook auto-fetches, caches, deduplicates, and refetches as needed.
  *
  * @example
  * ```tsx
- * const { readContract, isPending } = useReadContract();
- *
- * // TypeScript infers method type from functionName
- * const result = await readContract({
+ * const { data, isLoading, error, refetch } = useReadContract({
+ *   queryKey: ['tokenBalance', tokenAddress, ownerAddress],
  *   contract: TokenContract,
  *   address: tokenAddress,
  *   functionName: 'balance_of_private',
  *   args: [ownerAddress],
  * });
+ *
+ * // Invalidation — just native TanStack Query
+ * queryClient.invalidateQueries({ queryKey: ['tokenBalance', tokenAddress, ownerAddress] });
  * ```
  */
-export const useReadContract = () => {
-  const { connector, account } = useAztecWallet();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export const useReadContract = <
+  TContract extends ContractBase,
+  TMethod extends MethodsOf<TContract>,
+  TSelectData = unknown,
+>(
+  params: UseReadContractParams<TContract, TMethod, TSelectData>
+): UseReadContractReturn<TSelectData> => {
+  const { isConnected, connector, account } = useAztecWallet();
 
-  const readContract = useCallback(
-    async <
-      TContract extends ContractBase,
-      TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
-      TResult = unknown,
-    >(
-      params: ReadContractParams<TContract, TMethod>
-    ): Promise<ReadContractResult<TResult>> => {
-      const { contract, address, functionName, args } = params;
-      const artifact = contract.artifact;
-
-      if (!connector || !account) {
-        return { success: false, error: 'Wallet not connected' };
-      }
-
-      setIsPending(true);
-      setError(null);
-
-      try {
-        // ========== BROWSER WALLET FLOW ==========
-        if (isBrowserWalletConnector(connector)) {
-          const selectedAccount = connector.getCaipAccount();
-          if (!selectedAccount) {
-            const errorMsg = 'Browser wallet account not selected';
-            setError(errorMsg);
-            return { success: false, error: errorMsg };
-          }
-
-          const operation: SimulateViewsOp = {
-            kind: 'simulate_views',
-            account: selectedAccount,
-            calls: [
-              {
-                kind: 'call',
-                contract: address,
-                method: String(functionName),
-                args: args as unknown[],
-              },
-            ],
-          };
-
-          const result = await connector.executeOperation(operation);
-
-          if (result.status !== 'ok') {
-            const errorMsg =
-              'error' in result && result.error
-                ? result.error
-                : 'Simulation failed';
-            setError(errorMsg);
-            return { success: false, error: errorMsg };
-          }
-
-          return {
-            success: true,
-            data: result.result as TResult,
-          };
-        }
-
-        // ========== EMBEDDED WALLET FLOW ==========
-        if (isEmbeddedConnector(connector)) {
-          const wallet = connector.getWallet();
-          if (!wallet) {
-            const errorMsg = 'Wallet instance not available';
-            setError(errorMsg);
-            return { success: false, error: errorMsg };
-          }
-
-          const contractAddress = AztecAddress.fromString(address);
-          const contract = await Contract.at(contractAddress, artifact, wallet);
-
-          const method = getContractMethod(contract, String(functionName));
-          if (!method) {
-            const errorMsg = `Method ${String(functionName)} not found on contract`;
-            setError(errorMsg);
-            return { success: false, error: errorMsg };
-          }
-
-          // Cast safe: args validated by ArgsOf<TContract, TMethod> at call site
-          const result = await method(...(args as unknown[])).simulate({
-            from: account.getAddress(),
-          });
-
-          return {
-            success: true,
-            data: result as TResult,
-          };
-        }
-
-        const errorMsg = 'Unknown wallet type';
-        setError(errorMsg);
-        return { success: false, error: errorMsg };
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
-        setError(errorMsg);
-        return { success: false, error: errorMsg };
-      } finally {
-        setIsPending(false);
-      }
-    },
-    [connector, account]
+  const isEnabled = Boolean(
+    (params.enabled ?? true) &&
+      isConnected &&
+      connector &&
+      account &&
+      params.address &&
+      params.args !== undefined
   );
 
-  const reset = useCallback(() => {
-    setError(null);
-    setIsPending(false);
-  }, []);
+  const query = useQuery({
+    queryKey: params.queryKey,
+    queryFn: async () => {
+      // These are guaranteed non-null by `enabled` guard
+      if (
+        !connector ||
+        !account ||
+        !params.address ||
+        params.args === undefined
+      ) {
+        throw new Error('Missing required parameters');
+      }
+
+      const artifact = params.contract.artifact;
+      const address = params.address;
+      const functionName = String(params.functionName);
+      const args = params.args as unknown[];
+
+      // ========== BROWSER WALLET FLOW ==========
+      if (isBrowserWalletConnector(connector)) {
+        const selectedAccount = connector.getCaipAccount();
+        if (!selectedAccount) {
+          throw new Error('Browser wallet account not selected');
+        }
+
+        const operation: SimulateViewsOp = {
+          kind: 'simulate_views',
+          account: selectedAccount,
+          calls: [
+            {
+              kind: 'call',
+              contract: address,
+              method: functionName,
+              args,
+            },
+          ],
+        };
+
+        const result = await connector.executeOperation(operation);
+
+        if (result.status !== 'ok') {
+          const errorMsg =
+            'error' in result && result.error
+              ? result.error
+              : 'Simulation failed';
+          throw new Error(errorMsg);
+        }
+
+        return result.result;
+      }
+
+      // ========== APP-MANAGED PXE FLOW (Embedded + External Signer) ==========
+      if (hasAppManagedPXE(connector)) {
+        const wallet = connector.getWallet();
+        if (!wallet) {
+          throw new Error('Wallet instance not available');
+        }
+
+        const contractAddress = AztecAddress.fromString(address);
+        const contractInstance = Contract.at(contractAddress, artifact, wallet);
+
+        const method = getContractMethod(contractInstance, functionName);
+        if (!method) {
+          throw new Error(`Method ${functionName} not found on contract`);
+        }
+
+        return await method(...args).simulate({
+          from: account.getAddress(),
+        });
+      }
+
+      throw new Error('Unknown wallet type');
+    },
+    enabled: isEnabled,
+    staleTime: params.staleTime,
+    gcTime: params.gcTime,
+    refetchInterval: params.refetchInterval,
+    refetchOnWindowFocus: params.refetchOnWindowFocus,
+    select: params.select,
+    retry: params.retry,
+  });
 
   return {
-    readContract,
-    isPending,
-    error,
-    reset,
+    data: query.data,
+    error: query.error,
+    isLoading: query.isLoading,
+    isPending: query.isPending,
+    isSuccess: query.isSuccess,
+    isError: query.isError,
+    isFetching: query.isFetching,
+    status: query.status,
+    refetch: async () => {
+      await query.refetch();
+    },
   };
 };

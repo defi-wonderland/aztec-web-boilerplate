@@ -76,7 +76,7 @@ export const DripperCard: React.FC = () => {
   const { method: feePaymentMethod } = useFeePayment();
   const loadingToastRef = useRef<LoadingToastResult | null>(null);
 
-  const { dripToPrivate, dripToPublic, isReady } = useDripper({
+  const { dripToPrivate, dripToPublic, isPending, isReady } = useDripper({
     onDripToPrivateSuccess: () => {
       loadingToastRef.current?.success(
         'Tokens minted successfully',
@@ -111,7 +111,6 @@ export const DripperCard: React.FC = () => {
     },
   });
 
-  const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
   const connectorStatus = connector?.getStatus().status;
   const isWalletBusy =
     connectorStatus === 'connecting' || connectorStatus === 'deploying';
@@ -127,17 +126,8 @@ export const DripperCard: React.FC = () => {
 
     const amountBigInt = BigInt(amount);
 
-    if (dripType === 'private') {
-      dripToPrivate.mutate({
-        amount: amountBigInt,
-        feePaymentMethod,
-      });
-    } else {
-      dripToPublic.mutate({
-        amount: amountBigInt,
-        feePaymentMethod,
-      });
-    }
+    const dripFn = dripType === 'private' ? dripToPrivate : dripToPublic;
+    dripFn({ amount: amountBigInt, feePaymentMethod });
   };
 
   const handleCopyAddress = () => {
@@ -246,7 +236,7 @@ export const DripperCard: React.FC = () => {
                   value={amount}
                   onChange={handleAmountChange}
                   placeholder="Enter amount"
-                  disabled={isProcessing || !isReady}
+                  disabled={isPending || !isReady}
                 />
               </div>
               <div className={styles.dripTypeWrapper}>
@@ -259,7 +249,7 @@ export const DripperCard: React.FC = () => {
                     onValueChange={(value) =>
                       setDripType(value as 'private' | 'public')
                     }
-                    disabled={isProcessing || !isReady}
+                    disabled={isPending || !isReady}
                   >
                     <SelectTrigger id="drip-type">
                       <SelectValue />
@@ -292,12 +282,12 @@ export const DripperCard: React.FC = () => {
               onClick={handleDrip}
               disabled={
                 !amount ||
-                isProcessing ||
+                isPending ||
                 isWalletBusy ||
                 !isReady ||
                 !contractsReady
               }
-              isLoading={isProcessing}
+              isLoading={isPending}
               icon={
                 dripType === 'private' ? (
                   <Shield size={iconSize()} />
@@ -309,7 +299,7 @@ export const DripperCard: React.FC = () => {
             >
               {isWalletBusy
                 ? 'Wallet Busy...'
-                : isProcessing
+                : isPending
                   ? 'Processing...'
                   : `Drip to ${dripType}`}
             </Button>

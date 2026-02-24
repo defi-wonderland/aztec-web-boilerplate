@@ -25,3 +25,11 @@ export type {
   UseContractCallerOptions,
   UseContractCallerReturn,
 } from './useContractCaller';
+export type {
+  UseReadContractParams,
+  UseReadContractReturn,
+  UseWriteContractOptions,
+  UseWriteContractReturn,
+  WriteContractData,
+  WriteContractMutateParams,
+} from '../../types/contractTypes';

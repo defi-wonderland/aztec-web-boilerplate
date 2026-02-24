@@ -95,7 +95,7 @@ export const useDynamicContractCaller = (
           }
 
           const contractAddress = AztecAddress.fromString(address);
-          const contract = await Contract.at(contractAddress, artifact, wallet);
+          const contract = Contract.at(contractAddress, artifact, wallet);
           const method = getContractMethod(contract, functionName);
 
           if (!method) {
@@ -195,7 +195,7 @@ export const useDynamicContractCaller = (
           }
 
           const contractAddress = AztecAddress.fromString(address);
-          const contract = await Contract.at(contractAddress, artifact, wallet);
+          const contract = Contract.at(contractAddress, artifact, wallet);
           const method = getContractMethod(contract, functionName);
 
           if (!method) {
