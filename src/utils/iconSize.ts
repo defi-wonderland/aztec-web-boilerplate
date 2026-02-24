@@ -16,6 +16,7 @@
  */
 
 const sizes = {
+  xxs: 8, // h-2 = 0.5rem = 8px
   xs: 12, // h-3 = 0.75rem = 12px
   sm: 16, // h-4 = 1rem = 16px
   md: 20, // h-5 = 1.25rem = 20px
@@ -28,7 +29,7 @@ export type IconSize = keyof typeof sizes;
 
 /**
  * Returns pixel size for Lucide icons.
- * @param size - Size variant: 'xs', 'sm' (default), 'md', 'lg', 'xl', '2xl'
+ * @param size - Size variant: 'xxs', 'xs', 'sm' (default), 'md', 'lg', 'xl', '2xl'
  * @returns Pixel value for the icon size
  */
 export const iconSize = (size: IconSize = 'sm'): number => sizes[size];

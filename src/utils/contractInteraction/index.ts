@@ -24,5 +24,9 @@ export {
 export {
   createArtifactSummary,
   formatFunctionSignature,
+  formatParsedType,
   formatResultData,
 } from './formatter';
+
+// Sidebar ID helpers
+export { toSidebarId, fromSidebarId } from './sidebarId';

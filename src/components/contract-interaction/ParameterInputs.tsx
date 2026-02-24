@@ -27,7 +27,7 @@ export interface ParameterInputsProps {
   trimOnChange?: boolean;
 }
 
-const ParameterInputs: React.FC<ParameterInputsProps> = ({
+export const ParameterInputs: React.FC<ParameterInputsProps> = ({
   inputs,
   values,
   onChange,
@@ -76,5 +76,3 @@ const ParameterInputs: React.FC<ParameterInputsProps> = ({
     </div>
   );
 };
-
-export default ParameterInputs;

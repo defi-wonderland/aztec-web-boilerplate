@@ -47,7 +47,7 @@ const AppContent: React.FC = () => {
   );
 };
 
-function App() {
+export function App() {
   return (
     <AppProvider>
       <AppNavigationProvider>
@@ -56,5 +56,3 @@ function App() {
     </AppProvider>
   );
 }
-
-export default App;

@@ -1,10 +1,9 @@
 import { useCallback } from 'react';
 import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 import {
-  useContractTargetAddress,
   useContractActions,
   useFormValues,
-  useParsedArtifact,
+  useInvokeFlowData,
 } from '../../store';
 import {
   formatResultData,
@@ -12,15 +11,18 @@ import {
 } from '../../utils/contractInteraction';
 import { safeStringify } from '../../utils/string';
 import { useDynamicContractCaller } from './useDynamicContractCaller';
-import type { FunctionGroup } from '../../components/contract-interaction/types';
+import type {
+  CallMode,
+  FunctionGroup,
+} from '../../components/contract-interaction/types';
 
 export interface UseContractCallerOptions {
   grouped: FunctionGroup[];
 }
 
 export interface UseContractCallerReturn {
-  handleSimulate: (functionName: string) => Promise<void>;
-  handleExecute: (functionName: string) => Promise<void>;
+  handleSimulate: (functionName: string) => Promise<string | null>;
+  handleExecute: (functionName: string) => Promise<string | null>;
   isSimulating: boolean;
   isExecuting: boolean;
   error: string | null;
@@ -35,9 +37,8 @@ export const useContractCaller = (
 ): UseContractCallerReturn => {
   const { grouped } = options;
 
-  const address = useContractTargetAddress();
+  const { address, parsedArtifact: parsed } = useInvokeFlowData();
   const formValues = useFormValues();
-  const parsed = useParsedArtifact();
   const { pushLog } = useContractActions();
 
   const {
@@ -49,14 +50,14 @@ export const useContractCaller = (
   } = useDynamicContractCaller(parsed?.artifact);
 
   const callFunction = useCallback(
-    async (mode: 'simulate' | 'execute', functionName: string) => {
+    async (mode: CallMode, functionName: string): Promise<string | null> => {
       if (!parsed) {
         pushLog({
           level: 'error',
           title: 'Missing artifact',
           detail: 'Load an artifact first',
         });
-        return;
+        return null;
       }
 
       const selectedFn = grouped
@@ -68,7 +69,7 @@ export const useContractCaller = (
           title: 'Function not found',
           detail: `No function named "${functionName}" in artifact`,
         });
-        return;
+        return null;
       }
 
       const validation = validateAndBuildCallArgs(
@@ -82,7 +83,7 @@ export const useContractCaller = (
           title: 'Validation failed',
           detail: validation.error ?? 'Invalid args',
         });
-        return;
+        return null;
       }
 
       const isSimulate = mode === 'simulate';
@@ -106,19 +107,23 @@ export const useContractCaller = (
           title: `${isSimulate ? 'Simulation' : 'Execution'} failed`,
           detail: result.error ?? 'Unknown error',
         });
-        return;
+        return null;
       }
+
+      const formattedResult = safeStringify(
+        formatResultData(
+          result.data ?? result.txHash,
+          readFieldCompressedString
+        )
+      );
 
       pushLog({
         level: 'success',
         title: `${isSimulate ? 'Simulation' : 'Execution'} complete`,
-        detail: safeStringify(
-          formatResultData(
-            result.data ?? result.txHash,
-            readFieldCompressedString
-          )
-        ),
+        detail: formattedResult,
       });
+
+      return formattedResult;
     },
     [parsed, address, formValues, grouped, simulate, execute, pushLog]
   );

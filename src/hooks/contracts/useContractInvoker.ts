@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
-  useContractTargetAddress,
   useContractActions,
   useFormActions,
-  useArtifactInput,
-  useParsedArtifact,
-  useSavedContracts,
+  useInvokeFlowData,
   useArtifactActions,
 } from '../../store';
 import { formatFunctionSignature } from '../../utils/contractInteraction';
@@ -34,8 +31,8 @@ export interface UseContractInvokerReturn {
   error: string | null;
   // Actions
   onLoad: () => Promise<void>;
-  onSimulate: (functionName: string) => Promise<void>;
-  onExecute: (functionName: string) => Promise<void>;
+  onSimulate: (functionName: string) => Promise<string | null>;
+  onExecute: (functionName: string) => Promise<string | null>;
   onApplySaved: (contract: CachedContract) => Promise<void>;
   onDeleteSaved: (address: string) => Promise<void>;
   onClearCache: () => void;
@@ -49,14 +46,14 @@ export const useContractInvoker = (
   const { networkName, filter = '' } = options;
 
   // Read from Zustand store
-  const address = useContractTargetAddress();
+  const {
+    address,
+    savedContracts,
+    parsedArtifact: parsed,
+    artifactInput,
+  } = useInvokeFlowData();
   const { setInvokeTarget } = useContractActions();
   const { reset: resetFormValues } = useFormActions();
-
-  // Artifact state from Zustand
-  const savedContracts = useSavedContracts();
-  const parsed = useParsedArtifact();
-  const artifactInput = useArtifactInput();
 
   const {
     setArtifactInput,
@@ -109,7 +106,11 @@ export const useContractInvoker = (
   // Wrapper for load artifact
   const handleLoadArtifact = useCallback(async () => {
     resetFormValues();
-    await loadArtifactWithData(address, artifactInput);
+    try {
+      await loadArtifactWithData(address, artifactInput);
+    } catch {
+      // Parse error is already surfaced via store state (artifactError)
+    }
   }, [address, artifactInput, loadArtifactWithData, resetFormValues]);
 
   // Initialize saved contracts on mount or network change

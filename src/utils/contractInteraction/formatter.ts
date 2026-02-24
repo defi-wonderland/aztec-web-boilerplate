@@ -1,8 +1,39 @@
 import type {
+  ParsedType,
   ParsedFunction,
   ParsedArtifact,
   ArtifactSummary,
 } from '../../types/artifact';
+
+/**
+ * Formats a ParsedType into a human-readable string.
+ */
+export const formatParsedType = (type: ParsedType): string => {
+  switch (type.kind) {
+    case 'field':
+      return 'Field';
+    case 'integer':
+      return `${type.sign === 'unsigned' ? 'U' : 'I'}${type.width}`;
+    case 'boolean':
+      return 'Boolean';
+    case 'string':
+      return 'String';
+    case 'address':
+      return 'AztecAddress';
+    case 'eth_address':
+      return 'EthAddress';
+    case 'selector':
+      return 'Selector';
+    case 'compressed_string':
+      return 'CompressedString';
+    case 'array':
+      return `Array<${formatParsedType(type.type)}>${type.length ? `[${type.length}]` : ''}`;
+    case 'struct':
+      return type.path?.split('::').pop() ?? 'Struct';
+    default:
+      return 'Unknown';
+  }
+};
 
 /**
  * Creates a lightweight summary of a parsed artifact for display purposes.

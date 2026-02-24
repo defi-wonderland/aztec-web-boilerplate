@@ -37,7 +37,7 @@ const styles = {
   navTab:
     'flex items-center justify-center gap-2 w-9 h-9 lg:w-auto lg:h-auto lg:px-4 lg:py-2.5 rounded-lg text-sm font-medium text-muted hover:bg-surface-tertiary transition-colors cursor-pointer',
   navTabActive:
-    'bg-[var(--accent-primary)]/10 dark:bg-[var(--accent-primary)]/15 text-accent font-semibold',
+    'bg-[var(--accent-primary)]/10 dark:bg-[var(--accent-primary)]/15 text-accent',
   navTabLabel: 'hidden lg:inline',
   spacer: 'flex-1',
   // Actions - different for mobile vs desktop

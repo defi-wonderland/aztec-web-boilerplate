@@ -106,6 +106,22 @@ export default defineConfig(({ mode }) => {
   const artifactRegistryUrl =
     env.VITE_ARTIFACT_REGISTRY_URL || DEFAULT_ARTIFACT_REGISTRY_URL;
 
+  const proxyConfig = {
+    '/github-releases': {
+      target: 'https://github.com',
+      changeOrigin: true,
+      followRedirects: true,
+      rewrite: (path: string) => path.replace(/^\/github-releases/, ''),
+    },
+    ...(artifactRegistryUrl && {
+      '/artifact-registry': {
+        target: artifactRegistryUrl,
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/artifact-registry/, ''),
+      },
+    }),
+  };
+
   return {
     plugins: [
       nodeBuiltinsShim(), // Must be first to intercept before nodePolyfills
@@ -183,15 +199,7 @@ export default defineConfig(({ mode }) => {
       fs: {
         allow: ['..'],
       },
-      proxy: artifactRegistryUrl
-        ? {
-            '/artifact-registry': {
-              target: artifactRegistryUrl,
-              changeOrigin: true,
-              rewrite: (path) => path.replace(/^\/artifact-registry/, ''),
-            },
-          }
-        : undefined,
+      proxy: proxyConfig,
     },
     preview: {
       port: 3000,
@@ -200,6 +208,7 @@ export default defineConfig(({ mode }) => {
         'Cross-Origin-Embedder-Policy': 'credentialless',
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },
+      proxy: proxyConfig,
     },
     build: {
       sourcemap: false, // Disable sourcemaps to reduce memory usage
