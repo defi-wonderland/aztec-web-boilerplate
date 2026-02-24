@@ -23,10 +23,7 @@ interface HealthData {
 /** Get the AztecNode from SharedPXEService (only works for app-managed PXE) */
 function getAztecNode() {
   const config = getNetworkStore().currentConfig;
-  const instance = SharedPXEService.getExistingInstance(
-    config.nodeUrl,
-    config.name
-  );
+  const instance = SharedPXEService.getExistingInstance(config.name);
   return instance?.aztecNode ?? null;
 }
 

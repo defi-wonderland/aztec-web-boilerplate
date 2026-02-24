@@ -2,14 +2,14 @@ import { useCallback } from 'react';
 import {
   PRECONFIGURED_CONTRACTS,
   type PreconfiguredContract,
-} from '../../config/preconfiguredContracts';
+} from '../../../config/preconfiguredContracts';
 import {
   useContractActions,
   useArtifactActions,
   useFormActions,
-} from '../../store';
-import { ArtifactFetchError, ArtifactError } from '../../utils/errors';
-import { resolvePreconfiguredArtifact } from '../useInteractionContracts';
+} from '../../../store';
+import { ArtifactFetchError, ArtifactError } from '../../../utils/errors';
+import { resolvePreconfiguredArtifact } from '../../useInteractionContracts';
 
 export interface UsePreconfiguredLoaderOptions {
   onClearState: () => void;

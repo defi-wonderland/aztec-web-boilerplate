@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
-import { useArtifactActions } from '../../store';
+import { useArtifactActions } from '../../../store';
 import {
   loadAndPrepareArtifact,
   parseArtifactSource,
-} from '../../utils/contractInteraction';
-import { ArtifactError, ArtifactErrorFactory } from '../../utils/errors';
-import type { ParsedArtifact } from '../../types/artifact';
+} from '../../../utils/contractInteraction';
+import { ArtifactError, ArtifactErrorFactory } from '../../../utils/errors';
+import type { ParsedArtifact } from '../../../types/artifact';
 
 type ParseResult =
   | { success: true; parsed: ParsedArtifact }
