@@ -50,7 +50,7 @@ export const DripperCard: React.FC = () => {
   const isDataLoading =
     isWalletReady && (!contractsReady || balanceLoading || !formattedBalances);
 
-  const { dripToPrivate, dripToPublic, isReady } = useDripper({
+  const { dripToPrivate, dripToPublic, isPending, isReady } = useDripper({
     onDripToPrivateSuccess: () => {
       loadingToastRef.current?.success(
         'Tokens minted successfully',
@@ -84,8 +84,6 @@ export const DripperCard: React.FC = () => {
       loadingToastRef.current = null;
     },
   });
-
-  const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
   const connectorStatus = connector?.getStatus().status;
   const isWalletBusy =
     connectorStatus === 'connecting' || connectorStatus === 'deploying';
@@ -100,11 +98,8 @@ export const DripperCard: React.FC = () => {
 
     const amountBigInt = BigInt(amount);
 
-    if (dripType === 'private') {
-      dripToPrivate.mutate({ amount: amountBigInt });
-    } else {
-      dripToPublic.mutate({ amount: amountBigInt });
-    }
+    const dripFn = dripType === 'private' ? dripToPrivate : dripToPublic;
+    dripFn({ amount: amountBigInt });
   };
 
   const handleCopyAddress = () => {
@@ -190,7 +185,7 @@ export const DripperCard: React.FC = () => {
                   value={amount}
                   onChange={handleAmountChange}
                   placeholder="100"
-                  disabled={isProcessing || !isReady}
+                  disabled={isPending || !isReady}
                   className={styles.amountInput}
                 />
                 <span className={styles.amountUnit}>TST</span>
@@ -203,7 +198,7 @@ export const DripperCard: React.FC = () => {
               <MintTypeToggle
                 value={dripType}
                 onChange={setDripType}
-                disabled={isProcessing || !isReady}
+                disabled={isPending || !isReady}
               />
             </div>
           </div>
@@ -229,19 +224,19 @@ export const DripperCard: React.FC = () => {
               onClick={handleDrip}
               disabled={
                 !amount ||
-                isProcessing ||
+                isPending ||
                 isWalletBusy ||
                 !isReady ||
                 !contractsReady
               }
-              isLoading={isProcessing}
+              isLoading={isPending}
               icon={<Droplets size={iconSize()} />}
               className={styles.mintButton}
               data-testid="drip-button"
             >
               {isWalletBusy
                 ? 'Wallet Busy...'
-                : isProcessing
+                : isPending
                   ? 'Processing...'
                   : 'Mint'}
             </Button>
