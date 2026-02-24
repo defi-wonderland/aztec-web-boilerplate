@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import {
@@ -10,20 +9,11 @@ import {
 import { SimulateViewsOp } from '../../types';
 import { getContractMethod } from './utils';
 import type {
+  ContractClassFor,
   MethodsOf,
   ArgsOf,
   ReadContractResult,
 } from '../../types/contractTypes';
-
-/**
- * Type helper to extract contract type from a contract class.
- * Uses the static `at` method signature to infer the contract instance type.
- */
-type ContractClassFor<TContract extends ContractBase> = {
-  artifact: ContractArtifact;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  at: (...args: any[]) => Promise<TContract>;
-};
 
 interface ReadContractParams<
   TContract extends ContractBase,

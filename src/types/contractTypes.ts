@@ -1,4 +1,18 @@
-import type { ContractFunctionInteraction } from '@aztec/aztec.js/contracts';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import type {
+  ContractBase,
+  ContractFunctionInteraction,
+} from '@aztec/aztec.js/contracts';
+
+/**
+ * Type helper to extract contract type from a contract class.
+ * Uses the static `at` method signature to infer the contract instance type.
+ */
+export type ContractClassFor<TContract extends ContractBase> = {
+  artifact: ContractArtifact;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  at: (...args: any[]) => Promise<TContract>;
+};
 
 /**
  * Extract method names from a contract class.
