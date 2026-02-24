@@ -116,12 +116,16 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
     ) as T[number][];
 
     const isRegistryActive = isConnected && registryStatus === 'ready';
+    const isRegistryInitializing =
+      isConnected && registryStatus === 'initializing';
 
     return {
       isReady: contractNames.every(
         (name) => statuses[name as T[number]] === 'ready'
       ),
-      isLoading: isRegistryActive && pendingContracts.length > 0,
+      isLoading:
+        isRegistryInitializing ||
+        (isRegistryActive && pendingContracts.length > 0),
       hasError: failedContracts.length > 0,
       failedContracts,
       pendingContracts,

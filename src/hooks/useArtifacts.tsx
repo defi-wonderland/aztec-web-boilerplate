@@ -66,6 +66,10 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
   const networkName = currentConfig.name;
 
   useEffect(() => {
+    if (artifacts === null && loadedNetworkRef.current !== null) {
+      loadedNetworkRef.current = null;
+    }
+
     if (loadedNetworkRef.current === networkName) return;
 
     const abortController = new AbortController();
@@ -110,7 +114,14 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
       abortController.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [networkName, showToast, addToast, setArtifacts, setArtifactStatus]);
+  }, [
+    networkName,
+    artifacts,
+    showToast,
+    addToast,
+    setArtifacts,
+    setArtifactStatus,
+  ]);
 
   return {
     artifacts,
