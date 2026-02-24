@@ -277,6 +277,16 @@ export const useReadContract = () => {
             })) as { [K in keyof T]: ReadContractResult };
           }
 
+          if (decoded.length !== params.length) {
+            const errorMsg =
+              'Unexpected batch result length from browser wallet';
+            setError(errorMsg);
+            return params.map(() => ({
+              success: false,
+              error: errorMsg,
+            })) as { [K in keyof T]: ReadContractResult };
+          }
+
           return params.map((_, i) => ({
             success: true,
             data: decoded[i],
