@@ -245,8 +245,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         disabled={disabled}
       />
 
-      {file ? (
-        /* File loaded state */
+      {/* File loaded state */}
+      {file && (
         <div className={styles.fileLoaded}>
           <div className={styles.fileInfo}>
             <FileText size={iconSize('md')} className={styles.fileIcon} />
@@ -293,8 +293,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </button>
           )}
         </div>
-      ) : (
-        /* Drop zone */
+      )}
+
+      {/* Drop zone */}
+      {!file && (
         <div
           role="button"
           tabIndex={disabled ? -1 : 0}
