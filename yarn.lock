@@ -1278,9 +1278,9 @@
   version "4.0.0-devnet.2-patch.0-prerelease.42da55a"
   resolved "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-42da55a/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.0-prerelease.42da55a.tgz#12a44ef1bd9d5fd63b44c8d952b3b06338268af4"
 
-"@defi-wonderland/aztec-standards@https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-37b4cc2/defi-wonderland-aztec-standards-4.0.0-devnet.2-patch.0-prerelease.37b4cc2.tgz":
-  version "4.0.0-devnet.2-patch.0-prerelease.37b4cc2"
-  resolved "https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-37b4cc2/defi-wonderland-aztec-standards-4.0.0-devnet.2-patch.0-prerelease.37b4cc2.tgz#db45cc34b3ba6261a64e34956ea2d1383da23830"
+"@defi-wonderland/aztec-standards@https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-85d235b/defi-wonderland-aztec-standards-4.0.0-devnet.2-patch.1-prerelease.85d235b.tgz":
+  version "4.0.0-devnet.2-patch.1-prerelease.85d235b"
+  resolved "https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-85d235b/defi-wonderland-aztec-standards-4.0.0-devnet.2-patch.1-prerelease.85d235b.tgz#e4512ce1c2b36c4f1fd3d48bd55ad3ccfb91a70a"
 
 "@emnapi/core@^1.7.1":
   version "1.8.1"
