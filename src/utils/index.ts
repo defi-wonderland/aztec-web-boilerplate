@@ -17,6 +17,11 @@ export {
   formatTime,
   formatDate,
 } from './format';
+export {
+  formatNumberCompact,
+  formatNumberFull,
+  formatPercentage,
+} from './formatters';
 export { getMimeType } from './mime';
 export { iconSize, type IconSize } from './iconSize';
 export { MinimalWallet } from './MinimalWallet';

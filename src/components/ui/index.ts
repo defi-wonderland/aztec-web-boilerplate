@@ -87,5 +87,8 @@ export {
 // Toggle
 export { Toggle, toggleVariants, type ToggleProps } from './Toggle';
 
+// Skeleton
+export { Skeleton, type SkeletonProps } from './Skeleton';
+
 // Accessibility utilities
 export { VisuallyHidden, type VisuallyHiddenProps } from './VisuallyHidden';
