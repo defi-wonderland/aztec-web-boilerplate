@@ -20,6 +20,7 @@ import {
   toSidebarId,
   fromSidebarId,
 } from '../../../utils/contractInteraction';
+import { ContractDisconnectedState } from './ContractDisconnectedState';
 import { ContractExplorerPanel } from './ContractExplorerPanel';
 import { ContractSetupPanel } from './ContractSetupPanel';
 import { ContractSidebar } from './ContractSidebar';
@@ -324,9 +325,9 @@ export const ContractLayout: React.FC = () => {
     [invokerExecute, pushLog]
   );
 
-  // Don't render if not connected
+  // Show disconnected state with skeleton preview
   if (!isConnected || !isPXEInitialized) {
-    return null;
+    return <ContractDisconnectedState />;
   }
 
   return (

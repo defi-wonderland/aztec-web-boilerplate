@@ -1,11 +1,17 @@
-import { useMemo, useEffect, useSyncExternalStore } from 'react';
+import { useMemo, useEffect, useRef, useSyncExternalStore } from 'react';
 import { useAztecWallet, WalletType } from '../../aztec-wallet';
 import { useContractRegistry } from '../context/useContractRegistry';
+import { useToast, type LoadingToastResult } from '../context/useToast';
 import type { ContractStatus, ContractName } from '../../contract-registry';
 
 type ContractStatusMap<T extends readonly ContractName[]> = {
   [K in T[number]]: ContractStatus;
 };
+
+interface UseRequiredContractsOptions {
+  /** Show a loading toast while contracts are registering with PXE. Default: false */
+  showLoadingToast?: boolean;
+}
 
 interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
   isReady: boolean;
@@ -25,7 +31,10 @@ interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
  *
  * @example
  * ```tsx
- * const { isReady, isLoading, hasError } = useRequiredContracts(['dripper', 'token'] as const);
+ * const { isReady, isLoading, hasError } = useRequiredContracts(
+ *   ['dripper', 'token'] as const,
+ *   { showLoadingToast: true }
+ * );
  *
  * if (isLoading) return <Spinner />;
  * if (hasError) return <Error />;
@@ -33,10 +42,12 @@ interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
  * ```
  */
 export function useRequiredContracts<T extends readonly ContractName[]>(
-  contractNames: T
+  contractNames: T,
+  options?: UseRequiredContractsOptions
 ): UseRequiredContractsReturn<T> {
   const { walletType, isConnected } = useAztecWallet();
   const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
+  const showLoadingToast = options?.showLoadingToast ?? false;
 
   const {
     subscribe,
@@ -44,6 +55,9 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
     getStatus,
     status: registryStatus,
   } = useContractRegistry();
+
+  const { loading: toastLoading } = useToast();
+  const toastRef = useRef<LoadingToastResult | null>(null);
 
   // Get snapshot of current statuses (serialized for comparison)
   const getSnapshot = (): string => {
@@ -68,7 +82,7 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
   }, [contractNames, registerMany, registryStatus]);
 
   // Compute derived state
-  return useMemo(() => {
+  const result = useMemo(() => {
     // For browser wallets, contracts are always "ready" since useContractRegistration
     // handles them with proxies - no PXE registration needed on app side
     if (isBrowserWallet && isConnected) {
@@ -101,15 +115,56 @@ export function useRequiredContracts<T extends readonly ContractName[]>(
       (name) => statuses[name as T[number]] === 'error'
     ) as T[number][];
 
+    const isRegistryActive = isConnected && registryStatus === 'ready';
+    const isRegistryInitializing =
+      isConnected && registryStatus === 'initializing';
+
     return {
       isReady: contractNames.every(
         (name) => statuses[name as T[number]] === 'ready'
       ),
-      isLoading: pendingContracts.length > 0,
+      isLoading:
+        isRegistryInitializing ||
+        (isRegistryActive && pendingContracts.length > 0),
       hasError: failedContracts.length > 0,
       failedContracts,
       pendingContracts,
       statuses,
     };
-  }, [contractNames, getStatus, isBrowserWallet, isConnected]);
+  }, [contractNames, getStatus, isBrowserWallet, isConnected, registryStatus]);
+
+  // Loading toast lifecycle
+  useEffect(() => {
+    if (!showLoadingToast) return;
+
+    if (result.isLoading && !toastRef.current) {
+      toastRef.current = toastLoading(
+        'Loading contracts...',
+        'Registering contracts with PXE'
+      );
+    }
+
+    if (!result.isLoading && toastRef.current) {
+      if (result.hasError) {
+        toastRef.current.error(
+          'Contract registration failed',
+          `Failed: ${result.failedContracts.join(', ')}`
+        );
+      } else {
+        toastRef.current.dismiss();
+      }
+      toastRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLoadingToast, result.isLoading, result.hasError]);
+
+  // Dismiss toast on unmount
+  useEffect(() => {
+    return () => {
+      toastRef.current?.dismiss();
+      toastRef.current = null;
+    };
+  }, []);
+
+  return result;
 }

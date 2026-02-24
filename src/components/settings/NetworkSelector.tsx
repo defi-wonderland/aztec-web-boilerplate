@@ -25,8 +25,6 @@ export interface NetworkSelectorProps {
   healthMetrics: NetworkHealth;
   showHealthMetrics: boolean;
   onSelectNetwork: (network: AztecNetwork) => void;
-  onSwitchNetwork: (network: AztecNetwork) => void;
-  isSwitching: boolean;
   networkConfigs: Record<AztecNetwork, { proverEnabled: boolean }>;
 }
 
@@ -51,8 +49,6 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   healthMetrics,
   showHealthMetrics,
   onSelectNetwork,
-  onSwitchNetwork,
-  isSwitching,
   networkConfigs,
 }) => {
   const networks: AztecNetwork[] = ['sandbox', 'devnet'];
@@ -91,12 +87,6 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
                   : undefined
               }
               onSelect={() => onSelectNetwork(network)}
-              onSwitch={
-                !isActive && connectedNetwork && status === 'idle'
-                  ? () => onSwitchNetwork(network)
-                  : undefined
-              }
-              isSwitching={isSwitching && !isActive}
             />
           );
         })}
