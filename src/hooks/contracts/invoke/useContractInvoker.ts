@@ -4,20 +4,20 @@ import {
   useFormActions,
   useInvokeFlowData,
   useArtifactActions,
-} from '../../store';
-import { formatFunctionSignature } from '../../utils/contractInteraction';
-import { useFunctionGroups } from '../useFunctionGroups';
+} from '../../../store';
+import { formatFunctionSignature } from '../../../utils/contractInteraction';
+import { useLoadArtifact } from '../artifact/useLoadArtifact';
+import { usePreconfiguredLoader } from '../artifact/usePreconfiguredLoader';
+import { useSavedContractManager } from '../artifact/useSavedContractManager';
 import { useContractCaller } from './useContractCaller';
-import { useLoadArtifact } from './useLoadArtifact';
-import { usePreconfiguredLoader } from './usePreconfiguredLoader';
-import { useSavedContractManager } from './useSavedContractManager';
+import { useFunctionGroups } from './useFunctionGroups';
 import type {
   FunctionGroup,
   InvokeStatus,
-} from '../../components/contract-interaction/types';
-import type { AztecNetwork } from '../../config/networks/constants';
-import type { CachedContract } from '../../services/storage';
-import type { ParsedFunction } from '../../types/artifact';
+} from '../../../components/contract-interaction/types';
+import type { AztecNetwork } from '../../../config/networks/constants';
+import type { CachedContract } from '../../../services/storage';
+import type { ParsedFunction } from '../../../types/artifact';
 
 export interface UseContractInvokerOptions {
   networkName?: AztecNetwork;

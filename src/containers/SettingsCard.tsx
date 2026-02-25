@@ -5,8 +5,7 @@ import { NetworkSelector, ConfigPanel } from '../components/settings';
 import { Button } from '../components/ui';
 import { DEVNET_CONFIG } from '../config/networks/devnet';
 import { SANDBOX_CONFIG } from '../config/networks/sandbox';
-import { useNetworkAvailability } from '../hooks/useNetworkAvailability';
-import { useNetworkHealth } from '../hooks/useNetworkHealth';
+import { useNetworkAvailability, useNetworkHealth } from '../hooks/network';
 import { iconSize } from '../utils';
 import type { AztecNetwork } from '../config/networks/constants';
 

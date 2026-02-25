@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import { useFeePayment } from '../../store/feePayment';
-import { useReadContract } from './useReadContract';
-import { useWriteContract } from './useWriteContract';
+import { useFeePayment } from '../../../store';
+import { useReadContract } from '../useReadContract';
+import { useWriteContract } from '../useWriteContract';
 
 interface CallParams {
   address: string;

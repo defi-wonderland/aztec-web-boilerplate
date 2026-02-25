@@ -2,15 +2,15 @@ import { useCallback } from 'react';
 import {
   getArtifactStorageService,
   type CachedContract,
-} from '../../services/storage';
+} from '../../../services/storage';
 import {
   useContractActions,
   useArtifactActions,
   getContractInteractionStore,
-} from '../../store';
-import { requestPersistentStorage } from '../../utils/indexeddb';
+} from '../../../store';
+import { requestPersistentStorage } from '../../../utils/indexeddb';
 import { useArtifactStateManager } from './useArtifactStateManager';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../../config/networks/constants';
 
 const generateKey = (network?: string): string =>
   `${network ?? 'default'}-${Date.now()}-${Math.random().toString(16).slice(2)}`;

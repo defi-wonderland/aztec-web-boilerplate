@@ -11,17 +11,17 @@ import {
   useAztecWallet,
   hasAppManagedPXE,
   isBrowserWalletConnector,
-} from '../../aztec-wallet';
-import { createFeePaymentMethod } from '../../services/aztec/feePayment';
-import { useFeePayment } from '../../store/feePayment';
-import { buildArgsFromInputs } from '../../utils/contractInteraction';
-import { restoreBytecodeBuffers } from '../../utils/storage';
-import type { DeployResult } from '../../components/contract-interaction/types';
-import type { SerializedArtifact } from '../../types/artifactRegistry';
+} from '../../../aztec-wallet';
+import { createFeePaymentMethod } from '../../../services/aztec/feePayment';
+import { useFeePayment } from '../../../store/feePayment';
+import { buildArgsFromInputs } from '../../../utils/contractInteraction';
+import { restoreBytecodeBuffers } from '../../../utils/storage';
+import type { DeployResult } from '../../../components/contract-interaction/types';
+import type { SerializedArtifact } from '../../../types/artifactRegistry';
 import type {
   DeployableContract,
   ContractConstructor,
-} from '../../utils/deployableContracts';
+} from '../../../utils/deployableContracts';
 
 /**
  * Detect if parsed JSON is already a ContractArtifact (from registry)
