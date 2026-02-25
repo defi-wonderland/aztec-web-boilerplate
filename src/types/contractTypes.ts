@@ -1,4 +1,19 @@
-import type { ContractFunctionInteraction } from '@aztec/aztec.js/contracts';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import type { AztecAddress } from '@aztec/aztec.js/addresses';
+import type {
+  ContractFunctionInteraction,
+  ContractBase,
+} from '@aztec/aztec.js/contracts';
+import type { Wallet } from '@aztec/aztec.js/wallet';
+
+/**
+ * Type helper to extract contract type from a contract class.
+ * Matches the static interface of generated Aztec contract classes.
+ */
+export type ContractClassFor<TContract extends ContractBase> = {
+  artifact: ContractArtifact;
+  at: (address: AztecAddress, wallet: Wallet) => TContract;
+};
 
 /**
  * Extract method names from a contract class.
@@ -71,4 +86,26 @@ export interface ReadContractResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+/**
+ * Configuration for a dynamic (untyped) contract read/simulate operation.
+ * Used when only a raw artifact is available (e.g. Contract Explorer).
+ */
+export interface DynamicReadContractConfig {
+  artifact: ContractArtifact;
+  address: string;
+  functionName: string;
+  args: unknown[];
+}
+
+/**
+ * Configuration for a dynamic (untyped) contract write operation.
+ * Used when only a raw artifact is available (e.g. Contract Explorer).
+ */
+export interface DynamicWriteContractConfig {
+  artifact: ContractArtifact;
+  address: string;
+  functionName: string;
+  args: unknown[];
 }

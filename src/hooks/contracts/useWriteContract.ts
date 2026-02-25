@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
 import { TxStatus } from '@aztec/stdlib/tx';
@@ -11,11 +10,14 @@ import {
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
+import { getContractMethod, resolveArtifact } from './utils';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type {
+  ContractClassFor,
   MethodsOf,
-  ArgsOf,
+  WriteContractConfig,
   WriteContractResult,
+  DynamicWriteContractConfig,
 } from '../../types/contractTypes';
 
 interface UseWriteContractOptions {
@@ -28,31 +30,24 @@ interface UseWriteContractOptions {
   };
 }
 
-/**
- * Type helper to extract contract type from a contract class.
- * Uses the static `at` method signature to infer the contract instance type.
- */
-type ContractClassFor<TContract extends ContractBase> = {
-  artifact: ContractArtifact;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  at: (...args: any[]) => TContract;
-};
+interface WriteContractFeeOption {
+  /** Fee payment method to use (defaults to DEFAULT_FEE_PAYMENT_METHOD) */
+  feePaymentMethod?: FeePaymentMethodType;
+}
 
 interface WriteContractParams<
   TContract extends ContractBase,
   TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
-> {
+> extends WriteContractConfig<TContract, TMethod>,
+    WriteContractFeeOption {
   /** Contract class - used for type inference and artifact */
   contract: ContractClassFor<TContract>;
-  /** Contract address */
-  address: string;
-  /** Method name to call */
-  functionName: TMethod;
-  /** Method arguments */
-  args: ArgsOf<TContract, TMethod>;
-  /** Fee payment method to use (defaults to DEFAULT_FEE_PAYMENT_METHOD) */
-  feePaymentMethod?: FeePaymentMethodType;
 }
+
+/** Params for a dynamic (untyped) write — passes artifact directly. */
+export interface DynamicWriteContractParams
+  extends DynamicWriteContractConfig,
+    WriteContractFeeOption {}
 
 const getChainFromCaipAccount = (caipAccount: string): string => {
   const parts = caipAccount.split(':');
@@ -88,16 +83,17 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
       TContract extends ContractBase,
       TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
     >(
-      params: WriteContractParams<TContract, TMethod>
+      params:
+        | WriteContractParams<TContract, TMethod>
+        | DynamicWriteContractParams
     ): Promise<WriteContractResult> => {
       const {
-        contract,
         address,
         functionName,
         args,
         feePaymentMethod = DEFAULT_FEE_PAYMENT_METHOD,
       } = params;
-      const artifact = contract.artifact;
+      const artifact = resolveArtifact(params);
 
       if (!connector || !account) {
         return { success: false, error: 'Wallet not connected' };
@@ -177,15 +173,16 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           const contractAddress = AztecAddress.fromString(address);
 
           // Create contract instance
-          const contract = await Contract.at(contractAddress, artifact, wallet);
+          const contractInstance = Contract.at(
+            contractAddress,
+            artifact,
+            wallet
+          );
 
-          // Get the method and call it
-          const method = (
-            contract as unknown as {
-              methods: Record<string, (...args: unknown[]) => unknown>;
-            }
-          ).methods[String(functionName)];
-
+          const method = getContractMethod(
+            contractInstance,
+            String(functionName)
+          );
           if (!method) {
             const errorMsg = `Method ${String(functionName)} not found on contract`;
             setError(errorMsg);
@@ -199,9 +196,9 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             `[useWriteContract] Simulating ${String(functionName)}...`
           );
           try {
-            const simulateResult = await (
-              tx as { simulate: (opts: unknown) => Promise<unknown> }
-            ).simulate({ from: account.getAddress() });
+            const simulateResult = await tx.simulate({
+              from: account.getAddress(),
+            });
             console.log(
               `[useWriteContract] Simulation successful:`,
               simulateResult
@@ -220,11 +217,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             };
           }
 
-          const result = await (
-            tx as {
-              send: (opts: unknown) => Promise<unknown>;
-            }
-          ).send({
+          const result = await tx.send({
             from: account.getAddress(),
             ...(paymentMethod ? { fee: { paymentMethod } } : {}),
             wait: { timeout, waitForStatus: TxStatus.PROPOSED },

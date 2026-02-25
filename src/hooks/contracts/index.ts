@@ -25,3 +25,5 @@ export type {
   UseContractCallerOptions,
   UseContractCallerReturn,
 } from './useContractCaller';
+export type { DynamicReadContractParams } from './useReadContract';
+export type { DynamicWriteContractParams } from './useWriteContract';
