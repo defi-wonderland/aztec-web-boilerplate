@@ -32,3 +32,5 @@ export type {
   UsePreconfiguredLoaderOptions,
   UsePreconfiguredLoaderReturn,
 } from './artifact';
+export type { DynamicReadContractParams } from './useReadContract';
+export type { DynamicWriteContractParams } from './useWriteContract';
