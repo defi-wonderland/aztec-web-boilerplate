@@ -1,6 +1,7 @@
 // Root-level hooks
 export { useWriteContract } from './useWriteContract';
 export { useReadContract } from './useReadContract';
+export { useReadContracts } from './useReadContracts';
 export { useRequiredContracts } from './useRequiredContracts';
 
 // Invoke (Contract Interaction UI - dynamic calling)

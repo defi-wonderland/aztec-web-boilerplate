@@ -47,13 +47,8 @@ import type {
 export const useWriteContract = (
   options: UseWriteContractOptions = {}
 ): UseWriteContractReturn => {
-  const {
-    timeout = 900,
-    receiptPolling,
-    onSuccess,
-    onError,
-    onSettled,
-  } = options;
+  const { timeout = 900, receiptPolling } = options;
+  const { onSuccess, onError, onSettled } = options.mutation ?? {};
   const { connector, account, currentConfig } = useAztecWallet();
 
   const mutation = useMutation<

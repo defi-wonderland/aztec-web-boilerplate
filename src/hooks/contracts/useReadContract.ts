@@ -43,8 +43,18 @@ export const useReadContract = <
 ): UseReadContractReturn<TSelectData> => {
   const { isConnected, connector, account } = useAztecWallet();
 
+  const {
+    enabled: queryEnabled,
+    staleTime,
+    gcTime,
+    refetchInterval,
+    refetchOnWindowFocus,
+    select,
+    retry,
+  } = params.query ?? {};
+
   const isEnabled = Boolean(
-    (params.enabled ?? true) &&
+    (queryEnabled ?? true) &&
       isConnected &&
       connector &&
       account &&
@@ -126,12 +136,12 @@ export const useReadContract = <
       throw new Error('Unknown wallet type');
     },
     enabled: isEnabled,
-    staleTime: params.staleTime,
-    gcTime: params.gcTime,
-    refetchInterval: params.refetchInterval,
-    refetchOnWindowFocus: params.refetchOnWindowFocus,
-    select: params.select,
-    retry: params.retry,
+    staleTime,
+    gcTime,
+    refetchInterval,
+    refetchOnWindowFocus,
+    select,
+    retry,
   });
 
   return {

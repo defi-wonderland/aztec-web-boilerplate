@@ -5,7 +5,7 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
 import { useContract } from '../context/useContract';
-import { useReadContract } from '../contracts/useReadContract';
+import { useReadContracts } from '../contracts/useReadContracts';
 import { queryKeys } from './queryKeys';
 
 export interface TokenBalance {
@@ -35,7 +35,7 @@ interface UseTokenBalanceReturn {
 
 /**
  * Hook to fetch token balance for the connected account.
- * Delegates to useReadContract for wallet-agnostic contract reads.
+ * Delegates to useReadContracts for batched wallet-agnostic contract reads.
  * Uses React Query for caching and automatic refetching.
  *
  * @param options - Configuration options
@@ -66,48 +66,42 @@ export const useTokenBalance = (
   );
 
   const args = useMemo(
-    () =>
-      ownerAddress
-        ? ([AztecAddress.fromString(ownerAddress)] as const)
-        : undefined,
+    () => (ownerAddress ? [AztecAddress.fromString(ownerAddress)] : undefined),
     [ownerAddress]
   );
 
-  const privateBalance = useReadContract({
-    queryKey: [
-      ...queryKeys.token.balance(tokenAddress, ownerAddress),
-      'private',
-    ] as const,
-    contract: TokenContract,
-    address: tokenAddress,
-    functionName: 'balance_of_private',
-    args,
-    enabled: isQueryEnabled,
-    staleTime: 60_000,
-  });
-
-  const publicBalance = useReadContract({
-    queryKey: [
-      ...queryKeys.token.balance(tokenAddress, ownerAddress),
-      'public',
-    ] as const,
-    contract: TokenContract,
-    address: tokenAddress,
-    functionName: 'balance_of_public',
-    args,
-    enabled: isQueryEnabled,
-    staleTime: 60_000,
+  const { data, isLoading, isFetching, isError, error } = useReadContracts({
+    queryKey: queryKeys.token.balance(tokenAddress, ownerAddress),
+    contracts: args
+      ? [
+          {
+            contract: TokenContract,
+            address: tokenAddress,
+            functionName: 'balance_of_private',
+            args,
+          },
+          {
+            contract: TokenContract,
+            address: tokenAddress,
+            functionName: 'balance_of_public',
+            args,
+          },
+        ]
+      : [],
+    allowFailure: false,
+    query: {
+      enabled: isQueryEnabled,
+      staleTime: 60_000,
+    },
   });
 
   const tokenBalance = useMemo((): TokenBalance | null => {
-    if (privateBalance.data === undefined || publicBalance.data === undefined) {
-      return null;
-    }
+    if (!data || !Array.isArray(data) || data.length < 2) return null;
     return {
-      private: BigInt(String(privateBalance.data ?? 0)),
-      public: BigInt(String(publicBalance.data ?? 0)),
+      private: BigInt(String(data[0] ?? 0)),
+      public: BigInt(String(data[1] ?? 0)),
     };
-  }, [privateBalance.data, publicBalance.data]);
+  }, [data]);
 
   const formattedBalances = useMemo((): FormattedBalances | null => {
     if (!tokenBalance) return null;
@@ -129,10 +123,10 @@ export const useTokenBalance = (
 
   return {
     tokenBalance,
-    isLoading: privateBalance.isLoading || publicBalance.isLoading,
-    isFetching: privateBalance.isFetching || publicBalance.isFetching,
-    isError: privateBalance.isError || publicBalance.isError,
-    error: privateBalance.error ?? publicBalance.error,
+    isLoading,
+    isFetching,
+    isError,
+    error,
     refetch,
     formattedBalances,
   };

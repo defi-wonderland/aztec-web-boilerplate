@@ -44,6 +44,41 @@ export type ContractClassFor<TContract extends ContractBase> = {
 };
 
 // =============================================================================
+// Shared TanStack Query/Mutation option types
+// =============================================================================
+
+/** TanStack Query options passthrough for read hooks. */
+export interface ContractQueryOptions<TSelectData = unknown> {
+  /** Additional gate to enable/disable the query (default: true) */
+  enabled?: boolean;
+  /** Time in ms before data is considered stale */
+  staleTime?: number;
+  /** Time in ms before inactive query data is garbage collected */
+  gcTime?: number;
+  /** Polling interval in ms, or false to disable */
+  refetchInterval?: number | false;
+  /** Whether to refetch on window focus */
+  refetchOnWindowFocus?: boolean;
+  /** Transform the raw result before returning */
+  select?: (data: unknown) => TSelectData;
+  /** Retry count or boolean */
+  retry?: number | boolean;
+}
+
+/** TanStack Mutation options passthrough for write hooks. */
+export interface ContractMutationOptions {
+  /** Called on successful write */
+  onSuccess?: (data: WriteContractData) => void;
+  /** Called on write failure */
+  onError?: (error: Error) => void;
+  /** Called when mutation settles (success or error) */
+  onSettled?: (
+    data: WriteContractData | undefined,
+    error: Error | null
+  ) => void;
+}
+
+// =============================================================================
 // useReadContract types
 // =============================================================================
 
@@ -66,20 +101,8 @@ export interface UseReadContractParams<
   functionName: TMethod;
   /** Method arguments. Set to undefined to auto-disable the query. */
   args: ArgsOf<TContract, TMethod> | undefined;
-  /** Additional gate to enable/disable the query (default: true) */
-  enabled?: boolean;
-  /** Time in ms before data is considered stale */
-  staleTime?: number;
-  /** Time in ms before inactive query data is garbage collected */
-  gcTime?: number;
-  /** Polling interval in ms, or false to disable */
-  refetchInterval?: number | false;
-  /** Whether to refetch on window focus */
-  refetchOnWindowFocus?: boolean;
-  /** Transform the raw result before returning */
-  select?: (data: unknown) => TSelectData;
-  /** Retry count or boolean */
-  retry?: number | boolean;
+  /** TanStack Query options (enabled, staleTime, gcTime, etc.) */
+  query?: ContractQueryOptions<TSelectData>;
 }
 
 /**
@@ -139,15 +162,8 @@ export interface UseWriteContractOptions {
   timeout?: number;
   /** Receipt polling options for browser wallet */
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };
-  /** Called on successful write */
-  onSuccess?: (data: WriteContractData) => void;
-  /** Called on write failure */
-  onError?: (error: Error) => void;
-  /** Called when mutation settles (success or error) */
-  onSettled?: (
-    data: WriteContractData | undefined,
-    error: Error | null
-  ) => void;
+  /** TanStack Mutation options (onSuccess, onError, onSettled) */
+  mutation?: ContractMutationOptions;
 }
 
 /**
@@ -171,6 +187,55 @@ export interface UseWriteContractReturn {
   status: 'idle' | 'pending' | 'error' | 'success';
   reset: () => void;
 }
+
+// =============================================================================
+// useReadContracts types (batch reads)
+// =============================================================================
+
+/** A single contract read config within a batch (one entry in the contracts array). */
+export interface ReadContractsContract<
+  TContract extends ContractBase = ContractBase,
+  TMethod extends MethodsOf<TContract> = MethodsOf<TContract>,
+> {
+  contract: ContractClassFor<TContract>;
+  address: string;
+  functionName: TMethod;
+  args: ArgsOf<TContract, TMethod>;
+}
+
+/** Per-result shape when allowFailure is true. Discriminated union on `status`. */
+export type ReadContractResult =
+  | { status: 'success'; result: unknown; error?: undefined }
+  | { status: 'failure'; result?: undefined; error: Error };
+
+/** Params for useReadContracts. */
+export interface UseReadContractsParams<
+  TAllowFailure extends boolean = true,
+  TSelectData = TAllowFailure extends true ? ReadContractResult[] : unknown[],
+> {
+  queryKey: readonly unknown[];
+  contracts: ReadContractsContract[];
+  allowFailure?: TAllowFailure;
+  /** TanStack Query options (enabled, staleTime, gcTime, etc.) */
+  query?: ContractQueryOptions<TSelectData>;
+}
+
+/** Return type for useReadContracts. Same shape as useReadContract. */
+export interface UseReadContractsReturn<TData = ReadContractResult[]> {
+  data: TData | undefined;
+  error: Error | null;
+  isLoading: boolean;
+  isPending: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  isFetching: boolean;
+  status: 'pending' | 'error' | 'success';
+  refetch: () => Promise<void>;
+}
+
+// =============================================================================
+// Dynamic contract types
+// =============================================================================
 
 /**
  * Configuration for a dynamic (untyped) contract read/simulate operation.
