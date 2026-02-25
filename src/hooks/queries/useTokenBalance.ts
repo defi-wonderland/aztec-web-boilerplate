@@ -1,10 +1,9 @@
 import { useMemo, useCallback } from 'react';
 import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
-import { queuePxeCall } from '../../utils';
 import { useContract } from '../context/useContract';
 import { useReadContract } from '../contracts/useReadContract';
 import { queryKeys } from './queryKeys';
@@ -53,7 +52,6 @@ export const useTokenBalance = (
     currentConfig,
   } = useAztecWallet();
   const queryClient = useQueryClient();
-  const { readContracts } = useReadContract();
 
   const tokenAddress = contractsConfig.token.address(currentConfig);
   const ownerAddress = account?.getAddress().toString() ?? '';
@@ -67,62 +65,61 @@ export const useTokenBalance = (
       (options.enabled ?? true)
   );
 
-  const query = useQuery({
-    queryKey: queryKeys.token.balance(tokenAddress, ownerAddress),
-    queryFn: async (): Promise<TokenBalance> => {
-      if (!tokenAddress || !ownerAddress) {
-        throw new Error('Token contract or owner address not available');
-      }
+  const args = useMemo(
+    () =>
+      ownerAddress
+        ? ([AztecAddress.fromString(ownerAddress)] as const)
+        : undefined,
+    [ownerAddress]
+  );
 
-      const owner = AztecAddress.fromString(ownerAddress);
-
-      const [privateResult, publicResult] = await queuePxeCall(() =>
-        readContracts([
-          {
-            contract: TokenContract,
-            address: tokenAddress,
-            functionName: 'balance_of_private',
-            args: [owner],
-          },
-          {
-            contract: TokenContract,
-            address: tokenAddress,
-            functionName: 'balance_of_public',
-            args: [owner],
-          },
-        ])
-      );
-
-      if (!privateResult.success) {
-        throw new Error(
-          privateResult.error ?? 'Failed to fetch private balance'
-        );
-      }
-
-      if (!publicResult.success) {
-        throw new Error(publicResult.error ?? 'Failed to fetch public balance');
-      }
-
-      return {
-        private: BigInt(String(privateResult.data ?? 0)),
-        public: BigInt(String(publicResult.data ?? 0)),
-      };
-    },
+  const privateBalance = useReadContract({
+    queryKey: [
+      ...queryKeys.token.balance(tokenAddress, ownerAddress),
+      'private',
+    ] as const,
+    contract: TokenContract,
+    address: tokenAddress,
+    functionName: 'balance_of_private',
+    args,
     enabled: isQueryEnabled,
     staleTime: 60_000,
   });
 
+  const publicBalance = useReadContract({
+    queryKey: [
+      ...queryKeys.token.balance(tokenAddress, ownerAddress),
+      'public',
+    ] as const,
+    contract: TokenContract,
+    address: tokenAddress,
+    functionName: 'balance_of_public',
+    args,
+    enabled: isQueryEnabled,
+    staleTime: 60_000,
+  });
+
+  const tokenBalance = useMemo((): TokenBalance | null => {
+    if (privateBalance.data === undefined || publicBalance.data === undefined) {
+      return null;
+    }
+    return {
+      private: BigInt(String(privateBalance.data ?? 0)),
+      public: BigInt(String(publicBalance.data ?? 0)),
+    };
+  }, [privateBalance.data, publicBalance.data]);
+
   const formattedBalances = useMemo((): FormattedBalances | null => {
-    if (!query.data) return null;
+    if (!tokenBalance) return null;
 
     const formatBalance = (balance: bigint): string => balance.toString();
 
     return {
-      private: formatBalance(query.data.private),
-      public: formatBalance(query.data.public),
-      total: formatBalance(query.data.private + query.data.public),
+      private: formatBalance(tokenBalance.private),
+      public: formatBalance(tokenBalance.public),
+      total: formatBalance(tokenBalance.private + tokenBalance.public),
     };
-  }, [query.data]);
+  }, [tokenBalance]);
 
   const refetch = useCallback(async () => {
     await queryClient.invalidateQueries({
@@ -131,11 +128,11 @@ export const useTokenBalance = (
   }, [queryClient, tokenAddress, ownerAddress]);
 
   return {
-    tokenBalance: query.data ?? null,
-    isLoading: query.isLoading,
-    isFetching: query.isFetching,
-    isError: query.isError,
-    error: query.error,
+    tokenBalance,
+    isLoading: privateBalance.isLoading || publicBalance.isLoading,
+    isFetching: privateBalance.isFetching || publicBalance.isFetching,
+    isError: privateBalance.isError || publicBalance.isError,
+    error: privateBalance.error ?? publicBalance.error,
     refetch,
     formattedBalances,
   };
