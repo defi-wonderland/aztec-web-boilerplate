@@ -171,3 +171,25 @@ export interface UseWriteContractReturn {
   status: 'idle' | 'pending' | 'error' | 'success';
   reset: () => void;
 }
+
+/**
+ * Configuration for a dynamic (untyped) contract read/simulate operation.
+ * Used when only a raw artifact is available (e.g. Contract Explorer).
+ */
+export interface DynamicReadContractConfig {
+  artifact: ContractArtifact;
+  address: string;
+  functionName: string;
+  args: unknown[];
+}
+
+/**
+ * Configuration for a dynamic (untyped) contract write operation.
+ * Used when only a raw artifact is available (e.g. Contract Explorer).
+ */
+export interface DynamicWriteContractConfig {
+  artifact: ContractArtifact;
+  address: string;
+  functionName: string;
+  args: unknown[];
+}

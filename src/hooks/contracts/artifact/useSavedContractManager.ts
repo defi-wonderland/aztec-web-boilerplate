@@ -2,17 +2,17 @@ import { useCallback } from 'react';
 import {
   getArtifactStorageService,
   type CachedContract,
-} from '../../services/storage';
+} from '../../../services/storage';
 import {
   useContractTargetAddress,
   useContractActions,
   useArtifactActions,
   useFormActions,
   getContractInteractionStore,
-} from '../../store';
-import { getErrorMessage } from '../../utils/errors';
+} from '../../../store';
+import { getErrorMessage } from '../../../utils/errors';
 import { useArtifactStateManager } from './useArtifactStateManager';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../../config/networks/constants';
 
 export interface UseSavedContractManagerOptions {
   networkName?: AztecNetwork;

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
-import { SharedPXEService } from '../aztec-wallet/services/aztec/pxe';
-import { getNetworkStore } from '../aztec-wallet/store/network';
+import { useAztecWallet, hasAppManagedPXE } from '../../aztec-wallet';
+import { SharedPXEService } from '../../aztec-wallet/services/aztec/pxe';
+import { getNetworkStore } from '../../aztec-wallet/store/network';
 
 const DEFAULT_REFRESH_INTERVAL = 30_000; // 30 seconds
 
@@ -23,10 +23,7 @@ interface HealthData {
 /** Get the AztecNode from SharedPXEService (only works for app-managed PXE) */
 function getAztecNode() {
   const config = getNetworkStore().currentConfig;
-  const instance = SharedPXEService.getExistingInstance(
-    config.nodeUrl,
-    config.name
-  );
+  const instance = SharedPXEService.getExistingInstance(config.name);
   return instance?.aztecNode ?? null;
 }
 

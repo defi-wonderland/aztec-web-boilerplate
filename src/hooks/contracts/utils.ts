@@ -1,3 +1,4 @@
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import type { ContractFunctionInteraction } from '@aztec/aztec.js/contracts';
 
 type ContractMethod = (...args: unknown[]) => ContractFunctionInteraction;
@@ -19,3 +20,14 @@ export const getContractMethod = (
   };
   return contractWithMethods.methods?.[methodName];
 };
+
+/**
+ * Extracts the artifact from either typed params (with `contract.artifact`)
+ * or dynamic params (with `artifact` directly).
+ */
+export const resolveArtifact = (
+  params:
+    | { contract: { artifact: ContractArtifact } }
+    | { artifact: ContractArtifact }
+): ContractArtifact =>
+  'artifact' in params ? params.artifact : params.contract.artifact;

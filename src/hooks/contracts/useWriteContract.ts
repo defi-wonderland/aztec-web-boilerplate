@@ -11,6 +11,7 @@ import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import { getChainFromCaipAccount } from '../../utils/caip';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
+import { getContractMethod } from './utils';
 import type {
   MethodsOf,
   WriteContractData,
@@ -62,13 +63,12 @@ export const useWriteContract = (
   >({
     mutationFn: async (params) => {
       const {
-        contract,
         address,
         functionName,
         args,
         feePaymentMethod = DEFAULT_FEE_PAYMENT_METHOD,
       } = params;
-      const artifact = contract.artifact;
+      const artifact = params.contract.artifact;
 
       if (!connector || !account) {
         throw new Error('Wallet not connected');
@@ -134,12 +134,10 @@ export const useWriteContract = (
         const contractAddress = AztecAddress.fromString(address);
         const contractInstance = Contract.at(contractAddress, artifact, wallet);
 
-        const method = (
-          contractInstance as unknown as {
-            methods: Record<string, (...args: unknown[]) => unknown>;
-          }
-        ).methods[String(functionName)];
-
+        const method = getContractMethod(
+          contractInstance,
+          String(functionName)
+        );
         if (!method) {
           throw new Error(
             `Method ${String(functionName)} not found on contract`
@@ -151,9 +149,9 @@ export const useWriteContract = (
         // Simulate first to catch revert reasons before sending
         console.log(`[useWriteContract] Simulating ${String(functionName)}...`);
         try {
-          const simulateResult = await (
-            tx as { simulate: (opts: unknown) => Promise<unknown> }
-          ).simulate({ from: account.getAddress() });
+          const simulateResult = await tx.simulate({
+            from: account.getAddress(),
+          });
           console.log(
             `[useWriteContract] Simulation successful:`,
             simulateResult
@@ -168,11 +166,7 @@ export const useWriteContract = (
           throw new Error(`Simulation failed: ${simErrorMsg}`);
         }
 
-        const result = await (
-          tx as {
-            send: (opts: unknown) => Promise<unknown>;
-          }
-        ).send({
+        const result = await tx.send({
           from: account.getAddress(),
           ...(paymentMethod ? { fee: { paymentMethod } } : {}),
           wait: { timeout, waitForStatus: TxStatus.PROPOSED },

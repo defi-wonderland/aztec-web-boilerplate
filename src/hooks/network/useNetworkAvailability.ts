@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { DEVNET_CONFIG } from '../config/networks/devnet';
-import { SANDBOX_CONFIG } from '../config/networks/sandbox';
-import type { AztecNetwork } from '../config/networks/constants';
+import { DEVNET_CONFIG } from '../../config/networks/devnet';
+import { SANDBOX_CONFIG } from '../../config/networks/sandbox';
+import type { AztecNetwork } from '../../config/networks/constants';
 
 const CHECK_INTERVAL = 30000; // Check every 30 seconds
 const TIMEOUT = 5000; // 5 second timeout for each check

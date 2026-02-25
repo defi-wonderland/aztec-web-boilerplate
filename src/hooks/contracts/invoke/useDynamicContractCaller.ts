@@ -7,12 +7,12 @@ import {
   useAztecWallet,
   hasAppManagedPXE,
   isBrowserWalletConnector,
-} from '../../aztec-wallet';
-import { createFeePaymentMethod } from '../../services/aztec/feePayment';
-import { useFeePayment } from '../../store/feePayment';
-import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
-import { getContractMethod } from './utils';
-import type { SimulateViewsOp } from '../../types';
+} from '../../../aztec-wallet';
+import { createFeePaymentMethod } from '../../../services/aztec/feePayment';
+import { useFeePayment } from '../../../store/feePayment';
+import { waitForBrowserWalletReceipt } from '../../../utils/txReceipt';
+import { getContractMethod } from '../utils';
+import type { SimulateViewsOp } from '../../../types';
 
 interface CallParams {
   address: string;

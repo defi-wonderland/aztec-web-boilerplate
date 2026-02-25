@@ -4,17 +4,17 @@ import {
   useContractActions,
   useFormValues,
   useInvokeFlowData,
-} from '../../store';
+} from '../../../store';
 import {
   formatResultData,
   validateAndBuildCallArgs,
-} from '../../utils/contractInteraction';
-import { safeStringify } from '../../utils/string';
+} from '../../../utils/contractInteraction';
+import { safeStringify } from '../../../utils/string';
 import { useDynamicContractCaller } from './useDynamicContractCaller';
 import type {
   CallMode,
   FunctionGroup,
-} from '../../components/contract-interaction/types';
+} from '../../../components/contract-interaction/types';
 
 export interface UseContractCallerOptions {
   grouped: FunctionGroup[];
