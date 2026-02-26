@@ -62,8 +62,15 @@ export const useReadContract = <
       params.args !== undefined
   );
 
+  const queryKey = params.queryKey ?? [
+    'readContract',
+    params.address,
+    String(params.functionName),
+    params.args,
+  ];
+
   const query = useQuery({
-    queryKey: params.queryKey,
+    queryKey,
     queryFn: async () => {
       // These are guaranteed non-null by `enabled` guard
       if (

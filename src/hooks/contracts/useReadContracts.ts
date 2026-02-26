@@ -191,8 +191,13 @@ export const useReadContracts = <
       params.contracts.length > 0
   );
 
+  const queryKey = params.queryKey ?? [
+    'readContracts',
+    params.contracts.map((c) => [c.address, String(c.functionName), c.args]),
+  ];
+
   const query = useQuery({
-    queryKey: params.queryKey,
+    queryKey,
     queryFn: async () => {
       if (!connector || !account) {
         throw new Error('Missing required parameters');

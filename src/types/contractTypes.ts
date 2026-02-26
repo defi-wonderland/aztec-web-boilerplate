@@ -91,8 +91,8 @@ export interface UseReadContractParams<
   TMethod extends MethodsOf<TContract>,
   TSelectData = unknown,
 > {
-  /** TanStack Query key — used for caching and invalidation */
-  queryKey: readonly unknown[];
+  /** TanStack Query key — used for caching and invalidation. Auto-generated from contract params when omitted. */
+  queryKey?: readonly unknown[];
   /** Contract class — used for type inference and artifact */
   contract: ContractClassFor<TContract>;
   /** Contract address. Set to undefined to auto-disable the query. */
@@ -213,7 +213,8 @@ export interface UseReadContractsParams<
   TAllowFailure extends boolean = true,
   TSelectData = TAllowFailure extends true ? ReadContractResult[] : unknown[],
 > {
-  queryKey: readonly unknown[];
+  /** TanStack Query key — used for caching and invalidation. Auto-generated from contracts array when omitted. */
+  queryKey?: readonly unknown[];
   contracts: ReadContractsContract[];
   allowFailure?: TAllowFailure;
   /** TanStack Query options (enabled, staleTime, gcTime, etc.) */
