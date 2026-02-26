@@ -117,34 +117,63 @@ export interface AppManagedBatchParams {
 }
 
 /**
- * Execute a batch of contract reads via app-managed PXE (parallel simulate calls).
+ * Execute a batch of contract reads via app-managed PXE (sequential simulate calls).
+ * PXE does not support concurrent operations, so calls are executed one at a time.
+ * Contract instances are cached by address+artifact to avoid redundant instantiation.
  */
 export const executeAppManagedBatch = async (
   params: AppManagedBatchParams
 ): Promise<BatchReadResult[] | unknown[]> => {
   const { wallet, fromAddress, contracts, allowFailure } = params;
 
-  const promises = contracts.map(async (c) => {
-    const contractAddress = AztecAddress.fromString(c.address);
-    const contractInstance = Contract.at(contractAddress, c.artifact, wallet);
+  const contractCache = new Map<string, ReturnType<typeof Contract.at>>();
+  const results: (BatchReadResult | unknown)[] = [];
 
-    const method = getContractMethod(contractInstance, c.functionName);
-    if (!method) {
-      throw new Error(`Method ${c.functionName} not found on contract`);
+  for (const contract of contracts) {
+    const cacheKey = `${contract.address}:${contract.artifact.name}`;
+    let contractInstance = contractCache.get(cacheKey);
+    if (!contractInstance) {
+      const contractAddress = AztecAddress.fromString(contract.address);
+      contractInstance = Contract.at(
+        contractAddress,
+        contract.artifact,
+        wallet
+      );
+      contractCache.set(cacheKey, contractInstance);
     }
 
-    return method(...c.args).simulate({ from: fromAddress });
-  });
+    const method = getContractMethod(contractInstance, contract.functionName);
+    if (!method) {
+      if (allowFailure) {
+        results.push({
+          status: 'failure' as const,
+          error: new Error(
+            `Method ${contract.functionName} not found on contract`
+          ),
+        });
+        continue;
+      }
+      throw new Error(`Method ${contract.functionName} not found on contract`);
+    }
 
-  if (allowFailure) {
-    const settled = await Promise.allSettled(promises);
-    return settled.map(
-      (s): BatchReadResult =>
-        s.status === 'fulfilled'
-          ? { status: 'success', result: s.value }
-          : { status: 'failure', error: s.reason as Error }
-    );
+    try {
+      const result = await method(...contract.args).simulate({
+        from: fromAddress,
+      });
+      results.push(
+        allowFailure ? { status: 'success' as const, result } : result
+      );
+    } catch (err) {
+      if (allowFailure) {
+        results.push({
+          status: 'failure' as const,
+          error: err instanceof Error ? err : new Error(String(err)),
+        });
+      } else {
+        throw err;
+      }
+    }
   }
 
-  return Promise.all(promises);
+  return results as BatchReadResult[] | unknown[];
 };

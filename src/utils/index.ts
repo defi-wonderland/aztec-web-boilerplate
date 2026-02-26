@@ -27,11 +27,6 @@ export { iconSize, type IconSize } from './iconSize';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
 export { toTitleCase } from './string';
-export {
-  waitForBrowserWalletReceipt,
-  type WaitForReceiptOptions,
-  type WaitForReceiptResult,
-} from './txReceipt';
 
 /** CAIP account format: "namespace:chainId:address" (e.g., "aztec:1:0x123...") */
 type CaipAccountString = string;
