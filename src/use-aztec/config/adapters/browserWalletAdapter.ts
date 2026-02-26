@@ -5,8 +5,8 @@
  */
 
 import { executeBrowserWalletBatch } from '../../core/executeBatchRead';
+import { executeBrowserWalletRead } from '../../core/executeRead';
 import { executeBrowserWalletWrite } from '../../core/executeWrite';
-import type { SimulateViewsOp } from '../../../types/browserWallet';
 import type {
   UseAztecConfig,
   UseAztecBrowserWalletConfig,
@@ -41,33 +41,13 @@ export const buildBrowserWalletConfig = (
   };
 
   const executeRead = async (params: ReadExecutionParams): Promise<unknown> => {
-    const selectedAccount = getCaipAccount();
-    if (!selectedAccount) {
-      throw new Error('Browser wallet account not selected');
-    }
-
-    const operation: SimulateViewsOp = {
-      kind: 'simulate_views',
-      account: selectedAccount,
-      calls: [
-        {
-          kind: 'call',
-          contract: params.address,
-          method: params.functionName,
-          args: params.args,
-        },
-      ],
-    };
-
-    const result = await executeOperation(operation);
-
-    if (result.status !== 'ok') {
-      const errorMsg =
-        'error' in result && result.error ? result.error : 'Simulation failed';
-      throw new Error(errorMsg);
-    }
-
-    return result.result;
+    return executeBrowserWalletRead({
+      executeOperation,
+      getCaipAccount,
+      address: params.address,
+      functionName: params.functionName,
+      args: params.args,
+    });
   };
 
   const executeBatchRead = async (

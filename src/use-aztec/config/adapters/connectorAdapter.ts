@@ -14,13 +14,15 @@ import {
   executeBrowserWalletBatch,
   executeAppManagedBatch,
 } from '../../core/executeBatchRead';
-import { executeAppManagedRead } from '../../core/executeRead';
+import {
+  executeAppManagedRead,
+  executeBrowserWalletRead,
+} from '../../core/executeRead';
 import {
   executeBrowserWalletWrite,
   executeAppManagedWrite,
 } from '../../core/executeWrite';
 import type { FeePaymentContext } from '../../../services/aztec/feePayment';
-import type { SimulateViewsOp } from '../../../types/browserWallet';
 import type {
   UseAztecConfig,
   UseAztecConnectorConfig,
@@ -61,40 +63,16 @@ export const buildConnectorConfig = (
       throw new Error('Wallet not connected');
     }
 
-    // Browser wallet flow
     if (isBrowserWalletConnector(connector)) {
-      const selectedAccount = connector.getCaipAccount();
-      if (!selectedAccount) {
-        throw new Error('Browser wallet account not selected');
-      }
-
-      const operation: SimulateViewsOp = {
-        kind: 'simulate_views',
-        account: selectedAccount,
-        calls: [
-          {
-            kind: 'call',
-            contract: params.address,
-            method: params.functionName,
-            args: params.args,
-          },
-        ],
-      };
-
-      const result = await connector.executeOperation(operation);
-
-      if (result.status !== 'ok') {
-        const errorMsg =
-          'error' in result && result.error
-            ? result.error
-            : 'Simulation failed';
-        throw new Error(errorMsg);
-      }
-
-      return result.result;
+      return executeBrowserWalletRead({
+        executeOperation: (op) => connector.executeOperation(op),
+        getCaipAccount: () => connector.getCaipAccount(),
+        address: params.address,
+        functionName: params.functionName,
+        args: params.args,
+      });
     }
 
-    // App-managed PXE flow
     if (hasAppManagedPXE(connector)) {
       const wallet = connector.getWallet();
       if (!wallet) {
