@@ -43,12 +43,12 @@ export interface UseAztecLogger {
   debug: (...args: unknown[]) => void;
 }
 
-/** Default console-based logger. */
+/** Default logger is silent to avoid noisy library output. */
 export const DEFAULT_LOGGER: UseAztecLogger = {
-  info: (...args) => console.log('[use-aztec]', ...args),
-  warn: (...args) => console.warn('[use-aztec]', ...args),
-  error: (...args) => console.error('[use-aztec]', ...args),
-  debug: (...args) => console.debug('[use-aztec]', ...args),
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+  debug: () => {},
 };
 
 // =============================================================================

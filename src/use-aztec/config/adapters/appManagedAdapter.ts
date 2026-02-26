@@ -7,6 +7,7 @@
 import { executeAppManagedBatch } from '../../core/executeBatchRead';
 import { executeAppManagedRead } from '../../core/executeRead';
 import { executeAppManagedWrite } from '../../core/executeWrite';
+import { DEFAULT_LOGGER } from '../types';
 import type {
   UseAztecConfig,
   UseAztecAppManagedConfig,
@@ -15,7 +16,6 @@ import type {
   WriteExecutionParams,
   BatchReadResult,
   WriteContractData,
-  UseAztecLogger,
 } from '../types';
 
 const DEFAULT_FEE_PAYMENT_METHOD = 'sponsored' as const;
@@ -35,12 +35,7 @@ export const buildAppManagedConfig = (
     logger: inputLogger,
   } = input;
 
-  const logger: UseAztecLogger = inputLogger ?? {
-    info: (...args) => console.log('[use-aztec]', ...args),
-    warn: (...args) => console.warn('[use-aztec]', ...args),
-    error: (...args) => console.error('[use-aztec]', ...args),
-    debug: (...args) => console.debug('[use-aztec]', ...args),
-  };
+  const logger = inputLogger ?? DEFAULT_LOGGER;
 
   const executeRead = async (params: ReadExecutionParams): Promise<unknown> => {
     if (!account) throw new Error('Account not available');

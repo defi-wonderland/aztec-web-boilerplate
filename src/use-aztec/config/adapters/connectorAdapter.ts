@@ -22,6 +22,7 @@ import {
   executeBrowserWalletWrite,
   executeAppManagedWrite,
 } from '../../core/executeWrite';
+import { DEFAULT_LOGGER } from '../types';
 import type { FeePaymentContext } from '../../../services/aztec/feePayment';
 import type {
   UseAztecConfig,
@@ -31,7 +32,6 @@ import type {
   WriteExecutionParams,
   BatchReadResult,
   WriteContractData,
-  UseAztecLogger,
 } from '../types';
 
 const DEFAULT_FEE_PAYMENT_METHOD = 'sponsored' as const;
@@ -51,12 +51,7 @@ export const buildConnectorConfig = (
     logger: inputLogger,
   } = input;
 
-  const logger: UseAztecLogger = inputLogger ?? {
-    info: (...args) => console.log('[use-aztec]', ...args),
-    warn: (...args) => console.warn('[use-aztec]', ...args),
-    error: (...args) => console.error('[use-aztec]', ...args),
-    debug: (...args) => console.debug('[use-aztec]', ...args),
-  };
+  const logger = inputLogger ?? DEFAULT_LOGGER;
 
   const executeRead = async (params: ReadExecutionParams): Promise<unknown> => {
     if (!connector || !account) {

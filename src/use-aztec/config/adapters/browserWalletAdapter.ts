@@ -7,6 +7,7 @@
 import { executeBrowserWalletBatch } from '../../core/executeBatchRead';
 import { executeBrowserWalletRead } from '../../core/executeRead';
 import { executeBrowserWalletWrite } from '../../core/executeWrite';
+import { DEFAULT_LOGGER } from '../types';
 import type {
   UseAztecConfig,
   UseAztecBrowserWalletConfig,
@@ -15,7 +16,6 @@ import type {
   WriteExecutionParams,
   BatchReadResult,
   WriteContractData,
-  UseAztecLogger,
 } from '../types';
 
 /**
@@ -33,12 +33,7 @@ export const buildBrowserWalletConfig = (
     logger: inputLogger,
   } = input;
 
-  const logger: UseAztecLogger = inputLogger ?? {
-    info: (...args) => console.log('[use-aztec]', ...args),
-    warn: (...args) => console.warn('[use-aztec]', ...args),
-    error: (...args) => console.error('[use-aztec]', ...args),
-    debug: (...args) => console.debug('[use-aztec]', ...args),
-  };
+  const logger = inputLogger ?? DEFAULT_LOGGER;
 
   const executeRead = async (params: ReadExecutionParams): Promise<unknown> => {
     return executeBrowserWalletRead({
