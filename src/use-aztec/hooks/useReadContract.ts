@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
-import { useAztec } from '../context/useAztec';
+import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import type {
   MethodsOf,
   UseReadContractParams,
@@ -31,7 +31,7 @@ export const useReadContract = <
 >(
   params: UseReadContractParams<TContract, TMethod, TSelectData>
 ): UseReadContractReturn<TSelectData> => {
-  const { isConnected, account, executeRead } = useAztec();
+  const client = useInternalAztecClient();
 
   const {
     enabled: queryEnabled,
@@ -45,8 +45,7 @@ export const useReadContract = <
 
   const isEnabled = Boolean(
     (queryEnabled ?? true) &&
-      isConnected &&
-      account &&
+      client &&
       params.address &&
       params.args !== undefined
   );
@@ -61,11 +60,11 @@ export const useReadContract = <
   const query = useQuery({
     queryKey,
     queryFn: async () => {
-      if (!account || !params.address || params.args === undefined) {
+      if (!client || !params.address || params.args === undefined) {
         throw new Error('Missing required parameters');
       }
 
-      return executeRead({
+      return client.executeRead({
         artifact: params.contract.artifact,
         address: params.address,
         functionName: String(params.functionName),

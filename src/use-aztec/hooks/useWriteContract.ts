@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
-import { useAztec } from '../context/useAztec';
+import { useInternalAztecClient } from '../context/useInternalAztecClient';
+import { AztecClientNotReadyError } from '../runtime/errors';
 import type {
   MethodsOf,
   WriteContractData,
@@ -8,8 +9,6 @@ import type {
   UseWriteContractOptions,
   UseWriteContractReturn,
 } from '../../types/contractTypes';
-
-const DEFAULT_FEE_PAYMENT_METHOD = 'sponsored' as const;
 
 /**
  * Hook for executing write operations on Aztec contracts.
@@ -31,7 +30,7 @@ export const useWriteContract = (
   options: UseWriteContractOptions = {}
 ): UseWriteContractReturn => {
   const { onSuccess, onError, onSettled } = options.mutation ?? {};
-  const { executeWrite } = useAztec();
+  const client = useInternalAztecClient();
 
   const mutation = useMutation<
     WriteContractData,
@@ -39,12 +38,16 @@ export const useWriteContract = (
     WriteContractMutateParams<ContractBase, string>
   >({
     mutationFn: async (params) => {
-      return executeWrite({
+      if (!client) {
+        throw new AztecClientNotReadyError();
+      }
+
+      return client.executeWrite({
         artifact: params.contract.artifact,
         address: params.address,
         functionName: String(params.functionName),
         args: params.args as unknown[],
-        feePaymentMethod: params.feePaymentMethod ?? DEFAULT_FEE_PAYMENT_METHOD,
+        feePaymentMethod: params.feePaymentMethod,
         timeout: params.timeout,
         receiptPolling: params.receiptPolling,
       });

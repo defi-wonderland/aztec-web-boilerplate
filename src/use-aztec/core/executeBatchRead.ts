@@ -14,7 +14,7 @@ import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
 } from '../../types/browserWallet';
-import type { BatchReadContract, BatchReadResult } from '../config/types';
+import type { BatchReadContract, BatchReadResult } from '../runtime/types';
 
 /**
  * Parse the raw result from a browser wallet batch simulation.

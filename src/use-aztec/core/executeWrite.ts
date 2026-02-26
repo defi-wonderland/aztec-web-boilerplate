@@ -20,11 +20,7 @@ import type {
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
 } from '../../types/browserWallet';
-import type {
-  FeePaymentMethodType,
-  UseAztecLogger,
-  WriteContractData,
-} from '../config/types';
+import type { WriteContractData } from '../runtime/types';
 
 // =============================================================================
 // Browser Wallet Write
@@ -43,7 +39,6 @@ export interface BrowserWalletWriteParams {
   functionName: string;
   args: unknown[];
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };
-  logger: UseAztecLogger;
 }
 
 /**
@@ -60,7 +55,6 @@ export const executeBrowserWalletWrite = async (
     functionName,
     args,
     receiptPolling,
-    logger,
   } = params;
 
   const response = await sendTransaction({
@@ -92,7 +86,6 @@ export const executeBrowserWalletWrite = async (
     executeOperation,
     response.txHash,
     chain,
-    logger,
     receiptPolling
   );
 
@@ -118,11 +111,10 @@ export interface AppManagedWriteParams {
   functionName: string;
   args: unknown[];
   createFeePaymentMethod: (
-    type: FeePaymentMethodType
-  ) => Promise<FeePaymentMethod>;
-  feePaymentMethod: FeePaymentMethodType;
+    feePaymentMethod?: unknown
+  ) => Promise<FeePaymentMethod | undefined>;
+  feePaymentMethod?: unknown;
   timeout: number;
-  logger: UseAztecLogger;
 }
 
 /**
@@ -141,7 +133,6 @@ export const executeAppManagedWrite = async (
     createFeePaymentMethod,
     feePaymentMethod,
     timeout,
-    logger,
   } = params;
 
   const paymentMethod = await createFeePaymentMethod(feePaymentMethod);
@@ -155,16 +146,11 @@ export const executeAppManagedWrite = async (
   }
 
   const tx = method(...args);
-
-  // Simulate first to catch revert reasons before sending
-  logger.info(`Simulating ${functionName}...`);
   try {
-    const simulateResult = await tx.simulate({ from: fromAddress });
-    logger.info(`Simulation successful:`, simulateResult);
+    await tx.simulate({ from: fromAddress });
   } catch (simErr) {
     const simErrorMsg =
       simErr instanceof Error ? simErr.message : 'Simulation failed';
-    logger.error(`Simulation failed for ${functionName}:`, simErr);
     throw new Error(`Simulation failed: ${simErrorMsg}`);
   }
 

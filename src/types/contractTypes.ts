@@ -150,7 +150,7 @@ export interface WriteContractMutateParams<
   functionName: TMethod;
   /** Method arguments */
   args: ArgsOf<TContract, TMethod>;
-  /** Fee payment method (Aztec-specific, defaults to store value) */
+  /** Optional fee payment policy consumed by the injected wallet adapter. */
   feePaymentMethod?: FeePaymentMethodType;
   /** Timeout for transaction confirmation in ms (default: 900) */
   timeout?: number;

@@ -1,30 +1,22 @@
 import React, { type ReactNode } from 'react';
-import { UseAztecContext } from './useAztecContext';
-import type { UseAztecConfig } from '../config/types';
+import { UseAztecRuntimeContext } from './useAztecRuntimeContext';
+import type { AztecExecutionClient } from '../runtime/types';
 
 interface UseAztecProviderProps {
-  config: UseAztecConfig;
+  client: AztecExecutionClient | null;
   children: ReactNode;
 }
 
 /**
- * Provides the resolved UseAztecConfig to all descendant hooks.
- *
- * @example
- * ```tsx
- * const config = createUseAztecConfig({ connector, account, isConnected });
- * <UseAztecProvider config={config}>
- *   <App />
- * </UseAztecProvider>
- * ```
+ * Provides the Aztec execution client to all descendant use-aztec hooks.
  */
 export const UseAztecProvider: React.FC<UseAztecProviderProps> = ({
-  config,
+  client,
   children,
 }) => {
   return (
-    <UseAztecContext.Provider value={config}>
+    <UseAztecRuntimeContext.Provider value={client}>
       {children}
-    </UseAztecContext.Provider>
+    </UseAztecRuntimeContext.Provider>
   );
 };

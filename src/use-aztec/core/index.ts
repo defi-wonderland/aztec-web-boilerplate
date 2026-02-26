@@ -1,5 +1,8 @@
-export { executeAppManagedRead } from './executeRead';
-export type { AppManagedReadParams } from './executeRead';
+export { executeAppManagedRead, executeBrowserWalletRead } from './executeRead';
+export type {
+  AppManagedReadParams,
+  BrowserWalletReadParams,
+} from './executeRead';
 
 export {
   executeBrowserWalletBatch,

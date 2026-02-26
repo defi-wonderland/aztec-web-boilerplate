@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import { useAztecWallet } from '../../../aztec-wallet';
+import { useWalletExecutionClient } from '../../../integrations/use-aztec-wallet';
 import { useFeePayment } from '../../../store/feePayment';
-import { useAztec } from '../../../use-aztec';
 
 interface CallParams {
   address: string;
@@ -19,12 +20,13 @@ interface CallResult {
 /**
  * Hook for dynamically calling arbitrary contract functions.
  * Delegates to use-aztec core execution functions via the adapter pattern,
- * keeping all wallet-type detection centralized in the config layer.
+ * keeping wallet-specific branching centralized in the integration layer.
  */
 export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
-  const { executeRead, executeWrite, isConnected } = useAztec();
+  const client = useWalletExecutionClient();
+  const { isConnected } = useAztecWallet();
   const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -46,7 +48,11 @@ export const useDynamicContractCaller = (
       setError(null);
 
       try {
-        const result = await executeRead({
+        if (!client) {
+          return { success: false, error: 'Wallet not connected' };
+        }
+
+        const result = await client.executeRead({
           artifact,
           address,
           functionName,
@@ -62,7 +68,7 @@ export const useDynamicContractCaller = (
         setIsSimulating(false);
       }
     },
-    [artifact, executeRead, isConnected]
+    [artifact, client, isConnected]
   );
 
   const execute = useCallback(
@@ -81,7 +87,11 @@ export const useDynamicContractCaller = (
       setError(null);
 
       try {
-        const result = await executeWrite({
+        if (!client) {
+          return { success: false, error: 'Wallet not connected' };
+        }
+
+        const result = await client.executeWrite({
           artifact,
           address,
           functionName,
@@ -102,7 +112,7 @@ export const useDynamicContractCaller = (
         setIsExecuting(false);
       }
     },
-    [artifact, executeWrite, feePaymentMethod, isConnected]
+    [artifact, client, feePaymentMethod, isConnected]
   );
 
   return {

@@ -2,21 +2,20 @@
  * use-aztec — Wallet-agnostic React hooks for Aztec contract interaction.
  *
  * Provides `useReadContract`, `useWriteContract`, and `useReadContracts` hooks
- * that work with any wallet implementation via the UseAztecProvider + config pattern.
+ * that work with any wallet implementation via the UseAztecProvider + execution
+ * client injection pattern.
  *
  * @example
  * ```tsx
  * import {
  *   UseAztecProvider,
- *   createUseAztecConfig,
  *   useReadContract,
  *   useWriteContract,
  * } from './use-aztec';
  *
- * // From aztec-wallet connector
- * const config = createUseAztecConfig({ connector, account, isConnected });
+ * const client = createExecutionClientSomehow();
  *
- * <UseAztecProvider config={config}>
+ * <UseAztecProvider client={client}>
  *   <App />
  * </UseAztecProvider>
  * ```
@@ -29,13 +28,7 @@
 // =============================================================================
 
 export { UseAztecProvider } from './context';
-export { useAztec } from './context';
-
-// =============================================================================
-// CONFIG
-// =============================================================================
-
-export { createUseAztecConfig } from './config';
+export { AztecClientNotReadyError } from './runtime';
 
 // =============================================================================
 // HOOKS
@@ -50,15 +43,8 @@ export { useReadContracts } from './hooks';
 // =============================================================================
 
 export type {
-  // Config types
-  UseAztecConfig,
-  UseAztecConfigInput,
-  UseAztecConnectorConfig,
-  UseAztecAppManagedConfig,
-  UseAztecBrowserWalletConfig,
-  UseAztecLogger,
-  FeePaymentMethodType,
-  FeePaymentContractsConfig,
+  // Runtime execution types
+  AztecExecutionClient,
   ReadExecutionParams,
   BatchReadExecutionParams,
   BatchReadContract,
