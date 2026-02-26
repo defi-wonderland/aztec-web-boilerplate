@@ -1,0 +1,42 @@
+/**
+ * use-aztec Type Re-exports
+ *
+ * Re-exports contract types from the app's canonical source
+ * plus use-aztec-specific config types.
+ */
+
+// Contract types — source of truth stays in src/types/contractTypes.ts
+export type {
+  MethodsOf,
+  ArgsOf,
+  ContractClassFor,
+  ContractQueryOptions,
+  ContractMutationOptions,
+  UseReadContractParams,
+  UseReadContractReturn,
+  WriteContractData,
+  WriteContractMutateParams,
+  UseWriteContractOptions,
+  UseWriteContractReturn,
+  ReadContractsContract,
+  ReadContractResult,
+  UseReadContractsParams,
+  UseReadContractsReturn,
+} from '../../types/contractTypes';
+
+// Config types
+export type {
+  UseAztecConfig,
+  UseAztecConfigInput,
+  UseAztecConnectorConfig,
+  UseAztecAppManagedConfig,
+  UseAztecBrowserWalletConfig,
+  UseAztecLogger,
+  FeePaymentMethodType,
+  FeePaymentContractsConfig,
+  ReadExecutionParams,
+  BatchReadExecutionParams,
+  BatchReadContract,
+  BatchReadResult,
+  WriteExecutionParams,
+} from '../config/types';

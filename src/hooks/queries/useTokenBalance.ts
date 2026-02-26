@@ -4,8 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
+import { useReadContracts } from '../../use-aztec';
 import { useContract } from '../context/useContract';
-import { useReadContracts } from '../contracts/useReadContracts';
 import { queryKeys } from './queryKeys';
 
 export interface TokenBalance {

@@ -1,0 +1,209 @@
+/**
+ * Connector Adapter
+ *
+ * Builds a UseAztecConfig from an aztec-wallet WalletConnector.
+ * This is the ONLY file in use-aztec that imports from aztec-wallet type guards.
+ */
+
+import { createFeePaymentMethod } from '../../../services/aztec/feePayment';
+import {
+  isBrowserWalletConnector,
+  hasAppManagedPXE,
+} from '../../../types/walletConnector';
+import {
+  executeBrowserWalletBatch,
+  executeAppManagedBatch,
+} from '../../core/executeBatchRead';
+import { executeAppManagedRead } from '../../core/executeRead';
+import {
+  executeBrowserWalletWrite,
+  executeAppManagedWrite,
+} from '../../core/executeWrite';
+import type { FeePaymentContext } from '../../../services/aztec/feePayment';
+import type { SimulateViewsOp } from '../../../types/browserWallet';
+import type {
+  UseAztecConfig,
+  UseAztecConnectorConfig,
+  ReadExecutionParams,
+  BatchReadExecutionParams,
+  WriteExecutionParams,
+  BatchReadResult,
+  WriteContractData,
+  UseAztecLogger,
+} from '../types';
+
+const DEFAULT_FEE_PAYMENT_METHOD = 'sponsored' as const;
+
+/**
+ * Builds a UseAztecConfig from an aztec-wallet connector.
+ */
+export const buildConnectorConfig = (
+  input: UseAztecConnectorConfig
+): UseAztecConfig => {
+  const {
+    connector,
+    account,
+    isConnected,
+    feePaymentConfig,
+    defaultFeePaymentMethod = DEFAULT_FEE_PAYMENT_METHOD,
+    logger: inputLogger,
+  } = input;
+
+  const logger: UseAztecLogger = inputLogger ?? {
+    info: (...args) => console.log('[use-aztec]', ...args),
+    warn: (...args) => console.warn('[use-aztec]', ...args),
+    error: (...args) => console.error('[use-aztec]', ...args),
+    debug: (...args) => console.debug('[use-aztec]', ...args),
+  };
+
+  const executeRead = async (params: ReadExecutionParams): Promise<unknown> => {
+    if (!connector || !account) {
+      throw new Error('Wallet not connected');
+    }
+
+    // Browser wallet flow
+    if (isBrowserWalletConnector(connector)) {
+      const selectedAccount = connector.getCaipAccount();
+      if (!selectedAccount) {
+        throw new Error('Browser wallet account not selected');
+      }
+
+      const operation: SimulateViewsOp = {
+        kind: 'simulate_views',
+        account: selectedAccount,
+        calls: [
+          {
+            kind: 'call',
+            contract: params.address,
+            method: params.functionName,
+            args: params.args,
+          },
+        ],
+      };
+
+      const result = await connector.executeOperation(operation);
+
+      if (result.status !== 'ok') {
+        const errorMsg =
+          'error' in result && result.error
+            ? result.error
+            : 'Simulation failed';
+        throw new Error(errorMsg);
+      }
+
+      return result.result;
+    }
+
+    // App-managed PXE flow
+    if (hasAppManagedPXE(connector)) {
+      const wallet = connector.getWallet();
+      if (!wallet) {
+        throw new Error('Wallet instance not available');
+      }
+
+      return executeAppManagedRead({
+        wallet,
+        fromAddress: account.getAddress(),
+        artifact: params.artifact,
+        address: params.address,
+        functionName: params.functionName,
+        args: params.args,
+      });
+    }
+
+    throw new Error('Unknown wallet type');
+  };
+
+  const executeBatchRead = async (
+    params: BatchReadExecutionParams
+  ): Promise<BatchReadResult[] | unknown[]> => {
+    if (!connector || !account) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (isBrowserWalletConnector(connector)) {
+      return executeBrowserWalletBatch({
+        executeOperation: (op) => connector.executeOperation(op),
+        getCaipAccount: () => connector.getCaipAccount(),
+        contracts: params.contracts,
+        allowFailure: params.allowFailure,
+      });
+    }
+
+    if (hasAppManagedPXE(connector)) {
+      const wallet = connector.getWallet();
+      if (!wallet) {
+        throw new Error('Wallet instance not available');
+      }
+
+      return executeAppManagedBatch({
+        wallet,
+        fromAddress: account.getAddress(),
+        contracts: params.contracts,
+        allowFailure: params.allowFailure,
+      });
+    }
+
+    throw new Error('Unknown wallet type');
+  };
+
+  const executeWrite = async (
+    params: WriteExecutionParams
+  ): Promise<WriteContractData> => {
+    if (!connector || !account) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (isBrowserWalletConnector(connector)) {
+      return executeBrowserWalletWrite({
+        sendTransaction: (req) => connector.sendTransaction(req),
+        executeOperation: (op) => connector.executeOperation(op),
+        getCaipAccount: () => connector.getCaipAccount(),
+        artifact: params.artifact,
+        address: params.address,
+        functionName: params.functionName,
+        args: params.args,
+        receiptPolling: params.receiptPolling,
+        logger,
+      });
+    }
+
+    if (hasAppManagedPXE(connector)) {
+      const wallet = connector.getWallet();
+      if (!wallet) {
+        throw new Error('Wallet instance not available');
+      }
+
+      const feePaymentContext: FeePaymentContext = {
+        config: feePaymentConfig ?? {},
+        getSponsoredFeePaymentMethod: () =>
+          connector.getSponsoredFeePaymentMethod(),
+      };
+
+      return executeAppManagedWrite({
+        wallet,
+        fromAddress: account.getAddress(),
+        artifact: params.artifact,
+        address: params.address,
+        functionName: params.functionName,
+        args: params.args,
+        createFeePaymentMethod: (type) =>
+          createFeePaymentMethod(type, feePaymentContext),
+        feePaymentMethod: params.feePaymentMethod ?? defaultFeePaymentMethod,
+        timeout: params.timeout ?? 900,
+        logger,
+      });
+    }
+
+    throw new Error('Unknown wallet type');
+  };
+
+  return {
+    isConnected,
+    account,
+    executeRead,
+    executeBatchRead,
+    executeWrite,
+    logger,
+  };
+};

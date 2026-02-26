@@ -67,7 +67,7 @@ export function ContractRegistryInitializer({
 
   const initialContracts = useMemo(
     () => getInitialContracts(typedContractsConfig),
-    [typedContractsConfig]
+    []
   );
 
   const registryRef = useRef<ContractRegistry<ContractConfigMap> | null>(null);

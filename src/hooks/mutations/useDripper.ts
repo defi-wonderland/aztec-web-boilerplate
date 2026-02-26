@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
-import { useWriteContract } from '../contracts/useWriteContract';
+import { useWriteContract } from '../../use-aztec';
 import { queryKeys } from '../queries/queryKeys';
 import { useFeeJuiceBalanceInvalidation } from '../queries/useFeeJuiceBalance';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
