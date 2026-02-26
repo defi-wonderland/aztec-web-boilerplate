@@ -152,16 +152,16 @@ export interface WriteContractMutateParams<
   args: ArgsOf<TContract, TMethod>;
   /** Fee payment method (Aztec-specific, defaults to store value) */
   feePaymentMethod?: FeePaymentMethodType;
+  /** Timeout for transaction confirmation in ms (default: 900) */
+  timeout?: number;
+  /** Receipt polling options for browser wallet */
+  receiptPolling?: { intervalMs?: number; maxAttempts?: number };
 }
 
 /**
  * Options for the useWriteContract hook.
  */
 export interface UseWriteContractOptions {
-  /** Timeout for transaction confirmation in ms (default: 900) */
-  timeout?: number;
-  /** Receipt polling options for browser wallet */
-  receiptPolling?: { intervalMs?: number; maxAttempts?: number };
   /** TanStack Mutation options (onSuccess, onError, onSettled) */
   mutation?: ContractMutationOptions;
 }

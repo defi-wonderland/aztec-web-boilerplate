@@ -30,7 +30,7 @@ import type {
  * @example
  * ```tsx
  * const { writeContract, writeContractAsync, isPending, isError, error, data, reset } =
- *   useWriteContract({ onSuccess, onError });
+ *   useWriteContract({ mutation: { onSuccess, onError } });
  *
  * // Fire-and-forget (errors land in isError/error)
  * writeContract({
@@ -40,14 +40,20 @@ import type {
  *   args: [tokenAddress, amount],
  * });
  *
- * // Or awaitable
- * const result = await writeContractAsync({ ... });
+ * // Per-call timeout and receipt polling
+ * const result = await writeContractAsync({
+ *   contract: DripperContract,
+ *   address: dripperAddress,
+ *   functionName: 'drip_to_private',
+ *   args: [tokenAddress, amount],
+ *   timeout: 1800,
+ *   receiptPolling: { intervalMs: 2000, maxAttempts: 30 },
+ * });
  * ```
  */
 export const useWriteContract = (
   options: UseWriteContractOptions = {}
 ): UseWriteContractReturn => {
-  const { timeout = 900, receiptPolling } = options;
   const { onSuccess, onError, onSettled } = options.mutation ?? {};
   const { connector, account, currentConfig } = useAztecWallet();
 
@@ -62,6 +68,8 @@ export const useWriteContract = (
         functionName,
         args,
         feePaymentMethod = DEFAULT_FEE_PAYMENT_METHOD,
+        timeout = 900,
+        receiptPolling,
       } = params;
       const artifact = params.contract.artifact;
 
