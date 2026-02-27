@@ -42,7 +42,9 @@ export const waitForReceipt = async (
 
       if (result.status === 'failed') {
         const errorMsg =
-          'error' in result ? String(result.error) : 'Failed to get receipt';
+          'error' in result && result.error
+            ? String(result.error)
+            : 'Failed to get receipt';
         return { success: false, error: errorMsg };
       }
 
