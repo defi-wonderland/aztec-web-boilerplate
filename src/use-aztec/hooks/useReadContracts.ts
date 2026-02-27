@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { readContracts as readContractsAction } from '../actions/readContracts';
 import { getClientOrNull } from '../config/clientStore';
+import { normalizeQueryKeyValue } from '../utils/queryKey';
 import type {
   ReadContractResult,
   UseReadContractsParams,
@@ -51,7 +52,11 @@ export const useReadContracts = <
 
   const queryKey = params.queryKey ?? [
     'readContracts',
-    params.contracts.map((c) => [c.address, String(c.functionName), c.args]),
+    params.contracts.map((c) => [
+      c.address,
+      String(c.functionName),
+      normalizeQueryKeyValue(c.args),
+    ]),
   ];
 
   const query = useQuery({

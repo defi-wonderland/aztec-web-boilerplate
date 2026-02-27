@@ -1,10 +1,14 @@
 import { useMutation } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
-import { writeContract as writeContractAction } from '../actions/writeContract';
+import {
+  writeContract as writeContractAction,
+  type WriteContractActionParams,
+} from '../actions/writeContract';
 import type {
   MethodsOf,
   WriteContractData,
   WriteContractMutateParams,
+  WriteContractCallOptions,
   UseWriteContractOptions,
   UseWriteContractReturn,
 } from '../../types/contractTypes';
@@ -13,16 +17,22 @@ import type {
  * Hook for executing write operations on Aztec contracts.
  * Wraps React Query's `useMutation` to provide wagmi-like ergonomics.
  *
+ * Supports both hook-level callbacks (via `mutation` option) and
+ * per-call callbacks (second argument to writeContract/writeContractAsync),
+ * matching wagmi v2's API.
+ *
  * @example
  * ```tsx
- * const { writeContract, writeContractAsync, isPending } = useWriteContract();
- *
- * writeContract({
- *   contract: DripperContract,
- *   address: dripperAddress,
- *   functionName: 'drip_to_private',
- *   args: [tokenAddress, amount],
+ * // Hook-level callbacks
+ * const { writeContract } = useWriteContract({
+ *   mutation: { onSuccess: (data) => console.log('tx:', data.txHash) }
  * });
+ *
+ * // Per-call callbacks (override hook-level)
+ * writeContract(
+ *   { contract: DripperContract, address, functionName: 'drip_to_private', args },
+ *   { onSuccess: (data) => invalidateQueries() }
+ * );
  * ```
  */
 export const useWriteContract = (
@@ -33,7 +43,7 @@ export const useWriteContract = (
   const mutation = useMutation<
     WriteContractData,
     Error,
-    WriteContractMutateParams<ContractBase, string>
+    WriteContractActionParams
   >({
     mutationFn: async (params) => writeContractAction(params),
     onSuccess,
@@ -41,20 +51,32 @@ export const useWriteContract = (
     onSettled,
   });
 
-  const writeContract = <T extends ContractBase, M extends MethodsOf<T>>(
+  const toWriteActionParams = <T extends ContractBase, M extends MethodsOf<T>>(
     params: WriteContractMutateParams<T, M>
+  ): WriteContractActionParams => {
+    return {
+      contract: params.contract,
+      address: params.address,
+      functionName: String(params.functionName),
+      args: params.args,
+      feePaymentMethod: params.feePaymentMethod,
+      timeout: params.timeout,
+      receiptPolling: params.receiptPolling,
+    };
+  };
+
+  const writeContract = <T extends ContractBase, M extends MethodsOf<T>>(
+    params: WriteContractMutateParams<T, M>,
+    callOptions?: WriteContractCallOptions
   ): void => {
-    mutation.mutate(
-      params as unknown as WriteContractMutateParams<ContractBase, string>
-    );
+    mutation.mutate(toWriteActionParams(params), callOptions);
   };
 
   const writeContractAsync = <T extends ContractBase, M extends MethodsOf<T>>(
-    params: WriteContractMutateParams<T, M>
+    params: WriteContractMutateParams<T, M>,
+    callOptions?: WriteContractCallOptions
   ): Promise<WriteContractData> => {
-    return mutation.mutateAsync(
-      params as unknown as WriteContractMutateParams<ContractBase, string>
-    );
+    return mutation.mutateAsync(toWriteActionParams(params), callOptions);
   };
 
   return {

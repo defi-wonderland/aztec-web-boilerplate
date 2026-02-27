@@ -39,8 +39,7 @@ export type ArgsOf<
  */
 export type ContractClassFor<TContract extends ContractBase> = {
   artifact: ContractArtifact;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  at: (...args: any[]) => Promise<TContract> | TContract;
+  at: (...args: never[]) => Promise<TContract> | TContract;
 };
 
 // =============================================================================
@@ -63,19 +62,6 @@ export interface ContractQueryOptions<TSelectData = unknown> {
   select?: (data: unknown) => TSelectData;
   /** Retry count or boolean */
   retry?: number | boolean;
-}
-
-/** TanStack Mutation options passthrough for write hooks. */
-export interface ContractMutationOptions {
-  /** Called on successful write */
-  onSuccess?: (data: WriteContractData) => void;
-  /** Called on write failure */
-  onError?: (error: Error) => void;
-  /** Called when mutation settles (success or error) */
-  onSettled?: (
-    data: WriteContractData | undefined,
-    error: Error | null
-  ) => void;
 }
 
 // =============================================================================
@@ -136,6 +122,19 @@ export interface WriteContractData {
 }
 
 /**
+ * Per-call callback options for writeContract / writeContractAsync.
+ * Mirrors wagmi's pattern of passing callbacks as a second argument.
+ */
+export interface WriteContractCallOptions {
+  onSuccess?: (data: WriteContractData) => void;
+  onError?: (error: Error) => void;
+  onSettled?: (
+    data: WriteContractData | undefined,
+    error: Error | null
+  ) => void;
+}
+
+/**
  * Parameters passed per-call to writeContract / writeContractAsync.
  */
 export interface WriteContractMutateParams<
@@ -160,10 +159,11 @@ export interface WriteContractMutateParams<
 
 /**
  * Options for the useWriteContract hook.
+ * Mirrors wagmi v2: hook-level callbacks live under `mutation`.
  */
 export interface UseWriteContractOptions {
-  /** TanStack Mutation options (onSuccess, onError, onSettled) */
-  mutation?: ContractMutationOptions;
+  /** TanStack Mutation callbacks (onSuccess, onError, onSettled) */
+  mutation?: WriteContractCallOptions;
 }
 
 /**
@@ -172,11 +172,13 @@ export interface UseWriteContractOptions {
 export interface UseWriteContractReturn {
   /** Fire-and-forget write (errors go to isError/error) */
   writeContract: <T extends ContractBase, M extends MethodsOf<T>>(
-    params: WriteContractMutateParams<T, M>
+    params: WriteContractMutateParams<T, M>,
+    options?: WriteContractCallOptions
   ) => void;
   /** Async write that returns the result or throws */
   writeContractAsync: <T extends ContractBase, M extends MethodsOf<T>>(
-    params: WriteContractMutateParams<T, M>
+    params: WriteContractMutateParams<T, M>,
+    options?: WriteContractCallOptions
   ) => Promise<WriteContractData>;
   data: WriteContractData | undefined;
   error: Error | null;

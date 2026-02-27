@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
 import { readContract as readContractAction } from '../actions/readContract';
 import { getClientOrNull } from '../config/clientStore';
+import { normalizeQueryKeyValue } from '../utils/queryKey';
 import type {
   MethodsOf,
   UseReadContractParams,
@@ -54,7 +55,7 @@ export const useReadContract = <
     'readContract',
     params.address,
     String(params.functionName),
-    params.args,
+    normalizeQueryKeyValue(params.args),
   ];
 
   const query = useQuery({

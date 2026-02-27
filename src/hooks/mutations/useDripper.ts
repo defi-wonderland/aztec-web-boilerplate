@@ -23,6 +23,8 @@ interface UseDripperOptions {
 
 export const useDripper = (options: UseDripperOptions = {}) => {
   const { account, currentConfig } = useAztecWallet();
+  const { writeContract, isPending, isError, error, reset } =
+    useWriteContract();
   const queryClient = useQueryClient();
   const { invalidateAll: invalidateFeeJuiceBalances } =
     useFeeJuiceBalanceInvalidation();
@@ -45,69 +47,68 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     invalidateFeeJuiceBalances();
   };
 
-  const privateDrip = useWriteContract({
-    mutation: {
-      onSuccess: () => {
-        invalidateAllBalances();
-        options.onDripToPrivateSuccess?.();
-      },
-      onError: (error) => {
-        options.onDripToPrivateError?.(error);
-      },
-    },
-  });
-
-  const publicDrip = useWriteContract({
-    mutation: {
-      onSuccess: () => {
-        invalidateAllBalances();
-        options.onDripToPublicSuccess?.();
-      },
-      onError: (error) => {
-        options.onDripToPublicError?.(error);
-      },
-    },
-  });
-
-  const dripToPrivate = async ({ amount, feePaymentMethod }: DripParams) => {
+  const dripToPrivate = ({ amount, feePaymentMethod }: DripParams) => {
     if (!dripperAddress || !tokenAddress) {
-      throw new Error('Contract addresses not configured');
+      options.onDripToPrivateError?.(
+        new Error('Contract addresses not configured')
+      );
+      return;
+    }
+    if (!account) {
+      options.onDripToPrivateError?.(new Error('Account not available'));
+      return;
     }
 
-    await privateDrip
-      .writeContractAsync({
+    writeContract(
+      {
         contract: DripperContract,
         address: dripperAddress,
         functionName: 'drip_to_private',
         args: [AztecAddress.fromString(tokenAddress), amount],
         feePaymentMethod,
-      })
-      .catch(() => {});
+      },
+      {
+        onSuccess: () => {
+          invalidateAllBalances();
+          options.onDripToPrivateSuccess?.();
+        },
+        onError: (err) => {
+          options.onDripToPrivateError?.(err);
+        },
+      }
+    );
   };
 
-  const dripToPublic = async ({ amount, feePaymentMethod }: DripParams) => {
+  const dripToPublic = ({ amount, feePaymentMethod }: DripParams) => {
     if (!dripperAddress || !tokenAddress) {
-      throw new Error('Contract addresses not configured');
+      options.onDripToPublicError?.(
+        new Error('Contract addresses not configured')
+      );
+      return;
+    }
+    if (!account) {
+      options.onDripToPublicError?.(new Error('Account not available'));
+      return;
     }
 
-    await publicDrip
-      .writeContractAsync({
+    writeContract(
+      {
         contract: DripperContract,
         address: dripperAddress,
         functionName: 'drip_to_public',
         args: [AztecAddress.fromString(tokenAddress), amount],
         feePaymentMethod,
-      })
-      .catch(() => {});
-  };
-
-  const isPending = privateDrip.isPending || publicDrip.isPending;
-  const isError = privateDrip.isError || publicDrip.isError;
-  const error = privateDrip.error || publicDrip.error;
-
-  const reset = () => {
-    privateDrip.reset();
-    publicDrip.reset();
+      },
+      {
+        onSuccess: () => {
+          invalidateAllBalances();
+          options.onDripToPublicSuccess?.();
+        },
+        onError: (err) => {
+          options.onDripToPublicError?.(err);
+        },
+      }
+    );
   };
 
   return {

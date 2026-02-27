@@ -1,10 +1,17 @@
-import type { ContractBase } from '@aztec/aztec.js/contracts';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { getClient } from '../config/clientStore';
-import type {
-  MethodsOf,
-  WriteContractData,
-  WriteContractMutateParams,
-} from '../../types/contractTypes';
+import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
+import type { WriteContractData } from '../../types/contractTypes';
+
+export interface WriteContractActionParams {
+  contract: { artifact: ContractArtifact };
+  address: string;
+  functionName: string;
+  args: readonly unknown[];
+  feePaymentMethod?: FeePaymentMethodType;
+  timeout?: number;
+  receiptPolling?: { intervalMs?: number; maxAttempts?: number };
+}
 
 /**
  * Pure async action for executing a write operation on an Aztec contract.
@@ -22,19 +29,16 @@ import type {
  * });
  * ```
  */
-export const writeContract = async <
-  T extends ContractBase,
-  M extends MethodsOf<T>,
->(
-  params: WriteContractMutateParams<T, M>
+export const writeContract = async (
+  params: WriteContractActionParams
 ): Promise<WriteContractData> => {
   const client = getClient();
 
   return client.executeWrite({
     artifact: params.contract.artifact,
     address: params.address,
-    functionName: String(params.functionName),
-    args: params.args as unknown[],
+    functionName: params.functionName,
+    args: [...params.args],
     feePaymentMethod: params.feePaymentMethod,
     timeout: params.timeout,
     receiptPolling: params.receiptPolling,

@@ -24,11 +24,29 @@ export const parseBatchResult = (
   raw: unknown,
   expectedLength: number
 ): unknown[] => {
-  if (Array.isArray(raw)) return raw;
+  const assertExpectedLength = (results: unknown[]): unknown[] => {
+    if (results.length !== expectedLength) {
+      throw new Error(
+        `Unexpected batch result length: expected ${expectedLength} result(s), received ${results.length}`
+      );
+    }
+    return results;
+  };
+
+  if (Array.isArray(raw)) {
+    return assertExpectedLength(raw);
+  }
 
   const obj = raw as Record<string, unknown> | null | undefined;
-  if (obj && 'decoded' in obj && Array.isArray(obj.decoded)) {
-    return obj.decoded;
+  if (obj && typeof obj === 'object' && 'decoded' in obj) {
+    const decoded = obj.decoded;
+    if (!Array.isArray(decoded)) {
+      throw new Error(
+        'Unexpected batch result shape: decoded must be an array'
+      );
+    }
+
+    return assertExpectedLength(decoded);
   }
 
   // Single-call result wrapped — return as single-element array

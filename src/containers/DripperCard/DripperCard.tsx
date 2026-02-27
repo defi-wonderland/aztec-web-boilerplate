@@ -99,7 +99,7 @@ export const DripperCard: React.FC = () => {
     const amountBigInt = BigInt(amount);
 
     const dripFn = dripType === 'private' ? dripToPrivate : dripToPublic;
-    dripFn({ amount: amountBigInt });
+    void dripFn({ amount: amountBigInt });
   };
 
   const handleCopyAddress = () => {
