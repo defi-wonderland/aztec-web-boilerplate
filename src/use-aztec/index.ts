@@ -37,6 +37,15 @@ export { AztecClientNotReadyError } from './runtime';
 export { useReadContract } from './hooks';
 export { useWriteContract } from './hooks';
 export { useReadContracts } from './hooks';
+export { useAztecClient } from './hooks';
+
+// =============================================================================
+// ACTIONS
+// =============================================================================
+
+export { writeContract } from './actions';
+export { readContract } from './actions';
+export { readContracts } from './actions';
 
 // =============================================================================
 // TYPES
@@ -50,6 +59,9 @@ export type {
   BatchReadContract,
   BatchReadResult,
   WriteExecutionParams,
+  // Action param types
+  ReadContractActionParams,
+  ReadContractsActionParams,
   // Contract types (re-exported from contractTypes.ts)
   MethodsOf,
   ArgsOf,

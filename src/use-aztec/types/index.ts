@@ -33,3 +33,7 @@ export type {
   BatchReadResult,
   WriteExecutionParams,
 } from '../runtime/types';
+
+// Action param types
+export type { ReadContractActionParams } from '../actions/readContract';
+export type { ReadContractsActionParams } from '../actions/readContracts';

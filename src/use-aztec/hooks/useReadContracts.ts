@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useInternalAztecClient } from '../context/useInternalAztecClient';
+import { readContracts as readContractsAction } from '../actions/readContracts';
+import { getClientOrNull } from '../config/clientStore';
 import type {
   ReadContractResult,
   UseReadContractsParams,
@@ -31,7 +32,6 @@ export const useReadContracts = <
 >(
   params: UseReadContractsParams<TAllowFailure, TSelectData>
 ): UseReadContractsReturn<TSelectData> => {
-  const client = useInternalAztecClient();
   const allowFailure = (params.allowFailure ?? true) as TAllowFailure;
 
   const {
@@ -44,6 +44,7 @@ export const useReadContracts = <
     retry,
   } = params.query ?? {};
 
+  const client = getClientOrNull();
   const isEnabled = Boolean(
     (queryEnabled ?? true) && client && params.contracts.length > 0
   );
@@ -56,17 +57,8 @@ export const useReadContracts = <
   const query = useQuery({
     queryKey,
     queryFn: async () => {
-      if (!client) {
-        throw new Error('Aztec execution client is not ready');
-      }
-
-      return client.executeBatchRead({
-        contracts: params.contracts.map((c) => ({
-          artifact: c.contract.artifact,
-          address: c.address,
-          functionName: String(c.functionName),
-          args: c.args as unknown[],
-        })),
+      return readContractsAction({
+        contracts: params.contracts,
         allowFailure: allowFailure as boolean,
       });
     },

@@ -1,7 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
-import { useInternalAztecClient } from '../context/useInternalAztecClient';
-import { AztecClientNotReadyError } from '../runtime/errors';
+import { writeContract as writeContractAction } from '../actions/writeContract';
 import type {
   MethodsOf,
   WriteContractData,
@@ -30,28 +29,13 @@ export const useWriteContract = (
   options: UseWriteContractOptions = {}
 ): UseWriteContractReturn => {
   const { onSuccess, onError, onSettled } = options.mutation ?? {};
-  const client = useInternalAztecClient();
 
   const mutation = useMutation<
     WriteContractData,
     Error,
     WriteContractMutateParams<ContractBase, string>
   >({
-    mutationFn: async (params) => {
-      if (!client) {
-        throw new AztecClientNotReadyError();
-      }
-
-      return client.executeWrite({
-        artifact: params.contract.artifact,
-        address: params.address,
-        functionName: String(params.functionName),
-        args: params.args as unknown[],
-        feePaymentMethod: params.feePaymentMethod,
-        timeout: params.timeout,
-        receiptPolling: params.receiptPolling,
-      });
-    },
+    mutationFn: async (params) => writeContractAction(params),
     onSuccess,
     onError,
     onSettled,
