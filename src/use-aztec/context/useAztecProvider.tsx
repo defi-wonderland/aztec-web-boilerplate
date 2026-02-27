@@ -1,7 +1,6 @@
-import React, { type ReactNode, useMemo } from 'react';
-import { setClient } from '../config/clientStore';
+import React, { type ReactNode } from 'react';
 import { UseAztecRuntimeContext } from './useAztecRuntimeContext';
-import type { AztecExecutionClient } from '../runtime/types';
+import type { AztecExecutionClient } from '../types/execution';
 
 interface UseAztecProviderProps {
   client: AztecExecutionClient | null;
@@ -9,18 +8,13 @@ interface UseAztecProviderProps {
 }
 
 /**
- * Provides the Aztec execution client to all descendant use-aztec hooks
- * and syncs it to the module-level store for action functions.
- *
- * The client is synced via useMemo (runs synchronously during render) to
- * avoid a null gap when the provider remounts or the client reference changes.
+ * Provides the Aztec execution client to all descendant use-aztec hooks.
+ * Hooks and actions access the client via React context.
  */
 export const UseAztecProvider: React.FC<UseAztecProviderProps> = ({
   client,
   children,
 }) => {
-  useMemo(() => setClient(client), [client]);
-
   return (
     <UseAztecRuntimeContext.Provider value={client}>
       {children}

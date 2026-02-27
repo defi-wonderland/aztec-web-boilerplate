@@ -1,5 +1,5 @@
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
-import type { AztecExecutionClient } from '../runtime/types';
+import type { AztecExecutionClient } from '../types/execution';
 
 /**
  * Public hook to access the Aztec execution client.

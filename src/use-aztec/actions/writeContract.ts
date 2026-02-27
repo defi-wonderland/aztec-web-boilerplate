@@ -1,7 +1,7 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import { getClient } from '../config/clientStore';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type { WriteContractData } from '../../types/contractTypes';
+import type { AztecExecutionClient } from '../types/execution';
 
 export interface WriteContractActionParams {
   contract: { artifact: ContractArtifact };
@@ -16,12 +16,12 @@ export interface WriteContractActionParams {
 /**
  * Pure async action for executing a write operation on an Aztec contract.
  *
- * Resolves the execution client from the module-level store (set by UseAztecProvider).
- * Throws `AztecClientNotReadyError` if the provider hasn't initialized yet.
+ * @param client - The execution client (provided by the calling hook via context).
+ * @param params - Contract write parameters.
  *
  * @example
  * ```ts
- * const result = await writeContract({
+ * const result = await writeContract(client, {
  *   contract: DripperContract,
  *   address: dripperAddress,
  *   functionName: 'drip_to_private',
@@ -30,10 +30,9 @@ export interface WriteContractActionParams {
  * ```
  */
 export const writeContract = async (
+  client: AztecExecutionClient,
   params: WriteContractActionParams
 ): Promise<WriteContractData> => {
-  const client = getClient();
-
   return client.executeWrite({
     artifact: params.contract.artifact,
     address: params.address,

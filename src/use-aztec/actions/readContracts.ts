@@ -1,8 +1,8 @@
-import { getClient } from '../config/clientStore';
 import type {
   ReadContractsContract,
   ReadContractResult,
 } from '../../types/contractTypes';
+import type { AztecExecutionClient } from '../types/execution';
 
 /**
  * Parameters for the `readContracts` action.
@@ -16,12 +16,12 @@ export interface ReadContractsActionParams {
 /**
  * Pure async action for batching multiple Aztec contract reads.
  *
- * Resolves the execution client from the module-level store (set by UseAztecProvider).
- * Throws `AztecClientNotReadyError` if the provider hasn't initialized yet.
+ * @param client - The execution client (provided by the calling hook via context).
+ * @param params - Batch read parameters.
  *
  * @example
  * ```ts
- * const results = await readContracts({
+ * const results = await readContracts(client, {
  *   contracts: [
  *     { contract: TokenContract, address, functionName: 'balance_of_private', args: [owner] },
  *     { contract: TokenContract, address, functionName: 'balance_of_public', args: [owner] },
@@ -31,9 +31,9 @@ export interface ReadContractsActionParams {
  * ```
  */
 export const readContracts = async (
+  client: AztecExecutionClient,
   params: ReadContractsActionParams
 ): Promise<ReadContractResult[] | unknown[]> => {
-  const client = getClient();
   const allowFailure = params.allowFailure ?? true;
 
   return client.executeBatchRead({

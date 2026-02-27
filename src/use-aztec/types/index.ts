@@ -2,7 +2,7 @@
  * use-aztec Type Re-exports
  *
  * Re-exports contract types from the app's canonical source
- * plus use-aztec runtime execution types.
+ * plus use-aztec execution client types.
  */
 
 // Contract types — source of truth stays in src/types/contractTypes.ts
@@ -24,14 +24,14 @@ export type {
   UseReadContractsReturn,
 } from '../../types/contractTypes';
 
-// Runtime types
+// Execution client types
 export type {
   AztecExecutionClient,
   ReadExecutionParams,
   BatchReadExecutionParams,
   BatchReadContract,
   WriteExecutionParams,
-} from '../runtime/types';
+} from './execution';
 
 // Action param types
 export type { ReadContractActionParams } from '../actions/readContract';

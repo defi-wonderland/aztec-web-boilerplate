@@ -4,6 +4,8 @@ import {
   writeContract as writeContractAction,
   type WriteContractActionParams,
 } from '../actions/writeContract';
+import { useInternalAztecClient } from '../context/useInternalAztecClient';
+import { AztecClientNotReadyError } from '../errors';
 import type {
   MethodsOf,
   WriteContractData,
@@ -39,13 +41,19 @@ export const useWriteContract = (
   options: UseWriteContractOptions = {}
 ): UseWriteContractReturn => {
   const { onSuccess, onError, onSettled } = options.mutation ?? {};
+  const client = useInternalAztecClient();
 
   const mutation = useMutation<
     WriteContractData,
     Error,
     WriteContractActionParams
   >({
-    mutationFn: async (params) => writeContractAction(params),
+    mutationFn: async (params) => {
+      if (!client) {
+        throw new AztecClientNotReadyError();
+      }
+      return writeContractAction(client, params);
+    },
     onSuccess,
     onError,
     onSettled,

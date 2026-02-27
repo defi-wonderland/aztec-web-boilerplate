@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { readContracts as readContractsAction } from '../actions/readContracts';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
+import { AztecClientNotReadyError } from '../errors';
 import { normalizeQueryKeyValue } from '../utils/queryKey';
 import type {
   ReadContractResult,
@@ -62,7 +63,10 @@ export const useReadContracts = <
   const query = useQuery({
     queryKey,
     queryFn: async () => {
-      return readContractsAction({
+      if (!client) {
+        throw new AztecClientNotReadyError();
+      }
+      return readContractsAction(client, {
         contracts: params.contracts,
         allowFailure: allowFailure as boolean,
       });

@@ -21,7 +21,7 @@ import type {
   BatchReadExecutionParams,
   ReadExecutionParams,
   WriteExecutionParams,
-} from '../../use-aztec/runtime';
+} from '../../use-aztec/types/execution';
 
 export interface WalletWriteExecutionContext {
   feePaymentMethod?: FeePaymentMethodType;

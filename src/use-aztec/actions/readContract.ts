@@ -1,10 +1,10 @@
 import type { ContractBase } from '@aztec/aztec.js/contracts';
-import { getClient } from '../config/clientStore';
 import type {
   ArgsOf,
   ContractClassFor,
   MethodsOf,
 } from '../../types/contractTypes';
+import type { AztecExecutionClient } from '../types/execution';
 
 /**
  * Parameters for the `readContract` action.
@@ -23,12 +23,12 @@ export interface ReadContractActionParams<
 /**
  * Pure async action for reading/simulating an Aztec contract method.
  *
- * Resolves the execution client from the module-level store (set by UseAztecProvider).
- * Throws `AztecClientNotReadyError` if the provider hasn't initialized yet.
+ * @param client - The execution client (provided by the calling hook via context).
+ * @param params - Contract read parameters.
  *
  * @example
  * ```ts
- * const result = await readContract({
+ * const result = await readContract(client, {
  *   contract: TokenContract,
  *   address: tokenAddress,
  *   functionName: 'balance_of_public',
@@ -40,10 +40,9 @@ export const readContract = async <
   T extends ContractBase,
   M extends MethodsOf<T>,
 >(
+  client: AztecExecutionClient,
   params: ReadContractActionParams<T, M>
 ): Promise<unknown> => {
-  const client = getClient();
-
   return client.executeRead({
     artifact: params.contract.artifact,
     address: params.address,

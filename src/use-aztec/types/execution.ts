@@ -38,7 +38,7 @@ export interface WriteExecutionParams {
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };
 }
 
-/** Runtime client injected into use-aztec. */
+/** Execution client injected into use-aztec via UseAztecProvider. */
 export interface AztecExecutionClient {
   executeRead: (params: ReadExecutionParams) => Promise<unknown>;
   executeBatchRead: (
