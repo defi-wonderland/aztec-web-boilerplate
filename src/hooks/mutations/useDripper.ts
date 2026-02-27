@@ -23,7 +23,7 @@ interface UseDripperOptions {
 
 export const useDripper = (options: UseDripperOptions = {}) => {
   const { account, currentConfig } = useAztecWallet();
-  const { writeContract, isPending, isError, error, reset } =
+  const { writeContractAsync, isPending, isError, error, reset } =
     useWriteContract();
   const queryClient = useQueryClient();
   const { invalidateAll: invalidateFeeJuiceBalances } =
@@ -60,7 +60,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const dripToPrivate = ({ amount, feePaymentMethod }: DripParams) => {
     const addrs = assertReady();
 
-    writeContract(
+    return writeContractAsync(
       {
         contract: DripperContract,
         address: addrs.dripperAddress,
@@ -83,7 +83,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const dripToPublic = ({ amount, feePaymentMethod }: DripParams) => {
     const addrs = assertReady();
 
-    writeContract(
+    return writeContractAsync(
       {
         contract: DripperContract,
         address: addrs.dripperAddress,
