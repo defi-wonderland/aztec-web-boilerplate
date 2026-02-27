@@ -50,7 +50,13 @@ export const DripperCard: React.FC = () => {
   const isDataLoading =
     isWalletReady && (!contractsReady || balanceLoading || !formattedBalances);
 
-  const { dripToPrivate, dripToPublic, isPending, isReady } = useDripper({
+  const {
+    dripToPrivate,
+    dripToPublic,
+    isPrivatePending,
+    isPublicPending,
+    isReady,
+  } = useDripper({
     onDripToPrivateSuccess: () => {
       loadingToastRef.current?.success(
         'Tokens minted successfully',
@@ -185,7 +191,7 @@ export const DripperCard: React.FC = () => {
                   value={amount}
                   onChange={handleAmountChange}
                   placeholder="100"
-                  disabled={isPending || !isReady}
+                  disabled={isPrivatePending || isPublicPending || !isReady}
                   className={styles.amountInput}
                 />
                 <span className={styles.amountUnit}>TST</span>
@@ -198,7 +204,7 @@ export const DripperCard: React.FC = () => {
               <MintTypeToggle
                 value={dripType}
                 onChange={setDripType}
-                disabled={isPending || !isReady}
+                disabled={isPrivatePending || isPublicPending || !isReady}
               />
             </div>
           </div>
@@ -224,19 +230,20 @@ export const DripperCard: React.FC = () => {
               onClick={handleDrip}
               disabled={
                 !amount ||
-                isPending ||
+                isPrivatePending ||
+                isPublicPending ||
                 isWalletBusy ||
                 !isReady ||
                 !contractsReady
               }
-              isLoading={isPending}
+              isLoading={isPrivatePending || isPublicPending}
               icon={<Droplets size={iconSize()} />}
               className={styles.mintButton}
               data-testid="drip-button"
             >
               {isWalletBusy
                 ? 'Wallet Busy...'
-                : isPending
+                : isPrivatePending || isPublicPending
                   ? 'Processing...'
                   : 'Mint'}
             </Button>

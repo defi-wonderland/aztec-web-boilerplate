@@ -23,7 +23,9 @@ interface UseDripperOptions {
 
 export const useDripper = (options: UseDripperOptions = {}) => {
   const { account, currentConfig } = useAztecWallet();
-  const { writeContractAsync, isPending, isError, error, reset } =
+  const { writeContractAsync: writePrivateAsync, isPending: isPrivatePending } =
+    useWriteContract();
+  const { writeContractAsync: writePublicAsync, isPending: isPublicPending } =
     useWriteContract();
   const queryClient = useQueryClient();
   const { invalidateAll: invalidateFeeJuiceBalances } =
@@ -60,7 +62,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const dripToPrivate = ({ amount, feePaymentMethod }: DripParams) => {
     const addrs = assertReady();
 
-    return writeContractAsync(
+    return writePrivateAsync(
       {
         contract: DripperContract,
         address: addrs.dripperAddress,
@@ -83,7 +85,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const dripToPublic = ({ amount, feePaymentMethod }: DripParams) => {
     const addrs = assertReady();
 
-    return writeContractAsync(
+    return writePublicAsync(
       {
         contract: DripperContract,
         address: addrs.dripperAddress,
@@ -106,10 +108,8 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   return {
     dripToPrivate,
     dripToPublic,
-    isPending,
-    isError,
-    error,
-    reset,
+    isPrivatePending,
+    isPublicPending,
     isReady,
   };
 };
