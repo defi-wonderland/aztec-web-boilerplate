@@ -13,6 +13,7 @@ import type { Wallet } from '@aztec/aztec.js/wallet';
 import { TxStatus } from '@aztec/stdlib/tx';
 import { getChainFromCaipAccount } from '../utils/caip';
 import { getContractMethod } from '../utils/getContractMethod';
+import { serializeArgs } from '../utils/serializeArgs';
 import { waitForReceipt } from '../utils/txReceipt';
 import type {
   BrowserWalletOperation,
@@ -62,9 +63,7 @@ export const executeBrowserWalletWrite = async (
       {
         contract: address,
         method: functionName,
-        args: args.map((arg) =>
-          typeof arg === 'bigint' ? arg.toString() : arg
-        ),
+        args: serializeArgs(args),
       },
     ],
   });
