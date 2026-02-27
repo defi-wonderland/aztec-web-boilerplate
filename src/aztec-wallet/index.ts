@@ -233,3 +233,16 @@ export { isBrowserWalletConnector } from '../types/walletConnector';
  * ```
  */
 export { hasAppManagedPXE } from '../types/walletConnector';
+
+/**
+ * Type guard to check if a connector is a DemoWallet connector (Aztec Keychain).
+ * These connectors expose a full Wallet proxy via getWallet().
+ *
+ * @example
+ * ```ts
+ * if (isDemoWalletConnector(connector)) {
+ *   const wallet = connector.getWallet();
+ * }
+ * ```
+ */
+export { isDemoWalletConnector } from '../types/walletConnector';

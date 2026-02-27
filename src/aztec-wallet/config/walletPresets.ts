@@ -5,7 +5,7 @@
  * This simplifies the config - devs just pass ['metamask', 'rabby'] instead of full configs.
  */
 
-import { MetaMaskIcon, RabbyIcon, AzguardIcon } from '../assets/icons';
+import { MetaMaskIcon, RabbyIcon, AzguardIcon, KeychainIcon } from '../assets/icons';
 import type { IBrowserWalletAdapter } from '../../types/browserWallet';
 import type { IconType } from '../types';
 
@@ -69,20 +69,16 @@ export const AZTEC_WALLET_PRESETS: Record<string, AztecWalletPreset> = {
       return AzguardClient.isAzguardInstalled();
     },
   },
-  // Add more Aztec wallets as they become available:
-  // obsidian: {
-  //   id: 'obsidian',
-  //   name: 'Obsidian',
-  //   icon: ObsidianIcon, // Use icon component
-  //   getAdapter: () => {
-  //     const { ObsidianAdapter } = require('../../adapters/obsidian');
-  //     return new ObsidianAdapter();
-  //   },
-  //   checkInstalled: async () => {
-  //     // Check for window.obsidian or similar
-  //     return typeof window !== 'undefined' && 'obsidian' in window;
-  //   },
-  // },
+  'aztec-keychain': {
+    id: 'aztec-keychain',
+    name: 'Aztec Keychain',
+    icon: KeychainIcon,
+    getAdapter: async () => {
+      const { DemoWalletAdapter } = await import('../adapters/demo-wallet');
+      return new DemoWalletAdapter();
+    },
+    // No checkInstalled — the extension doesn't inject detectable globals
+  },
 };
 
 // =============================================================================

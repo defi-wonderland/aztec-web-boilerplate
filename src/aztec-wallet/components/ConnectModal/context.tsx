@@ -3,14 +3,17 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
 } from 'react';
+import { useSyncExternalStore } from 'react';
 import type {
   ResolvedAztecWalletConfig,
   ModalView,
   ModalWalletType,
 } from '../../types';
+import { useVerificationStore } from '../../store/verification';
 
 interface ConnectingState {
   walletId: string;
@@ -77,6 +80,25 @@ export const ConnectModalProvider: React.FC<ConnectModalProviderProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const connectingRef = useRef(false);
 
+  // Subscribe to verification store for emoji verification flow
+  const verificationStore = useVerificationStore;
+  const verificationHash = useSyncExternalStore(
+    verificationStore.subscribe,
+    () => verificationStore.getState().verificationHash,
+    () => null
+  );
+
+  // Navigate to emoji-verification view when a verification hash appears,
+  // and back to connecting when it's confirmed (hash becomes null)
+  useEffect(() => {
+    if (verificationHash) {
+      setView('emoji-verification');
+    } else if (view === 'emoji-verification') {
+      // Hash cleared = user confirmed or cancelled, go back to connecting spinner
+      setView('connecting');
+    }
+  }, [verificationHash, view]);
+
   const reset = useCallback(() => {
     setView('main');
     setConnectingState(null);
@@ -125,6 +147,11 @@ export const ConnectModalProvider: React.FC<ConnectModalProviderProps> = ({
   );
 
   const handleClose = useCallback(() => {
+    // Cancel any pending emoji verification
+    const vs = useVerificationStore.getState();
+    if (vs.isPending) {
+      vs.cancelVerification();
+    }
     reset();
     onClose();
   }, [reset, onClose]);

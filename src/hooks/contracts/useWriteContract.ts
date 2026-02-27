@@ -5,12 +5,14 @@ import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
   isBrowserWalletConnector,
+  isDemoWalletConnector,
   hasAppManagedPXE,
 } from '../../aztec-wallet';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
 import { getContractMethod, resolveArtifact } from './utils';
+import { ensureDemoWalletContractRegistered } from './demoWalletRegistration';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type {
   ContractClassFor,
@@ -103,6 +105,44 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
       setError(null);
 
       try {
+        // Handle DemoWalletConnector (Aztec Keychain) — uses full Wallet proxy
+        if (isDemoWalletConnector(connector)) {
+          const wallet = connector.getWallet();
+          if (!wallet) {
+            const errorMsg = 'Aztec Keychain wallet not available';
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+          }
+
+          // Register contract on remote PXE before interaction
+          await ensureDemoWalletContractRegistered(wallet, address, artifact);
+
+          const contractAddress = AztecAddress.fromString(address);
+          const contractInstance = Contract.at(
+            contractAddress,
+            artifact,
+            wallet
+          );
+
+          const method = getContractMethod(
+            contractInstance,
+            String(functionName)
+          );
+          if (!method) {
+            const errorMsg = `Method ${String(functionName)} not found on contract`;
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+          }
+
+          const tx = method(...(args as unknown[]));
+
+          const result = await tx.send({
+            wait: { timeout, waitForStatus: TxStatus.PROPOSED },
+          });
+
+          return { success: true, data: result };
+        }
+
         if (isBrowserWalletConnector(connector)) {
           const response = await connector.sendTransaction({
             actions: [

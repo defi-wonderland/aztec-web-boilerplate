@@ -45,6 +45,7 @@ export type ModalView =
   | 'aztec-wallets'
   | 'evm-wallets'
   | 'connecting'
+  | 'emoji-verification'
   | 'success';
 
 // Connection state types

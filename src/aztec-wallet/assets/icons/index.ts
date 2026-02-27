@@ -23,6 +23,7 @@
 export { MetaMaskIcon } from './MetaMaskIcon';
 export { RabbyIcon } from './RabbyIcon';
 export { AzguardIcon } from './AzguardIcon';
+export { KeychainIcon } from './KeychainIcon';
 
 // Wrapper utilities
 export {

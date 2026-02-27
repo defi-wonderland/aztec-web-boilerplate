@@ -13,6 +13,7 @@ import {
   AztecWalletsView,
   EVMWalletsView,
   ConnectingView,
+  EmojiVerificationView,
   SuccessView,
 } from './views';
 import type { ResolvedAztecWalletConfig, ModalWalletType } from '../../types';
@@ -62,6 +63,12 @@ const ModalContent: React.FC = () => {
             <DialogTitle>Connecting Wallet</DialogTitle>
           </VisuallyHidden>
         );
+      case 'emoji-verification':
+        return (
+          <VisuallyHidden>
+            <DialogTitle>Verify Connection</DialogTitle>
+          </VisuallyHidden>
+        );
       case 'success':
         // Visually hidden title for accessibility
         return (
@@ -89,6 +96,8 @@ const ModalContent: React.FC = () => {
         return <EVMWalletsView />;
       case 'connecting':
         return <ConnectingView />;
+      case 'emoji-verification':
+        return <EmojiVerificationView />;
       case 'success':
         return <SuccessView />;
       default:

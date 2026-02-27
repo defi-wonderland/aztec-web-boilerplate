@@ -1,5 +1,6 @@
 import { isStringArray } from '../../utils';
 import { BrowserWalletConnector } from '../connectors/BrowserWalletConnector';
+import { DemoWalletConnector } from '../connectors/DemoWalletConnector';
 import { createEmbeddedConnector } from '../connectors/EmbeddedConnector';
 import { ExternalSignerConnector } from '../connectors/ExternalSignerConnector';
 import { ExternalSignerType } from '../types/aztec';
@@ -126,14 +127,26 @@ function createConnectorsFromWalletGroups(walletGroups: {
     for (const wallet of walletGroups.aztecWallets.wallets) {
       const preset = AZTEC_WALLET_PRESETS[wallet.id];
       if (preset) {
-        connectors.push(
-          () =>
-            new BrowserWalletConnector({
-              id: wallet.id,
-              label: wallet.name,
-              adapterFactory: preset.getAdapter,
-            })
-        );
+        // Use DemoWalletConnector for aztec-keychain (returns full Wallet proxy)
+        if (wallet.id === 'aztec-keychain') {
+          connectors.push(
+            () =>
+              new DemoWalletConnector({
+                id: wallet.id,
+                label: wallet.name,
+                adapterFactory: preset.getAdapter,
+              })
+          );
+        } else {
+          connectors.push(
+            () =>
+              new BrowserWalletConnector({
+                id: wallet.id,
+                label: wallet.name,
+                adapterFactory: preset.getAdapter,
+              })
+          );
+        }
       }
     }
   }

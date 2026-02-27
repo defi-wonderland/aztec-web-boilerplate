@@ -6,8 +6,10 @@ import {
   useAztecWallet,
   hasAppManagedPXE,
   isBrowserWalletConnector,
+  isDemoWalletConnector,
 } from '../../aztec-wallet';
 import { getContractMethod, resolveArtifact } from './utils';
+import { ensureDemoWalletContractRegistered } from './demoWalletRegistration';
 import type {
   SimulateViewsOp,
   BrowserWalletOperationResult,
@@ -45,6 +47,8 @@ type WalletContext =
       type: 'app_managed';
       wallet: Wallet;
       fromAddress: AztecAddress;
+      /** True for demo wallet — contracts must be registered on the remote PXE */
+      needsRemoteRegistration?: boolean;
     }
   | { type: 'error'; error: string };
 
@@ -81,6 +85,20 @@ export const useReadContract = () => {
   const resolveWallet = useCallback((): WalletContext => {
     if (!connector || !account) {
       return { type: 'error', error: 'Wallet not connected' };
+    }
+
+    // DemoWalletConnector (Aztec Keychain) — treat as app_managed with its Wallet proxy
+    if (isDemoWalletConnector(connector)) {
+      const wallet = connector.getWallet();
+      if (!wallet) {
+        return { type: 'error', error: 'Aztec Keychain wallet not available' };
+      }
+      return {
+        type: 'app_managed',
+        wallet,
+        fromAddress: account.getAddress(),
+        needsRemoteRegistration: true,
+      };
     }
 
     if (isBrowserWalletConnector(connector)) {
@@ -180,6 +198,11 @@ export const useReadContract = () => {
         }
 
         // ctx.type === 'app_managed'
+        // Demo wallet: register contract on remote PXE before interaction
+        if (ctx.needsRemoteRegistration) {
+          await ensureDemoWalletContractRegistered(ctx.wallet, address, artifact);
+        }
+
         const contractAddress = AztecAddress.fromString(address);
         const contract = await Contract.at(
           contractAddress,
@@ -299,6 +322,12 @@ export const useReadContract = () => {
 
         for (const param of params) {
           const paramArtifact = resolveArtifact(param);
+
+          // Demo wallet: register contract on remote PXE before interaction
+          if (ctx.needsRemoteRegistration) {
+            await ensureDemoWalletContractRegistered(ctx.wallet, param.address, paramArtifact);
+          }
+
           const cacheKey = `${param.address}:${paramArtifact.name}`;
           let contract = contractCache.get(cacheKey);
           if (!contract) {

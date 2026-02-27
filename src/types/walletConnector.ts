@@ -96,3 +96,22 @@ export const hasAppManagedPXE = (
     connector?.type === WalletType.EXTERNAL_SIGNER
   );
 };
+
+/**
+ * Type guard for DemoWalletConnector (Aztec Keychain).
+ * These connectors expose a full Wallet proxy via getWallet().
+ * Contract interactions go through the Wallet directly, not via executeOperations.
+ */
+export interface DemoWalletConnectorLike extends WalletConnector {
+  readonly type: typeof WalletType.BROWSER_WALLET;
+  getWallet: () => Wallet | null;
+}
+
+export const isDemoWalletConnector = (
+  connector: WalletConnector | null | undefined
+): connector is DemoWalletConnectorLike => {
+  return (
+    connector?.type === WalletType.BROWSER_WALLET &&
+    'getWallet' in (connector ?? {})
+  );
+};
