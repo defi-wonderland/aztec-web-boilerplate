@@ -1,4 +1,8 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import {
+  FEE_PAYMENT_METHOD_LABELS,
+  type FeePaymentMethodType,
+} from '../../config/feePaymentContracts';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment/index';
 import {
   hasAppManagedPXE,
@@ -12,7 +16,6 @@ import {
   executeBrowserWalletRead,
   executeBrowserWalletWrite,
 } from '../../use-aztec/core';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type { FeePaymentContractsConfig } from '../../config/networks/types';
 import type { FeePaymentContext } from '../../services/aztec/feePayment/index';
 import type { WalletConnector } from '../../types/walletConnector';
@@ -23,10 +26,6 @@ import type {
   WriteExecutionParams,
 } from '../../use-aztec/types/execution';
 
-export interface WalletWriteExecutionContext {
-  feePaymentMethod?: FeePaymentMethodType;
-}
-
 interface CreateWalletExecutionClientParams {
   connector: WalletConnector | null;
   account: AccountWithSecretKey | null;
@@ -35,26 +34,26 @@ interface CreateWalletExecutionClientParams {
   defaultFeePaymentMethod: FeePaymentMethodType;
 }
 
+const VALID_FEE_METHODS = new Set<string>(
+  Object.keys(FEE_PAYMENT_METHOD_LABELS)
+);
+
+const isFeePaymentMethodType = (
+  value: string
+): value is FeePaymentMethodType => {
+  return VALID_FEE_METHODS.has(value);
+};
+
 const resolveFeePaymentMethod = (
   feePaymentMethodInput: unknown,
   defaultFeePaymentMethod: FeePaymentMethodType
 ): FeePaymentMethodType => {
-  if (typeof feePaymentMethodInput === 'string' && feePaymentMethodInput) {
-    return feePaymentMethodInput as FeePaymentMethodType;
-  }
-
-  // Backward-compatible support for legacy `{ feePaymentMethod }` payloads.
   if (
+    typeof feePaymentMethodInput === 'string' &&
     feePaymentMethodInput &&
-    typeof feePaymentMethodInput === 'object' &&
-    'feePaymentMethod' in feePaymentMethodInput
+    isFeePaymentMethodType(feePaymentMethodInput)
   ) {
-    const feePaymentMethod = (
-      feePaymentMethodInput as WalletWriteExecutionContext
-    ).feePaymentMethod;
-    if (feePaymentMethod) {
-      return feePaymentMethod;
-    }
+    return feePaymentMethodInput;
   }
 
   return defaultFeePaymentMethod;
