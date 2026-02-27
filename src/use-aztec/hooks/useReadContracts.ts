@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { readContracts as readContractsAction } from '../actions/readContracts';
-import { getClientOrNull } from '../config/clientStore';
+import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import { normalizeQueryKeyValue } from '../utils/queryKey';
 import type {
   ReadContractResult,
@@ -45,7 +45,7 @@ export const useReadContracts = <
     retry,
   } = params.query ?? {};
 
-  const client = getClientOrNull();
+  const client = useInternalAztecClient();
   const isEnabled = Boolean(
     (queryEnabled ?? true) && client && params.contracts.length > 0
   );

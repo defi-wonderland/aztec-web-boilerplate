@@ -20,8 +20,3 @@ export const getClient = (): AztecExecutionClient => {
   }
   return _client;
 };
-
-/** Returns the current client or null (no throw). */
-export const getClientOrNull = (): AztecExecutionClient | null => {
-  return _client;
-};

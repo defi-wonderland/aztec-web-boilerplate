@@ -1,4 +1,4 @@
-import { getClientOrNull } from '../config/clientStore';
+import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import type { AztecExecutionClient } from '../runtime/types';
 
 /**
@@ -18,5 +18,5 @@ import type { AztecExecutionClient } from '../runtime/types';
  * ```
  */
 export const useAztecClient = (): AztecExecutionClient | null => {
-  return getClientOrNull();
+  return useInternalAztecClient();
 };
