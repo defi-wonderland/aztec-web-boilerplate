@@ -30,7 +30,6 @@ export type {
   ReadExecutionParams,
   BatchReadExecutionParams,
   BatchReadContract,
-  BatchReadResult,
   WriteExecutionParams,
 } from '../runtime/types';
 

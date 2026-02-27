@@ -3,7 +3,7 @@ export type {
   ReadExecutionParams,
   BatchReadExecutionParams,
   BatchReadContract,
-  BatchReadResult,
+  ReadContractResult,
   WriteExecutionParams,
   WriteContractData,
   AztecExecutionClient,

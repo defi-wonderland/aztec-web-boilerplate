@@ -65,6 +65,7 @@ export function ContractRegistryInitializer({
   const isReady =
     isConnected && isPXEInitialized && pxe !== null && artifactsReady;
 
+  // Static config — computed once (contractsConfig is a module-level constant)
   const initialContracts = useMemo(
     () => getInitialContracts(typedContractsConfig),
     []

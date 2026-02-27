@@ -57,7 +57,6 @@ export type {
   ReadExecutionParams,
   BatchReadExecutionParams,
   BatchReadContract,
-  BatchReadResult,
   WriteExecutionParams,
   // Action param types
   ReadContractActionParams,

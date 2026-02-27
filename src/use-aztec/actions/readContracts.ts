@@ -1,6 +1,8 @@
 import { getClient } from '../config/clientStore';
-import type { ReadContractsContract } from '../../types/contractTypes';
-import type { BatchReadResult } from '../runtime/types';
+import type {
+  ReadContractsContract,
+  ReadContractResult,
+} from '../../types/contractTypes';
 
 /**
  * Parameters for the `readContracts` action.
@@ -30,7 +32,7 @@ export interface ReadContractsActionParams {
  */
 export const readContracts = async (
   params: ReadContractsActionParams
-): Promise<BatchReadResult[] | unknown[]> => {
+): Promise<ReadContractResult[] | unknown[]> => {
   const client = getClient();
   const allowFailure = params.allowFailure ?? true;
 

@@ -14,7 +14,7 @@ import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
 } from '../../types/browserWallet';
-import type { BatchReadContract, BatchReadResult } from '../runtime/types';
+import type { BatchReadContract, ReadContractResult } from '../runtime/types';
 
 /**
  * Parse the raw result from a browser wallet batch simulation.
@@ -75,7 +75,7 @@ export interface BrowserWalletBatchParams {
  */
 export const executeBrowserWalletBatch = async (
   params: BrowserWalletBatchParams
-): Promise<BatchReadResult[] | unknown[]> => {
+): Promise<ReadContractResult[] | unknown[]> => {
   const { executeOperation, getCaipAccount, contracts, allowFailure } = params;
 
   const selectedAccount = getCaipAccount();
@@ -141,11 +141,11 @@ export interface AppManagedBatchParams {
  */
 export const executeAppManagedBatch = async (
   params: AppManagedBatchParams
-): Promise<BatchReadResult[] | unknown[]> => {
+): Promise<ReadContractResult[] | unknown[]> => {
   const { wallet, fromAddress, contracts, allowFailure } = params;
 
   const contractCache = new Map<string, ReturnType<typeof Contract.at>>();
-  const results: (BatchReadResult | unknown)[] = [];
+  const results: (ReadContractResult | unknown)[] = [];
 
   for (const contract of contracts) {
     const cacheKey = `${contract.address}:${contract.artifact.name}`;
@@ -193,5 +193,5 @@ export const executeAppManagedBatch = async (
     }
   }
 
-  return results as BatchReadResult[] | unknown[];
+  return results as ReadContractResult[] | unknown[];
 };

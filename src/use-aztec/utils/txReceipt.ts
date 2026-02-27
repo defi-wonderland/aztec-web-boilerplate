@@ -63,7 +63,10 @@ export const waitForReceipt = async (
         }
       }
     } catch (err) {
-      void err;
+      console.debug(
+        `[txReceipt] Attempt ${attempt}/${maxAttempts} error:`,
+        err
+      );
     }
 
     if (attempt < maxAttempts) {

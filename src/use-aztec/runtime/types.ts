@@ -1,4 +1,9 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import type {
+  WriteContractData,
+  ReadContractResult,
+} from '../../types/contractTypes';
+export type { WriteContractData, ReadContractResult };
 
 /** Parameters for a single contract read execution. */
 export interface ReadExecutionParams {
@@ -22,11 +27,6 @@ export interface BatchReadExecutionParams {
   allowFailure: boolean;
 }
 
-/** Result shape for individual results when allowFailure is true. */
-export type BatchReadResult =
-  | { status: 'success'; result: unknown; error?: undefined }
-  | { status: 'failure'; result?: undefined; error: Error };
-
 /** Parameters for a contract write execution. */
 export interface WriteExecutionParams {
   artifact: ContractArtifact;
@@ -38,17 +38,11 @@ export interface WriteExecutionParams {
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };
 }
 
-/** Data returned from a successful write operation. */
-export interface WriteContractData {
-  txHash?: string;
-  result?: unknown;
-}
-
 /** Runtime client injected into use-aztec. */
 export interface AztecExecutionClient {
   executeRead: (params: ReadExecutionParams) => Promise<unknown>;
   executeBatchRead: (
     params: BatchReadExecutionParams
-  ) => Promise<BatchReadResult[] | unknown[]>;
+  ) => Promise<ReadContractResult[] | unknown[]>;
   executeWrite: (params: WriteExecutionParams) => Promise<WriteContractData>;
 }
