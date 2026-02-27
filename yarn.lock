@@ -1274,9 +1274,9 @@
   resolved "https://registry.yarnpkg.com/@csstools/css-tokenizer/-/css-tokenizer-4.0.0.tgz#798a33950d11226a0ebb6acafa60f5594424967f"
   integrity sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==
 
-"@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-42da55a/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.0-prerelease.42da55a.tgz":
-  version "4.0.0-devnet.2-patch.0-prerelease.42da55a"
-  resolved "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-42da55a/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.0-prerelease.42da55a.tgz#12a44ef1bd9d5fd63b44c8d952b3b06338268af4"
+"@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-2f32c02/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.2f32c02.tgz":
+  version "4.0.0-devnet.2-patch.1-prerelease.2f32c02"
+  resolved "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-2f32c02/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.2f32c02.tgz#054bb1f4612719550855265f167d888451def934"
 
 "@defi-wonderland/aztec-standards@https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-85d235b/defi-wonderland-aztec-standards-4.0.0-devnet.2-patch.1-prerelease.85d235b.tgz":
   version "4.0.0-devnet.2-patch.1-prerelease.85d235b"
