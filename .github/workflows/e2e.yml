@@ -33,11 +33,8 @@ jobs:
         '
         echo "Sandbox is ready!"
 
-    - name: Build standards and contracts
-      run: yarn build:ci
-
-    - name: Deploy contracts
-      run: yarn deploy-contracts
+    - name: Deploy contracts and build app
+      run: yarn deploy-contracts && yarn build:ci
 
     - name: Verify test discovery
       run: |
