@@ -11,11 +11,11 @@ export const DEVNET_CONFIG: NetworkConfig = {
   name: 'devnet',
   displayName: 'Devnet',
   description: 'Public development network for testing with real tokens',
-  nodeUrl: 'https://v4-devnet-1.aztec-labs.com',
+  nodeUrl: 'https://v4-devnet-2.aztec-labs.com',
   dripperContractAddress:
-    '0x294f2f4d12fc8308fcde6df4025a9e83004928e58b4082e49b93b4bb69f6b0d8',
+    '0x14fc6329654486ae793a6ba5b4ac0479fd09902e98f928bfd0ef05d103ea402a',
   tokenContractAddress:
-    '0x24bf78296b515bab819d4e6bc39ef2dad7291699342d674f6ee155cae964fe55',
+    '0x15a9fec4a47541e2717c007e046837208e9383a9b66ca5bda8dfe63f785f4c47',
   deployerAddress: AztecAddress.ZERO.toString(),
   dripperDeploymentSalt: '1337',
   tokenDeploymentSalt: '1337',
