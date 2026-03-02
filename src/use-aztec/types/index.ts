@@ -27,6 +27,7 @@ export type {
 // Execution client types
 export type {
   AztecExecutionClient,
+  BatchReadResult,
   ReadExecutionParams,
   BatchReadExecutionParams,
   WriteExecutionParams,

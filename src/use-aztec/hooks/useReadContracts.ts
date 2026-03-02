@@ -3,10 +3,8 @@ import { readContracts as readContractsAction } from '../actions/readContracts';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import { AztecClientNotReady } from '../errors';
 import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
-import type {
-  ReadContractResult,
-  UseReadContractsParams,
-} from '../../types/contractTypes';
+import type { UseReadContractsParams } from '../../types/contractTypes';
+import type { BatchReadResult } from '../types/execution';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 /**
@@ -32,7 +30,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
  */
 export const useReadContracts = <
   TAllowFailure extends boolean = true,
-  TSelectData = TAllowFailure extends true ? ReadContractResult[] : unknown[],
+  TSelectData = BatchReadResult<TAllowFailure>,
 >(
   params: UseReadContractsParams<TAllowFailure, TSelectData>
 ): UseQueryResult<TSelectData, Error> => {
@@ -73,7 +71,7 @@ export const useReadContracts = <
       }
       return readContractsAction(client, {
         contracts: params.contracts,
-        allowFailure: allowFailure as boolean,
+        allowFailure,
       });
     },
     enabled: isEnabled,
@@ -82,7 +80,7 @@ export const useReadContracts = <
     refetchInterval,
     refetchOnWindowFocus,
     select: select as
-      | ((data: ReadContractResult[] | unknown[]) => TSelectData)
+      | ((data: BatchReadResult<TAllowFailure>) => TSelectData)
       | undefined,
     retry,
   });

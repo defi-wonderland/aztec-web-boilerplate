@@ -14,9 +14,11 @@ export interface ReadExecutionParams {
 }
 
 /** Parameters for batch contract read execution. */
-export interface BatchReadExecutionParams {
+export interface BatchReadExecutionParams<
+  TAllowFailure extends boolean = boolean,
+> {
   contracts: ReadExecutionParams[];
-  allowFailure: boolean;
+  allowFailure: TAllowFailure;
 }
 
 /** Parameters for a contract write execution. */
@@ -30,11 +32,15 @@ export interface WriteExecutionParams {
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };
 }
 
+/** Conditional return type for batch reads based on `allowFailure`. */
+export type BatchReadResult<TAllowFailure extends boolean> =
+  TAllowFailure extends true ? ReadContractResult[] : unknown[];
+
 /** Execution client injected into use-aztec via UseAztecProvider. */
 export interface AztecExecutionClient {
   executeRead: (params: ReadExecutionParams) => Promise<unknown>;
-  executeBatchRead: (
-    params: BatchReadExecutionParams
-  ) => Promise<ReadContractResult[] | unknown[]>;
+  executeBatchRead: <TAllowFailure extends boolean>(
+    params: BatchReadExecutionParams<TAllowFailure>
+  ) => Promise<BatchReadResult<TAllowFailure>>;
   executeWrite: (params: WriteExecutionParams) => Promise<WriteContractData>;
 }

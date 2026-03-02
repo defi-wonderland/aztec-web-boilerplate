@@ -15,8 +15,9 @@ import type {
   BrowserWalletOperationResult,
 } from '../../types/browserWallet';
 import type {
-  ReadExecutionParams,
+  BatchReadResult,
   ReadContractResult,
+  ReadExecutionParams,
 } from '../types/execution';
 
 /**
@@ -64,21 +65,23 @@ export const parseBatchResult = (
 // Browser Wallet Batch
 // =============================================================================
 
-export interface BrowserWalletBatchParams {
+export interface BrowserWalletBatchParams<
+  TAllowFailure extends boolean = boolean,
+> {
   executeOperation: (
     operation: BrowserWalletOperation
   ) => Promise<BrowserWalletOperationResult>;
   getCaipAccount: () => string | null;
   contracts: ReadExecutionParams[];
-  allowFailure: boolean;
+  allowFailure: TAllowFailure;
 }
 
 /**
  * Execute a batch of contract reads via browser wallet (single round-trip).
  */
-export const executeBrowserWalletBatch = async (
-  params: BrowserWalletBatchParams
-): Promise<ReadContractResult[] | unknown[]> => {
+export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
+  params: BrowserWalletBatchParams<TAllowFailure>
+): Promise<BatchReadResult<TAllowFailure>> => {
   const { executeOperation, getCaipAccount, contracts, allowFailure } = params;
 
   const selectedAccount = getCaipAccount();
@@ -109,7 +112,7 @@ export const executeBrowserWalletBatch = async (
       return contracts.map(() => ({
         status: 'failure' as const,
         error: new Error(errorMsg),
-      }));
+      })) as BatchReadResult<TAllowFailure>;
     }
     throw new Error(errorMsg);
   }
@@ -120,21 +123,23 @@ export const executeBrowserWalletBatch = async (
     return results.map((r) => ({
       status: 'success' as const,
       result: r,
-    }));
+    })) as BatchReadResult<TAllowFailure>;
   }
 
-  return results;
+  return results as BatchReadResult<TAllowFailure>;
 };
 
 // =============================================================================
 // App-Managed Batch
 // =============================================================================
 
-export interface AppManagedBatchParams {
+export interface AppManagedBatchParams<
+  TAllowFailure extends boolean = boolean,
+> {
   wallet: Wallet;
   fromAddress: AztecAddressType;
   contracts: ReadExecutionParams[];
-  allowFailure: boolean;
+  allowFailure: TAllowFailure;
 }
 
 /**
@@ -142,9 +147,9 @@ export interface AppManagedBatchParams {
  * PXE does not support concurrent operations, so calls are executed one at a time.
  * Contract instances are cached by address+artifact to avoid redundant instantiation.
  */
-export const executeAppManagedBatch = async (
-  params: AppManagedBatchParams
-): Promise<ReadContractResult[] | unknown[]> => {
+export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
+  params: AppManagedBatchParams<TAllowFailure>
+): Promise<BatchReadResult<TAllowFailure>> => {
   const { wallet, fromAddress, contracts, allowFailure } = params;
 
   const contractCache = new Map<string, ReturnType<typeof Contract.at>>();
@@ -196,5 +201,5 @@ export const executeAppManagedBatch = async (
     }
   }
 
-  return results as ReadContractResult[] | unknown[];
+  return results as BatchReadResult<TAllowFailure>;
 };

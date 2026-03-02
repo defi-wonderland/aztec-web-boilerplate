@@ -108,7 +108,9 @@ export const createWalletExecutionClient = (
     throw new Error('Unknown wallet type');
   };
 
-  const executeBatchRead = async (batchParams: BatchReadExecutionParams) => {
+  const executeBatchRead = async <TAllowFailure extends boolean>(
+    batchParams: BatchReadExecutionParams<TAllowFailure>
+  ) => {
     if (isBrowserWalletConnector(connector)) {
       return executeBrowserWalletBatch({
         executeOperation: (op) => connector.executeOperation(op),

@@ -1,16 +1,15 @@
-import type {
-  ReadContractsContract,
-  ReadContractResult,
-} from '../../types/contractTypes';
-import type { AztecExecutionClient } from '../types/execution';
+import type { ReadContractsContract } from '../../types/contractTypes';
+import type { AztecExecutionClient, BatchReadResult } from '../types/execution';
 
 /**
  * Parameters for the `readContracts` action.
  * Subset of `UseReadContractsParams` without query/hook-specific fields.
  */
-export interface ReadContractsActionParams {
+export interface ReadContractsActionParams<
+  TAllowFailure extends boolean = true,
+> {
   contracts: ReadContractsContract[];
-  allowFailure?: boolean;
+  allowFailure?: TAllowFailure;
 }
 
 /**
@@ -30,11 +29,11 @@ export interface ReadContractsActionParams {
  * });
  * ```
  */
-export const readContracts = async (
+export const readContracts = async <TAllowFailure extends boolean = true>(
   client: AztecExecutionClient,
-  params: ReadContractsActionParams
-): Promise<ReadContractResult[] | unknown[]> => {
-  const allowFailure = params.allowFailure ?? true;
+  params: ReadContractsActionParams<TAllowFailure>
+): Promise<BatchReadResult<TAllowFailure>> => {
+  const allowFailure = (params.allowFailure ?? true) as TAllowFailure;
 
   return client.executeBatchRead({
     contracts: params.contracts.map((c) => ({
