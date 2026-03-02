@@ -141,7 +141,7 @@ export interface WriteContractMutateParams<
   args: ArgsOf<TContract, TMethod>;
   /** Optional fee payment policy consumed by the injected wallet adapter. */
   feePaymentMethod?: FeePaymentMethodType;
-  /** Timeout for transaction confirmation in ms (default: 900) */
+  /** Timeout for transaction confirmation in seconds (default: 900) */
   timeout?: number;
   /** Receipt polling options for browser wallet */
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };
