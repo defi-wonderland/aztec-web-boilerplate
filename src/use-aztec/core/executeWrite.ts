@@ -35,7 +35,6 @@ export interface BrowserWalletWriteParams {
     operation: BrowserWalletOperation
   ) => Promise<BrowserWalletOperationResult>;
   getCaipAccount: () => string | null;
-  artifact: ContractArtifact;
   address: string;
   functionName: string;
   args: unknown[];

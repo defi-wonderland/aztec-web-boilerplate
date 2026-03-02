@@ -145,7 +145,6 @@ export const createWalletExecutionClient = (
         sendTransaction: (req) => connector.sendTransaction(req),
         executeOperation: (op) => connector.executeOperation(op),
         getCaipAccount: () => connector.getCaipAccount(),
-        artifact: writeParams.artifact,
         address: writeParams.address,
         functionName: writeParams.functionName,
         args: writeParams.args,
