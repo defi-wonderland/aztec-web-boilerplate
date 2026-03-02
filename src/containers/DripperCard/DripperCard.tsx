@@ -106,7 +106,9 @@ export const DripperCard: React.FC = () => {
     const amountBigInt = BigInt(amount);
 
     const dripFn = dripType === 'private' ? dripToPrivate : dripToPublic;
-    void dripFn({ amount: amountBigInt });
+    dripFn({ amount: amountBigInt }).catch(() => {
+      // errors are handled by onDripTo*Error callbacks
+    });
   };
 
   const handleCopyAddress = () => {
