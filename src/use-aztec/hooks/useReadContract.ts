@@ -3,12 +3,12 @@ import type { ContractBase } from '@aztec/aztec.js/contracts';
 import { readContract as readContractAction } from '../actions/readContract';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import { AztecClientNotReadyError } from '../errors';
-import { normalizeQueryKeyValue } from '../utils/queryKey';
+import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
 import type {
   MethodsOf,
   UseReadContractParams,
-  UseReadContractReturn,
 } from '../../types/contractTypes';
+import type { UseQueryResult } from '@tanstack/react-query';
 
 /**
  * Declarative hook for reading/simulating Aztec contract methods.
@@ -16,10 +16,12 @@ import type {
  * Mirrors wagmi's `useReadContract` API: pass params declaratively and the
  * hook auto-fetches, caches, deduplicates, and refetches as needed.
  *
+ * Returns the full TanStack `UseQueryResult` object.
+ *
  * @example
  * ```tsx
- * const { data, isLoading, error, refetch } = useReadContract({
- *   queryKey: ['tokenBalance', tokenAddress, ownerAddress],
+ * const result = useReadContract({
+ *   scopeKey: ['tokenBalance', tokenAddress, ownerAddress],
  *   contract: TokenContract,
  *   address: tokenAddress,
  *   functionName: 'balance_of_private',
@@ -33,7 +35,7 @@ export const useReadContract = <
   TSelectData = unknown,
 >(
   params: UseReadContractParams<TContract, TMethod, TSelectData>
-): UseReadContractReturn<TSelectData> => {
+): UseQueryResult<TSelectData, Error> => {
   const {
     enabled: queryEnabled,
     staleTime,
@@ -52,14 +54,16 @@ export const useReadContract = <
       params.args !== undefined
   );
 
-  const queryKey = params.queryKey ?? [
+  const scopePrefix = normalizeScopeKey(params.scopeKey);
+  const queryKey = [
+    ...scopePrefix,
     'readContract',
     params.address,
     String(params.functionName),
     normalizeQueryKeyValue(params.args),
   ];
 
-  const query = useQuery({
+  return useQuery({
     queryKey,
     queryFn: async () => {
       if (!client) {
@@ -84,18 +88,4 @@ export const useReadContract = <
     select,
     retry,
   });
-
-  return {
-    data: query.data,
-    error: query.error,
-    isLoading: query.isLoading,
-    isPending: query.isPending,
-    isSuccess: query.isSuccess,
-    isError: query.isError,
-    isFetching: query.isFetching,
-    status: query.status,
-    refetch: async () => {
-      await query.refetch();
-    },
-  };
 };

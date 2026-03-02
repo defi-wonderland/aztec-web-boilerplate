@@ -2,6 +2,7 @@ import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
 import type { ContractFunctionInteraction } from '@aztec/aztec.js/contracts';
 import type { FeePaymentMethodType } from '../config/feePaymentContracts';
+import type { UseMutationResult } from '@tanstack/react-query';
 
 /**
  * Extract method names from a contract class.
@@ -43,6 +44,13 @@ export type ContractClassFor<TContract extends ContractBase> = {
 };
 
 // =============================================================================
+// Scope key type
+// =============================================================================
+
+/** Key-scoping input for use-aztec read hooks (wagmi-style `scopeKey`). */
+export type ScopeKey = string | readonly unknown[];
+
+// =============================================================================
 // Shared TanStack Query/Mutation option types
 // =============================================================================
 
@@ -77,8 +85,6 @@ export interface UseReadContractParams<
   TMethod extends MethodsOf<TContract>,
   TSelectData = unknown,
 > {
-  /** TanStack Query key — used for caching and invalidation. Auto-generated from contract params when omitted. */
-  queryKey?: readonly unknown[];
   /** Contract class — used for type inference and artifact */
   contract: ContractClassFor<TContract>;
   /** Contract address. Set to undefined to auto-disable the query. */
@@ -87,26 +93,10 @@ export interface UseReadContractParams<
   functionName: TMethod;
   /** Method arguments. Set to undefined to auto-disable the query. */
   args: ArgsOf<TContract, TMethod> | undefined;
+  /** Wagmi-style scope key — used as a prefix for the auto-generated query key. */
+  scopeKey?: ScopeKey;
   /** TanStack Query options (enabled, staleTime, gcTime, etc.) */
   query?: ContractQueryOptions<TSelectData>;
-}
-
-/**
- * Return type for the declarative useReadContract hook.
- */
-export interface UseReadContractReturn<TData = unknown> {
-  data: TData | undefined;
-  error: Error | null;
-  /** True during first load when no cached data exists */
-  isLoading: boolean;
-  /** True while the query hasn't resolved yet */
-  isPending: boolean;
-  isSuccess: boolean;
-  isError: boolean;
-  /** True during any background fetch (including refetches) */
-  isFetching: boolean;
-  status: 'pending' | 'error' | 'success';
-  refetch: () => Promise<void>;
 }
 
 // =============================================================================
@@ -168,8 +158,13 @@ export interface UseWriteContractOptions {
 
 /**
  * Return type for the useWriteContract hook.
+ * Full TanStack `UseMutationResult` plus wagmi-style `writeContract` / `writeContractAsync` methods.
  */
-export interface UseWriteContractReturn {
+export type UseWriteContractReturn = UseMutationResult<
+  WriteContractData,
+  Error,
+  WriteContractActionParams
+> & {
   /** Fire-and-forget write (errors go to isError/error) */
   writeContract: <T extends ContractBase, M extends MethodsOf<T>>(
     params: WriteContractMutateParams<T, M>,
@@ -180,15 +175,7 @@ export interface UseWriteContractReturn {
     params: WriteContractMutateParams<T, M>,
     options?: WriteContractCallOptions
   ) => Promise<WriteContractData>;
-  data: WriteContractData | undefined;
-  error: Error | null;
-  isPending: boolean;
-  isSuccess: boolean;
-  isError: boolean;
-  isIdle: boolean;
-  status: 'idle' | 'pending' | 'error' | 'success';
-  reset: () => void;
-}
+};
 
 // =============================================================================
 // useReadContracts types (batch reads)
@@ -215,25 +202,27 @@ export interface UseReadContractsParams<
   TAllowFailure extends boolean = true,
   TSelectData = TAllowFailure extends true ? ReadContractResult[] : unknown[],
 > {
-  /** TanStack Query key — used for caching and invalidation. Auto-generated from contracts array when omitted. */
-  queryKey?: readonly unknown[];
   contracts: ReadContractsContract[];
   allowFailure?: TAllowFailure;
+  /** Wagmi-style scope key — used as a prefix for the auto-generated query key. */
+  scopeKey?: ScopeKey;
   /** TanStack Query options (enabled, staleTime, gcTime, etc.) */
   query?: ContractQueryOptions<TSelectData>;
 }
 
-/** Return type for useReadContracts. Same shape as useReadContract. */
-export interface UseReadContractsReturn<TData = ReadContractResult[]> {
-  data: TData | undefined;
-  error: Error | null;
-  isLoading: boolean;
-  isPending: boolean;
-  isSuccess: boolean;
-  isError: boolean;
-  isFetching: boolean;
-  status: 'pending' | 'error' | 'success';
-  refetch: () => Promise<void>;
+// =============================================================================
+// Action param types
+// =============================================================================
+
+/** Action params for writeContract. */
+export interface WriteContractActionParams {
+  contract: { artifact: ContractArtifact };
+  address: string;
+  functionName: string;
+  args: readonly unknown[];
+  feePaymentMethod?: FeePaymentMethodType;
+  timeout?: number;
+  receiptPolling?: { intervalMs?: number; maxAttempts?: number };
 }
 
 // =============================================================================

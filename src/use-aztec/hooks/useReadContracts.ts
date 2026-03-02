@@ -2,12 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { readContracts as readContractsAction } from '../actions/readContracts';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import { AztecClientNotReadyError } from '../errors';
-import { normalizeQueryKeyValue } from '../utils/queryKey';
+import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
 import type {
   ReadContractResult,
   UseReadContractsParams,
-  UseReadContractsReturn,
 } from '../../types/contractTypes';
+import type { UseQueryResult } from '@tanstack/react-query';
 
 /**
  * Declarative hook for batching multiple Aztec contract reads into a single query.
@@ -16,10 +16,12 @@ import type {
  * and the hook batches them into a single `useQuery`, providing one cache entry,
  * one loading state, and atomic refetches.
  *
+ * Returns the full TanStack `UseQueryResult` object.
+ *
  * @example
  * ```tsx
- * const { data, isLoading } = useReadContracts({
- *   queryKey: ['tokenBalance', tokenAddress, ownerAddress],
+ * const result = useReadContracts({
+ *   scopeKey: ['tokenBalance', tokenAddress, ownerAddress],
  *   contracts: [
  *     { contract: TokenContract, address: tokenAddress, functionName: 'balance_of_private', args: [owner] },
  *     { contract: TokenContract, address: tokenAddress, functionName: 'balance_of_public', args: [owner] },
@@ -33,7 +35,7 @@ export const useReadContracts = <
   TSelectData = TAllowFailure extends true ? ReadContractResult[] : unknown[],
 >(
   params: UseReadContractsParams<TAllowFailure, TSelectData>
-): UseReadContractsReturn<TSelectData> => {
+): UseQueryResult<TSelectData, Error> => {
   const allowFailure = (params.allowFailure ?? true) as TAllowFailure;
 
   const {
@@ -51,8 +53,11 @@ export const useReadContracts = <
     (queryEnabled ?? true) && client && params.contracts.length > 0
   );
 
-  const queryKey = params.queryKey ?? [
+  const scopePrefix = normalizeScopeKey(params.scopeKey);
+  const queryKey = [
+    ...scopePrefix,
     'readContracts',
+    { allowFailure },
     params.contracts.map((c) => [
       c.address,
       String(c.functionName),
@@ -60,7 +65,7 @@ export const useReadContracts = <
     ]),
   ];
 
-  const query = useQuery({
+  return useQuery({
     queryKey,
     queryFn: async () => {
       if (!client) {
@@ -81,18 +86,4 @@ export const useReadContracts = <
       | undefined,
     retry,
   });
-
-  return {
-    data: query.data,
-    error: query.error,
-    isLoading: query.isLoading,
-    isPending: query.isPending,
-    isSuccess: query.isSuccess,
-    isError: query.isError,
-    isFetching: query.isFetching,
-    status: query.status,
-    refetch: async () => {
-      await query.refetch();
-    },
-  };
 };

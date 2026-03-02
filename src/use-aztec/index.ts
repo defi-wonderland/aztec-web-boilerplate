@@ -61,13 +61,14 @@ export type {
   // Action param types
   ReadContractActionParams,
   ReadContractsActionParams,
+  WriteContractActionParams,
   // Contract types (re-exported from contractTypes.ts)
   MethodsOf,
   ArgsOf,
   ContractClassFor,
+  ScopeKey,
   ContractQueryOptions,
   UseReadContractParams,
-  UseReadContractReturn,
   WriteContractData,
   WriteContractMutateParams,
   WriteContractCallOptions,
@@ -76,5 +77,4 @@ export type {
   ReadContractsContract,
   ReadContractResult,
   UseReadContractsParams,
-  UseReadContractsReturn,
 } from './types';

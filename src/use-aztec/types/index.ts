@@ -10,18 +10,18 @@ export type {
   MethodsOf,
   ArgsOf,
   ContractClassFor,
+  ScopeKey,
   ContractQueryOptions,
   UseReadContractParams,
-  UseReadContractReturn,
   WriteContractData,
   WriteContractMutateParams,
   WriteContractCallOptions,
   UseWriteContractOptions,
   UseWriteContractReturn,
+  WriteContractActionParams,
   ReadContractsContract,
   ReadContractResult,
   UseReadContractsParams,
-  UseReadContractsReturn,
 } from '../../types/contractTypes';
 
 // Execution client types

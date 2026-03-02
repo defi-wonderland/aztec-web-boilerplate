@@ -1,17 +1,10 @@
-import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
-import type { WriteContractData } from '../../types/contractTypes';
+import type {
+  WriteContractActionParams,
+  WriteContractData,
+} from '../../types/contractTypes';
 import type { AztecExecutionClient } from '../types/execution';
 
-export interface WriteContractActionParams {
-  contract: { artifact: ContractArtifact };
-  address: string;
-  functionName: string;
-  args: readonly unknown[];
-  feePaymentMethod?: FeePaymentMethodType;
-  timeout?: number;
-  receiptPolling?: { intervalMs?: number; maxAttempts?: number };
-}
+export type { WriteContractActionParams };
 
 /**
  * Pure async action for executing a write operation on an Aztec contract.

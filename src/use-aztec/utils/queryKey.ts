@@ -47,3 +47,18 @@ export const normalizeQueryKeyValue = (value: unknown): unknown => {
 
   return value;
 };
+
+/**
+ * Normalizes a scope key into a readonly array suitable for use as a query key prefix.
+ *
+ * - `undefined` → `[]`
+ * - `string` → `[scopeKey]`
+ * - `readonly unknown[]` → passthrough
+ */
+export const normalizeScopeKey = (
+  scopeKey: string | readonly unknown[] | undefined
+): readonly unknown[] => {
+  if (scopeKey === undefined) return [];
+  if (typeof scopeKey === 'string') return [scopeKey];
+  return scopeKey;
+};

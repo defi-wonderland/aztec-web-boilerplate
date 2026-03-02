@@ -71,7 +71,7 @@ export const useTokenBalance = (
   );
 
   const { data, isLoading, isFetching, isError, error } = useReadContracts({
-    queryKey: queryKeys.token.balance(tokenAddress, ownerAddress),
+    scopeKey: queryKeys.token.balance(tokenAddress, ownerAddress),
     contracts: args
       ? [
           {

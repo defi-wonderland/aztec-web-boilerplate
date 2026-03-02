@@ -1,13 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
-import {
-  writeContract as writeContractAction,
-  type WriteContractActionParams,
-} from '../actions/writeContract';
+import { writeContract as writeContractAction } from '../actions/writeContract';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import { AztecClientNotReadyError } from '../errors';
 import type {
   MethodsOf,
+  WriteContractActionParams,
   WriteContractData,
   WriteContractMutateParams,
   WriteContractCallOptions,
@@ -18,6 +16,9 @@ import type {
 /**
  * Hook for executing write operations on Aztec contracts.
  * Wraps React Query's `useMutation` to provide wagmi-like ergonomics.
+ *
+ * Returns the full TanStack `UseMutationResult` plus `writeContract` and
+ * `writeContractAsync` convenience methods.
  *
  * Supports both hook-level callbacks (via `mutation` option) and
  * per-call callbacks (second argument to writeContract/writeContractAsync),
@@ -66,7 +67,7 @@ export const useWriteContract = (
       contract: params.contract,
       address: params.address,
       functionName: String(params.functionName),
-      args: params.args,
+      args: params.args as readonly unknown[],
       feePaymentMethod: params.feePaymentMethod,
       timeout: params.timeout,
       receiptPolling: params.receiptPolling,
@@ -88,15 +89,8 @@ export const useWriteContract = (
   };
 
   return {
+    ...mutation,
     writeContract,
     writeContractAsync,
-    data: mutation.data,
-    error: mutation.error,
-    isPending: mutation.isPending,
-    isSuccess: mutation.isSuccess,
-    isError: mutation.isError,
-    isIdle: mutation.isIdle,
-    status: mutation.status,
-    reset: mutation.reset,
   };
 };
