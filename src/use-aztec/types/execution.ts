@@ -13,17 +13,9 @@ export interface ReadExecutionParams {
   args: unknown[];
 }
 
-/** A single contract read within a batch. */
-export interface BatchReadContract {
-  artifact: ContractArtifact;
-  address: string;
-  functionName: string;
-  args: unknown[];
-}
-
 /** Parameters for batch contract read execution. */
 export interface BatchReadExecutionParams {
-  contracts: BatchReadContract[];
+  contracts: ReadExecutionParams[];
   allowFailure: boolean;
 }
 

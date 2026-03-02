@@ -56,7 +56,6 @@ export type {
   AztecExecutionClient,
   ReadExecutionParams,
   BatchReadExecutionParams,
-  BatchReadContract,
   WriteExecutionParams,
   // Action param types
   ReadContractActionParams,

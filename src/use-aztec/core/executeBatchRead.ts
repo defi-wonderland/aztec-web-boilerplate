@@ -14,7 +14,10 @@ import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
 } from '../../types/browserWallet';
-import type { BatchReadContract, ReadContractResult } from '../types/execution';
+import type {
+  ReadExecutionParams,
+  ReadContractResult,
+} from '../types/execution';
 
 /**
  * Parse the raw result from a browser wallet batch simulation.
@@ -66,7 +69,7 @@ export interface BrowserWalletBatchParams {
     operation: BrowserWalletOperation
   ) => Promise<BrowserWalletOperationResult>;
   getCaipAccount: () => string | null;
-  contracts: BatchReadContract[];
+  contracts: ReadExecutionParams[];
   allowFailure: boolean;
 }
 
@@ -130,7 +133,7 @@ export const executeBrowserWalletBatch = async (
 export interface AppManagedBatchParams {
   wallet: Wallet;
   fromAddress: AztecAddressType;
-  contracts: BatchReadContract[];
+  contracts: ReadExecutionParams[];
   allowFailure: boolean;
 }
 

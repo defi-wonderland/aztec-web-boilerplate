@@ -29,7 +29,6 @@ export type {
   AztecExecutionClient,
   ReadExecutionParams,
   BatchReadExecutionParams,
-  BatchReadContract,
   WriteExecutionParams,
 } from './execution';
 
