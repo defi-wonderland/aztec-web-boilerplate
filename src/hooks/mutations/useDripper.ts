@@ -33,7 +33,7 @@ export const useDripper = (options: UseDripperOptions = {}) => {
 
   const dripperAddress = contractsConfig.dripper.address(currentConfig);
   const tokenAddress = contractsConfig.token.address(currentConfig);
-  const isReady = !!account;
+  const isReady = !!account && !!dripperAddress && !!tokenAddress;
 
   const invalidateBalance = () => {
     if (!account || !tokenAddress) return;
