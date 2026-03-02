@@ -50,8 +50,13 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   };
 
   const dripToPrivate = async ({ amount, feePaymentMethod }: DripParams) => {
-    if (!dripperAddress || !tokenAddress || !account) {
-      const error = new Error(!account ? 'Account not available' : 'Contract addresses not configured');
+    if (!dripperAddress || !tokenAddress) {
+      const error = new Error('Contract addresses not configured');
+      options.onDripToPrivateError?.(error);
+      throw error;
+    }
+    if (!account) {
+      const error = new Error('Account not available');
       options.onDripToPrivateError?.(error);
       throw error;
     }
@@ -77,11 +82,15 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   };
 
   const dripToPublic = async ({ amount, feePaymentMethod }: DripParams) => {
-    if (!dripperAddress || !tokenAddress || !account) {
-      options.onDripToPublicError?.(
-        new Error('Contract addresses not configured')
-      );
-      return;
+    if (!dripperAddress || !tokenAddress) {
+      const error = new Error('Contract addresses not configured');
+      options.onDripToPublicError?.(error);
+      throw error;
+    }
+    if (!account) {
+      const error = new Error('Account not available');
+      options.onDripToPublicError?.(error);
+      throw error;
     }
 
     return writePublicAsync(
