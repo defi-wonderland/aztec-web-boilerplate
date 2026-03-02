@@ -59,62 +59,50 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     return { dripperAddress, tokenAddress };
   };
 
-  const dripToPrivate = ({ amount, feePaymentMethod }: DripParams) => {
-    try {
-      const addrs = assertReady();
+  const dripToPrivate = async ({ amount, feePaymentMethod }: DripParams) => {
+    const addrs = assertReady();
 
-      return writePrivateAsync(
-        {
-          contract: DripperContract,
-          address: addrs.dripperAddress,
-          functionName: 'drip_to_private',
-          args: [AztecAddress.fromString(addrs.tokenAddress), amount],
-          feePaymentMethod,
+    return writePrivateAsync(
+      {
+        contract: DripperContract,
+        address: addrs.dripperAddress,
+        functionName: 'drip_to_private',
+        args: [AztecAddress.fromString(addrs.tokenAddress), amount],
+        feePaymentMethod,
+      },
+      {
+        onSuccess: () => {
+          invalidateAllBalances();
+          options.onDripToPrivateSuccess?.();
         },
-        {
-          onSuccess: () => {
-            invalidateAllBalances();
-            options.onDripToPrivateSuccess?.();
-          },
-          onError: (err) => {
-            options.onDripToPrivateError?.(err);
-          },
-        }
-      );
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      options.onDripToPrivateError?.(error);
-      return Promise.reject(error);
-    }
+        onError: (err) => {
+          options.onDripToPrivateError?.(err);
+        },
+      }
+    );
   };
 
-  const dripToPublic = ({ amount, feePaymentMethod }: DripParams) => {
-    try {
-      const addrs = assertReady();
+  const dripToPublic = async ({ amount, feePaymentMethod }: DripParams) => {
+    const addrs = assertReady();
 
-      return writePublicAsync(
-        {
-          contract: DripperContract,
-          address: addrs.dripperAddress,
-          functionName: 'drip_to_public',
-          args: [AztecAddress.fromString(addrs.tokenAddress), amount],
-          feePaymentMethod,
+    return writePublicAsync(
+      {
+        contract: DripperContract,
+        address: addrs.dripperAddress,
+        functionName: 'drip_to_public',
+        args: [AztecAddress.fromString(addrs.tokenAddress), amount],
+        feePaymentMethod,
+      },
+      {
+        onSuccess: () => {
+          invalidateAllBalances();
+          options.onDripToPublicSuccess?.();
         },
-        {
-          onSuccess: () => {
-            invalidateAllBalances();
-            options.onDripToPublicSuccess?.();
-          },
-          onError: (err) => {
-            options.onDripToPublicError?.(err);
-          },
-        }
-      );
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      options.onDripToPublicError?.(error);
-      return Promise.reject(error);
-    }
+        onError: (err) => {
+          options.onDripToPublicError?.(err);
+        },
+      }
+    );
   };
 
   return {
