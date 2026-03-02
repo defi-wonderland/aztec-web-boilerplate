@@ -44,14 +44,14 @@ export const useDynamicContractCaller = (
         return { success: false, error: 'Artifact not loaded' };
       }
 
+      if (!client) {
+        return { success: false, error: 'Wallet not connected' };
+      }
+
       setIsSimulating(true);
       setError(null);
 
       try {
-        if (!client) {
-          return { success: false, error: 'Wallet not connected' };
-        }
-
         const result = await client.executeRead({
           artifact,
           address,
@@ -83,14 +83,14 @@ export const useDynamicContractCaller = (
         return { success: false, error: 'Artifact not loaded' };
       }
 
+      if (!client) {
+        return { success: false, error: 'Wallet not connected' };
+      }
+
       setIsExecuting(true);
       setError(null);
 
       try {
-        if (!client) {
-          return { success: false, error: 'Wallet not connected' };
-        }
-
         const result = await client.executeWrite({
           artifact,
           address,
