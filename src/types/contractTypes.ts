@@ -37,6 +37,11 @@ export type ArgsOf<
 /**
  * Type helper to extract contract type from a contract class.
  * Uses the static `at` method signature to infer the contract instance type.
+ *
+ * The `at` parameter uses `never[]` intentionally — this type is only used for
+ * artifact access and contract type inference, never for calling `at` directly.
+ * Using `never[]` avoids coupling to a specific `at` method signature, which
+ * varies across Aztec.js versions (sync vs async, different parameter sets).
  */
 export type ContractClassFor<TContract extends ContractBase> = {
   artifact: ContractArtifact;

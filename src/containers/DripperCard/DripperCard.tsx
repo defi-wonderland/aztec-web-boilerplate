@@ -90,6 +90,7 @@ export const DripperCard: React.FC = () => {
       loadingToastRef.current = null;
     },
   });
+  const isProcessing = isPrivatePending || isPublicPending;
   const connectorStatus = connector?.getStatus().status;
   const isWalletBusy =
     connectorStatus === 'connecting' || connectorStatus === 'deploying';
@@ -191,7 +192,7 @@ export const DripperCard: React.FC = () => {
                   value={amount}
                   onChange={handleAmountChange}
                   placeholder="100"
-                  disabled={isPrivatePending || isPublicPending || !isReady}
+                  disabled={isProcessing || !isReady}
                   className={styles.amountInput}
                 />
                 <span className={styles.amountUnit}>TST</span>
@@ -204,7 +205,7 @@ export const DripperCard: React.FC = () => {
               <MintTypeToggle
                 value={dripType}
                 onChange={setDripType}
-                disabled={isPrivatePending || isPublicPending || !isReady}
+                disabled={isProcessing || !isReady}
               />
             </div>
           </div>
@@ -230,20 +231,19 @@ export const DripperCard: React.FC = () => {
               onClick={handleDrip}
               disabled={
                 !amount ||
-                isPrivatePending ||
-                isPublicPending ||
+                isProcessing ||
                 isWalletBusy ||
                 !isReady ||
                 !contractsReady
               }
-              isLoading={isPrivatePending || isPublicPending}
+              isLoading={isProcessing}
               icon={<Droplets size={iconSize()} />}
               className={styles.mintButton}
               data-testid="drip-button"
             >
               {isWalletBusy
                 ? 'Wallet Busy...'
-                : isPrivatePending || isPublicPending
+                : isProcessing
                   ? 'Processing...'
                   : 'Mint'}
             </Button>
