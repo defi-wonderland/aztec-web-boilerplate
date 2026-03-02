@@ -23,9 +23,9 @@ interface UseDripperOptions {
 
 export const useDripper = (options: UseDripperOptions = {}) => {
   const { account, currentConfig } = useAztecWallet();
-  const { writeContractAsync: writePrivateAsync, isPending: isPrivatePending } =
+  const { writeContract: writePrivate, isPending: isPrivatePending } =
     useWriteContract();
-  const { writeContractAsync: writePublicAsync, isPending: isPublicPending } =
+  const { writeContract: writePublic, isPending: isPublicPending } =
     useWriteContract();
   const queryClient = useQueryClient();
   const { invalidateAll: invalidateFeeJuiceBalances } =
@@ -49,19 +49,19 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     invalidateFeeJuiceBalances();
   };
 
-  const dripToPrivate = async ({ amount, feePaymentMethod }: DripParams) => {
+  const dripToPrivate = ({ amount, feePaymentMethod }: DripParams) => {
     if (!dripperAddress || !tokenAddress) {
-      const error = new Error('Contract addresses not configured');
-      options.onDripToPrivateError?.(error);
-      throw error;
+      options.onDripToPrivateError?.(
+        new Error('Contract addresses not configured')
+      );
+      return;
     }
     if (!account) {
-      const error = new Error('Account not available');
-      options.onDripToPrivateError?.(error);
-      throw error;
+      options.onDripToPrivateError?.(new Error('Account not available'));
+      return;
     }
 
-    return writePrivateAsync(
+    writePrivate(
       {
         contract: DripperContract,
         address: dripperAddress,
@@ -81,19 +81,19 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     );
   };
 
-  const dripToPublic = async ({ amount, feePaymentMethod }: DripParams) => {
+  const dripToPublic = ({ amount, feePaymentMethod }: DripParams) => {
     if (!dripperAddress || !tokenAddress) {
-      const error = new Error('Contract addresses not configured');
-      options.onDripToPublicError?.(error);
-      throw error;
+      options.onDripToPublicError?.(
+        new Error('Contract addresses not configured')
+      );
+      return;
     }
     if (!account) {
-      const error = new Error('Account not available');
-      options.onDripToPublicError?.(error);
-      throw error;
+      options.onDripToPublicError?.(new Error('Account not available'));
+      return;
     }
 
-    return writePublicAsync(
+    writePublic(
       {
         contract: DripperContract,
         address: dripperAddress,
