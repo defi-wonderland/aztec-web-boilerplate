@@ -855,7 +855,7 @@ const { open: openNetwork } = useNetworkModal();
           <pre className={styles.codeBlock}>
             {`const config = createAztecWalletConfig({
   networks: [
-    { name: 'devnet', nodeUrl: 'https://v4-devnet-1.aztec-labs.com' },
+    { name: 'devnet', nodeUrl: 'https://v4-devnet-2.aztec-labs.com' },
     { name: 'sandbox', nodeUrl: 'http://localhost:8080' },
   ],
   walletGroups: {
