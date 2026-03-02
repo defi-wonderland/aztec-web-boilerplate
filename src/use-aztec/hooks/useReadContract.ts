@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
 import { readContract as readContractAction } from '../actions/readContract';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
-import { AztecClientNotReadyError } from '../errors';
+import { AztecClientNotReady } from '../errors';
 import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
 import type {
   MethodsOf,
@@ -67,7 +67,7 @@ export const useReadContract = <
     queryKey,
     queryFn: async () => {
       if (!client) {
-        throw new AztecClientNotReadyError();
+        throw new AztecClientNotReady();
       }
       if (!params.address || params.args === undefined) {
         throw new Error('Missing required parameters');

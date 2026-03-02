@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
 import { writeContract as writeContractAction } from '../actions/writeContract';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
-import { AztecClientNotReadyError } from '../errors';
+import { AztecClientNotReady } from '../errors';
 import type {
   MethodsOf,
   WriteContractActionParams,
@@ -51,7 +51,7 @@ export const useWriteContract = (
   >({
     mutationFn: async (params) => {
       if (!client) {
-        throw new AztecClientNotReadyError();
+        throw new AztecClientNotReady();
       }
       return writeContractAction(client, params);
     },

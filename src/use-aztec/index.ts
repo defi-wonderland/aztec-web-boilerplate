@@ -28,7 +28,7 @@
 // =============================================================================
 
 export { UseAztecProvider } from './context';
-export { AztecClientNotReadyError } from './errors';
+export { AztecClientNotReady } from './errors';
 
 // =============================================================================
 // HOOKS

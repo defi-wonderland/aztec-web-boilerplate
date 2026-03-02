@@ -1,6 +1,6 @@
-export class AztecClientNotReadyError extends Error {
+export class AztecClientNotReady extends Error {
   constructor() {
     super('Aztec execution client is not ready');
-    this.name = 'AztecClientNotReadyError';
+    this.name = 'AztecClientNotReady';
   }
 }
