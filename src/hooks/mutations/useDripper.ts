@@ -51,10 +51,9 @@ export const useDripper = (options: UseDripperOptions = {}) => {
 
   const dripToPrivate = async ({ amount, feePaymentMethod }: DripParams) => {
     if (!dripperAddress || !tokenAddress || !account) {
-      options.onDripToPrivateError?.(
-        new Error('Contract addresses not configured')
-      );
-      return;
+      const error = new Error(!account ? 'Account not available' : 'Contract addresses not configured');
+      options.onDripToPrivateError?.(error);
+      throw error;
     }
 
     return writePrivateAsync(
