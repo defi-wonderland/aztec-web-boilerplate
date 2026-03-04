@@ -80,12 +80,12 @@ export const executeBrowserWalletWrite = async (
   }
 
   const chain = getChainFromCaipAccount(caipAccount);
-  const receiptResult = await waitForReceipt(
+  const receiptResult = await waitForReceipt({
     executeOperation,
-    response.txHash,
+    txHash: response.txHash,
     chain,
-    receiptPolling
-  );
+    ...receiptPolling,
+  });
 
   if (receiptResult.success === false) {
     throw new Error(receiptResult.error);
@@ -112,7 +112,7 @@ export interface AppManagedWriteParams {
     feePaymentMethod?: unknown
   ) => Promise<FeePaymentMethod | undefined>;
   feePaymentMethod?: unknown;
-  timeout: number;
+  timeout?: number;
 }
 
 /**
@@ -155,7 +155,7 @@ export const executeAppManagedWrite = async (
   const result = await tx.send({
     from: fromAddress,
     ...(paymentMethod ? { fee: { paymentMethod } } : {}),
-    wait: { timeout, waitForStatus: TxStatus.PROPOSED },
+    wait: { timeout: timeout ?? 900, waitForStatus: TxStatus.PROPOSED },
   });
 
   return { result };

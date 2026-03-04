@@ -22,8 +22,6 @@ export type {
   ReadContractResult,
   UseReadContractsParams,
 } from '../use-aztec';
-// Re-export use-aztec's WriteContractMutateParams and WriteContractActionParams
-// but override feePaymentMethod with the app-specific FeePaymentMethodType
 import type { MethodsOf, ArgsOf } from '../use-aztec';
 
 /**
@@ -45,15 +43,3 @@ export interface WriteContractMutateParams<
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };
 }
 
-/**
- * App-specific override of WriteContractActionParams with typed fee payment.
- */
-export interface WriteContractActionParams {
-  contract: { artifact: ContractArtifact };
-  address: string;
-  functionName: string;
-  args: readonly unknown[];
-  feePaymentMethod?: FeePaymentMethodType;
-  timeout?: number;
-  receiptPolling?: { intervalMs?: number; maxAttempts?: number };
-}

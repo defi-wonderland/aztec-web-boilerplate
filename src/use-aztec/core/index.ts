@@ -7,7 +7,6 @@ export type {
 export {
   executeBrowserWalletBatch,
   executeAppManagedBatch,
-  parseBatchResult,
 } from './executeBatchRead';
 export type {
   BrowserWalletBatchParams,

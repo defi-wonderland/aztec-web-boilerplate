@@ -7,10 +7,15 @@ import type {
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_MAX_ATTEMPTS = 30; // 60 seconds total
 
-export type WaitForReceiptOptions = {
+export interface WaitForReceiptParams {
+  executeOperation: (
+    operation: BrowserWalletOperation
+  ) => Promise<BrowserWalletOperationResult>;
+  txHash: string;
+  chain: string;
   intervalMs?: number;
   maxAttempts?: number;
-};
+}
 
 export type WaitForReceiptResult =
   | { success: true }
@@ -21,15 +26,15 @@ export type WaitForReceiptResult =
  * Parameterized — accepts an executeOperation function instead of a connector.
  */
 export const waitForReceipt = async (
-  executeOperation: (
-    operation: BrowserWalletOperation
-  ) => Promise<BrowserWalletOperationResult>,
-  txHash: string,
-  chain: string,
-  options: WaitForReceiptOptions = {}
+  params: WaitForReceiptParams
 ): Promise<WaitForReceiptResult> => {
-  const intervalMs = options.intervalMs ?? DEFAULT_POLL_INTERVAL_MS;
-  const maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
+  const {
+    executeOperation,
+    txHash,
+    chain,
+    intervalMs = DEFAULT_POLL_INTERVAL_MS,
+    maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  } = params;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
