@@ -11,11 +11,24 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@aztec-wallet": ["packages/aztec-wallet/index.ts"],
+      "@aztec-wallet/*": ["packages/aztec-wallet/*"],
+      "@contract-registry": ["packages/contract-registry/index.ts"],
+      "@contract-registry/*": ["packages/contract-registry/*"],
+      "@use-aztec": ["packages/use-aztec/index.ts"],
+      "@use-aztec/*": ["packages/use-aztec/*"]
+    }
   },
   "include": [
-    "src/**/*.{ts,tsx}",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "src/vite-env.d.ts",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
     "tests/**/*.ts",
     "scripts/**/*.ts"
   ],

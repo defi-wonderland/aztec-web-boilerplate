@@ -1,9 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { Coins, Wrench, Settings, Layers, Menu, X, Globe } from 'lucide-react';
-import { ConnectButton, NetworkPicker } from '../aztec-wallet';
+import { Menu, X, Globe } from 'lucide-react';
+import { ConnectButton, NetworkPicker } from '@aztec-wallet';
+import { FEATURES } from '../features';
 import { useAppNavigation } from '../hooks';
 import { cn, iconSize } from '../utils';
 import { ThemeToggle } from './ui';
+import type { FeatureModule } from '../features';
 import type { TabType } from '../types';
 
 interface NavTab {
@@ -12,16 +14,24 @@ interface NavTab {
   icon: React.ReactNode;
 }
 
-const NAV_TABS: NavTab[] = [
-  { id: 'mint', label: 'Mint Tokens', icon: <Coins size={iconSize()} /> },
-  { id: 'contract', label: 'Contract UI', icon: <Wrench size={iconSize()} /> },
-  { id: 'settings', label: 'Settings', icon: <Settings size={iconSize()} /> },
-  {
-    id: 'components',
-    label: 'UI Components',
-    icon: <Layers size={iconSize()} />,
-  },
-];
+const toNavTab = (feature: FeatureModule): NavTab => {
+  const resolvedIcon =
+    typeof feature.icon === 'function'
+      ? feature.icon(iconSize())
+      : feature.icon;
+
+  return {
+    id: feature.id,
+    label: feature.label,
+    icon: resolvedIcon,
+  };
+};
+
+let _navTabs: NavTab[] | null = null;
+const getNavTabs = (): NavTab[] => {
+  if (!_navTabs) _navTabs = FEATURES.map(toNavTab);
+  return _navTabs;
+};
 
 const styles = {
   navbar: 'sticky top-0 z-40 w-full bg-card border-b border-default',
@@ -99,7 +109,7 @@ export const Header: React.FC = () => {
 
         {/* Desktop nav tabs */}
         <div className={styles.navTabs}>
-          {NAV_TABS.map((tab) => (
+          {getNavTabs().map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -133,7 +143,7 @@ export const Header: React.FC = () => {
       {mobileMenuOpen && (
         <div className={styles.mobileMenu}>
           <div className={styles.mobileMenuInner}>
-            {NAV_TABS.map((tab) => (
+            {getNavTabs().map((tab) => (
               <button
                 key={tab.id}
                 type="button"

@@ -255,12 +255,12 @@ yarn clean                    # Remove all build artifacts
 
 ### Wallet System (aztec-wallet)
 
-This boilerplate uses **aztec-wallet** (`src/aztec-wallet/`) - a modular wallet connection library similar to wagmi + RainbowKit for EVM.
+This boilerplate uses **aztec-wallet** (`packages/aztec-wallet/`) - a modular wallet connection library similar to wagmi + RainbowKit for EVM.
 
 **Quick Start:**
 
 ```tsx
-import { AztecWalletProvider, createAztecWalletConfig, ConnectButton } from './aztec-wallet';
+import { AztecWalletProvider, createAztecWalletConfig, ConnectButton } from '@aztec-wallet';
 
 const config = createAztecWalletConfig({
   networks: [{ name: 'devnet', nodeUrl: 'https://devnet.aztec.network' }],
@@ -289,7 +289,7 @@ function App() {
 | **External Signer** | App-managed (SharedPXEService) | EVM wallet (MetaMask, etc.) | Users with existing wallets |
 | **Browser Wallet** | Extension-managed | Extension (Azguard) | Production apps |
 
-**Connector Files** (`src/aztec-wallet/connectors/`):
+**Connector Files** (`packages/aztec-wallet/connectors/`):
 - `EmbeddedConnector.ts` - Auto-initialization, account persistence
 - `ExternalSignerConnector.ts` - EIP-6963 support, EVM address recovery
 - `BrowserWalletConnector.ts` - Adapter pattern for extensions
@@ -299,7 +299,7 @@ function App() {
 The main hook for wallet interaction:
 
 ```tsx
-import { useAztecWallet } from './aztec-wallet';
+import { useAztecWallet } from '@aztec-wallet';
 
 function MyComponent() {
   const {
@@ -351,7 +351,7 @@ function MyComponent() {
 Control modals programmatically when building custom UIs:
 
 ```tsx
-import { useConnectModal, useAccountModal, useNetworkModal } from './aztec-wallet';
+import { useConnectModal, useAccountModal, useNetworkModal } from '@aztec-wallet';
 
 // Open connect modal
 const { open: openConnect } = useConnectModal();
@@ -365,7 +365,7 @@ const { open: openNetwork } = useNetworkModal();
 
 ### Contract Management
 
-**ContractRegistry** (`src/contract-registry/ContractRegistry.ts`):
+**ContractRegistry** (`packages/contract-registry/`):
 
 - Three-tier caching: Memory → IndexedDB → Fresh registration
 - Lazy loading support (set `lazyRegister: true` in config)
@@ -379,34 +379,36 @@ const { open: openNetwork } = useNetworkModal();
 3. Query IndexedDB storage (fast if previously registered)
 4. Fresh PXE registration (slowest, only when needed)
 
-**Contract Configuration** (`src/config/contracts.ts`):
+**Contract Configuration** (`src/config/contracts.ts` + `src/features/**/feature.tsx`):
 
 ```typescript
-export const contractsConfig = createContractConfig({
-  dripper: {
-    artifact: DripperContract.artifact,
-    contract: DripperContract,
-    address: (config) => config.dripperContractAddress,
-    deployParams: (config) => ({ salt, deployer, ... }),
-    lazyRegister: false,  // Register at app startup
-  },
-  token: {
-    // Same structure
-    lazyRegister: true,  // Register on-demand only
+// src/features/examples/my-feature/config/contracts.ts
+export const myFeatureContracts = createContractConfig({
+  myContract: {
+    contract: MyContract,
+    address: (config) => config.myContractAddress,
+    deployParams: () => ({ salt, deployer }),
+    lazyRegister: true,
   },
 });
+
+// src/features/examples/my-feature/feature.tsx
+export default {
+  id: 'my-feature',
+  label: 'My Feature',
+  order: 200,
+  component: MyFeatureScreen,
+  contracts: myFeatureContracts,
+} satisfies FeatureModule;
 ```
 
 **Usage**:
 
 ```typescript
-// In components
-const { getContract } = useContracts();
-const dripper = await getContract('dripper'); // Typed, cached
-
-// Access methods
-await dripper.methods.drip(recipient).send().wait();
-const balance = await token.methods.balance_of_public(address).simulate();
+const { contract, isReady } = useContract('dripper');
+if (isReady && contract) {
+  await contract.methods.drip_to_public(recipient, amount).send().wait();
+}
 ```
 
 ### Network Configuration
@@ -448,7 +450,7 @@ import {
   isExternalSignerConnector,
   isBrowserWalletConnector,
   hasAppManagedPXE,
-} from './aztec-wallet';
+} from '@aztec-wallet';
 
 const { connector } = useAztecWallet();
 
@@ -465,9 +467,9 @@ Internal services and stores are available via deep imports for advanced use cas
 
 ```tsx
 // ⚠️ Use at your own risk - not part of stable API
-import { getWalletStore } from './aztec-wallet/store/wallet';
-import { SharedPXEService } from './aztec-wallet/services/aztec/pxe';
-import { EVMWalletService } from './aztec-wallet/services/evm/EVMWalletService';
+import { getWalletStore } from '@aztec-wallet/store/wallet';
+import { SharedPXEService } from '@aztec-wallet/services/aztec/pxe';
+import { EVMWalletService } from '@aztec-wallet/services/evm/EVMWalletService';
 ```
 
 For most use cases, the public API (`useAztecWallet`, `ConnectButton`, etc.) is sufficient.
@@ -516,16 +518,17 @@ Cross-Origin-Resource-Policy: cross-origin
 
 **4. Configure Registry** (`src/config/contracts.ts`):
 
-- Import generated TypeScript contract wrapper
-- Add contract to `contractsConfig`
-- Specify address resolver, deployment params, lazy loading
+- Define contract config in the feature (`src/features/.../config/contracts.ts`)
+- Export it via the feature module (`contracts` field in `feature.tsx`)
+- Aggregation happens automatically through feature discovery
 
 **5. Use in App**:
 
 ```typescript
-const { getContract } = useContracts();
-const myContract = await getContract('your_contract');
-await myContract.methods.myMethod(args).send().wait();
+const { contract, isReady } = useContract('your_contract');
+if (isReady && contract) {
+  await contract.methods.myMethod(args).send().wait();
+}
 ```
 
 ### Testing Strategy
@@ -560,20 +563,24 @@ await myContract.methods.myMethod(args).send().wait();
 ### File Structure
 
 ```
+packages/                    # Library-like modules (future npm extraction)
+├── aztec-wallet/            # Modular wallet library (wagmi-like for Aztec)
+│   ├── adapters/            # Browser wallet adapters (Azguard)
+│   ├── assets/icons/        # Wallet icons (MetaMask, Rabby, Azguard)
+│   ├── components/          # ConnectButton (public), modals (internal)
+│   ├── config/              # createAztecWalletConfig, presets
+│   ├── connectors/          # Connector implementations (internal)
+│   ├── hooks/               # useAztecWallet, useConnectModal, etc. (public)
+│   ├── providers/           # AztecWalletProvider (public)
+│   ├── services/            # Internal services (not exported)
+│   ├── signers/             # Account signing implementations (internal)
+│   ├── store/               # Zustand stores (internal)
+│   ├── types/               # Configuration types (public)
+│   └── index.ts             # Public exports only
+├── contract-registry/       # Contract registration utilities
+└── use-aztec-wallet/        # Wallet execution client integration
+
 src/
-├── aztec-wallet/        # Modular wallet library (wagmi-like for Aztec)
-│   ├── adapters/        # Browser wallet adapters (Azguard)
-│   ├── assets/icons/    # Wallet icons (MetaMask, Rabby, Azguard)
-│   ├── components/      # ConnectButton (public), modals (internal)
-│   ├── config/          # createAztecWalletConfig, presets
-│   ├── connectors/      # Connector implementations (internal)
-│   ├── hooks/           # useAztecWallet, useConnectModal, etc. (public)
-│   ├── providers/       # AztecWalletProvider (public)
-│   ├── services/        # Internal services (not exported)
-│   ├── signers/         # Account signing implementations (internal)
-│   ├── store/           # Zustand stores (internal)
-│   ├── types/           # Configuration types (public)
-│   └── index.ts         # Public exports only
 ├── artifacts/           # Generated contract TypeScript bindings
 │   ├── devnet/          # Devnet-specific artifacts
 │   └── sandbox/         # Sandbox-specific artifacts
@@ -586,7 +593,6 @@ src/
 │   ├── networks/        # Network-specific configs
 │   └── deployments/     # Deployed contract addresses (generated)
 ├── containers/          # Page-level components
-├── contract-registry/   # Contract registration utilities
 ├── hooks/               # Custom React hooks
 ├── providers/           # App context providers
 ├── styles/
@@ -612,7 +618,7 @@ tests/                   # Test suites (unit, integration, e2e)
 
 - Browser wallets use adapters to translate generic operations
 - Implement `IBrowserWalletAdapter` for new wallet integrations
-- See `src/adapters/azguard/` as reference
+- See `packages/aztec-wallet/adapters/azguard/` as reference
 
 **Provider Composition**:
 

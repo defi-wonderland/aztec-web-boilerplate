@@ -1,9 +1,13 @@
+import { resolve } from 'path';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, Plugin } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import wasm from 'vite-plugin-wasm';
-import { DEFAULT_ARTIFACT_REGISTRY_URL } from './src/config/networks/constants';
+import {
+  DEFAULT_ARTIFACT_REGISTRY_URL,
+  NETWORK_URLS,
+} from './src/config/networks/constants';
 
 /**
  * Plugin to fix static class field initialization issue with Rollup bundling.
@@ -107,6 +111,11 @@ export default defineConfig(({ mode }) => {
     env.VITE_ARTIFACT_REGISTRY_URL || DEFAULT_ARTIFACT_REGISTRY_URL;
 
   const proxyConfig = {
+    '/api/devnet-status': {
+      target: NETWORK_URLS.devnet,
+      changeOrigin: true,
+      rewrite: () => '/status',
+    },
     '/github-releases': {
       target: 'https://github.com',
       changeOrigin: true,
@@ -165,6 +174,11 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
+        // Package aliases (must come before polyfills)
+        '@': resolve(__dirname, 'src'),
+        '@aztec-wallet': resolve(__dirname, 'packages/aztec-wallet'),
+        '@contract-registry': resolve(__dirname, 'packages/contract-registry'),
+        '@use-aztec': resolve(__dirname, 'packages/use-aztec'),
         // Additional polyfills for blockchain dependencies
         crypto: 'crypto-browserify',
         stream: 'stream-browserify',

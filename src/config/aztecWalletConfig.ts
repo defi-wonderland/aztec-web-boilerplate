@@ -7,7 +7,7 @@
  *   - Aztec: 'azguard'
  */
 
-import { createAztecWalletConfig } from '../aztec-wallet';
+import { createAztecWalletConfig } from '@aztec-wallet';
 import { DEFAULT_NETWORK, NETWORK_URLS } from './networks';
 
 /**

@@ -37,12 +37,13 @@ export function wrapIDBRequest<T, F extends IDBFallbackValue>(
 ): Promise<T | F> {
   return new Promise((resolve, reject) => {
     request.onerror = () => {
-      if (
-        typeof onError === 'object' &&
-        onError !== null &&
-        'throw' in onError
-      ) {
-        reject(new Error((onError as { throw: string }).throw));
+      const throwable =
+        typeof onError === 'object' && onError !== null
+          ? (onError as { throw?: string })
+          : null;
+
+      if (typeof throwable?.throw === 'string') {
+        reject(new Error(throwable.throw));
       } else {
         resolve(onError as F);
       }

@@ -107,7 +107,7 @@ The application will be available at **http://localhost:3000**
 Edit `src/config/aztecWalletConfig.ts` to customize wallet options and networks:
 
 ```typescript
-import { createAztecWalletConfig } from '../aztec-wallet';
+import { createAztecWalletConfig } from '@aztec-wallet';
 
 export const aztecWalletConfig = createAztecWalletConfig({
   // Networks to support
@@ -129,30 +129,34 @@ export const aztecWalletConfig = createAztecWalletConfig({
 
 ### Contract Configuration
 
-Edit `src/config/contracts.ts` to add or configure your contracts:
+`src/config/contracts.ts` is the aggregation layer. It automatically collects
+contract definitions from all discovered feature modules
+(`src/features/**/feature.tsx`).
+
+To add contracts, define them inside the feature and expose them from that
+feature's `feature.tsx`:
 
 ```typescript
-export const contractsConfig = createContractConfig({
-  dripper: {
-    artifact: DripperContract.artifact,
-    contract: DripperContract,
-    address: (config) => config.dripperContractAddress,
-    deployParams: (config) => ({
+// src/features/examples/my-feature/config/contracts.ts
+export const myFeatureContracts = createContractConfig({
+  myContract: {
+    contract: MyContract,
+    address: (config) => config.myContractAddress,
+    deployParams: () => ({
       /* ... */
     }),
-    lazyRegister: false, // Register immediately at initialization
-  },
-
-  token: {
-    artifact: TokenContract.artifact,
-    contract: TokenContract,
-    address: (config) => config.tokenContractAddress,
-    deployParams: (config) => ({
-      /* ... */
-    }),
-    lazyRegister: false,
+    lazyRegister: true,
   },
 });
+
+// src/features/examples/my-feature/feature.tsx
+const feature: FeatureModule = {
+  id: 'my-feature',
+  label: 'My Feature',
+  order: 200,
+  component: MyFeatureScreen,
+  contracts: myFeatureContracts,
+};
 ```
 
 #### Lazy Loading Contracts
@@ -169,6 +173,24 @@ myOptionalContract: {
 ```
 
 Lazy contracts are registered on-demand when first accessed, reducing the initial sync time.
+
+### Feature Modules (Add/Remove)
+
+Features are auto-discovered via `import.meta.glob('./**/feature.tsx')` in
+`src/features/registry.ts`.
+
+To add a feature:
+
+1. Create a folder under `src/features/...`
+2. Export a default `feature.tsx` with unique `id`, `label`, `order`,
+   `component`, and optional `contracts`
+3. Add feature-local config/hooks/components
+
+To remove a feature:
+
+1. Delete the feature folder (or remove its `feature.tsx`)
+2. Remove any contracts/artifacts used only by that feature
+3. Run `yarn test:unit && yarn lint` to validate there are no stale imports
 
 ---
 
@@ -224,6 +246,15 @@ VITE_AZTEC_NODE_URL=http://localhost:8080
 # Disable prover for faster development
 VITE_PROVER_ENABLED=false
 
+# Artifact registry URL used for class ID lookups
+VITE_ARTIFACT_REGISTRY_URL=https://sandbox.aztec.network/api/v1/contracts
+
+# Optional external artifact bundle fallback (.tgz)
+VITE_EXTERNAL_TGZ_URL=https://github.com/.../your-artifacts.tgz
+
+# Enable/disable SponsoredFPC flow in UI
+VITE_FPC_ENABLED=true
+
 # Embedded wallet credentials (optional - auto-generated if not provided)
 VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE="my secret"
 VITE_EMBEDDED_ACCOUNT_SECRET_KEY="0x..."
@@ -238,39 +269,37 @@ VITE_COMMON_SALT="1337"
 aztec-web-boilerplate/
 ├── contracts/                  # Noir smart contracts
 │   └── dripper/               # Token faucet contract
+├── packages/
+│   ├── aztec-wallet/          # Wallet package
+│   ├── contract-registry/     # Contract registry package
+│   └── use-aztec/             # Query/mutation hooks package
 ├── scripts/
 │   └── deploy.ts              # Contract deployment script
 ├── src/
 │   ├── artifacts/             # Generated contract TypeScript bindings
 │   │   ├── devnet/            # Devnet-specific artifacts
 │   │   └── sandbox/           # Sandbox-specific artifacts
-│   ├── aztec-wallet/          # Modular wallet library (wagmi-like for Aztec)
-│   │   ├── adapters/          # Browser wallet adapters (Azguard)
-│   │   ├── components/        # ConnectButton and internal modals
-│   │   ├── config/            # createAztecWalletConfig
-│   │   ├── connectors/        # Wallet connector implementations
-│   │   ├── hooks/             # useAztecWallet, useConnectModal, etc.
-│   │   ├── providers/         # AztecWalletProvider
-│   │   ├── services/          # Internal services (PXE, EVM)
-│   │   ├── signers/           # Account signing implementations
-│   │   ├── store/             # Zustand stores
-│   │   └── types/             # Configuration types
 │   ├── components/            # React UI components
 │   │   └── ui/                # Primitive UI components (Button, Input, etc.)
 │   ├── config/
-│   │   ├── contracts.ts       # Contract configuration
+│   │   ├── contracts.ts       # Aggregates contracts from features
 │   │   ├── aztecWalletConfig.ts # Wallet & network configuration
-│   │   ├── deployments/       # Deployment config JSON files
+│   │   ├── deployments/       # Shared deployment JSON files
 │   │   └── networks/          # Network constants
-│   ├── containers/            # Layout and page containers
-│   ├── contract-registry/     # Contract registration utilities
-│   ├── hooks/                 # React hooks
-│   ├── providers/             # React context providers
-│   ├── styles/                # Tailwind CSS configuration
-│   │   ├── globals.css        # Global styles & theme variables
-│   │   └── theme.ts           # CVA variants for components
-│   ├── types/                 # TypeScript type definitions
-│   └── utils/                 # Utility functions
+│   ├── features/              # Feature modules (auto-discovered)
+│   │   ├── contract-interaction/
+│   │   ├── examples/
+│   │   │   ├── mint/
+│   │   │   │   └── config/mint.ts # Feature-local mint constants/deployments
+│   │   │   └── ui-showcase/
+│   │   ├── settings/
+│   │   └── registry.ts
+│   ├── containers/            # Layout containers
+│   ├── hooks/                 # Shared app hooks
+│   ├── providers/             # App providers
+│   ├── styles/                # Tailwind and theme setup
+│   ├── types/                 # Shared type definitions
+│   └── utils/                 # Shared utilities
 └── tests/                     # Test suites
 ```
 
@@ -309,7 +338,7 @@ export const BadComponent = () => (
 
 A live showcase of all UI components is available in the app under the **"UI Components"** tab, or you can view the source at:
 
-📄 **`src/containers/UIComponentsShowcase.tsx`**
+📄 **`src/features/examples/ui-showcase/UIComponentsShowcase.tsx`**
 
 This showcase serves as living documentation for the design system.
 
@@ -321,7 +350,7 @@ When you need a new UI component:
 2. Create a wrapper in `src/components/ui/`
 3. Style with Tailwind using the semantic styles pattern
 4. Export from `src/components/ui/index.ts`
-5. **Add examples to `UIComponentsShowcase.tsx`** for documentation
+5. **Add examples to `src/features/examples/ui-showcase/UIComponentsShowcase.tsx`** for documentation
 6. Update the component table above
 
 ---
@@ -355,8 +384,9 @@ yarn lint                     # Check code formatting
 2. Add it to `contracts/Nargo.toml` workspace members
 3. Run `yarn build-contracts` to compile and generate TypeScript bindings
 4. Update `scripts/deploy.ts` to deploy your contract
-5. Add contract configuration in `src/config/contracts.ts`
-6. Import the generated TypeScript bindings from `src/artifacts/`
+5. Create feature-local contract config in `src/features/.../config/contracts.ts`
+6. Expose that config via the feature's `feature.tsx` `contracts` field
+7. Import generated TypeScript bindings from `src/artifacts/`
 
 ---
 
@@ -384,10 +414,10 @@ To add support for a new browser wallet (e.g., Obsidian), follow these steps:
 
 ### 1. Create the Adapter Folder
 
-Create a new folder under `src/aztec-wallet/adapters/` with your wallet name:
+Create a new folder under `packages/aztec-wallet/adapters/` with your wallet name:
 
 ```
-src/aztec-wallet/adapters/obsidian/
+packages/aztec-wallet/adapters/obsidian/
 ├── ObsidianAdapter.ts       # Implements IBrowserWalletAdapter interface
 ├── ObsidianWalletService.ts # Handles extension communication
 └── index.ts                 # Exports adapter and factory
@@ -433,7 +463,7 @@ export const createObsidianAdapter = (): IBrowserWalletAdapter =>
 
 ### 4. Register the Wallet
 
-In `src/aztec-wallet/config/aztecWallets.ts`, add your wallet configuration:
+In `packages/aztec-wallet/config/aztecWallets.ts`, add your wallet configuration:
 
 ```typescript
 export const AZTEC_WALLETS: AztecWalletInfo[] = [
@@ -461,8 +491,8 @@ walletGroups: {
 
 Make sure to properly export your adapter from:
 
-- `src/aztec-wallet/adapters/obsidian/index.ts`
-- `src/aztec-wallet/adapters/index.ts`
+- `packages/aztec-wallet/adapters/obsidian/index.ts`
+- `packages/aztec-wallet/adapters/index.ts`
 
 > **Note:** No changes are needed to hooks, providers, or the `BrowserWalletConnector` class. The adapter pattern handles all wallet-specific logic.
 

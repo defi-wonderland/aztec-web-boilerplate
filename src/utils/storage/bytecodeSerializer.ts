@@ -1,5 +1,5 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { SerializedArtifact } from '../../types/artifactRegistry';
+import type { SerializedArtifact } from '@contract-registry';
 
 interface SerializedBuffer {
   type: 'Buffer';

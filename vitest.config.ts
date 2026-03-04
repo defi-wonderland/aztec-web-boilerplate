@@ -63,6 +63,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '@aztec-wallet': resolve(__dirname, './packages/aztec-wallet'),
+      '@contract-registry': resolve(__dirname, './packages/contract-registry'),
+      '@use-aztec': resolve(__dirname, './packages/use-aztec'),
       '@tests': resolve(__dirname, './tests'),
     },
   },

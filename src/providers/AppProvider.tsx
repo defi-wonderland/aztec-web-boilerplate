@@ -1,11 +1,11 @@
 import React, { ReactNode } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { AztecWalletProvider } from '../aztec-wallet';
+import { AztecWalletProvider } from '@aztec-wallet';
 import { TooltipProvider, Toaster } from '../components/ui';
 import { aztecWalletConfig } from '../config/aztecWalletConfig';
 import { ModalProvider, ToastProvider } from '../hooks';
 import { queryClient } from '../lib/queryClient';
-import { ContractRegistryInitializer } from './ContractRegistryInitializer';
+import { ContractRegistrySetup } from './ContractRegistrySetup';
 import { UseAztecClientProvider } from './UseAztecClientProvider';
 
 interface AppProviderProps {
@@ -20,9 +20,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           <ModalProvider>
             <AztecWalletProvider config={aztecWalletConfig}>
               <UseAztecClientProvider>
-                <ContractRegistryInitializer>
-                  {children}
-                </ContractRegistryInitializer>
+                <ContractRegistrySetup>{children}</ContractRegistrySetup>
               </UseAztecClientProvider>
             </AztecWalletProvider>
           </ModalProvider>

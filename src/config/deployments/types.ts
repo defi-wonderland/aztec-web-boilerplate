@@ -1,22 +1,21 @@
 /**
- * Deployment configuration types for Aztec contracts
+ * Shared deployment configuration types.
  */
 
-import { NETWORK_URLS, type NetworkType } from '../networks/constants';
+import {
+  NETWORK_URLS,
+  PLACEHOLDER_ADDRESS,
+  PLACEHOLDER_SALT,
+  type AztecNetwork,
+} from '../networks/constants';
 
-/**
- * Contract deployment information
- */
 export interface ContractDeployment {
   address: string;
   salt: string;
 }
 
-/**
- * Full deployment configuration for a network
- */
 export interface DeploymentConfig {
-  network: NetworkType;
+  network: AztecNetwork;
   nodeUrl: string;
   dripperContract: ContractDeployment;
   tokenContract: ContractDeployment;
@@ -25,17 +24,6 @@ export interface DeploymentConfig {
   deployedAt: string;
 }
 
-/**
- * Placeholder values for undeployed contracts
- */
-export const PLACEHOLDER_ADDRESS =
-  '0x0000000000000000000000000000000000000000000000000000000000000000';
-export const PLACEHOLDER_SALT =
-  '0x0000000000000000000000000000000000000000000000000000000000000000';
-
-/**
- * Check if a deployment config has valid (non-placeholder) contract addresses
- */
 export const isDeploymentValid = (config: DeploymentConfig): boolean => {
   return (
     config.dripperContract.address !== PLACEHOLDER_ADDRESS &&
@@ -44,9 +32,6 @@ export const isDeploymentValid = (config: DeploymentConfig): boolean => {
   );
 };
 
-/**
- * Default sandbox deployment config (placeholder until contracts are deployed)
- */
 export const DEFAULT_SANDBOX_DEPLOYMENT: DeploymentConfig = {
   network: 'sandbox',
   nodeUrl: NETWORK_URLS.sandbox,
@@ -63,9 +48,6 @@ export const DEFAULT_SANDBOX_DEPLOYMENT: DeploymentConfig = {
   deployedAt: '',
 };
 
-/**
- * Default devnet deployment config (placeholder until contracts are deployed)
- */
 export const DEFAULT_DEVNET_DEPLOYMENT: DeploymentConfig = {
   network: 'devnet',
   nodeUrl: NETWORK_URLS.devnet,

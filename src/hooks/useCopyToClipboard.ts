@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { copyToClipboard } from '../utils/clipboard';
+import { copyToClipboard } from '../utils/file';
 
 export const useCopyToClipboard = (resetDelay = 2000) => {
   const [copied, setCopied] = useState(false);

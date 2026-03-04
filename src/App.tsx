@@ -1,7 +1,8 @@
 import React from 'react';
-import { useAztecWallet } from './aztec-wallet';
+import { useAztecWallet } from '@aztec-wallet';
 import { Header, NetworkError } from './components';
 import { Layout } from './containers/Layout';
+import { FEATURE_BY_ID, FEATURES } from './features';
 import { useAppNavigation } from './hooks';
 import { AppNavigationProvider, AppProvider } from './providers';
 import { cn } from './utils';
@@ -18,6 +19,9 @@ const AppContent: React.FC = () => {
   const { networkStatus, networkError, networkName, checkNetwork } =
     useAztecWallet();
   const { activeTab } = useAppNavigation();
+  const fallbackFeature = FEATURES[0] ?? null;
+  const selectedFeature =
+    (activeTab ? FEATURE_BY_ID.get(activeTab) : null) ?? fallbackFeature;
 
   const showNetworkError = networkStatus === 'error';
 
@@ -25,7 +29,9 @@ const AppContent: React.FC = () => {
     <div
       className={cn(
         styles.container,
-        activeTab === 'settings' ? styles.bgSettings : styles.bgDefault
+        selectedFeature?.pageVariant === 'page'
+          ? styles.bgSettings
+          : styles.bgDefault
       )}
     >
       <Header />

@@ -9,6 +9,6 @@ export type {
   CreateAccountResult,
   AccountCredentials,
   AzguardAccountData,
-} from '../aztec-wallet/types/aztec';
+} from '@aztec-wallet/types/aztec';
 
-export { WalletType, ExternalSignerType } from '../aztec-wallet/types/aztec';
+export { WalletType, ExternalSignerType } from '@aztec-wallet/types/aztec';

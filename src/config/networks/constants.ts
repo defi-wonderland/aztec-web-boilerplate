@@ -18,11 +18,6 @@ export const DEFAULT_ARTIFACT_REGISTRY_URL =
   'https://devnet.aztec-registry.xyz';
 
 /**
- * Available network types
- */
-export type NetworkType = keyof typeof NETWORK_URLS;
-
-/**
  * Supported Aztec network identifiers
  */
 export type AztecNetwork = 'sandbox' | 'devnet';
@@ -70,7 +65,7 @@ export const SUPPORTED_CHAINS: AztecChainId[] = Object.values(CHAIN_IDS);
 /**
  * Get the default URL for a network type
  */
-export const getNetworkUrl = (network: NetworkType): string => {
+export const getNetworkUrl = (network: AztecNetwork): string => {
   return NETWORK_URLS[network];
 };
 
@@ -80,3 +75,15 @@ export const getNetworkUrl = (network: NetworkType): string => {
 export const getChainId = (network: string): AztecChainId => {
   return CHAIN_IDS[network as AztecNetwork] ?? CHAIN_IDS.devnet;
 };
+
+/**
+ * Placeholder zero address for undeployed contracts or empty fields
+ */
+export const PLACEHOLDER_ADDRESS =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+/**
+ * Placeholder zero salt for undeployed contracts
+ */
+export const PLACEHOLDER_SALT =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';

@@ -1,19 +1,14 @@
-import { parseArtifactSource } from './contractInteraction';
-import { isKnownStructPath, getKnownStructKind } from './knownStructTypes';
-import { toTitleCase } from './string';
+import {
+  parseArtifactSource,
+  isKnownStructPath,
+  getKnownStructKind,
+} from './artifactParser';
+import { toTitleCase } from './formatting';
 import type { AztecNetwork } from '../config/networks/constants';
 import type { ParsedFunction } from '../types/artifact';
+import type { DeployableContractConfig } from '../types/deployableContract';
 
-export type DeployableContractConfig = {
-  id: string;
-  label: string;
-  network?: AztecNetwork;
-  /** Optional field name to use as the display label in saved contracts. */
-  labelField?: string;
-} & (
-  | { artifact: unknown; classId?: never }
-  | { artifact?: never; classId: string }
-);
+export type { DeployableContractConfig } from '../types/deployableContract';
 
 /**
  * Constructor definition - extends ParsedFunction with a friendly label.
@@ -167,6 +162,7 @@ const extractFromContractArtifact = (artifact: {
     .map((fn) => ({
       name: fn.name,
       inputs: flattenRegistryParameters(fn.parameters ?? []),
+      output: null,
       attributes: ['abi_initializer'],
       isUnconstrained: false,
       label: buildConstructorLabel(fn.name),
@@ -223,19 +219,12 @@ const extractConstructorsFromArtifact = (
 const createDeployableContract = (
   config: DeployableContractConfig
 ): DeployableContract => {
-  if ('classId' in config && config.classId) {
-    return {
-      id: config.id,
-      label: config.label,
-      constructors: [],
-      network: config.network,
-      labelField: config.labelField,
-      classId: config.classId,
-    };
-  }
-
-  const artifactJson = JSON.stringify(config.artifact);
-  const constructors = extractConstructorsFromArtifact(artifactJson);
+  const artifactJson = config.artifact
+    ? JSON.stringify(config.artifact)
+    : undefined;
+  const constructors = artifactJson
+    ? extractConstructorsFromArtifact(artifactJson)
+    : [];
 
   return {
     id: config.id,
@@ -244,6 +233,7 @@ const createDeployableContract = (
     constructors,
     network: config.network,
     labelField: config.labelField,
+    classId: config.classId,
   };
 };
 

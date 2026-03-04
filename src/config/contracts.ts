@@ -1,10 +1,13 @@
-import { createContractConfig } from '../contract-registry';
-import { boilerplateContracts } from './boilerplateContracts';
+import { createContractConfig } from '@contract-registry';
+import { collectFeatureContracts } from '../features';
 
 /**
- * Contract registry configuration.
+ * Aggregation entry point — collects contract configs from all registered features.
  *
- * The boilerplate ships with Dripper and Token (see boilerplateContracts.ts).
+ * Individual contract definitions live in their respective feature modules
+ * (e.g., src/features/mint/config/contracts.ts).
+ *
+ * Contract entries are collected from discovered feature modules.
  * Add your own contracts below — each entry needs:
  *   address          — function returning the contract address
  *   deployParams     — function returning deployment parameters
@@ -13,15 +16,9 @@ import { boilerplateContracts } from './boilerplateContracts';
  * Optional fields:
  *   classId          — class ID for registry lookups
  *   lazyRegister     — if true, register on-demand instead of at startup
+ *
+ * @see src/features/registry.ts for the collection mechanism
  */
 export const contractsConfig = createContractConfig({
-  // Boilerplate demo contracts (Dripper + Token)
-  ...boilerplateContracts,
-
-  // Add your own contracts here:
-  // myContract: {
-  //   address: (config) => config.myContractAddress,
-  //   deployParams: (config) => ({ ... }),
-  //   artifactSources: (config) => [...],
-  // },
+  ...collectFeatureContracts(),
 });

@@ -1,0 +1,1 @@
+export { FeePaymentRegister } from './FeePaymentRegister';

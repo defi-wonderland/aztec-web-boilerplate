@@ -84,8 +84,58 @@ export default tseslint.config(
               group: 'external',
               position: 'after',
             },
+            {
+              pattern: '@aztec-wallet',
+              group: 'parent',
+              position: 'before',
+            },
+            {
+              pattern: '@aztec-wallet/**',
+              group: 'parent',
+              position: 'before',
+            },
+            {
+              pattern: '@contract-registry',
+              group: 'parent',
+              position: 'before',
+            },
+            {
+              pattern: '@contract-registry/**',
+              group: 'parent',
+              position: 'before',
+            },
+            {
+              pattern: '@use-aztec',
+              group: 'parent',
+              position: 'before',
+            },
+            {
+              pattern: '@use-aztec/**',
+              group: 'parent',
+              position: 'before',
+            },
+            {
+              pattern: '@/**',
+              group: 'parent',
+              position: 'before',
+            },
           ],
           pathGroupsExcludedImportTypes: ['react'],
+        },
+      ],
+
+      // Architecture boundary: shared/core utils must stay feature-agnostic
+      'import/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './src/utils',
+              from: './src/features',
+              message:
+                'Core/shared utils must not depend on feature modules.',
+            },
+          ],
         },
       ],
 

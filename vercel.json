@@ -4,6 +4,10 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/api/devnet-status",
+      "destination": "https://v4-devnet-2.aztec-labs.com/status"
+    },
+    {
       "source": "/artifact-registry/:path*",
       "destination": "https://devnet.aztec-registry.xyz/:path*"
     },

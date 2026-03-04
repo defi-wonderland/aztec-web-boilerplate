@@ -31,7 +31,7 @@ import fs from 'fs';
 import path from 'path';
 import {
   NETWORK_URLS,
-  type NetworkType,
+  type AztecNetwork,
 } from '../src/config/networks/constants';
 
 class MinimalWallet extends BaseWallet {
@@ -71,14 +71,14 @@ class MinimalWallet extends BaseWallet {
 }
 
 // Parse command line arguments
-const parseArgs = (): { network: NetworkType } => {
+const parseArgs = (): { network: AztecNetwork } => {
   const args = process.argv.slice(2);
   const networkIndex = args.findIndex(
     (arg) => arg === '--network' || arg === '-n'
   );
 
   if (networkIndex !== -1 && args[networkIndex + 1]) {
-    const network = args[networkIndex + 1] as NetworkType;
+    const network = args[networkIndex + 1] as AztecNetwork;
     if (network !== 'sandbox' && network !== 'devnet') {
       console.error(
         `Invalid network: ${network}. Must be 'sandbox' or 'devnet'`
@@ -460,7 +460,7 @@ interface DeploymentInfo {
 }
 
 async function writeDeploymentConfig(
-  network: NetworkType,
+  network: AztecNetwork,
   deploymentInfo: DeploymentInfo
 ) {
   const configDir = path.join(import.meta.dirname, `../src/config/deployments`);

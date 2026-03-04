@@ -1,60 +1,30 @@
 import React from 'react';
-import { useAztecWallet, isEmbeddedConnector } from '../aztec-wallet';
-import { SecurityWarning } from '../components';
-import { ContractLayout } from '../components/contract-interaction';
+import { FEATURE_BY_ID, FEATURES, NoFeaturesInstalled } from '../features';
 import { useAppNavigation } from '../hooks';
-import { DripperCard } from './DripperCard';
-import { SettingsCard } from './SettingsCard';
-import { UIComponentsShowcase } from './UIComponentsShowcase';
 
 const styles = {
   main: 'flex flex-col',
-  contentWrapper:
-    'w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6',
-  contractWrapper: 'w-full',
-  settingsWrapper:
-    'w-full max-w-[1400px] mx-auto px-0 lg:px-6 xl:px-10 py-0 lg:py-6',
 } as const;
 
 export const MainContent: React.FC = () => {
-  const { connector } = useAztecWallet();
   const { activeTab } = useAppNavigation();
+  const fallbackFeature = FEATURES[0] ?? null;
+  const activeFeature = activeTab ? FEATURE_BY_ID.get(activeTab) : null;
+  const selectedFeature = activeFeature ?? fallbackFeature;
 
-  const showSecurityWarning =
-    connector?.getStatus().status === 'connected' &&
-    isEmbeddedConnector(connector);
+  if (!selectedFeature) {
+    return (
+      <main className={styles.main}>
+        <NoFeaturesInstalled />
+      </main>
+    );
+  }
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'mint':
-        return (
-          <div className={styles.contentWrapper}>
-            {showSecurityWarning && <SecurityWarning />}
-            <DripperCard />
-          </div>
-        );
-      case 'contract':
-        return (
-          <div className={styles.contractWrapper}>
-            <ContractLayout />
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className={styles.settingsWrapper}>
-            <SettingsCard />
-          </div>
-        );
-      case 'components':
-        return (
-          <div className={styles.contentWrapper}>
-            <UIComponentsShowcase />
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  const ActiveFeature = selectedFeature.component;
 
-  return <main className={styles.main}>{renderContent()}</main>;
+  return (
+    <main className={styles.main}>
+      <ActiveFeature />
+    </main>
+  );
 };

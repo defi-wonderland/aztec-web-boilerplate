@@ -1,5 +1,4 @@
-export { useContract } from './useContract';
-export { useContractRegistry } from './useContractRegistry';
+export { useContract, useContractRegistry } from '@contract-registry';
 export {
   ModalProvider,
   useModal,

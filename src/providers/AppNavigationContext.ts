@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import type { TabType } from '../types';
 
 export interface AppNavigationContextValue {
-  activeTab: TabType;
+  activeTab: TabType | null;
   setActiveTab: (tab: TabType) => void;
 }
 
