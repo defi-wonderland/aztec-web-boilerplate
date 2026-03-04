@@ -153,7 +153,7 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
   const { wallet, fromAddress, contracts, allowFailure } = params;
 
   const contractCache = new Map<string, ReturnType<typeof Contract.at>>();
-  const results: (ReadContractResult | unknown)[] = [];
+  const results: ReadContractResult[] = [];
 
   for (const contract of contracts) {
     const cacheKey = `${contract.address}:${contract.artifact.name}`;
@@ -186,9 +186,7 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
       const result = await method(...contract.args).simulate({
         from: fromAddress,
       });
-      results.push(
-        allowFailure ? { status: 'success' as const, result } : result
-      );
+      results.push({ status: 'success' as const, result });
     } catch (err) {
       if (allowFailure) {
         results.push({
@@ -201,5 +199,8 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
     }
   }
 
-  return results as BatchReadResult<TAllowFailure>;
+  if (allowFailure) {
+    return results as BatchReadResult<TAllowFailure>;
+  }
+  return results.map((r) => r.result) as BatchReadResult<TAllowFailure>;
 };

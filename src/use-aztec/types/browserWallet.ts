@@ -21,7 +21,7 @@ export interface ContractCall {
   kind: 'call';
   contract: string;
   method: string;
-  args: unknown[];
+  args: readonly unknown[];
 }
 
 /**

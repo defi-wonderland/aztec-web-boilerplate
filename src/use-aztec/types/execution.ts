@@ -7,7 +7,7 @@ export interface ReadExecutionParams {
   artifact: ContractArtifact;
   address: string;
   functionName: string;
-  args: unknown[];
+  args: readonly unknown[];
 }
 
 /** Parameters for batch contract read execution. */
@@ -23,7 +23,7 @@ export interface WriteExecutionParams {
   artifact: ContractArtifact;
   address: string;
   functionName: string;
-  args: unknown[];
+  args: readonly unknown[];
   feePaymentMethod?: unknown;
   timeout?: number;
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };

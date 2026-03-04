@@ -30,7 +30,7 @@ export const writeContract = async (
     artifact: params.contract.artifact,
     address: params.address,
     functionName: params.functionName,
-    args: [...params.args],
+    args: params.args,
     feePaymentMethod: params.feePaymentMethod,
     timeout: params.timeout,
     receiptPolling: params.receiptPolling,

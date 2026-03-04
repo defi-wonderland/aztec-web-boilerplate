@@ -21,8 +21,6 @@ export type {
   ReadContractsContract,
   ReadContractResult,
   UseReadContractsParams,
-  DynamicReadContractConfig,
-  DynamicWriteContractConfig,
 } from '../use-aztec';
 // Re-export use-aztec's WriteContractMutateParams and WriteContractActionParams
 // but override feePaymentMethod with the app-specific FeePaymentMethodType

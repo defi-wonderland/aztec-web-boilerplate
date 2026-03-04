@@ -6,7 +6,7 @@ import { useAztecClient } from '../../../use-aztec';
 interface CallParams {
   address: string;
   functionName: string;
-  args: unknown[];
+  args: unknown[]; // Untyped — the artifact's ABI handles encoding/decoding at runtime
 }
 
 interface CallResult {

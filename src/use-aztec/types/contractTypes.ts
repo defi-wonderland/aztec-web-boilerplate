@@ -164,24 +164,13 @@ export interface UseWriteContractOptions {
 
 /**
  * Return type for the useWriteContract hook.
- * Full TanStack `UseMutationResult` plus wagmi-style `writeContract` / `writeContractAsync` methods.
+ * Standard TanStack `UseMutationResult` — call `.mutate()` / `.mutateAsync()` to write.
  */
 export type UseWriteContractReturn = UseMutationResult<
   WriteContractData,
   Error,
   WriteContractActionParams
-> & {
-  /** Fire-and-forget write (errors go to isError/error) */
-  writeContract: <T extends ContractBase, M extends MethodsOf<T>>(
-    params: WriteContractMutateParams<T, M>,
-    options?: WriteContractCallOptions
-  ) => void;
-  /** Async write that returns the result or throws */
-  writeContractAsync: <T extends ContractBase, M extends MethodsOf<T>>(
-    params: WriteContractMutateParams<T, M>,
-    options?: WriteContractCallOptions
-  ) => Promise<WriteContractData>;
-};
+>;
 
 // =============================================================================
 // useReadContracts types (batch reads)
@@ -232,27 +221,3 @@ export interface WriteContractActionParams {
 }
 
 // =============================================================================
-// Dynamic contract types
-// =============================================================================
-
-/**
- * Configuration for a dynamic (untyped) contract read/simulate operation.
- * Used when only a raw artifact is available (e.g. Contract Explorer).
- */
-export interface DynamicReadContractConfig {
-  artifact: ContractArtifact;
-  address: string;
-  functionName: string;
-  args: unknown[];
-}
-
-/**
- * Configuration for a dynamic (untyped) contract write operation.
- * Used when only a raw artifact is available (e.g. Contract Explorer).
- */
-export interface DynamicWriteContractConfig {
-  artifact: ContractArtifact;
-  address: string;
-  functionName: string;
-  args: unknown[];
-}

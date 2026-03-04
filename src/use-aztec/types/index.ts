@@ -21,8 +21,6 @@ export type {
   ReadContractsContract,
   ReadContractResult,
   UseReadContractsParams,
-  DynamicReadContractConfig,
-  DynamicWriteContractConfig,
 } from './contractTypes';
 
 // Browser wallet operation types

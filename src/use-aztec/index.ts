@@ -28,8 +28,6 @@
 // =============================================================================
 
 export { UseAztecProvider } from './context';
-export { AztecClientNotReady } from './errors';
-
 // =============================================================================
 // HOOKS
 // =============================================================================
@@ -40,27 +38,10 @@ export { useReadContracts } from './hooks';
 export { useAztecClient } from './hooks';
 
 // =============================================================================
-// ACTIONS
-// =============================================================================
-
-export { writeContract } from './actions';
-export { readContract } from './actions';
-export { readContracts } from './actions';
-
-// =============================================================================
 // TYPES
 // =============================================================================
 
 export type {
-  // Runtime execution types
-  AztecExecutionClient,
-  ReadExecutionParams,
-  BatchReadExecutionParams,
-  WriteExecutionParams,
-  // Action param types
-  ReadContractActionParams,
-  ReadContractsActionParams,
-  WriteContractActionParams,
   // Contract types
   MethodsOf,
   ArgsOf,
@@ -76,8 +57,6 @@ export type {
   ReadContractsContract,
   ReadContractResult,
   UseReadContractsParams,
-  DynamicReadContractConfig,
-  DynamicWriteContractConfig,
   // Browser wallet operation types
   BrowserWalletOperationResult,
   BrowserWalletOperation,
