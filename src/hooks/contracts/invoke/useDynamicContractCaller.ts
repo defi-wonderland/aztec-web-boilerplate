@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import { useAztecWallet } from '../../../aztec-wallet';
-import { useWalletExecutionClient } from '../../../integrations/use-aztec-wallet';
 import { useFeePayment } from '../../../store/feePayment';
+import { useAztecClient } from '../../../use-aztec';
 
 interface CallParams {
   address: string;
@@ -25,8 +24,7 @@ interface CallResult {
 export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
-  const client = useWalletExecutionClient();
-  const { isConnected } = useAztecWallet();
+  const client = useAztecClient();
   const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -35,10 +33,6 @@ export const useDynamicContractCaller = (
   const simulate = useCallback(
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
-
-      if (!isConnected) {
-        return { success: false, error: 'Wallet not connected' };
-      }
 
       if (!artifact) {
         return { success: false, error: 'Artifact not loaded' };
@@ -68,16 +62,12 @@ export const useDynamicContractCaller = (
         setIsSimulating(false);
       }
     },
-    [artifact, client, isConnected]
+    [artifact, client]
   );
 
   const execute = useCallback(
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
-
-      if (!isConnected) {
-        return { success: false, error: 'Wallet not connected' };
-      }
 
       if (!artifact) {
         return { success: false, error: 'Artifact not loaded' };
@@ -112,7 +102,7 @@ export const useDynamicContractCaller = (
         setIsExecuting(false);
       }
     },
-    [artifact, client, feePaymentMethod, isConnected]
+    [artifact, client, feePaymentMethod]
   );
 
   return {

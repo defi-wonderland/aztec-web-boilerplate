@@ -1,4 +1,4 @@
-import type { ReadContractsContract } from '../../types/contractTypes';
+import type { ReadContractsContract } from '../types/contractTypes';
 import type { AztecExecutionClient, BatchReadResult } from '../types/execution';
 
 /**

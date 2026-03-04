@@ -3,7 +3,7 @@ import type {
   ArgsOf,
   ContractClassFor,
   MethodsOf,
-} from '../../types/contractTypes';
+} from '../types/contractTypes';
 import type { AztecExecutionClient } from '../types/execution';
 
 /**

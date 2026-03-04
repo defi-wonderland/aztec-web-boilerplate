@@ -2,7 +2,7 @@ import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
   GetTxReceiptOp,
-} from '../../types/browserWallet';
+} from '../types/browserWallet';
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_MAX_ATTEMPTS = 30; // 60 seconds total

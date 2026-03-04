@@ -1,6 +1,30 @@
+/**
+ * Browser wallet types.
+ *
+ * Re-exports operation types from use-aztec and defines app-specific
+ * adapter interfaces and state types.
+ */
+
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type {
+  BrowserWalletOperation,
+  BrowserWalletOperationResult,
+} from '../use-aztec';
 import type { ConnectionStatus } from './walletConnector';
 import type { AztecNetwork } from '../config/networks/constants';
+
+// Re-export operation types from use-aztec as the canonical source
+export type {
+  BrowserWalletOperationResult,
+  BrowserWalletOperation,
+  SimulateViewsOp,
+  SendTransactionOp,
+  GetTxReceiptOp,
+  RegisterContractOp,
+  ContractCall,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
+} from '../use-aztec';
 
 /**
  * Generic state for any browser wallet extension.
@@ -13,105 +37,6 @@ export interface BrowserWalletState {
   supportedChains: string[];
   error: string | null;
 }
-
-/**
- * Generic operation result from browser wallet.
- */
-export interface BrowserWalletOperationResult {
-  status: 'ok' | 'failed' | 'skipped';
-  result?: unknown;
-  error?: string;
-}
-
-/**
- * A single action within a connector transaction request.
- */
-export interface ConnectorTransactionAction {
-  contract: string;
-  method: string;
-  args: unknown[];
-}
-
-/**
- * Request to send a transaction via a connector.
- */
-export interface ConnectorTransactionRequest {
-  actions: ConnectorTransactionAction[];
-  metadata?: Record<string, unknown>;
-}
-
-/**
- * Result of a connector transaction.
- */
-export interface ConnectorTransactionResult {
-  status: 'success' | 'failed';
-  txHash?: string;
-  error?: string;
-  rawResult?: unknown;
-}
-
-// ============================================================================
-// Generic Operations (wallet-agnostic)
-// ============================================================================
-
-/**
- * A single contract call within an operation.
- */
-export interface ContractCall {
-  kind: 'call';
-  contract: string;
-  method: string;
-  args: unknown[];
-}
-
-/**
- * Simulate view functions without sending a transaction.
- */
-export interface SimulateViewsOp {
-  kind: 'simulate_views';
-  account: string;
-  calls: ContractCall[];
-}
-
-/**
- * Send a transaction to the network.
- */
-export interface SendTransactionOp {
-  kind: 'send_transaction';
-  account: string;
-  chain: string;
-  calls: ContractCall[];
-}
-
-/**
- * Get a transaction receipt by hash.
- */
-export interface GetTxReceiptOp {
-  kind: 'aztec_getTxReceipt';
-  chain: string;
-  txHash: string;
-}
-
-/**
- * Register a contract with the browser wallet.
- * Note: The instance/artifact structure may vary by wallet implementation.
- */
-export interface RegisterContractOp {
-  kind: 'register_contract';
-  chain: string;
-  address: string;
-  instance: unknown;
-  artifact: unknown;
-}
-
-/**
- * Union of all supported browser wallet operations.
- */
-export type BrowserWalletOperation =
-  | SimulateViewsOp
-  | SendTransactionOp
-  | GetTxReceiptOp
-  | RegisterContractOp;
 
 /**
  * Interface that any browser wallet adapter must implement.

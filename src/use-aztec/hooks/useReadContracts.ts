@@ -3,7 +3,7 @@ import { readContracts as readContractsAction } from '../actions/readContracts';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import { AztecClientNotReady } from '../errors';
 import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
-import type { UseReadContractsParams } from '../../types/contractTypes';
+import type { UseReadContractsParams } from '../types/contractTypes';
 import type { BatchReadResult } from '../types/execution';
 import type { UseQueryResult } from '@tanstack/react-query';
 

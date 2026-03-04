@@ -9,11 +9,11 @@ import type { AztecAddress as AztecAddressType } from '@aztec/aztec.js/addresses
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { getContractMethod } from '../utils/getContractMethod';
-import type { SimulateViewsOp } from '../../types/browserWallet';
+import type { SimulateViewsOp } from '../types/browserWallet';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
-} from '../../types/browserWallet';
+} from '../types/browserWallet';
 import type {
   BatchReadResult,
   ReadContractResult,

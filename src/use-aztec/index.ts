@@ -61,7 +61,7 @@ export type {
   ReadContractActionParams,
   ReadContractsActionParams,
   WriteContractActionParams,
-  // Contract types (re-exported from contractTypes.ts)
+  // Contract types
   MethodsOf,
   ArgsOf,
   ContractClassFor,
@@ -76,4 +76,16 @@ export type {
   ReadContractsContract,
   ReadContractResult,
   UseReadContractsParams,
+  DynamicReadContractConfig,
+  DynamicWriteContractConfig,
+  // Browser wallet operation types
+  BrowserWalletOperationResult,
+  BrowserWalletOperation,
+  SimulateViewsOp,
+  SendTransactionOp,
+  GetTxReceiptOp,
+  RegisterContractOp,
+  ContractCall,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
 } from './types';

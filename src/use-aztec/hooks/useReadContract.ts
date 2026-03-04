@@ -7,7 +7,7 @@ import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
 import type {
   MethodsOf,
   UseReadContractParams,
-} from '../../types/contractTypes';
+} from '../types/contractTypes';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 /**

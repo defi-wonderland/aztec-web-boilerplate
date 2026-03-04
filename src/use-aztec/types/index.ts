@@ -1,11 +1,10 @@
 /**
- * use-aztec Type Re-exports
+ * use-aztec Type Exports
  *
- * Re-exports contract types from the app's canonical source
- * plus use-aztec execution client types.
+ * All types are self-contained within use-aztec.
  */
 
-// Contract types — source of truth stays in src/types/contractTypes.ts
+// Contract types
 export type {
   MethodsOf,
   ArgsOf,
@@ -22,7 +21,22 @@ export type {
   ReadContractsContract,
   ReadContractResult,
   UseReadContractsParams,
-} from '../../types/contractTypes';
+  DynamicReadContractConfig,
+  DynamicWriteContractConfig,
+} from './contractTypes';
+
+// Browser wallet operation types
+export type {
+  BrowserWalletOperationResult,
+  BrowserWalletOperation,
+  SimulateViewsOp,
+  SendTransactionOp,
+  GetTxReceiptOp,
+  RegisterContractOp,
+  ContractCall,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
+} from './browserWallet';
 
 // Execution client types
 export type {

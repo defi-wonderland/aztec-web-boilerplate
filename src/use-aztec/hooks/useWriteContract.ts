@@ -11,7 +11,7 @@ import type {
   WriteContractCallOptions,
   UseWriteContractOptions,
   UseWriteContractReturn,
-} from '../../types/contractTypes';
+} from '../types/contractTypes';
 
 /**
  * Hook for executing write operations on Aztec contracts.

@@ -1,7 +1,7 @@
 import type {
   WriteContractActionParams,
   WriteContractData,
-} from '../../types/contractTypes';
+} from '../types/contractTypes';
 import type { AztecExecutionClient } from '../types/execution';
 
 export type { WriteContractActionParams };

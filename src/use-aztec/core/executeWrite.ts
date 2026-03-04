@@ -20,8 +20,8 @@ import type {
   BrowserWalletOperationResult,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
-} from '../../types/browserWallet';
-import type { WriteContractData } from '../../types/contractTypes';
+} from '../types/browserWallet';
+import type { WriteContractData } from '../types/contractTypes';
 
 // =============================================================================
 // Browser Wallet Write
