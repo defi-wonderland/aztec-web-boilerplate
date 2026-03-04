@@ -4,10 +4,7 @@ import { readContract as readContractAction } from '../actions/readContract';
 import { useInternalAztecClient } from '../context/useInternalAztecClient';
 import { AztecClientNotReady } from '../errors';
 import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
-import type {
-  MethodsOf,
-  UseReadContractParams,
-} from '../types/contractTypes';
+import type { MethodsOf, UseReadContractParams } from '../types/contractTypes';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 /**

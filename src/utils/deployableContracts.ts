@@ -3,6 +3,7 @@ import { isKnownStructPath, getKnownStructKind } from './knownStructTypes';
 import { toTitleCase } from './string';
 import type { AztecNetwork } from '../config/networks/constants';
 import type { ParsedFunction } from '../types/artifact';
+import type { ArtifactSourceConfig } from '../types/artifactSource';
 
 export type DeployableContractConfig = {
   id: string;
@@ -10,6 +11,7 @@ export type DeployableContractConfig = {
   network?: AztecNetwork;
   /** Optional field name to use as the display label in saved contracts. */
   labelField?: string;
+  artifactSources?: ArtifactSourceConfig[];
 } & (
   | { artifact: unknown; classId?: never }
   | { artifact?: never; classId: string }
@@ -37,6 +39,8 @@ export type DeployableContract = {
   labelField?: string;
   /** Class ID to fetch artifact from registry */
   classId?: string;
+  /** Optional ordered fallback chain for artifact resolution. */
+  artifactSources?: ArtifactSourceConfig[];
 };
 
 /**
@@ -167,6 +171,7 @@ const extractFromContractArtifact = (artifact: {
     .map((fn) => ({
       name: fn.name,
       inputs: flattenRegistryParameters(fn.parameters ?? []),
+      output: null,
       attributes: ['abi_initializer'],
       isUnconstrained: false,
       label: buildConstructorLabel(fn.name),
@@ -231,6 +236,7 @@ const createDeployableContract = (
       network: config.network,
       labelField: config.labelField,
       classId: config.classId,
+      artifactSources: config.artifactSources,
     };
   }
 

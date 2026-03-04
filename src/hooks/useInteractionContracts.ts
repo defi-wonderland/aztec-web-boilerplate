@@ -4,7 +4,7 @@ import {
   PRECONFIGURED_CONTRACTS,
   type PreconfiguredContract,
 } from '../config/preconfiguredContracts';
-import { ArtifactRegistryService } from '../services/aztec/artifactRegistry';
+import { ArtifactService } from '../services/aztec/artifact/ArtifactService';
 import {
   getDeployableContractsForNetwork,
   findDeployableContract,
@@ -13,8 +13,6 @@ import {
   type DeployableContract,
 } from '../utils/deployableContracts';
 import type { AztecNetwork } from '../config/networks/constants';
-
-const REGISTRY_URL = import.meta.env.VITE_ARTIFACT_REGISTRY_URL;
 
 export const usePreconfiguredContracts = (networkName?: AztecNetwork) => {
   return useMemo(() => {
@@ -68,8 +66,8 @@ export const findConstructorByName = (
 
 /**
  * Resolve artifact for a preconfigured contract.
- * Returns artifactJson string, fetching from registry if needed.
- * Preconfigured contracts by default are trusted, so validation is skipped for performance.
+ * Returns artifactJson string using ArtifactService's full
+ * fallback chain (cache → registry → external → local).
  */
 export const resolvePreconfiguredArtifact = async (
   contract: PreconfiguredContract
@@ -78,14 +76,13 @@ export const resolvePreconfiguredArtifact = async (
     return contract.artifactJson;
   }
 
-  if ('classId' in contract && contract.classId && REGISTRY_URL) {
-    const service = ArtifactRegistryService.getInstance(REGISTRY_URL);
-    const cachedString = service.getStringifiedArtifact(contract.classId);
-    if (cachedString) {
-      return cachedString;
-    }
-    await service.getArtifact(contract.classId, { skipValidation: true });
-    return service.getStringifiedArtifact(contract.classId);
+  if (contract.artifactSources && contract.classId) {
+    const { artifact } = await ArtifactService.getInstance().loadArtifact(
+      contract.id,
+      contract.artifactSources,
+      contract.classId
+    );
+    return JSON.stringify(artifact);
   }
 
   return null;
@@ -93,11 +90,7 @@ export const resolvePreconfiguredArtifact = async (
 
 /**
  * Resolve artifact for a deployable contract.
- * Uses ArtifactRegistryService which has three-tier caching:
- * 1. Memory cache (instant, populated during app init)
- * 2. IndexedDB (fast, persisted across sessions)
- * 3. Network (only if not cached)
- *
+ * Uses ArtifactService's full fallback chain (cache → registry → external → local).
  * Returns fully hydrated DeployableContract with constructors.
  */
 export const resolveDeployableArtifact = async (
@@ -107,13 +100,14 @@ export const resolveDeployableArtifact = async (
     return contract;
   }
 
-  if (!REGISTRY_URL) {
+  if (!contract.artifactSources) {
     return contract;
   }
 
-  // ArtifactRegistryService is a singleton - same instance used by app init
-  // Memory cache is populated during init, so this returns instantly for known classIds
-  const service = ArtifactRegistryService.getInstance(REGISTRY_URL);
-  const { artifact } = await service.getArtifact(contract.classId);
+  const { artifact } = await ArtifactService.getInstance().loadArtifact(
+    contract.id,
+    contract.artifactSources,
+    contract.classId
+  );
   return resolveDeployableContract(contract, artifact);
 };
