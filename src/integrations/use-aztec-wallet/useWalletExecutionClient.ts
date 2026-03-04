@@ -6,6 +6,7 @@ import { createWalletExecutionClient } from './createWalletExecutionClient';
 export const useWalletExecutionClient = () => {
   const { connector, account, isConnected, currentConfig } = useAztecWallet();
   const { method: defaultFeePaymentMethod } = useFeePayment();
+  const feePaymentConfig = currentConfig?.feePaymentContracts;
 
   return useMemo(
     () =>
@@ -13,9 +14,9 @@ export const useWalletExecutionClient = () => {
         connector,
         account,
         isConnected,
-        feePaymentConfig: currentConfig?.feePaymentContracts,
+        feePaymentConfig,
         defaultFeePaymentMethod,
       }),
-    [connector, account, isConnected, currentConfig, defaultFeePaymentMethod]
+    [connector, account, isConnected, feePaymentConfig, defaultFeePaymentMethod]
   );
 };
