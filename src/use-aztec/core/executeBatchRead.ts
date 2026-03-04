@@ -110,7 +110,7 @@ export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
 
     if (allowFailure) {
       return contracts.map(() => ({
-        status: 'failure' as const,
+        status: 'failed' as const,
         error: new Error(errorMsg),
       })) as BatchReadResult<TAllowFailure>;
     }
@@ -172,7 +172,7 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
     if (!method) {
       if (allowFailure) {
         results.push({
-          status: 'failure' as const,
+          status: 'failed' as const,
           error: new Error(
             `Method ${contract.functionName} not found on contract`
           ),
@@ -190,7 +190,7 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
     } catch (err) {
       if (allowFailure) {
         results.push({
-          status: 'failure' as const,
+          status: 'failed' as const,
           error: err instanceof Error ? err : new Error(String(err)),
         });
       } else {

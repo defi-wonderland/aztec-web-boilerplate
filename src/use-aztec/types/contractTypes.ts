@@ -190,7 +190,7 @@ export interface ReadContractsContract<
 /** Per-result shape when allowFailure is true. Discriminated union on `status`. */
 export type ReadContractResult =
   | { status: 'success'; result: unknown; error?: undefined }
-  | { status: 'failure'; result?: undefined; error: Error };
+  | { status: 'failed'; result?: undefined; error: Error };
 
 /** Params for useReadContracts. */
 export interface UseReadContractsParams<
