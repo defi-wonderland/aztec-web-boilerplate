@@ -9,6 +9,7 @@ import type { AztecAddress as AztecAddressType } from '@aztec/aztec.js/addresses
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { getContractMethod } from './utils/getContractMethod';
+import { serializeArgs } from './utils/serializeArgs';
 import type { ReadContractResult } from '../../use-aztec/types/contractTypes';
 import type {
   BatchReadResult,
@@ -96,7 +97,7 @@ export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
       kind: 'call' as const,
       contract: c.address,
       method: c.functionName,
-      args: c.args,
+      args: serializeArgs(c.args),
     })),
   };
 

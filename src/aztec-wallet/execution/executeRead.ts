@@ -10,6 +10,7 @@ import type { AztecAddress as AztecAddressType } from '@aztec/aztec.js/addresses
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { getContractMethod } from './utils/getContractMethod';
+import { serializeArgs } from './utils/serializeArgs';
 import type { SimulateViewsOp } from '../types/browserWallet';
 import type {
   BrowserWalletOperation,
@@ -76,7 +77,7 @@ export const executeBrowserWalletRead = async (
         kind: 'call',
         contract: address,
         method: functionName,
-        args,
+        args: serializeArgs(args),
       },
     ],
   };
