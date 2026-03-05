@@ -15,13 +15,13 @@ import {
 import { parseAddressFromCaip } from '../../../utils/caip';
 import { AzguardWalletService } from './AzguardWalletService';
 import type {
-  IBrowserWalletAdapter,
-  BrowserWalletState,
-} from '../../../types/browserWallet';
-import type {
   BrowserWalletOperationResult,
   BrowserWalletOperation,
-} from '../../../use-aztec';
+} from '../../types/browserWallet';
+import type {
+  IBrowserWalletAdapter,
+  BrowserWalletState,
+} from '../../types/browserWalletAdapter';
 import type {
   CaipAccount,
   CaipChain,

@@ -178,7 +178,7 @@ export { WalletType, ExternalSignerType } from './types/aztec';
 export type {
   WalletConnector,
   WalletConnectorId,
-} from '../types/walletConnector';
+} from './types/walletConnector';
 
 // =============================================================================
 // TYPE GUARDS
@@ -194,7 +194,7 @@ export type {
  * }
  * ```
  */
-export { isEmbeddedConnector } from '../types/walletConnector';
+export { isEmbeddedConnector } from './types/walletConnector';
 
 /**
  * Type guard to check if a connector is an external signer connector (EVM wallet).
@@ -206,7 +206,7 @@ export { isEmbeddedConnector } from '../types/walletConnector';
  * }
  * ```
  */
-export { isExternalSignerConnector } from '../types/walletConnector';
+export { isExternalSignerConnector } from './types/walletConnector';
 
 /**
  * Type guard to check if a connector is a browser wallet connector (Azguard).
@@ -218,7 +218,7 @@ export { isExternalSignerConnector } from '../types/walletConnector';
  * }
  * ```
  */
-export { isBrowserWalletConnector } from '../types/walletConnector';
+export { isBrowserWalletConnector } from './types/walletConnector';
 
 /**
  * Type guard to check if a connector has app-managed PXE.
@@ -232,7 +232,7 @@ export { isBrowserWalletConnector } from '../types/walletConnector';
  * }
  * ```
  */
-export { hasAppManagedPXE } from '../types/walletConnector';
+export { hasAppManagedPXE } from './types/walletConnector';
 
 // =============================================================================
 // EXECUTION CLIENT

@@ -6,8 +6,8 @@
  */
 
 import { MetaMaskIcon, RabbyIcon, AzguardIcon } from '../assets/icons';
-import type { IBrowserWalletAdapter } from '../../types/browserWallet';
 import type { IconType } from '../types';
+import type { IBrowserWalletAdapter } from '../types/browserWalletAdapter';
 
 // =============================================================================
 // Types

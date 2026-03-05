@@ -1,5 +1,5 @@
 /**
- * Browser wallet operation types for use-aztec.
+ * Browser wallet operation types for aztec-wallet.
  *
  * These types define the protocol for communicating with browser wallet
  * extensions. They are intentionally kept minimal and wallet-agnostic.

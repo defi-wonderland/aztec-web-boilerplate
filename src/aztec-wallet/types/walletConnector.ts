@@ -8,7 +8,7 @@ import type {
   BrowserWalletOperationResult,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
-} from '../use-aztec';
+} from './browserWallet';
 import type { CaipAccount } from '@azguardwallet/types';
 
 export type WalletConnectorId = string;

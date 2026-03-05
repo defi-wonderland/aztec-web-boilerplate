@@ -1,16 +1,16 @@
 /**
- * Browser wallet types.
+ * Browser wallet adapter types.
  *
- * Defines app-specific adapter interfaces and state types.
+ * Defines the adapter interface and state types for browser wallet extensions.
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
-} from '../use-aztec';
+} from './browserWallet';
 import type { ConnectionStatus } from './walletConnector';
-import type { AztecNetwork } from '../config/networks/constants';
+import type { AztecNetwork } from '../../config/networks/constants';
 
 /**
  * Generic state for any browser wallet extension.

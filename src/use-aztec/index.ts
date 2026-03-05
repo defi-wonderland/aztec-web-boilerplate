@@ -57,14 +57,10 @@ export type {
   ReadContractsContract,
   ReadContractResult,
   UseReadContractsParams,
-  // Browser wallet operation types
-  BrowserWalletOperationResult,
-  BrowserWalletOperation,
-  SimulateViewsOp,
-  SendTransactionOp,
-  GetTxReceiptOp,
-  RegisterContractOp,
-  ContractCall,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
+  // Execution client types
+  AztecExecutionClient,
+  BatchReadResult,
+  ReadExecutionParams,
+  BatchReadExecutionParams,
+  WriteExecutionParams,
 } from './types';

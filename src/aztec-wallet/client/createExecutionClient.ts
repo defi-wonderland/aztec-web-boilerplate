@@ -5,26 +5,26 @@ import {
 } from '../../config/feePaymentContracts';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment/index';
 import {
-  hasAppManagedPXE,
-  isBrowserWalletConnector,
-} from '../../types/walletConnector';
-import {
   executeAppManagedBatch,
   executeAppManagedRead,
   executeAppManagedWrite,
   executeBrowserWalletBatch,
   executeBrowserWalletRead,
   executeBrowserWalletWrite,
-} from '../../use-aztec/core';
+} from '../execution';
+import {
+  hasAppManagedPXE,
+  isBrowserWalletConnector,
+} from '../types/walletConnector';
 import type { FeePaymentContractsConfig } from '../../config/networks/types';
 import type { FeePaymentContext } from '../../services/aztec/feePayment/index';
-import type { WalletConnector } from '../../types/walletConnector';
 import type {
   AztecExecutionClient,
   BatchReadExecutionParams,
   ReadExecutionParams,
   WriteExecutionParams,
 } from '../../use-aztec/types/execution';
+import type { WalletConnector } from '../types/walletConnector';
 
 interface CreateWalletExecutionClientParams {
   connector: WalletConnector | null;

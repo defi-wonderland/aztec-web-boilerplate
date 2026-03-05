@@ -1,13 +1,13 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { hasHexPrefix } from '@aztec/foundation/string';
+import { isBrowserWalletConnector } from '../aztec-wallet/types/walletConnector';
 import { PLACEHOLDER_ADDRESS } from '../config/deployments';
 import {
   CHAIN_ID_TO_NETWORK,
   NETWORK_NAMES,
 } from '../config/networks/constants';
-import { isBrowserWalletConnector } from '../types/walletConnector';
-import type { WalletConnector } from '../types/walletConnector';
+import type { WalletConnector } from '../aztec-wallet/types/walletConnector';
 export { cn } from './cn';
 export { downloadAsFile } from './file';
 export {

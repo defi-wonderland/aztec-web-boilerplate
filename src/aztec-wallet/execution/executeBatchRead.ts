@@ -8,14 +8,17 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { AztecAddress as AztecAddressType } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
-import { getContractMethod } from '../utils/getContractMethod';
+import { getContractMethod } from './utils/getContractMethod';
+import type { ReadContractResult } from '../../use-aztec/types/contractTypes';
+import type {
+  BatchReadResult,
+  ReadExecutionParams,
+} from '../../use-aztec/types/execution';
 import type { SimulateViewsOp } from '../types/browserWallet';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
 } from '../types/browserWallet';
-import type { ReadContractResult } from '../types/contractTypes';
-import type { BatchReadResult, ReadExecutionParams } from '../types/execution';
 
 /**
  * Parse the raw result from a browser wallet batch simulation.

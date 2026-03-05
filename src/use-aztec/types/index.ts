@@ -23,19 +23,6 @@ export type {
   UseReadContractsParams,
 } from './contractTypes';
 
-// Browser wallet operation types
-export type {
-  BrowserWalletOperationResult,
-  BrowserWalletOperation,
-  SimulateViewsOp,
-  SendTransactionOp,
-  GetTxReceiptOp,
-  RegisterContractOp,
-  ContractCall,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
-} from './browserWallet';
-
 // Execution client types
 export type {
   AztecExecutionClient,
