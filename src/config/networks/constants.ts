@@ -31,11 +31,11 @@ export function toProxiedGithubUrl(url: string): string {
 
 /** Resolved registry URL (env override or default). */
 export const ARTIFACT_REGISTRY_URL: string =
-  import.meta.env.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL;
+  import.meta?.env?.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL;
 
 /** Resolved external tgz URL (env override → CORS proxy). */
 export const EXTERNAL_TGZ_URL: string = toProxiedGithubUrl(
-  import.meta.env.VITE_EXTERNAL_TGZ_URL ?? DEFAULT_EXTERNAL_TGZ_URL
+  import.meta?.env?.VITE_EXTERNAL_TGZ_URL ?? DEFAULT_EXTERNAL_TGZ_URL
 );
 
 /**
