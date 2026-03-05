@@ -163,14 +163,40 @@ export interface UseWriteContractOptions {
 }
 
 /**
- * Return type for the useWriteContract hook.
- * Standard TanStack `UseMutationResult` — call `.mutate()` / `.mutateAsync()` to write.
+ * Generic `mutate` signature — infers `TContract` and `TMethod` from params
+ * so that `args` is compile-time checked against the contract ABI.
  */
-export type UseWriteContractReturn = UseMutationResult<
-  WriteContractData,
-  Error,
-  WriteContractActionParams
->;
+type UseWriteContractMutate = <
+  TContract extends ContractBase,
+  TMethod extends MethodsOf<TContract>,
+>(
+  params: WriteContractMutateParams<TContract, TMethod>,
+  options?: WriteContractCallOptions
+) => void;
+
+/**
+ * Generic `mutateAsync` signature — same inference, returns a Promise.
+ */
+type UseWriteContractMutateAsync = <
+  TContract extends ContractBase,
+  TMethod extends MethodsOf<TContract>,
+>(
+  params: WriteContractMutateParams<TContract, TMethod>,
+  options?: WriteContractCallOptions
+) => Promise<WriteContractData>;
+
+/**
+ * Return type for the useWriteContract hook.
+ * Overrides `mutate` / `mutateAsync` with generic signatures so callers
+ * get compile-time arg checking without needing explicit type annotations.
+ */
+export type UseWriteContractReturn = Omit<
+  UseMutationResult<WriteContractData, Error, WriteContractActionParams>,
+  'mutate' | 'mutateAsync'
+> & {
+  mutate: UseWriteContractMutate;
+  mutateAsync: UseWriteContractMutateAsync;
+};
 
 // =============================================================================
 // useReadContracts types (batch reads)

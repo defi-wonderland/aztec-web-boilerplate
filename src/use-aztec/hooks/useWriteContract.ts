@@ -41,5 +41,5 @@ export const useWriteContract = (
     onSuccess,
     onError,
     onSettled,
-  });
+  }) as unknown as UseWriteContractReturn;
 };
