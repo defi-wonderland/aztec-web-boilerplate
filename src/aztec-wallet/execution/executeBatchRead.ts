@@ -54,11 +54,8 @@ export const parseBatchResult = (
     return assertExpectedLength(decoded);
   }
 
-  // Single-call result wrapped — return as single-element array
-  if (expectedLength === 1) return [raw];
-
   throw new Error(
-    `Unexpected batch result shape: expected array of ${expectedLength} results`
+    `Unexpected batch result shape: expected array or { decoded: unknown[] }, received ${typeof raw}`
   );
 };
 
@@ -118,7 +115,13 @@ export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
     throw new Error(errorMsg);
   }
 
-  const results = parseBatchResult(result.result, contracts.length);
+  // Normalize: some wallets return an unwrapped value for single-call batches
+  const normalized =
+    contracts.length === 1 && !Array.isArray(result.result)
+      ? [result.result]
+      : result.result;
+
+  const results = parseBatchResult(normalized, contracts.length);
 
   if (allowFailure) {
     return results.map((r) => ({
