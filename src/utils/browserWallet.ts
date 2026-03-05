@@ -7,7 +7,7 @@ import { getChainId, type AztecChainId } from '../config/networks/constants';
 import { type ContractNames } from '../contract-registry';
 import type { NetworkConfig } from '../config/networks';
 import type { ResolvedArtifacts } from '../services/aztec/artifact';
-import type { RegisterContractOp } from '../types/browserWallet';
+import type { RegisterContractOp } from '../use-aztec';
 
 interface BuildRegisterContractOperationsOptions {
   config: NetworkConfig;

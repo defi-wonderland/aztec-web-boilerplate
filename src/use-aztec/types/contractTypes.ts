@@ -214,7 +214,7 @@ export interface WriteContractActionParams {
   contract: { artifact: ContractArtifact };
   address: string;
   functionName: string;
-  args: readonly unknown[];
+  args: unknown[];
   feePaymentMethod?: unknown;
   timeout?: number;
   receiptPolling?: { intervalMs?: number; maxAttempts?: number };

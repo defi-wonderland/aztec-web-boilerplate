@@ -9,3 +9,4 @@ export {
   useEvmWalletsAvailability,
   useAztecWalletsAvailability,
 } from './useWalletAvailability';
+export { useAztecExecutionClient } from './useExecutionClient';

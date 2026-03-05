@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { useAztecWallet } from '../../aztec-wallet';
 import { useFeePayment } from '../../store/feePayment';
-import { createWalletExecutionClient } from './createWalletExecutionClient';
+import { createWalletExecutionClient } from '../client/createExecutionClient';
+import { useAztecWallet } from './useAztecWallet';
 
-export const useWalletExecutionClient = () => {
+export const useAztecExecutionClient = () => {
   const { connector, account, isConnected, currentConfig } = useAztecWallet();
   const { method: defaultFeePaymentMethod } = useFeePayment();
   const feePaymentConfig = currentConfig?.feePaymentContracts;

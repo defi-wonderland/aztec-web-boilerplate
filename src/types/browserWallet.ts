@@ -1,8 +1,7 @@
 /**
  * Browser wallet types.
  *
- * Re-exports operation types from use-aztec and defines app-specific
- * adapter interfaces and state types.
+ * Defines app-specific adapter interfaces and state types.
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
@@ -12,19 +11,6 @@ import type {
 } from '../use-aztec';
 import type { ConnectionStatus } from './walletConnector';
 import type { AztecNetwork } from '../config/networks/constants';
-
-// Re-export operation types from use-aztec as the canonical source
-export type {
-  BrowserWalletOperationResult,
-  BrowserWalletOperation,
-  SimulateViewsOp,
-  SendTransactionOp,
-  GetTxReceiptOp,
-  RegisterContractOp,
-  ContractCall,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
-} from '../use-aztec';
 
 /**
  * Generic state for any browser wallet extension.
@@ -69,15 +55,3 @@ export interface IBrowserWalletAdapter {
  * Returns a Promise to support async dynamic imports.
  */
 export type BrowserWalletAdapterFactory = () => Promise<IBrowserWalletAdapter>;
-
-/**
- * Default state for browser wallets.
- */
-export const DEFAULT_BROWSER_WALLET_STATE: BrowserWalletState = {
-  isInstalled: false,
-  status: 'disconnected',
-  accounts: [],
-  selectedAccount: null,
-  supportedChains: [],
-  error: null,
-};

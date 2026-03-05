@@ -13,17 +13,19 @@ import { WalletType } from '../types/aztec';
 import type {
   IBrowserWalletAdapter,
   BrowserWalletAdapterFactory,
-  BrowserWalletOperation,
-  BrowserWalletOperationResult,
-  SendTransactionOp,
-  ContractCall,
 } from '../../types/browserWallet';
 import type {
   BrowserWalletConnector as IBrowserWalletConnector,
   ConnectorStatus,
+} from '../../types/walletConnector';
+import type {
+  BrowserWalletOperation,
+  BrowserWalletOperationResult,
+  SendTransactionOp,
+  ContractCall,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
-} from '../../types/walletConnector';
+} from '../../use-aztec';
 import type { CaipAccount } from '@azguardwallet/types';
 
 const toContractCall = (

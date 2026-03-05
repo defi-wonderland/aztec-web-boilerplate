@@ -233,3 +233,19 @@ export { isBrowserWalletConnector } from '../types/walletConnector';
  * ```
  */
 export { hasAppManagedPXE } from '../types/walletConnector';
+
+// =============================================================================
+// EXECUTION CLIENT
+// =============================================================================
+
+/**
+ * Hook that creates an AztecExecutionClient from the current wallet state.
+ * Bridges aztec-wallet connection state into use-aztec's execution interface.
+ */
+export { useAztecExecutionClient } from './hooks';
+
+/**
+ * Factory function to create an execution client from wallet state.
+ * For advanced use cases and testing — most apps should use useAztecExecutionClient instead.
+ */
+export { createWalletExecutionClient } from './client/createExecutionClient';

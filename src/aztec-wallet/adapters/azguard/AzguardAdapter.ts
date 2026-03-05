@@ -17,9 +17,11 @@ import { AzguardWalletService } from './AzguardWalletService';
 import type {
   IBrowserWalletAdapter,
   BrowserWalletState,
+} from '../../../types/browserWallet';
+import type {
   BrowserWalletOperationResult,
   BrowserWalletOperation,
-} from '../../../types/browserWallet';
+} from '../../../use-aztec';
 import type {
   CaipAccount,
   CaipChain,
