@@ -115,11 +115,19 @@ export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
     throw new Error(errorMsg);
   }
 
-  // Normalize: some wallets return an unwrapped value for single-call batches
+  // Normalize: some wallets return an unwrapped value for single-call batches.
+  // Skip wrapping if the result is a `{ decoded: [...] }` envelope — parseBatchResult
+  // handles that shape directly.
+  const raw = result.result;
+  const isDecodedEnvelope =
+    raw != null &&
+    typeof raw === 'object' &&
+    !Array.isArray(raw) &&
+    'decoded' in raw;
   const normalized =
-    contracts.length === 1 && !Array.isArray(result.result)
-      ? [result.result]
-      : result.result;
+    contracts.length === 1 && !Array.isArray(raw) && !isDecodedEnvelope
+      ? [raw]
+      : raw;
 
   const results = parseBatchResult(normalized, contracts.length);
 
