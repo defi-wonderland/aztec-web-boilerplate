@@ -16,6 +16,7 @@ export {
   formatRelativeTime,
   formatTime,
   formatDate,
+  toBigInt,
 } from './format';
 export {
   formatNumberCompact,

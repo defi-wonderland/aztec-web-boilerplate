@@ -5,6 +5,7 @@ import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
 import { useReadContracts } from '../../use-aztec';
+import { toBigInt } from '../../utils';
 import { useContract } from '../context/useContract';
 import { queryKeys } from './queryKeys';
 
@@ -32,6 +33,15 @@ interface UseTokenBalanceReturn {
   refetch: () => Promise<void>;
   formattedBalances: FormattedBalances | null;
 }
+
+const selectTokenBalance = (data: unknown): TokenBalance | null => {
+  if (!Array.isArray(data) || data.length < 2) return null;
+  const [privateBalance, publicBalance] = data;
+  return {
+    private: toBigInt(privateBalance ?? 0),
+    public: toBigInt(publicBalance ?? 0),
+  };
+};
 
 /**
  * Hook to fetch token balance for the connected account.
@@ -70,7 +80,13 @@ export const useTokenBalance = (
     [ownerAddress]
   );
 
-  const { data, isLoading, isFetching, isError, error } = useReadContracts({
+  const {
+    data: tokenBalance,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useReadContracts({
     scopeKey: queryKeys.token.balance(tokenAddress, ownerAddress),
     contracts: args
       ? [
@@ -92,16 +108,9 @@ export const useTokenBalance = (
     query: {
       enabled: isQueryEnabled,
       staleTime: 60_000,
+      select: selectTokenBalance,
     },
   });
-
-  const tokenBalance = useMemo((): TokenBalance | null => {
-    if (!data || !Array.isArray(data) || data.length < 2) return null;
-    return {
-      private: BigInt(String(data[0] ?? 0)),
-      public: BigInt(String(data[1] ?? 0)),
-    };
-  }, [data]);
 
   const formattedBalances = useMemo((): FormattedBalances | null => {
     if (!tokenBalance) return null;
@@ -122,7 +131,7 @@ export const useTokenBalance = (
   }, [queryClient, tokenAddress, ownerAddress]);
 
   return {
-    tokenBalance,
+    tokenBalance: tokenBalance ?? null,
     isLoading,
     isFetching,
     isError,
