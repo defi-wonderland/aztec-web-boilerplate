@@ -10,7 +10,6 @@ import {
 } from '../../../utils/storage';
 import { getArtifactStorageService } from '../../storage/ArtifactStorageService';
 import { ArtifactRegistryService } from '../artifactRegistry';
-import { loadExternalArtifact } from './externalTgz';
 import type { NetworkConfig } from '../../../config/networks/types';
 import type { ContractConfigMap } from '../../../contract-registry/types';
 import type { SerializedArtifact } from '../../../types/artifactRegistry';
@@ -190,8 +189,6 @@ export class ArtifactService {
     switch (source.type) {
       case 'registry':
         return `registry (${source.url})`;
-      case 'external':
-        return `external (${source.url})`;
       case 'local':
         return 'bundled artifact';
     }
@@ -266,8 +263,6 @@ export class ArtifactService {
           sourceLabel: 'registry',
         };
       }
-      case 'external':
-        return loadExternalArtifact(source.url, contractName, classId);
     }
   }
 }

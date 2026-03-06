@@ -1,6 +1,6 @@
 import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
 import tokenSandbox from '@defi-wonderland/aztec-standards/target/token_contract-Token.json';
-import { ARTIFACT_REGISTRY_URL, EXTERNAL_TGZ_URL } from './networks/constants';
+import { ARTIFACT_REGISTRY_URL } from './networks/constants';
 import { DEVNET_CONFIG } from './networks/devnet';
 import { SANDBOX_CONFIG } from './networks/sandbox';
 import type { AztecNetwork } from './networks/constants';
@@ -27,7 +27,6 @@ export const PRECONFIGURED_CONTRACTS: PreconfiguredContract[] = [
     network: 'devnet',
     artifactSources: [
       { registry: ARTIFACT_REGISTRY_URL },
-      { external: EXTERNAL_TGZ_URL },
       { local: TokenContract.artifact },
     ],
   },
