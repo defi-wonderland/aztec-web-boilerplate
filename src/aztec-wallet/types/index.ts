@@ -1,3 +1,41 @@
+// Wallet connector types & type guards
+export type {
+  WalletConnectorId,
+  ConnectionStatus as ConnectorConnectionStatus,
+  ConnectorStatus,
+  WalletConnector,
+  EmbeddedWalletConnector,
+  ExternalSignerWalletConnector,
+  BrowserWalletConnector as BrowserWalletConnectorInterface,
+} from './walletConnector';
+export {
+  isEmbeddedConnector,
+  isExternalSignerConnector,
+  isBrowserWalletConnector,
+  hasAppManagedPXE,
+} from './walletConnector';
+
+// Browser wallet adapter types
+export type {
+  BrowserWalletState,
+  IBrowserWalletAdapter,
+  BrowserWalletAdapterFactory,
+} from './browserWalletAdapter';
+
+// Browser wallet operation types
+export type {
+  BrowserWalletOperationResult,
+  BrowserWalletOperation,
+  SimulateViewsOp,
+  SendTransactionOp,
+  GetTxReceiptOp,
+  RegisterContractOp,
+  ContractCall,
+  ConnectorTransactionAction,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
+} from './browserWallet';
+
 // Config types
 export type {
   IconType,

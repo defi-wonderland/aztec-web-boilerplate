@@ -28,14 +28,6 @@ export interface ArtifactStateUpdate {
 }
 
 /**
- * Cached artifact record stored in IndexedDB.
- */
-export interface CachedArtifact {
-  classId: string;
-  artifact: SerializedArtifact;
-}
-
-/**
  * Source of an artifact: memory cache, IndexedDB cache, or network fetch.
  */
 export type ArtifactCacheOrigin = 'memory' | 'indexeddb' | 'network';

@@ -1,13 +1,13 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { hasHexPrefix } from '@aztec/foundation/string';
+import { isBrowserWalletConnector } from '../aztec-wallet/types/walletConnector';
 import { PLACEHOLDER_ADDRESS } from '../config/deployments';
 import {
   CHAIN_ID_TO_NETWORK,
   NETWORK_NAMES,
 } from '../config/networks/constants';
-import { isBrowserWalletConnector } from '../types/walletConnector';
-import type { WalletConnector } from '../types/walletConnector';
+import type { WalletConnector } from '../aztec-wallet/types/walletConnector';
 export { cn } from './cn';
 export { downloadAsFile } from './file';
 export {
@@ -16,6 +16,7 @@ export {
   formatRelativeTime,
   formatTime,
   formatDate,
+  toBigInt,
 } from './format';
 export {
   formatNumberCompact,
@@ -27,11 +28,6 @@ export { iconSize, type IconSize } from './iconSize';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
 export { toTitleCase } from './string';
-export {
-  waitForBrowserWalletReceipt,
-  type WaitForReceiptOptions,
-  type WaitForReceiptResult,
-} from './txReceipt';
 
 /** CAIP account format: "namespace:chainId:address" (e.g., "aztec:1:0x123...") */
 type CaipAccountString = string;

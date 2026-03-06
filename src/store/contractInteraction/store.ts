@@ -136,7 +136,11 @@ export const useContractInteractionStore = create<ContractInteractionStore>(
         const now = Date.now();
         return {
           logs: [
-            { ...entry, id: `${now}-${state.logs.length}-${Math.random().toString(36).substr(2, 9)}`, timestamp: now },
+            {
+              ...entry,
+              id: `${now}-${state.logs.length}-${Math.random().toString(36).substr(2, 9)}`,
+              timestamp: now,
+            },
             ...state.logs,
           ].slice(0, 50),
         };

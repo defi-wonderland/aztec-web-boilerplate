@@ -15,7 +15,7 @@ import { WalletType } from '../types/aztec';
 import type {
   EmbeddedWalletConnector,
   ConnectorStatus,
-} from '../../types/walletConnector';
+} from '../types/walletConnector';
 
 export const EMBEDDED_CONNECTOR_ID = 'embedded' as const;
 

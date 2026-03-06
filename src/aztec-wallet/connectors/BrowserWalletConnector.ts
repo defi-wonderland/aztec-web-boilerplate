@@ -11,19 +11,21 @@ import { getNetworkStore } from '../store/network';
 import { getWalletStore } from '../store/wallet';
 import { WalletType } from '../types/aztec';
 import type {
-  IBrowserWalletAdapter,
-  BrowserWalletAdapterFactory,
   BrowserWalletOperation,
   BrowserWalletOperationResult,
   SendTransactionOp,
   ContractCall,
-} from '../../types/browserWallet';
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
+} from '../types/browserWallet';
+import type {
+  IBrowserWalletAdapter,
+  BrowserWalletAdapterFactory,
+} from '../types/browserWalletAdapter';
 import type {
   BrowserWalletConnector as IBrowserWalletConnector,
   ConnectorStatus,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
-} from '../../types/walletConnector';
+} from '../types/walletConnector';
 import type { CaipAccount } from '@azguardwallet/types';
 
 const toContractCall = (

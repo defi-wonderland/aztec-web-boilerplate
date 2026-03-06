@@ -1,7 +1,7 @@
 import type {
   WalletConnector,
   WalletConnectorId,
-} from '../../types/walletConnector';
+} from '../types/walletConnector';
 
 export type ConnectorFactory = () => WalletConnector;
 

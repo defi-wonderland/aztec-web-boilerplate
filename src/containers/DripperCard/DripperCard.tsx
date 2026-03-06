@@ -50,7 +50,13 @@ export const DripperCard: React.FC = () => {
   const isDataLoading =
     isWalletReady && (!contractsReady || balanceLoading || !formattedBalances);
 
-  const { dripToPrivate, dripToPublic, isReady } = useDripper({
+  const {
+    dripToPrivate,
+    dripToPublic,
+    isPrivatePending,
+    isPublicPending,
+    isReady,
+  } = useDripper({
     onDripToPrivateSuccess: () => {
       loadingToastRef.current?.success(
         'Tokens minted successfully',
@@ -84,8 +90,7 @@ export const DripperCard: React.FC = () => {
       loadingToastRef.current = null;
     },
   });
-
-  const isProcessing = dripToPrivate.isPending || dripToPublic.isPending;
+  const isProcessing = isPrivatePending || isPublicPending;
   const connectorStatus = connector?.getStatus().status;
   const isWalletBusy =
     connectorStatus === 'connecting' || connectorStatus === 'deploying';
@@ -100,11 +105,8 @@ export const DripperCard: React.FC = () => {
 
     const amountBigInt = BigInt(amount);
 
-    if (dripType === 'private') {
-      dripToPrivate.mutate({ amount: amountBigInt });
-    } else {
-      dripToPublic.mutate({ amount: amountBigInt });
-    }
+    const dripFn = dripType === 'private' ? dripToPrivate : dripToPublic;
+    dripFn({ amount: amountBigInt });
   };
 
   const handleCopyAddress = () => {

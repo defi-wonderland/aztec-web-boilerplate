@@ -10,27 +10,8 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/ar
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { createContractConfig, getDeployerAddress } from '../contract-registry';
-import { DEFAULT_ARTIFACT_REGISTRY_URL } from './networks/constants';
+import { ARTIFACT_REGISTRY_URL, EXTERNAL_TGZ_URL } from './networks/constants';
 import type { ArtifactSourceConfig } from '../types/artifactSource';
-
-// ---------------------------------------------------------------------------
-// Boilerplate-specific constants
-// ---------------------------------------------------------------------------
-
-const registryUrl =
-  import.meta.env.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL;
-
-const DEFAULT_EXTERNAL_TGZ_URL =
-  'https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-69dc5c4/defi-wonderland-aztec-standards-4.0.0-devnet.2-patch.1-prerelease.69dc5c4.tgz';
-
-/** Rewrite `https://github.com/` URLs to the CORS proxy path. */
-function toProxiedGithubUrl(url: string): string {
-  return url.replace(/^https:\/\/github\.com\//, '/github-releases/');
-}
-
-const externalTgzUrl = toProxiedGithubUrl(
-  import.meta.env.VITE_EXTERNAL_TGZ_URL ?? DEFAULT_EXTERNAL_TGZ_URL
-);
 
 const CLASS_IDS = {
   dripper: '0x1dffc5e2b304ff01d1c589e19b2c953575f022a17f1acf4e01614527c24093db',
@@ -43,16 +24,16 @@ const CLASS_IDS = {
 
 function dripperArtifactSources(): ArtifactSourceConfig[] {
   return [
-    { registry: registryUrl },
-    { external: externalTgzUrl },
+    { registry: ARTIFACT_REGISTRY_URL },
+    { external: EXTERNAL_TGZ_URL },
     { local: DripperContract.artifact },
   ];
 }
 
 function tokenArtifactSources(): ArtifactSourceConfig[] {
   return [
-    { registry: registryUrl },
-    { external: externalTgzUrl },
+    { registry: ARTIFACT_REGISTRY_URL },
+    { external: EXTERNAL_TGZ_URL },
     { local: TokenContract.artifact },
   ];
 }
