@@ -1,13 +1,9 @@
 import { create } from 'zustand';
-import {
-  SANDBOX_CONFIG,
-  DEVNET_CONFIG,
-  type NetworkConfig,
-} from '../../../config/networks';
+import { SANDBOX_CONFIG, DEVNET_CONFIG } from '../../../config/networks';
 import { getContractRegistryStore } from '../../../store/contractRegistry';
 import { isValidConfig } from '../../../utils';
 import { getWalletStore } from '../wallet';
-import type { AztecNetwork } from '../../../config/networks/constants';
+import type { AztecNetwork, NetworkConfig } from '../../../types/network';
 import type { StoreNetworkPreset } from '../../types';
 
 const STORAGE_KEY = 'aztec-wallet-network';

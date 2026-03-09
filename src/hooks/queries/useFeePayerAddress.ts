@@ -11,8 +11,8 @@ import type {
   EmbeddedWalletConnector,
   ExternalSignerWalletConnector,
 } from '../../aztec-wallet/types/walletConnector';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
-import type { FeePaymentContractsConfig } from '../../config/networks/types';
+import type { FeePaymentMethodType } from '../../services/aztec/feePayment/feePaymentMethods';
+import type { FeePaymentContractsConfig } from '../../types/network';
 
 interface UseFeePayerAddressOptions {
   /** The selected fee payment method */

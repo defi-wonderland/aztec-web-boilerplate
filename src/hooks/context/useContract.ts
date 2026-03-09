@@ -20,6 +20,7 @@ import {
   useContractRegistryStatus,
 } from '../../store';
 import { queuePxeCall } from '../../utils';
+import { getNetworkDeployments } from '../../utils/deployments';
 
 interface ExternalWalletContractProxy {
   readonly __browserWalletPlaceholder: true;
@@ -88,9 +89,12 @@ export function useContract<K extends ContractName>(
       throw new Error('External wallet account not connected');
     }
 
-    const contractAddress = AztecAddress.fromString(
-      definition.address(currentConfig)
-    );
+    const deployments = getNetworkDeployments(currentConfig.name);
+    const deployment = deployments[name];
+    if (!deployment) {
+      throw new Error(`No deployment for "${name}" on ${currentConfig.name}`);
+    }
+    const contractAddress = AztecAddress.fromString(deployment.address);
 
     const proxy: ExternalWalletContractProxy = {
       __browserWalletPlaceholder: true,

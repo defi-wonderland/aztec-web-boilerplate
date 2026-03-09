@@ -1,25 +1,17 @@
 export * from './types';
+export { devnetDeployments } from './devnet';
+export { sandboxDeployments } from './sandbox';
 
-import devnetDeployment from './devnet.json';
-import sandboxDeployment from './sandbox.json';
-import {
-  DeploymentConfig,
-  DEFAULT_SANDBOX_DEPLOYMENT,
-  DEFAULT_DEVNET_DEPLOYMENT,
-} from './types';
+import { devnetDeployments } from './devnet';
+import { sandboxDeployments } from './sandbox';
+import type { NetworkDeployments } from './types';
+import type { AztecNetwork } from '../networks/constants';
 
-export const getSandboxDeployment = (): DeploymentConfig => {
-  try {
-    return sandboxDeployment as DeploymentConfig;
-  } catch {
-    return DEFAULT_SANDBOX_DEPLOYMENT;
-  }
-};
-
-export const getDevnetDeployment = (): DeploymentConfig => {
-  try {
-    return devnetDeployment as DeploymentConfig;
-  } catch {
-    return DEFAULT_DEVNET_DEPLOYMENT;
-  }
+/**
+ * All deployment data keyed by network name.
+ * The contract registry uses this to resolve addresses at runtime.
+ */
+export const deployments: Record<AztecNetwork, NetworkDeployments> = {
+  devnet: devnetDeployments,
+  sandbox: sandboxDeployments,
 };

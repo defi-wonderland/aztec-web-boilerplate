@@ -8,7 +8,7 @@ import {
 } from '../../config/networkPresets';
 import { useNetworkStore } from '../../store/network';
 import { NetworkIcon } from '../shared';
-import type { AztecNetwork } from '../../../config/networks/constants';
+import type { AztecNetwork } from '../../../types/network';
 import type { NetworkPreset } from '../../types';
 
 const styles = {

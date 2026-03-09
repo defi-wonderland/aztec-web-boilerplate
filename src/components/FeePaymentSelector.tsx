@@ -1,17 +1,17 @@
 import React from 'react';
 import { Fuel, Info, Loader2 } from 'lucide-react';
 import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
+import { useFeeJuiceBalance } from '../hooks/queries/useFeeJuiceBalance';
+import { useFeePayerAddress } from '../hooks/queries/useFeePayerAddress';
 import {
   FEE_PAYMENT_METHOD_LABELS,
   FEE_PAYMENT_METHOD_DESCRIPTIONS,
   getAvailableFeePaymentMethods,
   type FeePaymentMethodType,
-} from '../config/feePaymentContracts';
-import { AVAILABLE_NETWORKS, type AztecNetwork } from '../config/networks';
-import { useFeeJuiceBalance } from '../hooks/queries/useFeeJuiceBalance';
-import { useFeePayerAddress } from '../hooks/queries/useFeePayerAddress';
+} from '../services/aztec/feePayment/feePaymentMethods';
 import { useFeePayment } from '../store/feePayment';
 import { iconSize, cn, formatFeeJuiceBalance } from '../utils';
+import { getNetworkDeployments } from '../utils/deployments';
 import {
   Select,
   SelectContent,
@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from './ui';
+import type { AztecNetwork } from '../config/networks';
 
 const styles = {
   container: 'flex flex-col gap-2',
@@ -59,14 +60,13 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   const { connector, currentConfig, isConnected, isPXEInitialized } =
     useAztecWallet();
 
-  // Use provided networkName's config for available methods, or fall back to connected network
-  const targetConfig = networkName
-    ? AVAILABLE_NETWORKS.find((n) => n.name === networkName)
-    : currentConfig;
+  // Resolve fee payment config from the target network's deployments
+  const targetNetwork = networkName ?? currentConfig?.name;
+  const feePaymentConfig = targetNetwork
+    ? getNetworkDeployments(targetNetwork)
+    : undefined;
 
-  const availableMethods = getAvailableFeePaymentMethods(
-    targetConfig?.feePaymentContracts
-  );
+  const availableMethods = getAvailableFeePaymentMethods(feePaymentConfig);
 
   const isReady =
     isConnected && isPXEInitialized && hasAppManagedPXE(connector);
@@ -82,7 +82,7 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   const { feePayerAddress } = useFeePayerAddress({
     selectedMethod: method,
     connector: appManagedConnector,
-    feePaymentConfig: currentConfig?.feePaymentContracts,
+    feePaymentConfig,
     enabled: isReady,
   });
 

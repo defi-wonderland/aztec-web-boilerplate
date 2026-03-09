@@ -8,11 +8,11 @@ import {
 } from '@defi-wonderland/aztec-fee-payment/fee-payment-methods';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
-import type { FeePaymentMethodType } from '../../../config/feePaymentContracts';
-import type { FeePaymentContractsConfig } from '../../../config/networks/types';
+import type { FeePaymentMethodType } from './feePaymentMethods';
+import type { ContractDeployment } from '../../../config/deployments/types';
 
 export interface FeePaymentContext {
-  config: FeePaymentContractsConfig;
+  config: Record<string, ContractDeployment>;
   getSponsoredFeePaymentMethod: () => Promise<FeePaymentMethod>;
 }
 

@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
+import type { FeePaymentMethodType } from '../../services/aztec/feePayment/feePaymentMethods';
 
 const STORAGE_KEY = 'aztec-fee-payment';
 export const DEFAULT_FEE_PAYMENT_METHOD: FeePaymentMethodType = 'sponsored';

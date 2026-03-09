@@ -5,7 +5,7 @@ import {
   toSidebarId,
 } from '../../../../utils/contractInteraction';
 import type { ArtifactInputMethod, ContractSource } from './setup-utils';
-import type { PreconfiguredContract } from '../../../../config/preconfiguredContracts';
+import type { PreconfiguredContract } from '../../../../types/preconfiguredContract';
 
 interface UseLoadTabOptions {
   preconfiguredContracts: PreconfiguredContract[];

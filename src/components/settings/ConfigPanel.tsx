@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link, FileText, Rocket } from 'lucide-react';
 import { iconSize } from '../../utils';
+import { getNetworkDeployments } from '../../utils/deployments';
 import { ConfigPanelHeader } from './ConfigPanelHeader';
 import { ConfigSection } from './ConfigSection';
 import { ConfigValueRow } from './ConfigValueRow';
-import type { NetworkConfig } from '../../config/networks/types';
+import type { NetworkConfig } from '../../types/network';
 
 export interface ConfigPanelProps {
   config: NetworkConfig;
@@ -20,6 +21,10 @@ const styles = {
 } as const;
 
 export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
+  const networkDeployments = getNetworkDeployments(config.name);
+  const dripper = networkDeployments?.dripper;
+  const token = networkDeployments?.token;
+
   return (
     <div className={styles.container}>
       <ConfigPanelHeader
@@ -47,12 +52,12 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
           <div className={styles.contractsGap}>
             <ConfigValueRow
               label="Token Contract"
-              value={config.tokenContractAddress}
+              value={token?.address}
               badge={{ text: 'TOKEN', variant: 'blue' }}
             />
             <ConfigValueRow
               label="Dripper Contract"
-              value={config.dripperContractAddress}
+              value={dripper?.address}
               badge={{ text: 'FAUCET', variant: 'red' }}
             />
           </div>
@@ -64,16 +69,16 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
           title="Deployment Info"
         >
           <div className={styles.contractsGap}>
-            <ConfigValueRow label="Deployer" value={config.deployerAddress} />
+            <ConfigValueRow label="Deployer" value={dripper?.deployer} />
             <div className={styles.grid2Col}>
               <ConfigValueRow
                 label="Dripper Salt"
-                value={config.dripperDeploymentSalt}
+                value={dripper?.salt}
                 showCopy={false}
               />
               <ConfigValueRow
                 label="Token Salt"
-                value={config.tokenDeploymentSalt}
+                value={token?.salt}
                 showCopy={false}
               />
             </div>

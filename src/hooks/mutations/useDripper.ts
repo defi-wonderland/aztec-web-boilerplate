@@ -6,7 +6,7 @@ import { contractsConfig } from '../../config/contracts';
 import { useWriteContract } from '../../use-aztec';
 import { queryKeys } from '../queries/queryKeys';
 import { useFeeJuiceBalanceInvalidation } from '../queries/useFeeJuiceBalance';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
+import type { FeePaymentMethodType } from '../../services/aztec/feePayment/feePaymentMethods';
 
 interface DripParams {
   amount: bigint;

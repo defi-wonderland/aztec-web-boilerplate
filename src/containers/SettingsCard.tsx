@@ -7,7 +7,7 @@ import { DEVNET_CONFIG } from '../config/networks/devnet';
 import { SANDBOX_CONFIG } from '../config/networks/sandbox';
 import { useNetworkAvailability, useNetworkHealth } from '../hooks/network';
 import { iconSize } from '../utils';
-import type { AztecNetwork } from '../config/networks/constants';
+import type { AztecNetwork } from '../types/network';
 
 const styles = {
   container: 'flex flex-col lg:flex-row w-full min-h-[600px]',

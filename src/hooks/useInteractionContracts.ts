@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { DEPLOYABLE_CONTRACTS } from '../config/deployableContracts';
 import {
+  DEPLOYABLE_CONTRACTS,
   PRECONFIGURED_CONTRACTS,
   type PreconfiguredContract,
-} from '../config/preconfiguredContracts';
+} from '../components/contract-interaction/presets';
 import { ArtifactService } from '../services/aztec/artifact/ArtifactService';
 import {
   getDeployableContractsForNetwork,
@@ -12,7 +12,7 @@ import {
   resolveDeployableContract,
   type DeployableContract,
 } from '../utils/deployableContracts';
-import type { AztecNetwork } from '../config/networks/constants';
+import type { AztecNetwork } from '../types/network';
 
 export const usePreconfiguredContracts = (networkName?: AztecNetwork) => {
   return useMemo(() => {

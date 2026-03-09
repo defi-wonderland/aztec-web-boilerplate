@@ -12,9 +12,10 @@ import type { PXE } from '@aztec/pxe/server';
 import { AVAILABLE_NETWORKS } from '../../../../config/networks';
 import { FeePaymentRegister } from '../../../../services/aztec/feePayment/FeePaymentRegister';
 import { MinimalWallet } from '../../../../utils/MinimalWallet';
+import { getNetworkDeployments } from '../../../../utils/deployments';
 import { NetworkService } from '../network';
 import { AztecStorageService } from '../storage';
-import type { AztecNetwork } from '../../../../config/networks/constants';
+import type { AztecNetwork } from '../../../../types/network';
 
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
@@ -146,13 +147,6 @@ class SharedPXEServiceClass {
     return `${networkName}`;
   }
 
-  private getFeePaymentConfig(networkName: string) {
-    const networkConfig = AVAILABLE_NETWORKS.find(
-      (n) => n.name === networkName
-    );
-    return networkConfig?.feePaymentContracts;
-  }
-
   private normalizeNodeUrl(nodeUrl: string): string {
     if (!nodeUrl) {
       return nodeUrl;
@@ -186,10 +180,12 @@ class SharedPXEServiceClass {
 
     const wallet = new MinimalWallet(pxe, aztecNode);
 
-    // Register fee payment contracts (look up config by network name)
-    const feePaymentConfig = this.getFeePaymentConfig(networkName);
+    // Register fee payment contracts
     const feePaymentRegister = new FeePaymentRegister();
-    await feePaymentRegister.registerAll(pxe, feePaymentConfig);
+    await feePaymentRegister.registerAll(
+      pxe,
+      getNetworkDeployments(networkName)
+    );
 
     // Initialize storage service
     const storageService = new AztecStorageService();

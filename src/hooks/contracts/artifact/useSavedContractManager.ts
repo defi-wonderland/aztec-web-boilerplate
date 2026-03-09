@@ -12,7 +12,7 @@ import {
 } from '../../../store';
 import { getErrorMessage } from '../../../utils/errors';
 import { useArtifactStateManager } from './useArtifactStateManager';
-import type { AztecNetwork } from '../../../config/networks/constants';
+import type { AztecNetwork } from '../../../types/network';
 
 export interface UseSavedContractManagerOptions {
   networkName?: AztecNetwork;

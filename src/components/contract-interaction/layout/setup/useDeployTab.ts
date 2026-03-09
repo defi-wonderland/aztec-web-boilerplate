@@ -18,7 +18,7 @@ import {
   type ArtifactInputMethod,
   type ContractSource,
 } from './setup-utils';
-import type { AztecNetwork } from '../../../../config/networks/constants';
+import type { AztecNetwork } from '../../../../types/network';
 import type { DeployableContract } from '../../../../utils/deployableContracts';
 
 interface UseDeployTabOptions {

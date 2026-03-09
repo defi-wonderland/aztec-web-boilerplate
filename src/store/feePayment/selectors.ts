@@ -6,7 +6,7 @@
 
 import { useAztecWallet } from '../../aztec-wallet';
 import { useFeePaymentStore, DEFAULT_FEE_PAYMENT_METHOD } from './store';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
+import type { FeePaymentMethodType } from '../../services/aztec/feePayment/feePaymentMethods';
 import type { AztecNetwork } from '../../config/networks';
 
 /**

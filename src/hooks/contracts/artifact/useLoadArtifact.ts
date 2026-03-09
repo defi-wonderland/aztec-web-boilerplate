@@ -10,7 +10,7 @@ import {
 } from '../../../store';
 import { requestPersistentStorage } from '../../../utils/indexeddb';
 import { useArtifactStateManager } from './useArtifactStateManager';
-import type { AztecNetwork } from '../../../config/networks/constants';
+import type { AztecNetwork } from '../../../types/network';
 
 const generateKey = (network?: string): string =>
   `${network ?? 'default'}-${Date.now()}-${Math.random().toString(16).slice(2)}`;

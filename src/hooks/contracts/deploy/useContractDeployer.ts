@@ -129,7 +129,7 @@ export const useContractDeployer = () => {
         );
 
         const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-          config: currentConfig?.feePaymentContracts ?? {},
+          config: {},
           getSponsoredFeePaymentMethod: () =>
             connector.getSponsoredFeePaymentMethod(),
         });
@@ -158,7 +158,7 @@ export const useContractDeployer = () => {
         setIsDeploying(false);
       }
     },
-    [connector, account, feePaymentMethod, currentConfig?.feePaymentContracts]
+    [connector, account, feePaymentMethod, currentConfig.name]
   );
 
   const clearError = useCallback(() => {

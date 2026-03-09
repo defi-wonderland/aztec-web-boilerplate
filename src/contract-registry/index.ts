@@ -19,7 +19,7 @@ export type {
   ContractType,
 } from './contractTypes';
 
-export { createContractConfig, getDeployerAddress } from './helpers';
+export { createContractConfig } from './helpers';
 
 // Registry class
 export { ContractRegistry } from './ContractRegistry';

@@ -9,7 +9,7 @@ import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import { getFeeJuiceBalance } from '@aztec/aztec.js/utils';
 import { NetworkService } from '../../aztec-wallet/services/aztec/network';
 import { queryKeys } from './queryKeys';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../types/network';
 
 interface UseFeeJuiceBalanceOptions {
   /** The fee payer address to query balance for */

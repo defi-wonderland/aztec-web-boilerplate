@@ -3,7 +3,7 @@ import type { ContractInstanceWithAddress } from '@aztec/aztec.js/contracts';
 import type { Fr } from '@aztec/aztec.js/fields';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { FunctionAbi } from '@aztec/stdlib/abi';
-import type { NetworkConfig } from '../config/networks';
+import type { NetworkDeployments } from '../config/deployments/types';
 import type { ArtifactSourceConfig } from '../types/artifactSource';
 
 /**
@@ -34,36 +34,40 @@ export interface ContractClass<TContract = unknown> {
 }
 
 /**
- * Configuration for a single contract in the registry
+ * Configuration for a single contract in the registry.
+ *
+ * Defines WHAT the contract is (artifact, constructor, sources).
+ * WHERE the contract is deployed (address, salt, deployer) comes from
+ * deployment files and is resolved by the registry at runtime.
  */
-export interface ContractConfigDefinition<
-  TConfig = NetworkConfig,
-  TContract = unknown,
-> {
+export interface ContractConfigDefinition<TContract = unknown> {
   /**
    * Optional contract class for type inference.
    * If provided, useContract() returns a fully typed instance with autocomplete for methods.
-   * If omitted, useContract() returns an untyped (`unknown`) instance with no autocomplete.
    */
   contract?: ContractClass<TContract>;
-  /** Function to derive the expected contract address from app config */
-  address: (config: TConfig) => string;
-  /** Function to derive deployment parameters from app config */
-  deployParams: (config: TConfig) => ContractDeployParams;
+  /** Constructor function name or ABI used for deterministic address computation */
+  constructorArtifact: FunctionAbi | string;
+  /**
+   * Constructor arguments. Can be:
+   * - A static array (simple contracts)
+   * - A function receiving the network deployments map (cross-contract references)
+   */
+  constructorArgs: unknown[] | ((deployments: NetworkDeployments) => unknown[]);
   /** If true, contract won't be registered at init (on-demand only). Default: false */
   lazyRegister?: boolean;
-  /** Ordered fallback chain of artifact sources for this contract (first success wins) */
-  artifactSources: (config: TConfig) => ArtifactSourceConfig[];
+  /** Ordered fallback chain of artifact sources (first success wins) */
+  artifactSources: ArtifactSourceConfig[];
   /** Class ID used by registry sources to look up this contract's artifact */
-  classId?: (config: TConfig) => string | undefined;
+  classId?: string;
 }
 
 /**
  * Map of contract names to their configurations
  */
-export type ContractConfigMap<TConfig = NetworkConfig> = Record<
+export type ContractConfigMap = Record<
   string,
-  ContractConfigDefinition<TConfig, unknown>
+  ContractConfigDefinition<unknown>
 >;
 
 /**

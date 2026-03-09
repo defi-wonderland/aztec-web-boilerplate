@@ -3,7 +3,7 @@ import { useFindDeployableById } from '../../hooks/useInteractionContracts';
 import { createArtifactSummary } from '../../utils/contractInteraction';
 import { getErrorMessage } from '../../utils/errors';
 import { useContractInteractionStore } from './store';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../types/network';
 
 export const useIsDeployMode = () =>
   useContractInteractionStore((state) => state.mode === 'deploy');

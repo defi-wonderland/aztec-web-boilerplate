@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import {
-  PRECONFIGURED_CONTRACTS,
-  type PreconfiguredContract,
-} from '../../../config/preconfiguredContracts';
+import { PRECONFIGURED_CONTRACTS } from '../../../components/contract-interaction/presets';
+import type { PreconfiguredContract } from '../../../types/preconfiguredContract';
 import {
   useContractActions,
   useArtifactActions,

@@ -77,7 +77,7 @@ export function useArtifacts({ showToast = true }: UseArtifactsOptions = {}) {
     setArtifactStatus('loading');
 
     ArtifactService.getInstance()
-      .loadArtifacts(currentConfig, contractsConfig)
+      .loadArtifacts(contractsConfig)
       .then((result) => {
         if (abortController.signal.aborted) return;
 

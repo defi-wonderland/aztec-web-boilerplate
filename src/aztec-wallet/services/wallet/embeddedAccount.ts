@@ -18,7 +18,7 @@ import {
   NoSavedAccountError,
   PXEInitError,
 } from './errors';
-import type { NetworkConfig } from '../../../config/networks/types';
+import type { NetworkConfig } from '../../../types/network';
 import type { AccountCredentials } from '../../types/aztec';
 
 // ============================================================================

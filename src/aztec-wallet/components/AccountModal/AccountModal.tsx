@@ -16,7 +16,7 @@ import {
 } from '../../config/networkPresets';
 import { getAddressEmoji } from '../ConnectButton/ConnectButton';
 import { NetworkIcon } from '../shared';
-import type { AztecNetwork } from '../../../config/networks/constants';
+import type { AztecNetwork } from '../../../types/network';
 
 const styles = {
   content: 'sm:max-w-sm',

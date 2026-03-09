@@ -6,3 +6,4 @@ export * from './azguard';
 export * from './browserWallet';
 export * from './walletConnector';
 export * from './evm';
+export * from './network';

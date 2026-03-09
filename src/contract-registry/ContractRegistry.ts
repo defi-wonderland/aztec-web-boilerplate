@@ -3,17 +3,19 @@ import {
   ContractInstanceWithAddress,
   getContractInstanceFromInstantiationParams,
 } from '@aztec/aztec.js/contracts';
+import { Fr } from '@aztec/aztec.js/fields';
 import { createLogger } from '@aztec/aztec.js/log';
 import type { PXE } from '@aztec/pxe/server';
 import type { ContractArtifact } from '@aztec/stdlib/abi';
 import type {
   ContractConfigMap,
+  ContractDeployParams,
   ContractNames,
   ContractStatus,
   IContractRegistry,
   RegisteredContract,
 } from './types';
-import type { NetworkConfig } from '../config/networks';
+import type { NetworkDeployments } from '../config/deployments/types';
 import type { ResolvedArtifacts } from '../services/aztec/artifact';
 
 const logger = createLogger('contract-registry');
@@ -21,22 +23,15 @@ const logger = createLogger('contract-registry');
 /**
  * Contract Registry Service
  *
- * Manages contract registration with PXE, featuring:
+ * Manages contract registration with PXE using:
+ * - Contract configs (what the contract is: artifact, constructor, sources)
+ * - Deployment data (where it's deployed: address, salt, deployer)
  *
  * @example
  * ```typescript
- * const registry = new ContractRegistry(pxe, contracts, config);
+ * const registry = new ContractRegistry(pxe, contracts, deployments, artifacts);
  *
- * // Register all contracts
  * await registry.registerAll();
- *
- * // Or register specific contracts
- * await registry.registerAll(['dripper', 'token']);
- *
- * // Lazy registration
- * await registry.register('dripper');
- *
- * // Get instance
  * const instance = registry.getInstance('dripper');
  * ```
  */
@@ -51,7 +46,7 @@ export class ContractRegistry<T extends ContractConfigMap>
   constructor(
     private readonly pxe: PXE,
     private readonly contracts: T,
-    private readonly config: NetworkConfig,
+    private readonly deployments: NetworkDeployments,
     private readonly artifacts: ResolvedArtifacts
   ) {
     logger.info('ContractRegistry initialized', {
@@ -71,74 +66,87 @@ export class ContractRegistry<T extends ContractConfigMap>
     return artifact;
   }
 
-  /**
-   * Check if a contract is registered and ready in the local cache
-   */
+  /** Resolve constructor args (static array or function receiving contract deployments) */
+  private resolveConstructorArgs(config: T[ContractNames<T>]): unknown[] {
+    return typeof config.constructorArgs === 'function'
+      ? config.constructorArgs(this.deployments)
+      : config.constructorArgs;
+  }
+
+  /** Build ContractDeployParams by merging contract config + deployment data */
+  private buildDeployParams(
+    name: ContractNames<T>,
+    config: T[ContractNames<T>]
+  ): ContractDeployParams {
+    const deployment = this.deployments[name as string];
+    if (!deployment) {
+      throw new Error(
+        `No deployment data for contract "${String(name)}". ` +
+          `Add it to the deployment file for this network.`
+      );
+    }
+
+    return {
+      salt: Fr.fromString(deployment.salt),
+      deployer: AztecAddress.fromString(deployment.deployer),
+      constructorArgs: this.resolveConstructorArgs(config),
+      constructorArtifact: config.constructorArtifact,
+    };
+  }
+
+  /** Get the expected address for a contract from deployment data */
+  private getExpectedAddress(name: ContractNames<T>): AztecAddress {
+    const deployment = this.deployments[name as string];
+    if (!deployment) {
+      throw new Error(`No deployment data for contract "${String(name)}".`);
+    }
+    return AztecAddress.fromString(deployment.address);
+  }
+
   isRegistered(name: ContractNames<T>): boolean {
     const entry = this.cache.get(name);
     return entry?.status === 'ready';
   }
 
-  /**
-   * Get the instance of a registered contract
-   */
   getInstance(name: ContractNames<T>): ContractInstanceWithAddress | null {
     const entry = this.cache.get(name);
     return entry?.status === 'ready' ? entry.instance : null;
   }
 
-  /**
-   * Get the current status of a contract
-   */
   getStatus(name: ContractNames<T>): ContractStatus {
     return this.cache.get(name)?.status ?? 'idle';
   }
 
-  /**
-   * Get all registered contract names
-   */
   getRegisteredNames(): ContractNames<T>[] {
     return Array.from(this.cache.entries())
       .filter(([, entry]) => entry.status === 'ready')
       .map(([name]) => name);
   }
 
-  /**
-   * Subscribe to registry changes
-   * @returns Unsubscribe function
-   */
   subscribe(callback: () => void): () => void {
     this.subscribers.add(callback);
     return () => this.subscribers.delete(callback);
   }
 
-  /**
-   * Ensure a contract is registered with PXE.
-   * Checks memory cache first, then storage, before registering fresh.
-   * Handles concurrent requests by deduplicating in-flight registrations.
-   */
   async register(name: ContractNames<T>): Promise<void> {
     if (this.isRegistered(name)) {
-      logger.info(`📦 Contract "${String(name)}" - MEMORY CACHE HIT`);
+      logger.info(`Contract "${String(name)}" - MEMORY CACHE HIT`);
       return;
     }
 
-    // Check if registration is already in progress
     const pending = this.pendingRegistrations.get(name);
     if (pending) {
       logger.info(
-        `⏳ Contract "${String(name)}" - AWAITING (registration in progress)`
+        `Contract "${String(name)}" - AWAITING (registration in progress)`
       );
       return pending;
     }
 
-    // Check storage before registering (avoid re-registration after page refresh)
     await this.syncFromStorage([name]);
     if (this.isRegistered(name)) {
       return;
     }
 
-    // Start new registration
     const registrationPromise = this.performRegistration(name);
     this.pendingRegistrations.set(name, registrationPromise);
 
@@ -149,15 +157,6 @@ export class ContractRegistry<T extends ContractConfigMap>
     }
   }
 
-  /**
-   * Ensure multiple contracts are registered and ready.
-   *
-   * This method handles the full registration flow:
-   * 1. First syncs from storage (checks which contracts are already in PXE's IndexedDB)
-   * 2. Then registers any contracts not found in storage
-   *
-   * If no names provided, processes all contracts in the config.
-   */
   async registerAll(names?: ContractNames<T>[]): Promise<void> {
     const contractNames =
       names ?? (Object.keys(this.contracts) as ContractNames<T>[]);
@@ -166,10 +165,8 @@ export class ContractRegistry<T extends ContractConfigMap>
       return;
     }
 
-    // 1. Sync from storage first (mark already-registered contracts as ready)
     await this.syncFromStorage(contractNames);
 
-    // 2. Register any contracts still not ready
     const toRegister = contractNames.filter((name) => !this.isRegistered(name));
 
     if (toRegister.length === 0) {
@@ -188,14 +185,9 @@ export class ContractRegistry<T extends ContractConfigMap>
     logger.info('All contracts registered successfully');
   }
 
-  /**
-   * Sync memory cache from PXE's persistent storage (IndexedDB).
-   * Checks which contracts are already registered and marks them as ready.
-   * This avoids re-registering contracts that persist across page refreshes.
-   */
   private async syncFromStorage(names: ContractNames<T>[]): Promise<void> {
     logger.debug(
-      `🔍 Checking storage for ${names.length} contracts: [${names.map(String).join(', ')}]`
+      `Checking storage for ${names.length} contracts: [${names.map(String).join(', ')}]`
     );
 
     const { getContractInstanceFromInstantiationParams } = await import(
@@ -205,7 +197,6 @@ export class ContractRegistry<T extends ContractConfigMap>
     let syncedCount = 0;
 
     for (const name of names) {
-      // Skip if already in memory cache
       if (this.isRegistered(name)) {
         syncedCount++;
         continue;
@@ -217,15 +208,12 @@ export class ContractRegistry<T extends ContractConfigMap>
       }
 
       try {
-        const expectedAddress = AztecAddress.fromString(
-          contractConfig.address(this.config)
-        );
-
+        const expectedAddress = this.getExpectedAddress(name);
         const isInStorage = await this.isRegisteredInStorage(expectedAddress);
 
         if (isInStorage) {
           const artifact = this.getArtifact(name);
-          const deployParams = contractConfig.deployParams(this.config);
+          const deployParams = this.buildDeployParams(name, contractConfig);
           const instance = await getContractInstanceFromInstantiationParams(
             artifact,
             {
@@ -238,9 +226,7 @@ export class ContractRegistry<T extends ContractConfigMap>
 
           this.updateCache(name, { status: 'ready', instance });
           syncedCount++;
-          logger.info(
-            `💾 Contract "${String(name)}" - STORAGE HIT (IndexedDB)`
-          );
+          logger.info(`Contract "${String(name)}" - STORAGE HIT (IndexedDB)`);
         }
       } catch {
         // Contract not in storage - will be registered fresh
@@ -252,10 +238,6 @@ export class ContractRegistry<T extends ContractConfigMap>
     }
   }
 
-  /**
-   * Internal: Perform the actual registration with PXE.
-   * At this point, we know the contract is NOT in memory cache.
-   */
   private async performRegistration(name: ContractNames<T>): Promise<void> {
     const contractConfig = this.contracts[name];
     if (!contractConfig) {
@@ -269,13 +251,9 @@ export class ContractRegistry<T extends ContractConfigMap>
     this.notifySubscribers();
 
     try {
-      const expectedAddress = AztecAddress.fromString(
-        contractConfig.address(this.config)
-      );
-
+      const expectedAddress = this.getExpectedAddress(name);
       const instance = await this.registerInstanceWithPXE(name, contractConfig);
 
-      // Validate address matches expected
       if (!instance.address.equals(expectedAddress)) {
         throw new Error(
           `Contract "${name}" address mismatch! ` +
@@ -288,7 +266,7 @@ export class ContractRegistry<T extends ContractConfigMap>
       this.notifySubscribers();
 
       logger.info(
-        `🆕 Contract "${String(name)}" - FRESH REGISTRATION at ${instance.address.toString()}`
+        `Contract "${String(name)}" - FRESH REGISTRATION at ${instance.address.toString()}`
       );
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -299,14 +277,11 @@ export class ContractRegistry<T extends ContractConfigMap>
       });
       this.notifySubscribers();
 
-      logger.error(`❌ Contract "${String(name)}" - REGISTRATION FAILED`, err);
+      logger.error(`Contract "${String(name)}" - REGISTRATION FAILED`, err);
       throw err;
     }
   }
 
-  /**
-   * Check if a contract is already registered in PXE's storage (IndexedDB)
-   */
   private async isRegisteredInStorage(address: AztecAddress): Promise<boolean> {
     try {
       const instance = await this.pxe.getContractInstance(address);
@@ -316,15 +291,12 @@ export class ContractRegistry<T extends ContractConfigMap>
     }
   }
 
-  /**
-   * Create contract instance from deploy params and register with PXE
-   */
   private async registerInstanceWithPXE(
     name: ContractNames<T>,
     contractConfig: T[ContractNames<T>]
   ): Promise<ContractInstanceWithAddress> {
     const artifact = this.getArtifact(name);
-    const deployParams = contractConfig.deployParams(this.config);
+    const deployParams = this.buildDeployParams(name, contractConfig);
 
     const instance = await getContractInstanceFromInstantiationParams(
       artifact,
@@ -344,16 +316,10 @@ export class ContractRegistry<T extends ContractConfigMap>
     return instance;
   }
 
-  /**
-   * Update the cache entry for a contract
-   */
   private updateCache(name: ContractNames<T>, entry: RegisteredContract): void {
     this.cache.set(name, entry);
   }
 
-  /**
-   * Notify all subscribers of a change
-   */
   private notifySubscribers(): void {
     this.subscribers.forEach((callback) => callback());
   }

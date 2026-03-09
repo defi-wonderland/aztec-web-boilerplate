@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { Droplets, AlertTriangle, Wallet } from 'lucide-react';
 import { useAztecWallet, useConnectModal } from '../../aztec-wallet';
 import { Button, Card, CardContent, Input } from '../../components/ui';
+import { getNetworkDeployments } from '../../utils/deployments';
 import {
   useRequiredContracts,
   useToast,
@@ -17,6 +18,8 @@ import { calculateBalanceMetrics } from './utils';
 export const DripperCard: React.FC = () => {
   const { account, isPXEInitialized, connectors, connector, currentConfig } =
     useAztecWallet();
+  const tokenAddress =
+    getNetworkDeployments(currentConfig.name)?.token?.address ?? '';
   const { open: openConnectModal } = useConnectModal();
   const { success, error: toastError, loading } = useToast();
   const {
@@ -111,7 +114,7 @@ export const DripperCard: React.FC = () => {
 
   const handleCopyAddress = () => {
     navigator.clipboard
-      .writeText(currentConfig.tokenContractAddress)
+      .writeText(tokenAddress)
       .then(() => success('Token address copied'))
       .catch(() => toastError('Failed to copy address'));
   };
@@ -149,7 +152,7 @@ export const DripperCard: React.FC = () => {
     <Card className={styles.card}>
       {/* TODO: Add token name and symbol from a proper hook (useTokenMetadata)*/}
       <TokenHeader
-        address={currentConfig.tokenContractAddress}
+        address={tokenAddress}
         tokenName="Test Token"
         tokenSymbol="TST"
         onCopy={handleCopyAddress}

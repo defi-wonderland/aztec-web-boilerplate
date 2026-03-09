@@ -15,9 +15,9 @@ import type {
   FunctionGroup,
   InvokeStatus,
 } from '../../../components/contract-interaction/types';
-import type { AztecNetwork } from '../../../config/networks/constants';
 import type { CachedContract } from '../../../services/storage';
 import type { ParsedFunction } from '../../../types/artifact';
+import type { AztecNetwork } from '../../../types/network';
 
 export interface UseContractInvokerOptions {
   networkName?: AztecNetwork;
