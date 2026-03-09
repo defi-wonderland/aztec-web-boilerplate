@@ -10,7 +10,7 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/ar
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { createContractConfig, getDeployerAddress } from '../contract-registry';
-import { ARTIFACT_REGISTRY_URL } from './networks/constants';
+import { ARTIFACT_REGISTRY_URL } from './networks';
 import type { ArtifactSourceConfig } from '../types/artifactSource';
 
 const CLASS_IDS = {
