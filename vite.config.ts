@@ -107,12 +107,6 @@ export default defineConfig(({ mode }) => {
     env.VITE_ARTIFACT_REGISTRY_URL || DEFAULT_ARTIFACT_REGISTRY_URL;
 
   const proxyConfig = {
-    '/github-releases': {
-      target: 'https://github.com',
-      changeOrigin: true,
-      followRedirects: true,
-      rewrite: (path: string) => path.replace(/^\/github-releases/, ''),
-    },
     ...(artifactRegistryUrl && {
       '/artifact-registry': {
         target: artifactRegistryUrl,

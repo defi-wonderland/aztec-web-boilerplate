@@ -17,26 +17,9 @@ export const NETWORK_URLS = {
 export const DEFAULT_ARTIFACT_REGISTRY_URL =
   'https://devnet.aztec-registry.xyz';
 
-/**
- * Default external tgz URL for downloading pre-built contract artifacts.
- * Used as a fallback when the artifact registry is unavailable.
- */
-export const DEFAULT_EXTERNAL_TGZ_URL =
-  'https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-69dc5c4/defi-wonderland-aztec-standards-4.0.0-devnet.2-patch.1-prerelease.69dc5c4.tgz';
-
-/** Rewrite `https://github.com/` URLs to the CORS proxy path. */
-export function toProxiedGithubUrl(url: string): string {
-  return url.replace(/^https:\/\/github\.com\//, '/github-releases/');
-}
-
 /** Resolved registry URL (env override or default). */
 export const ARTIFACT_REGISTRY_URL: string =
   import.meta?.env?.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL;
-
-/** Resolved external tgz URL (env override → CORS proxy). */
-export const EXTERNAL_TGZ_URL: string = toProxiedGithubUrl(
-  import.meta?.env?.VITE_EXTERNAL_TGZ_URL ?? DEFAULT_EXTERNAL_TGZ_URL
-);
 
 /**
  * Available network types

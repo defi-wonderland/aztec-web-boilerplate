@@ -10,7 +10,7 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/ar
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { createContractConfig, getDeployerAddress } from '../contract-registry';
-import { ARTIFACT_REGISTRY_URL, EXTERNAL_TGZ_URL } from './networks/constants';
+import { ARTIFACT_REGISTRY_URL } from './networks';
 import type { ArtifactSourceConfig } from '../types/artifactSource';
 
 const CLASS_IDS = {
@@ -25,7 +25,6 @@ const CLASS_IDS = {
 function dripperArtifactSources(): ArtifactSourceConfig[] {
   return [
     { registry: ARTIFACT_REGISTRY_URL },
-    { external: EXTERNAL_TGZ_URL },
     { local: DripperContract.artifact },
   ];
 }
@@ -33,7 +32,6 @@ function dripperArtifactSources(): ArtifactSourceConfig[] {
 function tokenArtifactSources(): ArtifactSourceConfig[] {
   return [
     { registry: ARTIFACT_REGISTRY_URL },
-    { external: EXTERNAL_TGZ_URL },
     { local: TokenContract.artifact },
   ];
 }

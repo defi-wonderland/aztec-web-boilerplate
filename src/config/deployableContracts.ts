@@ -9,7 +9,7 @@ import {
   loadDeployableContracts,
   type DeployableContractConfig,
 } from '../utils/deployableContracts';
-import { ARTIFACT_REGISTRY_URL, EXTERNAL_TGZ_URL } from './networks/constants';
+import { ARTIFACT_REGISTRY_URL } from './networks/constants';
 
 /**
  * ==========================================
@@ -35,7 +35,6 @@ const DEPLOYABLE_CONTRACTS_CONFIG: DeployableContractConfig[] = [
     labelField: 'name',
     artifactSources: [
       { registry: ARTIFACT_REGISTRY_URL },
-      { external: EXTERNAL_TGZ_URL },
       { local: TokenContract.artifact },
     ],
   },
