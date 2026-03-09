@@ -11,8 +11,7 @@ import { loadContractArtifact } from '@aztec/aztec.js/abi';
  * - `local` — Use a bundled artifact directly (no network request).
  *   Accepts either a processed ContractArtifact or raw Noir compiler output JSON.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type JsonImport = Record<string, any>;
+type JsonImport = Record<string, unknown>;
 
 export type ArtifactSourceConfig =
   | { registry: string }
@@ -30,6 +29,8 @@ export function normalizeArtifactSource(
   if ('registry' in source) return { type: 'registry', url: source.registry };
   return {
     type: 'local',
-    artifact: loadContractArtifact(source.local as NoirCompiledContract),
+    artifact: loadContractArtifact(
+      source.local as unknown as NoirCompiledContract
+    ),
   };
 }
