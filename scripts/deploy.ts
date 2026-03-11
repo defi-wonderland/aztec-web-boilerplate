@@ -548,7 +548,7 @@ async function createAccountAndDeployContract() {
         address: tokenDeploymentInfo.address,
         salt: tokenDeploymentInfo.salt,
       },
-      deployer: account.getAddress().toString(),
+      deployer: AztecAddress.ZERO.toString(),
     });
   } finally {
     // Always clean up the PXE store, even on failure
