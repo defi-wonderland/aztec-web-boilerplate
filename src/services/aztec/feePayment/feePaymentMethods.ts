@@ -4,7 +4,7 @@
  * Defines available fee payment methods and utilities.
  */
 
-import type { ContractDeployment } from '../../../config/deployments/types';
+import type { DeployedContractConfig } from '../../../types/network';
 
 /**
  * Fee payment method types available in the application.
@@ -39,7 +39,7 @@ export const FEE_PAYMENT_METHOD_DESCRIPTIONS: Record<
  * Get available fee payment methods for a given config.
  */
 export function getAvailableFeePaymentMethods(
-  config?: Record<string, ContractDeployment>
+  config?: Record<string, DeployedContractConfig>
 ): FeePaymentMethodType[] {
   const methods: FeePaymentMethodType[] = ['sponsored'];
 

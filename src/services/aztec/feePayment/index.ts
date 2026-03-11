@@ -9,10 +9,10 @@ import {
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { FeePaymentMethodType } from './feePaymentMethods';
-import type { ContractDeployment } from '../../../config/deployments/types';
+import type { DeployedContractConfig } from '../../../types/network';
 
 export interface FeePaymentContext {
-  config: Record<string, ContractDeployment>;
+  config: Record<string, DeployedContractConfig>;
   getSponsoredFeePaymentMethod: () => Promise<FeePaymentMethod>;
 }
 

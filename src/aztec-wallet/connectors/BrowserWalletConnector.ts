@@ -249,6 +249,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     return {
       status: 'success',
       txHash: typeof result.result === 'string' ? result.result : undefined,
+      chain,
       rawResult: result.result,
     };
   }

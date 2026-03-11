@@ -11,17 +11,16 @@ import { Contract } from '@aztec/aztec.js/contracts';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { TxStatus } from '@aztec/stdlib/tx';
-import { getChainFromCaipAccount } from '../utils/caip';
-import { getContractMethod } from '../utils/getContractMethod';
+import { getContractMethod } from '../../aztec-wallet/execution/utils/getContractMethod';
+import { waitForReceipt } from '../../aztec-wallet/execution/utils/txReceipt';
 import { serializeArgs } from '../utils/serializeArgs';
-import { waitForReceipt } from '../utils/txReceipt';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
   ConnectorTransactionRequest,
   ConnectorTransactionResult,
-} from '../../types/browserWallet';
-import type { WriteContractData } from '../../types/contractTypes';
+} from '../../aztec-wallet/types/browserWallet';
+import type { WriteContractData } from '../types/contractTypes';
 
 // =============================================================================
 // Browser Wallet Write
@@ -34,7 +33,6 @@ export interface BrowserWalletWriteParams {
   executeOperation: (
     operation: BrowserWalletOperation
   ) => Promise<BrowserWalletOperationResult>;
-  getCaipAccount: () => string | null;
   address: string;
   functionName: string;
   args: unknown[];
@@ -50,7 +48,6 @@ export const executeBrowserWalletWrite = async (
   const {
     sendTransaction,
     executeOperation,
-    getCaipAccount,
     address,
     functionName,
     args,
@@ -71,21 +68,19 @@ export const executeBrowserWalletWrite = async (
     throw new Error(response.error ?? 'Transaction failed');
   }
 
-  const caipAccount = getCaipAccount();
-  if (!caipAccount || !response.txHash) {
+  if (!response.chain || !response.txHash) {
     return {
       txHash: response.txHash,
       result: response.rawResult,
     };
   }
 
-  const chain = getChainFromCaipAccount(caipAccount);
-  const receiptResult = await waitForReceipt(
+  const receiptResult = await waitForReceipt({
     executeOperation,
-    response.txHash,
-    chain,
-    receiptPolling
-  );
+    txHash: response.txHash,
+    chain: response.chain,
+    ...receiptPolling,
+  });
 
   if (receiptResult.success === false) {
     throw new Error(receiptResult.error);

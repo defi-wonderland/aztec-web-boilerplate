@@ -1,13 +1,13 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import {
+  hasAppManagedPXE,
+  isBrowserWalletConnector,
+} from '../../aztec-wallet/types/walletConnector';
+import {
   FEE_PAYMENT_METHOD_LABELS,
   type FeePaymentMethodType,
 } from '../../services/aztec/feePayment/feePaymentMethods';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment/index';
-import {
-  hasAppManagedPXE,
-  isBrowserWalletConnector,
-} from '../../types/walletConnector';
 import {
   executeAppManagedBatch,
   executeAppManagedRead,
@@ -16,9 +16,9 @@ import {
   executeBrowserWalletRead,
   executeBrowserWalletWrite,
 } from '../../use-aztec/core';
-import type { ContractDeployment } from '../../config/deployments/types';
+import type { WalletConnector } from '../../aztec-wallet/types/walletConnector';
 import type { FeePaymentContext } from '../../services/aztec/feePayment/index';
-import type { WalletConnector } from '../../types/walletConnector';
+import type { DeployedContractConfig } from '../../types/network';
 import type {
   AztecExecutionClient,
   BatchReadExecutionParams,
@@ -30,7 +30,7 @@ interface CreateWalletExecutionClientParams {
   connector: WalletConnector | null;
   account: AccountWithSecretKey | null;
   isConnected: boolean;
-  feePaymentConfig?: Record<string, ContractDeployment>;
+  feePaymentConfig?: Record<string, DeployedContractConfig>;
   defaultFeePaymentMethod: FeePaymentMethodType;
 }
 
@@ -146,7 +146,6 @@ export const createWalletExecutionClient = (
       return executeBrowserWalletWrite({
         sendTransaction: (req) => connector.sendTransaction(req),
         executeOperation: (op) => connector.executeOperation(op),
-        getCaipAccount: () => connector.getCaipAccount(),
         address: writeParams.address,
         functionName: writeParams.functionName,
         args: writeParams.args,

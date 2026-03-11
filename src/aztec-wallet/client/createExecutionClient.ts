@@ -146,7 +146,6 @@ export const createWalletExecutionClient = (
       return executeBrowserWalletWrite({
         sendTransaction: (req) => connector.sendTransaction(req),
         executeOperation: (op) => connector.executeOperation(op),
-        getCaipAccount: () => connector.getCaipAccount(),
         address: writeParams.address,
         functionName: writeParams.functionName,
         args: writeParams.args,

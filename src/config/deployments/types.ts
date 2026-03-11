@@ -6,20 +6,13 @@
  * The registry merges both at runtime.
  */
 
-/**
- * Deployment data for a single contract on a specific network.
- */
-export interface ContractDeployment {
-  address: string;
-  salt: string;
-  deployer: string;
-}
+import type { DeployedContractConfig } from '../../types/network';
 
 /**
  * All deployment data for a given network.
  * Keys are contract names mapped to their deployment data.
  */
-export type NetworkDeployments = Record<string, ContractDeployment>;
+export type NetworkDeployments = Record<string, DeployedContractConfig>;
 
 /**
  * Placeholder values for undeployed contracts
@@ -31,10 +24,11 @@ export const PLACEHOLDER_ADDRESS =
  * Check if a deployment entry has valid address, salt, and deployer.
  */
 export const isValidDeployment = (
-  deployment: ContractDeployment | undefined
+  deployment: DeployedContractConfig | undefined
 ): boolean => {
   return (
     !!deployment &&
+    !!deployment.address &&
     deployment.address !== PLACEHOLDER_ADDRESS &&
     !!deployment.salt &&
     !!deployment.deployer &&
