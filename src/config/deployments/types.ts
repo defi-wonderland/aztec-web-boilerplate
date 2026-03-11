@@ -28,10 +28,16 @@ export const PLACEHOLDER_ADDRESS =
   '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 /**
- * Check if a deployment entry has a valid (non-placeholder) address.
+ * Check if a deployment entry has valid address, salt, and deployer.
  */
 export const isValidDeployment = (
   deployment: ContractDeployment | undefined
 ): boolean => {
-  return !!deployment && deployment.address !== PLACEHOLDER_ADDRESS;
+  return (
+    !!deployment &&
+    deployment.address !== PLACEHOLDER_ADDRESS &&
+    !!deployment.salt &&
+    !!deployment.deployer &&
+    deployment.deployer !== PLACEHOLDER_ADDRESS
+  );
 };
