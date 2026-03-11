@@ -100,7 +100,12 @@ export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
     })),
   };
 
-  const result = await executeOperation(operation);
+  const result = await executeOperation(operation).catch(
+    (err): BrowserWalletOperationResult => ({
+      status: 'failed',
+      error: err instanceof Error ? err.message : String(err),
+    })
+  );
 
   if (result.status !== 'ok') {
     const errorMsg =
