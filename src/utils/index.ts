@@ -1,6 +1,5 @@
 import { hasHexPrefix } from '@aztec/foundation/string';
 import { isBrowserWalletConnector } from '../aztec-wallet/types/walletConnector';
-import { PLACEHOLDER_ADDRESS } from '../config/deployments';
 import {
   CHAIN_ID_TO_NETWORK,
   NETWORK_NAMES,
@@ -155,9 +154,7 @@ export const shouldUseOperationsFlow = (
 /**
  * Validates that a network configuration has a valid node URL.
  */
-export const isValidConfig = (config: {
-  nodeUrl?: string;
-}): boolean => {
+export const isValidConfig = (config: { nodeUrl?: string }): boolean => {
   if (!config.nodeUrl) return false;
 
   const urlPattern = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/i;
