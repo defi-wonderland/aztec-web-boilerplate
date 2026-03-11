@@ -59,6 +59,6 @@ export const normalizeScopeKey = (
   scopeKey: string | readonly unknown[] | undefined
 ): readonly unknown[] => {
   if (scopeKey === undefined) return [];
-  if (typeof scopeKey === 'string') return [scopeKey];
-  return scopeKey;
+  if (typeof scopeKey === 'string') return [normalizeQueryKeyValue(scopeKey)];
+  return scopeKey.map(normalizeQueryKeyValue);
 };
