@@ -74,10 +74,7 @@ export const findConstructorByName = (
 export const resolvePreconfiguredArtifact = async (
   contract: PreconfiguredContract
 ): Promise<string | null> => {
-  if ('artifactJson' in contract && contract.artifactJson) {
-    return contract.artifactJson;
-  }
-
+  // Prefer ArtifactService (registry → local fallback chain) when available
   if (contract.artifactSources && contract.classId) {
     const { artifact } = await ArtifactService.getInstance().loadArtifact(
       contract.id,
@@ -85,6 +82,11 @@ export const resolvePreconfiguredArtifact = async (
       contract.classId
     );
     return JSON.stringify(artifact);
+  }
+
+  // Fall back to local artifactJson when no source chain is configured
+  if ('artifactJson' in contract && contract.artifactJson) {
+    return contract.artifactJson;
   }
 
   return null;
@@ -98,18 +100,15 @@ export const resolvePreconfiguredArtifact = async (
 export const resolveDeployableArtifact = async (
   contract: DeployableContract
 ): Promise<DeployableContract> => {
-  if (!contract.classId || contract.artifactJson) {
-    return contract;
+  // Prefer ArtifactService (registry → local fallback chain) when available
+  if (contract.classId && contract.artifactSources) {
+    const { artifact } = await ArtifactService.getInstance().loadArtifact(
+      contract.id,
+      contract.artifactSources,
+      contract.classId
+    );
+    return resolveDeployableContract(contract, artifact);
   }
 
-  if (!contract.artifactSources) {
-    return contract;
-  }
-
-  const { artifact } = await ArtifactService.getInstance().loadArtifact(
-    contract.id,
-    contract.artifactSources,
-    contract.classId
-  );
-  return resolveDeployableContract(contract, artifact);
+  return contract;
 };
