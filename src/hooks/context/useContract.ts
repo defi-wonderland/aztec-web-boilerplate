@@ -107,13 +107,18 @@ export function useContract<K extends ContractName>(
 
   const hasCreatedContract = useRef(false);
   const currentWalletRef = useRef<Wallet | null>(null);
+  const currentNetworkRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (wallet !== currentWalletRef.current) {
+    if (
+      wallet !== currentWalletRef.current ||
+      currentConfig.name !== currentNetworkRef.current
+    ) {
       hasCreatedContract.current = false;
       currentWalletRef.current = wallet;
+      currentNetworkRef.current = currentConfig.name;
     }
-  }, [wallet]);
+  }, [wallet, currentConfig.name]);
 
   useEffect(() => {
     if (!registry || isBrowserWallet) {
@@ -164,6 +169,7 @@ export function useContract<K extends ContractName>(
     isBrowserWallet,
     getContractDefinition,
     artifacts,
+    currentConfig.name,
   ]);
 
   useEffect(() => {

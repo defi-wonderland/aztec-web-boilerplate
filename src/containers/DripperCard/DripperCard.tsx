@@ -2,7 +2,6 @@ import React, { useState, useRef, useMemo } from 'react';
 import { Droplets, AlertTriangle, Wallet } from 'lucide-react';
 import { useAztecWallet, useConnectModal } from '../../aztec-wallet';
 import { Button, Card, CardContent, Input } from '../../components/ui';
-import { getNetworkDeployments } from '../../utils/deployments';
 import {
   useRequiredContracts,
   useToast,
@@ -11,6 +10,7 @@ import {
 import { useDripper } from '../../hooks/mutations/useDripper';
 import { useTokenBalance } from '../../hooks/queries/useTokenBalance';
 import { iconSize } from '../../utils';
+import { getNetworkDeployments } from '../../utils/deployments';
 import { TokenHeader, BalanceSection, MintTypeToggle } from './components';
 import { styles } from './styles';
 import { calculateBalanceMetrics } from './utils';
