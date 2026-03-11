@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { readFieldCompressedString } from '@aztec/aztec.js/utils';
 import {
   useContractActions,
@@ -47,7 +48,7 @@ export const useContractCaller = (
     isExecuting,
     isSimulating,
     error: callerError,
-  } = useDynamicContractCaller(parsed?.artifact);
+  } = useDynamicContractCaller(parsed?.artifact as ContractArtifact);
 
   const callFunction = useCallback(
     async (mode: CallMode, functionName: string): Promise<string | null> => {

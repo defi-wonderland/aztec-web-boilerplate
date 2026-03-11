@@ -21,9 +21,7 @@ interface CallResult {
  * Delegates to use-aztec core execution functions via the adapter pattern,
  * keeping wallet-specific branching centralized in the integration layer.
  */
-export const useDynamicContractCaller = (
-  artifact?: ContractArtifact | null
-) => {
+export const useDynamicContractCaller = (artifact: ContractArtifact) => {
   const client = useAztecClient();
   const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
@@ -34,12 +32,10 @@ export const useDynamicContractCaller = (
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
 
-      if (!artifact) {
-        return { success: false, error: 'Artifact not loaded' };
-      }
-
       if (!client) {
-        return { success: false, error: 'Wallet not connected' };
+        const errorMsg = 'Wallet not connected';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
 
       setIsSimulating(true);
@@ -69,12 +65,10 @@ export const useDynamicContractCaller = (
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
 
-      if (!artifact) {
-        return { success: false, error: 'Artifact not loaded' };
-      }
-
       if (!client) {
-        return { success: false, error: 'Wallet not connected' };
+        const errorMsg = 'Wallet not connected';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
 
       setIsExecuting(true);
