@@ -23,7 +23,6 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from './ui';
-import type { AztecNetwork } from '../config/networks';
 
 const styles = {
   container: 'flex flex-col gap-2',
@@ -47,23 +46,18 @@ interface FeePaymentSelectorProps {
   disabled?: boolean;
   /** Additional class names */
   className?: string;
-  /** Network name to determine available methods */
-  networkName?: AztecNetwork;
 }
 
 export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   disabled = false,
   className,
-  networkName,
 }) => {
-  const { method, setMethod } = useFeePayment(networkName);
-  const { connector, currentConfig, isConnected, isPXEInitialized } =
+  const { method, setMethod } = useFeePayment();
+  const { connector, network, networkName, isConnected, isPXEInitialized } =
     useAztecWallet();
 
-  // Resolve fee payment config from the target network's deployments
-  const targetNetwork = networkName ?? currentConfig?.name;
-  const feePaymentConfig = targetNetwork
-    ? getNetworkDeployments(targetNetwork)
+  const feePaymentConfig = networkName
+    ? getNetworkDeployments(networkName)
     : undefined;
 
   const availableMethods = getAvailableFeePaymentMethods(feePaymentConfig);
@@ -86,12 +80,11 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
     enabled: isReady,
   });
 
-  // Fetch balance for the fee payer
   const { balance: feeJuiceBalance, isLoading: isLoadingBalance } =
     useFeeJuiceBalance({
       feePayerAddress,
-      nodeUrl: currentConfig?.nodeUrl,
-      networkName: currentConfig?.name,
+      nodeUrl: network?.nodeUrl,
+      networkName,
       enabled: !!feePayerAddress,
     });
 

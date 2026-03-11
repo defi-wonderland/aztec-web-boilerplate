@@ -18,16 +18,9 @@ import {
   type ArtifactInputMethod,
   type ContractSource,
 } from './setup-utils';
-import type { AztecNetwork } from '../../../../types/network';
 import type { DeployableContract } from '../../../../utils/deployableContracts';
 
-interface UseDeployTabOptions {
-  networkName?: AztecNetwork;
-}
-
-export const useDeployTab = (options: UseDeployTabOptions) => {
-  const { networkName } = options;
-
+export const useDeployTab = () => {
   const [deploySource, setDeploySource] = useState<ContractSource>('custom');
   const [customDeployArtifact, setCustomDeployArtifact] = useState('');
   const [deployArtifactMethod, setDeployArtifactMethod] =
@@ -39,8 +32,8 @@ export const useDeployTab = (options: UseDeployTabOptions) => {
     useContractActions();
   const { reset: resetFormValues } = useFormActions();
   const { setViewMode, setSidebarSelectedId } = useLayoutActions();
-  const loadArtifactWithData = useLoadArtifact(networkName);
-  const deployableContracts = useDeployableContracts(networkName);
+  const loadArtifactWithData = useLoadArtifact();
+  const deployableContracts = useDeployableContracts();
 
   const {
     deploy,

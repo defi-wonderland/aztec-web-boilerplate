@@ -3,7 +3,6 @@ import { useFindDeployableById } from '../../hooks/useInteractionContracts';
 import { createArtifactSummary } from '../../utils/contractInteraction';
 import { getErrorMessage } from '../../utils/errors';
 import { useContractInteractionStore } from './store';
-import type { AztecNetwork } from '../../types/network';
 
 export const useIsDeployMode = () =>
   useContractInteractionStore((state) => state.mode === 'deploy');
@@ -17,11 +16,11 @@ export const useContractTargetAddress = () =>
 export const useIsCustomDeployable = () =>
   useContractInteractionStore((state) => state.deployableId === null);
 
-export const useSelectedDeployable = (networkName?: AztecNetwork) => {
+export const useSelectedDeployable = () => {
   const deployableId = useContractInteractionStore(
     (state) => state.deployableId
   );
-  return useFindDeployableById(deployableId, networkName);
+  return useFindDeployableById(deployableId);
 };
 
 export const useContractActions = () =>

@@ -1,13 +1,24 @@
-import { AztecNetwork } from './network';
+import type { ArtifactSourceConfig } from './artifactSource';
+import type { AztecNetwork } from './network';
 
-export type DeployableContractConfig = {
+/**
+ * Configuration for a deployable contract.
+ *
+ * At least one of `artifact` or `classId` must be provided.
+ * When both are present, classId is used for registry lookup and
+ * artifact serves as a local fallback.
+ */
+type DeployableContractConfigBase = {
   id: string;
   label: string;
   network?: AztecNetwork;
   /** Optional field name to use as the display label in saved contracts. */
   labelField?: string;
-  /** Local artifact JSON (used as fallback when classId registry lookup fails). */
-  artifact?: unknown;
-  /** Class ID to fetch artifact from registry. */
-  classId?: string;
+  artifactSources?: ArtifactSourceConfig[];
 };
+
+export type DeployableContractConfig = DeployableContractConfigBase &
+  (
+    | { artifact: unknown; classId?: string }
+    | { classId: string; artifact?: unknown }
+  );

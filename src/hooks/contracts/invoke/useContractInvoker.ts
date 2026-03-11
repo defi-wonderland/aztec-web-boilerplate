@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useAztecWallet } from '../../../aztec-wallet';
 import {
   useContractActions,
   useFormActions,
@@ -17,10 +18,8 @@ import type {
 } from '../../../components/contract-interaction/types';
 import type { CachedContract } from '../../../services/storage';
 import type { ParsedFunction } from '../../../types/artifact';
-import type { AztecNetwork } from '../../../types/network';
 
 export interface UseContractInvokerOptions {
-  networkName?: AztecNetwork;
   filter?: string;
 }
 
@@ -43,7 +42,8 @@ export interface UseContractInvokerReturn {
 export const useContractInvoker = (
   options: UseContractInvokerOptions = {}
 ): UseContractInvokerReturn => {
-  const { networkName, filter = '' } = options;
+  const { filter = '' } = options;
+  const { networkName } = useAztecWallet();
 
   // Read from Zustand store
   const {
@@ -81,11 +81,10 @@ export const useContractInvoker = (
   }, [resetArtifact]);
 
   // Compose extracted hooks
-  const loadArtifactWithData = useLoadArtifact(networkName);
+  const loadArtifactWithData = useLoadArtifact();
 
   const { handleApplySaved, handleDeleteSaved, handleClearCache } =
     useSavedContractManager({
-      networkName,
       onClearState: clearContractState,
     });
 

@@ -1,4 +1,5 @@
-import { AztecNetwork } from './network';
+import type { ArtifactSourceConfig } from './artifactSource';
+import type { AztecNetwork } from './network';
 
 export type PreconfiguredContract = {
   id: string;
@@ -9,4 +10,6 @@ export type PreconfiguredContract = {
   artifactJson?: string;
   /** Class ID to fetch artifact from registry. */
   classId?: string;
+  /** Ordered fallback chain for artifact resolution. */
+  artifactSources?: ArtifactSourceConfig[];
 };

@@ -7,15 +7,13 @@
 import { useAztecWallet } from '../../aztec-wallet';
 import { useFeePaymentStore, DEFAULT_FEE_PAYMENT_METHOD } from './store';
 import type { FeePaymentMethodType } from '../../services/aztec/feePayment/feePaymentMethods';
-import type { AztecNetwork } from '../../config/networks';
 
 /**
- * Returns the fee payment method for a specific network.
- * @param networkOverride - If provided, uses this network instead of connected network
+ * Returns the fee payment method for the connected network.
  */
-export const useFeePayment = (networkOverride?: AztecNetwork) => {
-  const { currentConfig } = useAztecWallet();
-  const networkName = networkOverride ?? currentConfig?.name ?? 'sandbox';
+export const useFeePayment = () => {
+  const { networkName: connectedNetwork } = useAztecWallet();
+  const networkName = connectedNetwork ?? 'sandbox';
 
   const methods = useFeePaymentStore((s) => s.methods);
   const setMethodForNetwork = useFeePaymentStore((s) => s.setMethod);

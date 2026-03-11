@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
+import { useAztecWallet } from '../aztec-wallet';
 import {
   DEPLOYABLE_CONTRACTS,
   PRECONFIGURED_CONTRACTS,
-  type PreconfiguredContract,
 } from '../components/contract-interaction/presets';
 import { ArtifactService } from '../services/aztec/artifact/ArtifactService';
 import {
@@ -12,9 +12,10 @@ import {
   resolveDeployableContract,
   type DeployableContract,
 } from '../utils/deployableContracts';
-import type { AztecNetwork } from '../types/network';
+import type { PreconfiguredContract } from '../types/preconfiguredContract';
 
-export const usePreconfiguredContracts = (networkName?: AztecNetwork) => {
+export const usePreconfiguredContracts = () => {
+  const { networkName } = useAztecWallet();
   return useMemo(() => {
     return PRECONFIGURED_CONTRACTS.filter(
       (c) => !c.network || c.network === networkName
@@ -22,16 +23,17 @@ export const usePreconfiguredContracts = (networkName?: AztecNetwork) => {
   }, [networkName]);
 };
 
-export const useDeployableContracts = (networkName?: AztecNetwork) => {
+export const useDeployableContracts = () => {
+  const { networkName } = useAztecWallet();
   return useMemo(() => {
     return getDeployableContractsForNetwork(DEPLOYABLE_CONTRACTS, networkName);
   }, [networkName]);
 };
 
 export const useFindPreconfiguredContract = (
-  id: string | null,
-  networkName?: AztecNetwork
+  id: string | null
 ): PreconfiguredContract | null => {
+  const { networkName } = useAztecWallet();
   return useMemo(() => {
     if (!id) return null;
     return (
@@ -43,9 +45,9 @@ export const useFindPreconfiguredContract = (
 };
 
 export const useFindDeployableById = (
-  id: string | null,
-  networkName?: AztecNetwork
+  id: string | null
 ): DeployableContract | null => {
+  const { networkName } = useAztecWallet();
   return useMemo(() => {
     if (!id) return null;
     const contracts = getDeployableContractsForNetwork(

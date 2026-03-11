@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useAztecWallet } from '../../../aztec-wallet';
 import {
   getArtifactStorageService,
   type CachedContract,
@@ -12,10 +13,8 @@ import {
 } from '../../../store';
 import { getErrorMessage } from '../../../utils/errors';
 import { useArtifactStateManager } from './useArtifactStateManager';
-import type { AztecNetwork } from '../../../types/network';
 
 export interface UseSavedContractManagerOptions {
-  networkName?: AztecNetwork;
   onClearState: () => void;
 }
 
@@ -28,7 +27,8 @@ export interface UseSavedContractManagerReturn {
 export const useSavedContractManager = (
   options: UseSavedContractManagerOptions
 ): UseSavedContractManagerReturn => {
-  const { networkName, onClearState } = options;
+  const { onClearState } = options;
+  const { networkName } = useAztecWallet();
 
   const address = useContractTargetAddress();
   const { setInvokeTarget, pushLog } = useContractActions();
