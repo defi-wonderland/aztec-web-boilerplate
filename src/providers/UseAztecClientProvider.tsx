@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { useAztecExecutionClient } from '../aztec-wallet';
+import { useAztecExecutionClient, useAztecWallet } from '../aztec-wallet';
 import { UseAztecProvider } from '../use-aztec';
 
 interface UseAztecClientProviderProps {
@@ -13,6 +13,11 @@ export const UseAztecClientProvider: React.FC<UseAztecClientProviderProps> = ({
   children,
 }) => {
   const client = useAztecExecutionClient();
+  const { currentConfig } = useAztecWallet();
 
-  return <UseAztecProvider client={client}>{children}</UseAztecProvider>;
+  return (
+    <UseAztecProvider client={client} networkId={currentConfig?.name}>
+      {children}
+    </UseAztecProvider>
+  );
 };

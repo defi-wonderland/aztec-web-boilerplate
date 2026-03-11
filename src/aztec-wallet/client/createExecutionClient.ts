@@ -16,8 +16,8 @@ import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../types/walletConnector';
-import type { FeePaymentContractsConfig } from '../../types/network';
 import type { FeePaymentContext } from '../../services/aztec/feePayment/index';
+import type { FeePaymentContractsConfig } from '../../types/network';
 import type {
   AztecExecutionClient,
   BatchReadExecutionParams,

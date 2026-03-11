@@ -1,9 +1,10 @@
-import React, { type ReactNode } from 'react';
+import React, { useMemo, type ReactNode } from 'react';
 import { UseAztecRuntimeContext } from './useAztecRuntimeContext';
 import type { AztecExecutionClient } from '../types/execution';
 
 export interface UseAztecProviderProps {
   client: AztecExecutionClient | null;
+  networkId?: string;
   children: ReactNode;
 }
 
@@ -13,10 +14,13 @@ export interface UseAztecProviderProps {
  */
 export const UseAztecProvider: React.FC<UseAztecProviderProps> = ({
   client,
+  networkId,
   children,
 }) => {
+  const value = useMemo(() => ({ client, networkId }), [client, networkId]);
+
   return (
-    <UseAztecRuntimeContext.Provider value={client}>
+    <UseAztecRuntimeContext.Provider value={value}>
       {children}
     </UseAztecRuntimeContext.Provider>
   );

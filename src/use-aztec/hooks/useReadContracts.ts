@@ -1,8 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { readContracts as readContractsAction } from '../actions/readContracts';
-import { useInternalAztecClient } from '../context/useInternalAztecClient';
+import {
+  useInternalAztecClient,
+  useInternalNetworkId,
+} from '../context/useInternalAztecClient';
 import { AztecClientNotReady } from '../errors';
 import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
+import type { ReadContractsActionParams } from '../actions/readContracts';
 import type { UseReadContractsParams } from '../types/contractTypes';
 import type { BatchReadResult } from '../types/execution';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -47,6 +51,7 @@ export const useReadContracts = <
   } = params.query ?? {};
 
   const client = useInternalAztecClient();
+  const networkId = useInternalNetworkId();
   const isEnabled = Boolean(
     (queryEnabled ?? true) && client && params.contracts.length > 0
   );
@@ -55,6 +60,7 @@ export const useReadContracts = <
   const queryKey = [
     ...scopePrefix,
     'readContracts',
+    networkId,
     { allowFailure },
     params.contracts.map((c) => [
       c.address,
@@ -69,10 +75,10 @@ export const useReadContracts = <
       if (!client) {
         throw new AztecClientNotReady();
       }
-      return readContractsAction(client, {
+      return readContractsAction<TAllowFailure>(client, {
         contracts: params.contracts,
         allowFailure,
-      });
+      } as ReadContractsActionParams<TAllowFailure>);
     },
     enabled: isEnabled,
     staleTime,
