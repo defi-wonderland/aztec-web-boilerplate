@@ -550,6 +550,7 @@ async function createAccountAndDeployContract() {
       },
       deployer: account.getAddress().toString(),
     });
+    });
   } finally {
     // Always clean up the PXE store, even on failure
     fs.rmSync(PXE_STORE_DIR, { recursive: true, force: true });

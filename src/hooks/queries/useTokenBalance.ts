@@ -3,9 +3,9 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/ar
 import { useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
-import { contractsConfig } from '../../config/contracts';
 import { useReadContracts } from '../../use-aztec';
 import { toBigInt } from '../../utils';
+import { getNetworkDeployments } from '../../utils/deployments';
 import { useContract } from '../context/useContract';
 import { queryKeys } from './queryKeys';
 
@@ -63,7 +63,7 @@ export const useTokenBalance = (
   } = useAztecWallet();
   const queryClient = useQueryClient();
 
-  const tokenAddress = contractsConfig.token.address(currentConfig);
+  const tokenAddress = getNetworkDeployments(currentConfig.name).token.address;
   const ownerAddress = account?.getAddress().toString() ?? '';
 
   const isQueryEnabled = Boolean(
