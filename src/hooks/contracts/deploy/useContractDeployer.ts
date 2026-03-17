@@ -13,6 +13,7 @@ import {
   isBrowserWalletConnector,
 } from '../../../aztec-wallet';
 import { createFeePaymentMethod } from '../../../services/aztec/feePayment';
+import { getAvailableFeePaymentMethods } from '../../../services/aztec/feePayment/feePaymentMethods';
 import { useFeePayment } from '../../../store/feePayment';
 import { buildArgsFromInputs } from '../../../utils/contractInteraction';
 import { getNetworkDeployments } from '../../../utils/deployments';
@@ -129,8 +130,13 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-          config: getNetworkDeployments(networkName),
+        const deploymentConfig = getNetworkDeployments(networkName);
+        const available = getAvailableFeePaymentMethods(deploymentConfig);
+        const effectiveMethod = available.includes(feePaymentMethod)
+          ? feePaymentMethod
+          : 'sponsored';
+        const paymentMethod = await createFeePaymentMethod(effectiveMethod, {
+          config: deploymentConfig,
           getSponsoredFeePaymentMethod: () =>
             connector.getSponsoredFeePaymentMethod(),
         });

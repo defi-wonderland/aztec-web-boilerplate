@@ -396,7 +396,7 @@ export const contractsConfig = createContractConfig({
   token: {
     contract: TokenContract,
     constructorArtifact: 'constructor_with_minter',
-    constructorArgs: (deployments) => ['WETH', 'WETH', 18, deployments.dripper.address],
+    constructorArgs: (deployments) => ['WETH', 'WETH', 18, AztecAddress.fromString(deployments.dripper.address), AztecAddress.ZERO],
     lazyRegister: true,
     artifactSources: [{ registry: REGISTRY_URL }, { local: TokenContract.artifact }],
     classId: '0x...',

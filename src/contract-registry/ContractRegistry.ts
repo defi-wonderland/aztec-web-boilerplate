@@ -246,6 +246,14 @@ export class ContractRegistry<T extends ContractConfigMap>
             }
           );
 
+          if (!instance.address.equals(expectedAddress)) {
+            throw new Error(
+              `Contract "${String(name)}" storage address mismatch! ` +
+                `Computed: ${instance.address.toString()}, ` +
+                `Expected: ${expectedAddress.toString()}`
+            );
+          }
+
           this.updateCache(name, { status: 'ready', instance });
           syncedCount++;
           logger.info(`Contract "${String(name)}" - STORAGE HIT (IndexedDB)`);
