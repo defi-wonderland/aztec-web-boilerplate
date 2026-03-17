@@ -73,7 +73,6 @@ export type WalletActions = {
     connectorId: WalletConnectorId,
     run: (connector: WalletConnector) => Promise<T>
   ) => Promise<T>;
-  _disconnectWith: (cleanup?: () => Promise<void> | void) => Promise<void>;
   // Connector management
   setConnectors: (connectors: WalletConnector[]) => void;
   connect: (connectorId: WalletConnectorId) => Promise<void>;

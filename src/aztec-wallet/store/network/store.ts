@@ -24,7 +24,7 @@ type State = {
 type Actions = {
   initialize: (presets: StoreNetworkPreset[]) => void;
   updateNetworkConfig: (name: AztecNetwork) => boolean;
-  switchToNetwork: (name: AztecNetwork) => Promise<boolean>;
+  switchToNetwork: (name: AztecNetwork) => Promise<void>;
   resetToDefault: () => void;
   syncFromStorage: () => void;
 };
@@ -87,15 +87,18 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   },
 
   switchToNetwork: async (name) => {
-    const { currentConfig, updateNetworkConfig } = get();
-    const changed = updateNetworkConfig(name);
-    if (changed) {
-      const walletStore = getWalletStore();
-      await SharedPXEService.clearInstance(currentConfig.name);
-      getContractRegistryStore().reset();
-      walletStore.setPXEStatus('idle');
-    }
-    return changed;
+    const { currentConfig, configuredNetworks, updateNetworkConfig } = get();
+    const config = configuredNetworks[name as AztecNetwork];
+    if (!config || config.name === currentConfig.name) return;
+
+    // Clean up old PXE before switching config to avoid inconsistent state
+    const oldConfigName = currentConfig.name;
+    const walletStore = getWalletStore();
+    await SharedPXEService.clearInstance(oldConfigName);
+    getContractRegistryStore().reset();
+
+    updateNetworkConfig(name);
+    walletStore.setPXEStatus('idle');
   },
 
   resetToDefault: () => {

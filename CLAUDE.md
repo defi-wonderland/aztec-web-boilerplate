@@ -396,7 +396,7 @@ export const contractsConfig = createContractConfig({
   token: {
     contract: TokenContract,
     constructorArtifact: 'constructor_with_minter',
-    constructorArgs: (deployments) => ['WETH', 'WETH', 18, AztecAddress.fromString(deployments.dripper.address), AztecAddress.ZERO],
+    constructorArgs: (deployments) => ['WETH', 'WETH', 18, AztecAddress.fromString(deployments.dripper.address!), AztecAddress.ZERO],
     lazyRegister: true,
     artifactSources: [{ registry: REGISTRY_URL }, { local: TokenContract.artifact }],
     classId: '0x...',
@@ -551,7 +551,7 @@ Cross-Origin-Resource-Policy: cross-origin
 - Uses `scripts/deploy.ts`
 - Creates deployer account with ECDSA signing
 - Deploys contracts with deterministic addresses (salt-based)
-- Saves deployment info to `src/config/deployments/sandbox.json`
+- Saves deployment info to `src/config/deployments/<network>.json`
 
 **4. Add Deployment Data** (`src/config/deployments/`):
 

@@ -261,41 +261,6 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     }
   },
 
-  _disconnectWith: async (cleanup?: () => Promise<void> | void) => {
-    const { activeConnectorId, connectors } = get();
-    if (!activeConnectorId) return;
-
-    try {
-      if (cleanup) {
-        await cleanup();
-      }
-    } finally {
-      // Tear down PXE for the current network
-      const { currentConfig } = getNetworkStore();
-      await SharedPXEService.clearInstance(currentConfig.name);
-
-      clearWalletConnection();
-      getContractRegistryStore().reset();
-      set({
-        account: null,
-        walletType: null,
-        status: 'disconnected',
-        error: null,
-        signerType: null,
-        connectedRdns: null,
-        caipAccount: null,
-        caipAccounts: [],
-        supportedChains: [],
-        isInstalled: false,
-        activeConnectorId: null,
-        connectingConnectorId: null,
-        pxeStatus: 'idle',
-        pxeError: null,
-        connectors,
-      });
-    }
-  },
-
   setConnectors: (connectors) => set({ connectors }),
 
   /**
@@ -333,7 +298,38 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   // Shared actions
   disconnect: async (cleanup?: () => Promise<void> | void) => {
-    await get()._disconnectWith(cleanup);
+    const { activeConnectorId, connectors } = get();
+    if (!activeConnectorId) return;
+
+    try {
+      if (cleanup) {
+        await cleanup();
+      }
+    } finally {
+      // Tear down PXE for the current network
+      const { currentConfig } = getNetworkStore();
+      await SharedPXEService.clearInstance(currentConfig.name);
+
+      clearWalletConnection();
+      getContractRegistryStore().reset();
+      set({
+        account: null,
+        walletType: null,
+        status: 'disconnected',
+        error: null,
+        signerType: null,
+        connectedRdns: null,
+        caipAccount: null,
+        caipAccounts: [],
+        supportedChains: [],
+        isInstalled: false,
+        activeConnectorId: null,
+        connectingConnectorId: null,
+        pxeStatus: 'idle',
+        pxeError: null,
+        connectors,
+      });
+    }
   },
 
   setError: (error) => set({ error }),

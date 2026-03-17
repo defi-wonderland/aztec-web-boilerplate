@@ -68,11 +68,17 @@ export const executeBrowserWalletWrite = async (
     throw new Error(response.error ?? 'Transaction failed');
   }
 
-  if (!response.chain || !response.txHash) {
+  if (!response.txHash) {
     return {
       txHash: response.txHash,
       result: response.rawResult,
     };
+  }
+
+  if (!response.chain) {
+    throw new Error(
+      'Transaction succeeded but wallet did not return chain info — cannot poll for receipt'
+    );
   }
 
   const receiptResult = await waitForReceipt({
