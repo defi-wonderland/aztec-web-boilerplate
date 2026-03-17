@@ -19,7 +19,7 @@ export const DripperCard: React.FC = () => {
   const { account, isPXEInitialized, connectors, connector, currentConfig } =
     useAztecWallet();
   const tokenAddress =
-    getNetworkDeployments(currentConfig.name)?.token?.address ?? '';
+    getNetworkDeployments(currentConfig.name)?.token?.address;
   const { open: openConnectModal } = useConnectModal();
   const { success, error: toastError, loading } = useToast();
   const {
@@ -113,6 +113,10 @@ export const DripperCard: React.FC = () => {
   };
 
   const handleCopyAddress = () => {
+    if (!tokenAddress) {
+      toastError('No token address available');
+      return;
+    }
     navigator.clipboard
       .writeText(tokenAddress)
       .then(() => success('Token address copied'))
