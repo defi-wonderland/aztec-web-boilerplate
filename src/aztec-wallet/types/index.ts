@@ -78,6 +78,7 @@ export type ModalView =
 export type ConnectionStatus =
   | 'disconnected'
   | 'connecting'
+  | 'deploying'
   | 'switching'
   | 'connected'
   | 'error';
