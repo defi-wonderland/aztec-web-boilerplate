@@ -14,7 +14,7 @@ import {
   getNetworkIcon,
   getNetworkDisplayName,
 } from '../../config/networkPresets';
-import { getAddressEmoji } from '../ConnectButton/ConnectButton';
+import { getAddressEmoji } from '../ConnectButton/utils';
 import { NetworkIcon } from '../shared';
 import type { AztecNetwork } from '../../../types/network';
 

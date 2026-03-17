@@ -9,11 +9,12 @@ import type { AztecAddress as AztecAddressType } from '@aztec/aztec.js/addresses
 import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { getContractMethod } from '../utils/getContractMethod';
-import type { SimulateViewsOp } from '../../types/browserWallet';
+import { serializeArgs } from '../utils/serializeArgs';
+import type { SimulateViewsOp } from '../types/browserWallet';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
-} from '../../types/browserWallet';
+} from '../types/browserWallet';
 import type {
   BatchReadResult,
   ReadContractResult,
@@ -96,7 +97,7 @@ export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
       kind: 'call' as const,
       contract: c.address,
       method: c.functionName,
-      args: c.args,
+      args: serializeArgs(c.args),
     })),
   };
 
@@ -115,7 +116,7 @@ export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
 
     if (allowFailure) {
       return contracts.map(() => ({
-        status: 'failure' as const,
+        status: 'failed' as const,
         error: new Error(errorMsg),
       })) as BatchReadResult<TAllowFailure>;
     }
@@ -177,7 +178,7 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
     if (!method) {
       if (allowFailure) {
         results.push({
-          status: 'failure' as const,
+          status: 'failed' as const,
           error: new Error(
             `Method ${contract.functionName} not found on contract`
           ),
@@ -197,7 +198,7 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
     } catch (err) {
       if (allowFailure) {
         results.push({
-          status: 'failure' as const,
+          status: 'failed' as const,
           error: err instanceof Error ? err : new Error(String(err)),
         });
       } else {

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { SANDBOX_CONFIG, DEVNET_CONFIG } from '../../../config/networks';
 import { getContractRegistryStore } from '../../../store/contractRegistry';
 import { isValidConfig } from '../../../utils';
+import { SharedPXEService } from '../../services/aztec/pxe';
 import { getWalletStore } from '../wallet';
 import type { AztecNetwork, NetworkConfig } from '../../../types/network';
 import type { StoreNetworkPreset } from '../../types';
@@ -22,7 +23,8 @@ type State = {
 
 type Actions = {
   initialize: (presets: StoreNetworkPreset[]) => void;
-  switchToNetwork: (name: AztecNetwork) => boolean;
+  updateNetworkConfig: (name: AztecNetwork) => boolean;
+  switchToNetwork: (name: AztecNetwork) => Promise<boolean>;
   resetToDefault: () => void;
   syncFromStorage: () => void;
 };
@@ -73,12 +75,10 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
     setupCrossTabSync();
   },
 
-  switchToNetwork: (name) => {
+  updateNetworkConfig: (name) => {
     const { configuredNetworks, currentConfig } = get();
     const config = configuredNetworks[name as AztecNetwork];
     if (config && config.name !== currentConfig.name) {
-      getContractRegistryStore().reset();
-      getWalletStore().setPXEStatus('idle');
       set({ currentConfig: config });
       localStorage.setItem(STORAGE_KEY, name);
       return true;
@@ -86,29 +86,48 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
     return false;
   },
 
+  switchToNetwork: async (name) => {
+    const { currentConfig, updateNetworkConfig } = get();
+    const changed = updateNetworkConfig(name);
+    if (changed) {
+      const walletStore = getWalletStore();
+      await SharedPXEService.clearInstance(currentConfig.name);
+      getContractRegistryStore().reset();
+      walletStore.setPXEStatus('idle');
+    }
+    return changed;
+  },
+
   resetToDefault: () => {
     const { defaultNetwork, configuredNetworks, currentConfig } = get();
     const defaultConfig = configuredNetworks[defaultNetwork] ?? SANDBOX_CONFIG;
     if (defaultConfig.name !== currentConfig.name) {
+      const walletStore = getWalletStore();
       getContractRegistryStore().reset();
-      getWalletStore().setPXEStatus('idle');
+      walletStore.setPXEStatus('idle');
     }
     localStorage.setItem(STORAGE_KEY, defaultNetwork);
     set({ currentConfig: defaultConfig });
   },
 
   syncFromStorage: () => {
-    const { configuredNetworks, currentConfig } = get();
+    const { configuredNetworks, currentConfig, switchToNetwork } = get();
     const savedNetwork = localStorage.getItem(
       STORAGE_KEY
     ) as AztecNetwork | null;
     if (savedNetwork && configuredNetworks[savedNetwork]) {
-      const newConfig = configuredNetworks[savedNetwork];
-      if (newConfig.name !== currentConfig.name) {
-        getContractRegistryStore().reset();
-        getWalletStore().setPXEStatus('idle');
+      if (configuredNetworks[savedNetwork].name !== currentConfig.name) {
+        const walletStore = getWalletStore();
+        if (walletStore.status === 'connected') {
+          walletStore.switchNetwork(savedNetwork).catch((err) => {
+            console.warn('[network-sync] Cross-tab switch failed:', err);
+          });
+        } else {
+          switchToNetwork(savedNetwork).catch((err) => {
+            console.warn('[network-sync] Cross-tab switch failed:', err);
+          });
+        }
       }
-      set({ currentConfig: newConfig });
     }
   },
 }));

@@ -17,6 +17,7 @@ export type ConnectionStatus =
   | 'disconnected'
   | 'connecting'
   | 'deploying'
+  | 'switching'
   | 'connected';
 
 export interface ConnectorStatus {

@@ -18,13 +18,14 @@ export type NetworkStatus = 'idle' | 'checking' | 'available' | 'error';
  * - initializing → ready (PXE init success)
  * - initializing → error (PXE init failed)
  * - ready → idle (disconnect/reset)
+ * - ready → initializing (network switch — re-init PXE without going through idle)
  * - error → idle (disconnect/reset)
  * - error → initializing (retry)
  */
 export const VALID_PXE_TRANSITIONS: Record<PXEStatus, PXEStatus[]> = {
   idle: ['initializing'],
   initializing: ['ready', 'error'],
-  ready: ['idle'],
+  ready: ['idle', 'initializing'],
   error: ['idle', 'initializing'],
 };
 
@@ -110,6 +111,9 @@ export type WalletActions = {
       >
     >
   ) => void;
+
+  // Network switching
+  switchNetwork: (networkName: AztecNetwork) => Promise<void>;
 
   // Shared
   disconnect: (cleanup?: () => Promise<void> | void) => Promise<void>;

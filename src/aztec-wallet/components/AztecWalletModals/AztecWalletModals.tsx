@@ -7,6 +7,7 @@ import { useWalletStore } from '../../store/wallet';
 import { AccountModal } from '../AccountModal';
 import { ConnectModal } from '../ConnectModal';
 import { NetworkModal } from '../NetworkModal';
+import type { AztecNetwork } from '../../../types/network';
 import type { ModalWalletType } from '../../types';
 
 /**
@@ -37,6 +38,7 @@ export const AztecWalletModals: React.FC = () => {
       connectExistingEmbedded: state.connectExistingEmbedded,
       hasSavedEmbeddedAccount: state.hasSavedEmbeddedAccount,
       disconnect: state.disconnect,
+      switchNetwork: state.switchNetwork,
       connectors: state.connectors,
     }))
   );
@@ -44,7 +46,8 @@ export const AztecWalletModals: React.FC = () => {
   // Network state
   const currentConfig = useNetworkStore((state) => state.currentConfig);
 
-  const isConnected = walletState.status === 'connected';
+  const showAccountModal =
+    walletState.status === 'connected' || walletState.status === 'switching';
   const address = walletState.account?.getAddress().toString() ?? '';
 
   // Handle connect modal open change
@@ -96,6 +99,14 @@ export const AztecWalletModals: React.FC = () => {
     closeModal();
   }, [walletState, closeModal]);
 
+  // Handle network switch — in-place switch via wallet store
+  const handleSwitchNetwork = useCallback(
+    async (networkName: AztecNetwork) => {
+      await walletState.switchNetwork(networkName);
+    },
+    [walletState]
+  );
+
   return (
     <>
       {/* Connect Modal */}
@@ -107,7 +118,7 @@ export const AztecWalletModals: React.FC = () => {
       />
 
       {/* Account Modal */}
-      {isConnected && address && (
+      {showAccountModal && address && (
         <AccountModal
           open={openModal === 'account'}
           onOpenChange={handleAccountOpenChange}
@@ -123,6 +134,7 @@ export const AztecWalletModals: React.FC = () => {
         open={openModal === 'network'}
         onOpenChange={handleNetworkOpenChange}
         networks={config.networks}
+        onSwitchNetwork={handleSwitchNetwork}
       />
     </>
   );

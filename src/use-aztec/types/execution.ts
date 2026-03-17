@@ -1,5 +1,6 @@
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import type { WriteContractData, ReadContractResult } from './contractTypes';
+import type { WriteContractData } from './contractTypes';
+export type { ReadContractResult } from './contractTypes';
 
 /** Parameters for a single contract read execution. */
 export interface ReadExecutionParams {

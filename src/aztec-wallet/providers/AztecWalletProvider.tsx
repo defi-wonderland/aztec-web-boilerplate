@@ -50,7 +50,8 @@ const AutoReconnect: React.FC = () => {
 
   const isInitialized = connectors.length > 0;
   const isConnected = status === 'connected';
-  const isConnecting = status === 'connecting' || status === 'deploying';
+  const isConnecting =
+    status === 'connecting' || status === 'deploying' || status === 'switching';
 
   useEffect(() => {
     // Only attempt once, when initialized, and not already connected
@@ -268,12 +269,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     return () => {
       disconnect();
     };
-  }, [
-    resolvedConfig.connectors,
-    currentConfig.nodeUrl,
-    setConnectors,
-    disconnect,
-  ]);
+  }, [resolvedConfig.connectors, setConnectors, disconnect]);
 
   // Check if connectors are initialized
   const connectors = useWalletStore((state) => state.connectors);
