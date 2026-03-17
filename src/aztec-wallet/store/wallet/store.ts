@@ -146,7 +146,7 @@ async function reconnectWalletOnNetwork(
  * Switch networks in-place — tear down old PXE, swap config, spin up new PXE,
  * re-register account — all while keeping the wallet identity intact.
  *
- * If not connected, delegates to the network store's switchToNetwork.
+ * If not connected, tears down PXE and delegates config update to the network store.
  */
 async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
   const store = getWalletStore();
@@ -156,16 +156,20 @@ async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
     throw new Error('Network switch already in progress');
   }
 
-  // If not connected, delegate to network store (full teardown + config update)
-  if (store.status !== 'connected') {
-    await networkStore.switchToNetwork(networkName);
-    return;
-  }
-
   const oldConfigName = networkStore.currentConfig.name;
 
   // Update config (returns false if same network or invalid)
   if (!networkStore.updateNetworkConfig(networkName)) return;
+
+  // Always tear down old PXE regardless of connection status
+  await SharedPXEService.clearInstance(oldConfigName);
+  getContractRegistryStore().reset();
+
+  // If not connected, just reset PXE status — no wallet reconnection needed
+  if (store.status !== 'connected') {
+    useWalletStore.setState({ pxeStatus: 'idle', pxeError: null });
+    return;
+  }
 
   useWalletStore.setState({
     status: 'switching',
@@ -175,9 +179,6 @@ async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
   });
 
   try {
-    await SharedPXEService.clearInstance(oldConfigName);
-    getContractRegistryStore().reset();
-
     const walletState = await reconnectWalletOnNetwork(store, networkName);
 
     useWalletStore.setState({
@@ -191,7 +192,8 @@ async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
       err instanceof Error ? err.message : 'Failed to switch network';
     console.error('[switchNetwork] Failed:', message);
 
-    // No rollback — stay on new network with error state (wagmi pattern)
+    // Stay on new network with error state — wallet identity is preserved,
+    // but PXE is unusable until retry. Consumers gate on isPXEInitialized.
     useWalletStore.setState({
       status: 'connected',
       error: message,
