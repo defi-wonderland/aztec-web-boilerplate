@@ -8,7 +8,7 @@
 export const getChainFromCaipAccount = (caipAccount: string): string => {
   const parts = caipAccount.split(':');
   const [namespace, chainId, address] = parts;
-  if (parts.length < 3 || !namespace || !chainId || !address) {
+  if (parts.length !== 3 || !namespace || !chainId || !address) {
     throw new Error(
       `Invalid CAIP account: expected namespace:chainId:address, got "${caipAccount}"`
     );

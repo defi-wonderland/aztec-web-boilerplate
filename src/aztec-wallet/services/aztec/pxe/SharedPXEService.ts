@@ -82,8 +82,18 @@ class SharedPXEServiceClass {
 
     // Deduplicate concurrent initializations (only if URL matches)
     const pending = this.initPromises.get(key);
-    if (pending && pending.nodeUrl === normalizedNodeUrl) {
-      return pending.promise;
+    if (pending) {
+      if (pending.nodeUrl === normalizedNodeUrl) {
+        return pending.promise;
+      }
+      // Different URL requested — wait for the in-flight init to settle,
+      // then tear it down so we don't leave a stale PXE instance.
+      try {
+        await pending.promise;
+      } catch {
+        // init failed — nothing to tear down
+      }
+      await this.clearInstance(networkName);
     }
 
     // Start new initialization
