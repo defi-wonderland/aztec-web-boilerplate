@@ -46,10 +46,7 @@ interface PXEInstanceEntry {
  */
 class SharedPXEServiceClass {
   private instances: Map<string, PXEInstanceEntry> = new Map();
-  private initPromises: Map<
-    string,
-    { promise: Promise<SharedPXEInstance>; nodeUrl: string }
-  > = new Map();
+  private initPromises: Map<string, Promise<SharedPXEInstance>> = new Map();
   private cachedPaymentMethods: Map<string, SponsoredFeePaymentMethod> =
     new Map();
   private storePromises: Map<
@@ -61,7 +58,7 @@ class SharedPXEServiceClass {
 
   /**
    * Get or create a PXE instance for a specific network.
-   * If already initializing, returns the same promise to avoid duplicate initialization.
+   * Deduplicates concurrent callers — all get the same promise.
    */
   async getInstance(
     nodeUrl: string,
@@ -73,27 +70,13 @@ class SharedPXEServiceClass {
     // Return existing instance if available
     const existing = this.instances.get(key);
     if (existing) {
-      // Reuse if URL matches, else replace stale one for this network
-      if (existing.nodeUrl === normalizedNodeUrl) {
-        return existing.instance;
-      }
-      await this.clearInstance(existing.networkName);
+      return existing.instance;
     }
 
-    // Deduplicate concurrent initializations (only if URL matches)
+    // Deduplicate concurrent initializations
     const pending = this.initPromises.get(key);
     if (pending) {
-      if (pending.nodeUrl === normalizedNodeUrl) {
-        return pending.promise;
-      }
-      // Different URL requested — wait for the in-flight init to settle,
-      // then tear it down so we don't leave a stale PXE instance.
-      try {
-        await pending.promise;
-      } catch {
-        // init failed — nothing to tear down
-      }
-      await this.clearInstance(networkName);
+      return pending;
     }
 
     // Start new initialization
@@ -102,11 +85,10 @@ class SharedPXEServiceClass {
       networkName,
       key
     );
-    this.initPromises.set(key, { promise, nodeUrl: normalizedNodeUrl });
+    this.initPromises.set(key, promise);
 
     try {
-      const instance = await promise;
-      return instance;
+      return await promise;
     } finally {
       this.initPromises.delete(key);
     }
