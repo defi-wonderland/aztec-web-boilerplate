@@ -157,26 +157,30 @@ async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
   }
 
   const oldConfigName = networkStore.currentConfig.name;
+  const wasConnected = store.status === 'connected';
 
   // Update config (returns false if same network or invalid)
   if (!networkStore.updateNetworkConfig(networkName)) return;
+
+  // Set switching status BEFORE any async work so concurrent calls see the guard
+  if (wasConnected) {
+    useWalletStore.setState({
+      status: 'switching',
+      error: null,
+      pxeStatus: 'initializing',
+      pxeError: null,
+    });
+  }
 
   // Always tear down old PXE regardless of connection status
   await SharedPXEService.clearInstance(oldConfigName);
   getContractRegistryStore().reset();
 
   // If not connected, just reset PXE status — no wallet reconnection needed
-  if (store.status !== 'connected') {
+  if (!wasConnected) {
     useWalletStore.setState({ pxeStatus: 'idle', pxeError: null });
     return;
   }
-
-  useWalletStore.setState({
-    status: 'switching',
-    error: null,
-    pxeStatus: 'initializing',
-    pxeError: null,
-  });
 
   try {
     const walletState = await reconnectWalletOnNetwork(store, networkName);

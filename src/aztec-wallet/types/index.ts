@@ -63,17 +63,6 @@ export type {
 export { WalletType, ExternalSignerType } from './aztec';
 import type { ModalWalletType } from './aztec';
 
-// Theme types
-export type {
-  ThemeConfig,
-  PartialThemeConfig,
-  ThemeColors,
-  ThemeRadii,
-  ThemeFonts,
-  ThemeShadows,
-  ThemeSpacing,
-} from '../theme/types';
-
 // Network picker variant
 export type NetworkPickerVariant = 'full' | 'compact';
 
@@ -89,6 +78,7 @@ export type ModalView =
 export type ConnectionStatus =
   | 'disconnected'
   | 'connecting'
+  | 'switching'
   | 'connected'
   | 'error';
 

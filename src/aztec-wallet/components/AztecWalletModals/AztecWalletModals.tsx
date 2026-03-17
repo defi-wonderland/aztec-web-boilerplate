@@ -46,8 +46,8 @@ export const AztecWalletModals: React.FC = () => {
   // Network state
   const currentConfig = useNetworkStore((state) => state.currentConfig);
 
-  const showAccountModal =
-    walletState.status === 'connected' || walletState.status === 'switching';
+  const isSwitching = walletState.status === 'switching';
+  const showAccountModal = walletState.status === 'connected' || isSwitching;
   const address = walletState.account?.getAddress().toString() ?? '';
 
   // Handle connect modal open change
@@ -117,15 +117,17 @@ export const AztecWalletModals: React.FC = () => {
         onConnect={handleConnect}
       />
 
-      {/* Account Modal */}
+      {/* Account Modal — force-closed during network switching to prevent
+          the Disconnect action from racing with the in-flight switch */}
       {showAccountModal && address && (
         <AccountModal
-          open={openModal === 'account'}
+          open={openModal === 'account' && !isSwitching}
           onOpenChange={handleAccountOpenChange}
           address={address}
           networkName={currentConfig?.name}
           showNetwork={config.accountModal?.showNetwork}
           onDisconnect={handleDisconnect}
+          disabled={isSwitching}
         />
       )}
 

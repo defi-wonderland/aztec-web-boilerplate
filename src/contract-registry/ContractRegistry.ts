@@ -116,7 +116,13 @@ export class ContractRegistry<T extends ContractConfigMap>
         `Missing "address" in deployment data for contract "${String(name)}".`
       );
     }
-    return AztecAddress.fromString(deployment.address);
+    const address = AztecAddress.fromString(deployment.address);
+    if (address.isZero()) {
+      throw new Error(
+        `Contract "${String(name)}" has a zero address, which indicates it has not been deployed yet.`
+      );
+    }
+    return address;
   }
 
   isRegistered(name: ContractNames<T>): boolean {

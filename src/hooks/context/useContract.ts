@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
-import type { Wallet } from '@aztec/aztec.js/wallet';
 import {
   useAztecWallet,
   WalletType,
@@ -89,10 +88,14 @@ export function useContract<K extends ContractName>(
       throw new Error('External wallet account not connected');
     }
 
-    const deployments = getNetworkDeployments(currentConfig.name);
+    const network = currentConfig?.name;
+    if (!network) {
+      throw new Error('Network not configured');
+    }
+    const deployments = getNetworkDeployments(network);
     const deployment = deployments[name];
-    if (!deployment) {
-      throw new Error(`No deployment for "${name}" on ${currentConfig.name}`);
+    if (!deployment?.address) {
+      throw new Error(`No deployment for "${name}" on ${network}`);
     }
     const contractAddress = AztecAddress.fromString(deployment.address);
 
@@ -105,25 +108,31 @@ export function useContract<K extends ContractName>(
     return proxy as unknown as TContract;
   }, [account, currentConfig, getContractDefinition, name]);
 
-  const hasCreatedContract = useRef(false);
-  const currentWalletRef = useRef<Wallet | null>(null);
-  const currentNetworkRef = useRef<string | null>(null);
+  const networkName = currentConfig?.name;
 
-  useEffect(() => {
-    if (
-      wallet !== currentWalletRef.current ||
-      currentConfig.name !== currentNetworkRef.current
-    ) {
-      hasCreatedContract.current = false;
-      currentWalletRef.current = wallet;
-      currentNetworkRef.current = currentConfig.name;
-    }
-  }, [wallet, currentConfig.name]);
+  // React-recommended pattern: reset state when dependencies change by
+  // tracking previous values in state and calling setState during render.
+  // This triggers a synchronous re-render before commit, preventing stale
+  // contract references from being visible to consumers.
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevWallet, setPrevWallet] = useState(wallet);
+  const [prevNetworkName, setPrevNetworkName] = useState(networkName);
+  if (wallet !== prevWallet || networkName !== prevNetworkName) {
+    setPrevWallet(wallet);
+    setPrevNetworkName(networkName);
+    setContract(null);
+    setStatus('idle');
+    setError(null);
+  }
+
+  const hasCreatedContract = useRef(false);
 
   useEffect(() => {
     if (!registry || isBrowserWallet) {
       return;
     }
+
+    hasCreatedContract.current = false;
 
     const updateState = async () => {
       const currentStatus = registry.getStatus(name);
@@ -169,7 +178,7 @@ export function useContract<K extends ContractName>(
     isBrowserWallet,
     getContractDefinition,
     artifacts,
-    currentConfig.name,
+    networkName,
   ]);
 
   useEffect(() => {

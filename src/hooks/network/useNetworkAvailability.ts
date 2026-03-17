@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { NETWORK_URLS } from '../../config/networks/constants';
+import { DEVNET_CONFIG } from '../../config/networks/devnet';
+import { SANDBOX_CONFIG } from '../../config/networks/sandbox';
 import type { AztecNetwork } from '../../types/network';
 
 const CHECK_INTERVAL = 30000; // Check every 30 seconds
@@ -13,8 +14,8 @@ export interface NetworkAvailability {
 }
 
 const NETWORK_CONFIGS: Record<AztecNetwork, { nodeUrl: string }> = {
-  sandbox: { nodeUrl: NETWORK_URLS.sandbox },
-  devnet: { nodeUrl: NETWORK_URLS.devnet },
+  sandbox: { nodeUrl: SANDBOX_CONFIG.nodeUrl },
+  devnet: { nodeUrl: DEVNET_CONFIG.nodeUrl },
 };
 
 /** Generate vite proxy path for network status endpoint (bypasses CORS) */

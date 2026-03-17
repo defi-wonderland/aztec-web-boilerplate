@@ -123,6 +123,8 @@ export interface AccountModalProps {
   showNetwork?: boolean;
   /** Callback when disconnect is clicked */
   onDisconnect?: () => void;
+  /** Whether actions are disabled (e.g. during network switching) */
+  disabled?: boolean;
 }
 
 /**
@@ -141,6 +143,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   networkName,
   showNetwork = false,
   onDisconnect,
+  disabled = false,
 }) => {
   const { copied, copy } = useCopyToClipboard();
 
@@ -203,6 +206,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               variant="ghost"
               className={styles.disconnectButton}
               onClick={handleDisconnect}
+              disabled={disabled}
               icon={<LogOut size={iconSize()} />}
             >
               Disconnect Wallet

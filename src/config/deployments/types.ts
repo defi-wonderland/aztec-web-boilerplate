@@ -31,7 +31,6 @@ export const isValidDeployment = (
     !!deployment.address &&
     deployment.address !== PLACEHOLDER_ADDRESS &&
     !!deployment.salt &&
-    !!deployment.deployer &&
-    deployment.deployer !== PLACEHOLDER_ADDRESS
+    !!deployment.deployer
   );
 };
