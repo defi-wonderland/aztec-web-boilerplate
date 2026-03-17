@@ -24,6 +24,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
   const networkDeployments = getNetworkDeployments(config.name);
   const dripper = networkDeployments?.dripper;
   const token = networkDeployments?.token;
+  const deploymentsCount = [dripper, token].filter(Boolean).length;
 
   return (
     <div className={styles.container}>
@@ -47,18 +48,27 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
           icon={<FileText size={iconSize()} />}
           iconVariant="purple"
           title="Smart Contracts"
-          badge={{ text: '2 deployed', variant: 'count' }}
+          badge={
+            deploymentsCount > 0
+              ? {
+                  text: `${deploymentsCount} deployed`,
+                  variant: 'count' as const,
+                }
+              : undefined
+          }
         >
           <div className={styles.contractsGap}>
             <ConfigValueRow
               label="Token Contract"
-              value={token?.address}
+              value={token?.address ?? 'Not configured'}
               badge={{ text: 'TOKEN', variant: 'blue' }}
+              showCopy={!!token?.address}
             />
             <ConfigValueRow
               label="Dripper Contract"
-              value={dripper?.address}
+              value={dripper?.address ?? 'Not configured'}
               badge={{ text: 'FAUCET', variant: 'red' }}
+              showCopy={!!dripper?.address}
             />
           </div>
         </ConfigSection>
@@ -69,16 +79,20 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
           title="Deployment Info"
         >
           <div className={styles.contractsGap}>
-            <ConfigValueRow label="Deployer" value={dripper?.deployer} />
+            <ConfigValueRow
+              label="Deployer"
+              value={dripper?.deployer ?? 'Not configured'}
+              showCopy={!!dripper?.deployer}
+            />
             <div className={styles.grid2Col}>
               <ConfigValueRow
                 label="Dripper Salt"
-                value={dripper?.salt}
+                value={dripper?.salt ?? 'Not configured'}
                 showCopy={false}
               />
               <ConfigValueRow
                 label="Token Salt"
-                value={token?.salt}
+                value={token?.salt ?? 'Not configured'}
                 showCopy={false}
               />
             </div>
