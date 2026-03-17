@@ -21,7 +21,17 @@ interface CallResult {
  * Delegates to use-aztec core execution functions via the adapter pattern,
  * keeping wallet-specific branching centralized in the integration layer.
  */
-export const useDynamicContractCaller = (artifact: ContractArtifact) => {
+interface UseDynamicContractCaller {
+  simulate: (params: CallParams) => Promise<CallResult>;
+  execute: (params: CallParams) => Promise<CallResult>;
+  isSimulating: boolean;
+  isExecuting: boolean;
+  error: string | null;
+}
+
+export const useDynamicContractCaller = (
+  artifact: ContractArtifact | null
+): UseDynamicContractCaller => {
   const client = useAztecClient();
   const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
@@ -31,6 +41,12 @@ export const useDynamicContractCaller = (artifact: ContractArtifact) => {
   const simulate = useCallback(
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
+
+      if (!artifact) {
+        const errorMsg = 'No contract artifact loaded';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
+      }
 
       if (!client) {
         const errorMsg = 'Wallet not connected';
@@ -64,6 +80,12 @@ export const useDynamicContractCaller = (artifact: ContractArtifact) => {
   const execute = useCallback(
     async (params: CallParams): Promise<CallResult> => {
       const { address, functionName, args } = params;
+
+      if (!artifact) {
+        const errorMsg = 'No contract artifact loaded';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
+      }
 
       if (!client) {
         const errorMsg = 'Wallet not connected';

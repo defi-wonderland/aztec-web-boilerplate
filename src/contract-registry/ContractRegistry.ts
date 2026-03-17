@@ -258,7 +258,15 @@ export class ContractRegistry<T extends ContractConfigMap>
           syncedCount++;
           logger.info(`Contract "${String(name)}" - STORAGE HIT (IndexedDB)`);
         }
-      } catch {
+      } catch (err) {
+        // Re-throw address mismatches — these indicate a config/storage
+        // inconsistency that must not silently fall through to fresh registration.
+        if (
+          err instanceof Error &&
+          err.message.includes('storage address mismatch')
+        ) {
+          throw err;
+        }
         // Contract not in storage - will be registered fresh
       }
     }

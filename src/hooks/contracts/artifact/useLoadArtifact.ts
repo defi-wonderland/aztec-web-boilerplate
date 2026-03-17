@@ -55,6 +55,16 @@ export const useLoadArtifact = () => {
         detail: `Loaded ${parsed.functions.length} functions`,
       });
 
+      // Skip persistence when no network is selected to avoid orphaned data
+      if (!networkName) {
+        pushLog({
+          level: 'info',
+          title: 'Artifact not cached',
+          detail: 'No network selected; artifact loaded in-memory only.',
+        });
+        return;
+      }
+
       // Cache artifact and update contracts list
       const storage = getArtifactStorageService();
       const key = generateKey(networkName);

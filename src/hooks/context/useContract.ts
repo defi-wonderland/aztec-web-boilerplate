@@ -178,6 +178,7 @@ export function useContract<K extends ContractName>(
     isBrowserWallet,
     getContractDefinition,
     artifacts,
+    networkName,
   ]);
 
   useEffect(() => {

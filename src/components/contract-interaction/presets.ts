@@ -7,8 +7,16 @@ import type { DeployableContractConfig } from '../../types/deployableContract';
 import type { AztecNetwork } from '../../types/network';
 import type { PreconfiguredContract } from '../../types/preconfiguredContract';
 
-const getWonderlandsTokenAddress = (network: AztecNetwork): string =>
-  getNetworkDeployments(network).token.address;
+const getWonderlandsTokenAddress = (network: AztecNetwork): string => {
+  const deployments = getNetworkDeployments(network);
+  const token = deployments.token;
+  if (!token?.address) {
+    throw new Error(
+      `No token deployment address found for network "${network}"`
+    );
+  }
+  return token.address;
+};
 
 const DEPLOYABLE_CONTRACTS_CONFIG: DeployableContractConfig[] = [
   {
