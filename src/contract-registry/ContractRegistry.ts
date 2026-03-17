@@ -86,6 +86,17 @@ export class ContractRegistry<T extends ContractConfigMap>
       );
     }
 
+    if (!deployment.salt) {
+      throw new Error(
+        `Missing "salt" in deployment data for contract "${String(name)}".`
+      );
+    }
+    if (!deployment.deployer) {
+      throw new Error(
+        `Missing "deployer" in deployment data for contract "${String(name)}".`
+      );
+    }
+
     return {
       salt: Fr.fromString(deployment.salt),
       deployer: AztecAddress.fromString(deployment.deployer),
@@ -99,6 +110,11 @@ export class ContractRegistry<T extends ContractConfigMap>
     const deployment = this.deployments[name as string];
     if (!deployment) {
       throw new Error(`No deployment data for contract "${String(name)}".`);
+    }
+    if (!deployment.address) {
+      throw new Error(
+        `Missing "address" in deployment data for contract "${String(name)}".`
+      );
     }
     return AztecAddress.fromString(deployment.address);
   }

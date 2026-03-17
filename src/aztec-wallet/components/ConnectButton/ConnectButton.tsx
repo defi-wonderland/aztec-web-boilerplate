@@ -142,7 +142,9 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
   if (isSwitching) {
     return (
       <div className={styles.container}>
-        {showNetworkPicker && <NetworkPicker variant={networkPickerVariant} />}
+        {showNetworkPicker && (
+          <NetworkPicker variant={networkPickerVariant} disabled />
+        )}
         <Button
           variant="secondary"
           disabled
