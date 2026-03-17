@@ -162,33 +162,26 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
   const results: (ReadContractResult | unknown)[] = [];
 
   for (const contract of contracts) {
-    const cacheKey = `${contract.address}:${contract.artifact.name}`;
-    let contractInstance = contractCache.get(cacheKey);
-    if (!contractInstance) {
-      const contractAddress = AztecAddress.fromString(contract.address);
-      contractInstance = Contract.at(
-        contractAddress,
-        contract.artifact,
-        wallet
-      );
-      contractCache.set(cacheKey, contractInstance);
-    }
-
-    const method = getContractMethod(contractInstance, contract.functionName);
-    if (!method) {
-      if (allowFailure) {
-        results.push({
-          status: 'failed' as const,
-          error: new Error(
-            `Method ${contract.functionName} not found on contract`
-          ),
-        });
-        continue;
-      }
-      throw new Error(`Method ${contract.functionName} not found on contract`);
-    }
-
     try {
+      const cacheKey = `${contract.address}:${contract.artifact.name}`;
+      let contractInstance = contractCache.get(cacheKey);
+      if (!contractInstance) {
+        const contractAddress = AztecAddress.fromString(contract.address);
+        contractInstance = Contract.at(
+          contractAddress,
+          contract.artifact,
+          wallet
+        );
+        contractCache.set(cacheKey, contractInstance);
+      }
+
+      const method = getContractMethod(contractInstance, contract.functionName);
+      if (!method) {
+        throw new Error(
+          `Method ${contract.functionName} not found on contract`
+        );
+      }
+
       const result = await method(...contract.args).simulate({
         from: fromAddress,
       });

@@ -29,9 +29,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const { invalidateAll: invalidateFeeJuiceBalances } =
     useFeeJuiceBalanceInvalidation();
 
-  const deployments = getNetworkDeployments(currentConfig.name);
-  const dripperAddress = deployments.dripper.address;
-  const tokenAddress = deployments.token.address;
+  const deployments = currentConfig
+    ? getNetworkDeployments(currentConfig.name)
+    : undefined;
+  const dripperAddress = deployments?.dripper.address;
+  const tokenAddress = deployments?.token.address;
   const isReady = !!account && !!dripperAddress && !!tokenAddress;
 
   const invalidateBalance = () => {
