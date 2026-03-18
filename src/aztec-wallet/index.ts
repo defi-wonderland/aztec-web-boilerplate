@@ -162,7 +162,7 @@ export type { NetworkPreset } from './types';
 export type { WalletGroupsConfig } from './types';
 
 /**
- * Connection status enum: 'disconnected' | 'connecting' | 'connected' | 'error'
+ * Connection status enum: 'disconnected' | 'connecting' | 'switching' | 'connected' | 'error'
  */
 export type { ConnectionStatus } from './types';
 

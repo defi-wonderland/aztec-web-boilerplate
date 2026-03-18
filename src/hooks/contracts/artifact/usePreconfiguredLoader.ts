@@ -1,8 +1,5 @@
 import { useCallback } from 'react';
-import {
-  PRECONFIGURED_CONTRACTS,
-  type PreconfiguredContract,
-} from '../../../config/preconfiguredContracts';
+import { PRECONFIGURED_CONTRACTS } from '../../../components/contract-interaction/presets';
 import {
   useContractActions,
   useArtifactActions,
@@ -10,6 +7,7 @@ import {
 } from '../../../store';
 import { ArtifactFetchError, ArtifactError } from '../../../utils/errors';
 import { resolvePreconfiguredArtifact } from '../../useInteractionContracts';
+import type { PreconfiguredContract } from '../../../types/preconfiguredContract';
 
 export interface UsePreconfiguredLoaderOptions {
   onClearState: () => void;

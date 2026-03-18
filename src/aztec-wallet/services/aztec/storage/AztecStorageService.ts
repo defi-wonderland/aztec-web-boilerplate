@@ -7,28 +7,34 @@
  *
  * The embedded wallet is designed for development and demonstration purposes.
  */
-import { IAztecStorageService, AccountData } from '../../types/aztec';
+import { IAztecStorageService, AccountData } from '../../../types/aztec';
 
 export class AztecStorageService implements IAztecStorageService {
-  private static readonly STORAGE_KEY = 'aztec-account';
-  private static readonly SENDERS_STORAGE_KEY = 'aztec-senders';
+  private static readonly BASE_STORAGE_KEY = 'aztec-account';
+  private static readonly BASE_SENDERS_KEY = 'aztec-senders';
+
+  private readonly storageKey: string;
+  private readonly sendersKey: string;
+
+  constructor(networkName?: string) {
+    const suffix = networkName ? `:${networkName}` : '';
+    this.storageKey = `${AztecStorageService.BASE_STORAGE_KEY}${suffix}`;
+    this.sendersKey = `${AztecStorageService.BASE_SENDERS_KEY}${suffix}`;
+  }
 
   /**
    * Save account data to localStorage
    * ⚠️ Keys are stored in plain text - testnet only!
    */
   saveAccount(accountData: AccountData): void {
-    localStorage.setItem(
-      AztecStorageService.STORAGE_KEY,
-      JSON.stringify(accountData)
-    );
+    localStorage.setItem(this.storageKey, JSON.stringify(accountData));
   }
 
   /**
    * Get account data from localStorage
    */
   getAccount(): AccountData | null {
-    const data = localStorage.getItem(AztecStorageService.STORAGE_KEY);
+    const data = localStorage.getItem(this.storageKey);
 
     if (!data) {
       return null;
@@ -47,24 +53,21 @@ export class AztecStorageService implements IAztecStorageService {
    * Clear account data from localStorage
    */
   clearAccount(): void {
-    localStorage.removeItem(AztecStorageService.STORAGE_KEY);
+    localStorage.removeItem(this.storageKey);
   }
 
   /**
    * Save senders array to localStorage
    */
   saveSenders(senders: string[]): void {
-    localStorage.setItem(
-      AztecStorageService.SENDERS_STORAGE_KEY,
-      JSON.stringify(senders)
-    );
+    localStorage.setItem(this.sendersKey, JSON.stringify(senders));
   }
 
   /**
    * Get senders array from localStorage
    */
   getSenders(): string[] {
-    const data = localStorage.getItem(AztecStorageService.SENDERS_STORAGE_KEY);
+    const data = localStorage.getItem(this.sendersKey);
     if (!data) {
       return [];
     }
@@ -100,6 +103,6 @@ export class AztecStorageService implements IAztecStorageService {
    * Clear all saved senders from localStorage
    */
   clearSenders(): void {
-    localStorage.removeItem(AztecStorageService.SENDERS_STORAGE_KEY);
+    localStorage.removeItem(this.sendersKey);
   }
 }

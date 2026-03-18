@@ -13,7 +13,7 @@ import {
   PXEInitError,
   SignerConnectionError,
 } from './errors';
-import type { NetworkConfig } from '../../../config/networks/types';
+import type { NetworkConfig } from '../../../types/network';
 import type { ExternalSigner } from '../../signers/types';
 import type { ExternalSignerType } from '../../types/aztec';
 

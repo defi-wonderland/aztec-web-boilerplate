@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useAztecWallet } from '../../../aztec-wallet';
 import {
   getArtifactStorageService,
   type CachedContract,
@@ -12,10 +13,8 @@ import {
 } from '../../../store';
 import { getErrorMessage } from '../../../utils/errors';
 import { useArtifactStateManager } from './useArtifactStateManager';
-import type { AztecNetwork } from '../../../config/networks/constants';
 
 export interface UseSavedContractManagerOptions {
-  networkName?: AztecNetwork;
   onClearState: () => void;
 }
 
@@ -28,7 +27,8 @@ export interface UseSavedContractManagerReturn {
 export const useSavedContractManager = (
   options: UseSavedContractManagerOptions
 ): UseSavedContractManagerReturn => {
-  const { networkName, onClearState } = options;
+  const { onClearState } = options;
+  const { networkName } = useAztecWallet();
 
   const address = useContractTargetAddress();
   const { setInvokeTarget, pushLog } = useContractActions();
@@ -96,6 +96,15 @@ export const useSavedContractManager = (
 
   const handleDeleteSaved = useCallback(
     async (targetAddress: string) => {
+      if (!networkName) {
+        pushLog({
+          level: 'error',
+          title: 'Cannot delete saved contract',
+          detail: 'No network selected',
+        });
+        return;
+      }
+
       const storage = getArtifactStorageService();
       const currentContracts = getContractInteractionStore().savedContracts;
 
@@ -125,6 +134,15 @@ export const useSavedContractManager = (
   );
 
   const handleClearCache = useCallback(async () => {
+    if (!networkName) {
+      pushLog({
+        level: 'error',
+        title: 'Cannot clear cache',
+        detail: 'No network selected',
+      });
+      return;
+    }
+
     const storage = getArtifactStorageService();
     await storage.clearArtifactsForNetwork(networkName);
     await storage.clearContracts(networkName);

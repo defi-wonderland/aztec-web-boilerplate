@@ -10,6 +10,7 @@ import {
 import { useDripper } from '../../hooks/mutations/useDripper';
 import { useTokenBalance } from '../../hooks/queries/useTokenBalance';
 import { iconSize } from '../../utils';
+import { getNetworkDeployments } from '../../utils/deployments';
 import { TokenHeader, BalanceSection, MintTypeToggle } from './components';
 import { styles } from './styles';
 import { calculateBalanceMetrics } from './utils';
@@ -17,6 +18,8 @@ import { calculateBalanceMetrics } from './utils';
 export const DripperCard: React.FC = () => {
   const { account, isPXEInitialized, connectors, connector, currentConfig } =
     useAztecWallet();
+  const tokenAddress =
+    getNetworkDeployments(currentConfig.name)?.token?.address;
   const { open: openConnectModal } = useConnectModal();
   const { success, error: toastError, loading } = useToast();
   const {
@@ -110,8 +113,12 @@ export const DripperCard: React.FC = () => {
   };
 
   const handleCopyAddress = () => {
+    if (!tokenAddress) {
+      toastError('No token address available');
+      return;
+    }
     navigator.clipboard
-      .writeText(currentConfig.tokenContractAddress)
+      .writeText(tokenAddress)
       .then(() => success('Token address copied'))
       .catch(() => toastError('Failed to copy address'));
   };
@@ -149,7 +156,7 @@ export const DripperCard: React.FC = () => {
     <Card className={styles.card}>
       {/* TODO: Add token name and symbol from a proper hook (useTokenMetadata)*/}
       <TokenHeader
-        address={currentConfig.tokenContractAddress}
+        address={tokenAddress}
         tokenName="Test Token"
         tokenSymbol="TST"
         onCopy={handleCopyAddress}

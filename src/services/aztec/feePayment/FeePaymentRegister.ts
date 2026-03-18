@@ -12,7 +12,7 @@ import { createLogger } from '@aztec/aztec.js/log';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import type { PXE } from '@aztec/pxe/server';
-import type { DeployedContractConfig } from '../../../config/networks/types';
+import type { DeployedContractConfig } from '../../../types/network';
 
 const logger = createLogger('fee-payment-register');
 

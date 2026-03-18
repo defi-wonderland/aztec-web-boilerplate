@@ -3,9 +3,9 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/ar
 import { useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
-import { contractsConfig } from '../../config/contracts';
 import { useReadContracts } from '../../use-aztec';
 import { toBigInt } from '../../utils';
+import { getNetworkDeployments } from '../../utils/deployments';
 import { useContract } from '../context/useContract';
 import { queryKeys } from './queryKeys';
 
@@ -63,7 +63,10 @@ export const useTokenBalance = (
   } = useAztecWallet();
   const queryClient = useQueryClient();
 
-  const tokenAddress = contractsConfig.token.address(currentConfig);
+  const deployments = currentConfig
+    ? getNetworkDeployments(currentConfig.name)
+    : undefined;
+  const tokenAddress = deployments?.token?.address;
   const ownerAddress = account?.getAddress().toString() ?? '';
 
   const isQueryEnabled = Boolean(
@@ -86,24 +89,25 @@ export const useTokenBalance = (
     isFetching,
     isError,
     error,
-  } = useReadContracts({
-    scopeKey: queryKeys.token.balance(tokenAddress, ownerAddress),
-    contracts: args
-      ? [
-          {
-            contract: TokenContract,
-            address: tokenAddress,
-            functionName: 'balance_of_private',
-            args,
-          },
-          {
-            contract: TokenContract,
-            address: tokenAddress,
-            functionName: 'balance_of_public',
-            args,
-          },
-        ]
-      : [],
+  } = useReadContracts<false, TokenBalance | null>({
+    scopeKey: queryKeys.token.balance(tokenAddress ?? '', ownerAddress),
+    contracts:
+      args && tokenAddress
+        ? [
+            {
+              contract: TokenContract,
+              address: tokenAddress,
+              functionName: 'balance_of_private',
+              args,
+            },
+            {
+              contract: TokenContract,
+              address: tokenAddress,
+              functionName: 'balance_of_public',
+              args,
+            },
+          ]
+        : [],
     allowFailure: false,
     query: {
       enabled: isQueryEnabled,
@@ -126,7 +130,7 @@ export const useTokenBalance = (
 
   const refetch = useCallback(async () => {
     await queryClient.invalidateQueries({
-      queryKey: queryKeys.token.balance(tokenAddress, ownerAddress),
+      queryKey: queryKeys.token.balance(tokenAddress ?? '', ownerAddress),
     });
   }, [queryClient, tokenAddress, ownerAddress]);
 

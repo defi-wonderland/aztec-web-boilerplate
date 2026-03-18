@@ -2,7 +2,7 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import {
   FEE_PAYMENT_METHOD_LABELS,
   type FeePaymentMethodType,
-} from '../../config/feePaymentContracts';
+} from '../../services/aztec/feePayment/feePaymentMethods';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment/index';
 import {
   executeAppManagedBatch,
@@ -16,14 +16,14 @@ import {
   hasAppManagedPXE,
   isBrowserWalletConnector,
 } from '../types/walletConnector';
-import type { FeePaymentContractsConfig } from '../../config/networks/types';
 import type { FeePaymentContext } from '../../services/aztec/feePayment/index';
+import type { FeePaymentContractsConfig } from '../../types/network';
 import type {
   AztecExecutionClient,
   BatchReadExecutionParams,
   ReadExecutionParams,
   WriteExecutionParams,
-} from '../../use-aztec/types/execution';
+} from '../../use-aztec/types';
 import type { WalletConnector } from '../types/walletConnector';
 
 interface CreateWalletExecutionClientParams {
@@ -146,7 +146,6 @@ export const createWalletExecutionClient = (
       return executeBrowserWalletWrite({
         sendTransaction: (req) => connector.sendTransaction(req),
         executeOperation: (op) => connector.executeOperation(op),
-        getCaipAccount: () => connector.getCaipAccount(),
         address: writeParams.address,
         functionName: writeParams.functionName,
         args: writeParams.args,

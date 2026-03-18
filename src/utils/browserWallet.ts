@@ -1,16 +1,20 @@
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { contractsConfig } from '../config/contracts';
-import { getChainId, type AztecChainId } from '../config/networks/constants';
+import { getChainId } from '../config/networks/constants';
+import type { AztecChainId } from '../types/network';
 import { type ContractNames } from '../contract-registry';
+import { NetworkConfig } from '../types/network';
 import type { RegisterContractOp } from '../aztec-wallet/types/browserWallet';
-import type { NetworkConfig } from '../config/networks';
+import type { NetworkDeployments } from '../config/deployments/types';
 import type { ResolvedArtifacts } from '../services/aztec/artifact';
 
 interface BuildRegisterContractOperationsOptions {
   config: NetworkConfig;
+  deployments: NetworkDeployments;
   artifacts: ResolvedArtifacts;
   chainOverride?: AztecChainId;
 }
@@ -22,6 +26,7 @@ interface BuildRegisterContractOperationsOptions {
  */
 export const buildRegisterContractOperations = async ({
   config,
+  deployments,
   artifacts,
   chainOverride,
 }: BuildRegisterContractOperationsOptions): Promise<RegisterContractOp[]> => {
@@ -37,6 +42,14 @@ export const buildRegisterContractOperations = async ({
     if (!definition) {
       continue;
     }
+    const deployment = deployments[name];
+    if (!deployment?.address || !deployment.salt || !deployment.deployer) {
+      console.warn(
+        `Skipping contract "${name}": missing deployment data for the "${config.name}" network.`
+      );
+      continue;
+    }
+
     const artifact = artifacts[name];
     if (!artifact) {
       throw new Error(
@@ -45,21 +58,34 @@ export const buildRegisterContractOperations = async ({
       );
     }
 
-    const deployParams = definition.deployParams(config);
+    const constructorArgs =
+      typeof definition.constructorArgs === 'function'
+        ? definition.constructorArgs(deployments)
+        : definition.constructorArgs;
+
     const instance = await getContractInstanceFromInstantiationParams(
       artifact,
       {
-        salt: deployParams.salt,
-        deployer: deployParams.deployer,
-        constructorArgs: deployParams.constructorArgs,
-        constructorArtifact: deployParams.constructorArtifact,
+        salt: Fr.fromString(deployment.salt),
+        deployer: AztecAddress.fromString(deployment.deployer),
+        constructorArgs,
+        constructorArtifact: definition.constructorArtifact,
       }
     );
+
+    const derivedAddress = instance.address.toString();
+    if (derivedAddress !== deployment.address) {
+      throw new Error(
+        `Address mismatch for contract "${name}": ` +
+          `deployment config has ${deployment.address} but derived ${derivedAddress} ` +
+          `from instantiation params. Check salt, deployer, and constructor args.`
+      );
+    }
 
     operations.push({
       kind: 'register_contract',
       chain,
-      address: definition.address(config),
+      address: derivedAddress,
       instance,
       artifact,
     });

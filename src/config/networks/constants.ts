@@ -3,6 +3,8 @@
  * Single source of truth for all Aztec network URLs and chain IDs.
  */
 
+import type { AztecChainId, AztecNetwork } from '../../types/network';
+
 /**
  * Default node URLs for each network type
  */
@@ -22,24 +24,9 @@ export const ARTIFACT_REGISTRY_URL: string =
   import.meta?.env?.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL;
 
 /**
- * Available network types
- */
-export type NetworkType = keyof typeof NETWORK_URLS;
-
-/**
- * Supported Aztec network identifiers
- */
-export type AztecNetwork = 'sandbox' | 'devnet';
-
-/**
  * Default network used when none is specified
  */
 export const DEFAULT_NETWORK: AztecNetwork = 'devnet';
-
-/**
- * Aztec chain ID type - follows CAIP-2 format
- */
-export type AztecChainId = `aztec:${number}`;
 
 /**
  * Chain IDs for each network (CAIP-2 format)
@@ -70,13 +57,6 @@ export const CHAIN_ID_TO_NETWORK: Record<string, AztecNetwork> = {
  * All supported Aztec chains
  */
 export const SUPPORTED_CHAINS: AztecChainId[] = Object.values(CHAIN_IDS);
-
-/**
- * Get the default URL for a network type
- */
-export const getNetworkUrl = (network: NetworkType): string => {
-  return NETWORK_URLS[network];
-};
 
 /**
  * Get the chain ID for a network name

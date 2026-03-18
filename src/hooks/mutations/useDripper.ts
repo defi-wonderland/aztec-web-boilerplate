@@ -2,11 +2,11 @@ import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/
 import { useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
-import { contractsConfig } from '../../config/contracts';
 import { useWriteContract } from '../../use-aztec';
+import { getNetworkDeployments } from '../../utils/deployments';
 import { queryKeys } from '../queries/queryKeys';
 import { useFeeJuiceBalanceInvalidation } from '../queries/useFeeJuiceBalance';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
+import type { FeePaymentMethodType } from '../../services/aztec/feePayment/feePaymentMethods';
 
 interface DripParams {
   amount: bigint;
@@ -29,8 +29,11 @@ export const useDripper = (options: UseDripperOptions = {}) => {
   const { invalidateAll: invalidateFeeJuiceBalances } =
     useFeeJuiceBalanceInvalidation();
 
-  const dripperAddress = contractsConfig.dripper.address(currentConfig);
-  const tokenAddress = contractsConfig.token.address(currentConfig);
+  const deployments = currentConfig
+    ? getNetworkDeployments(currentConfig.name)
+    : undefined;
+  const dripperAddress = deployments?.dripper?.address;
+  const tokenAddress = deployments?.token?.address;
   const isReady = !!account && !!dripperAddress && !!tokenAddress;
 
   const invalidateBalance = () => {

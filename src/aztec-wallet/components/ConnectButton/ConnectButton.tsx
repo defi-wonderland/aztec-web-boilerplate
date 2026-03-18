@@ -8,57 +8,8 @@ import { useModalStore } from '../../store/modal';
 import { useWalletStore } from '../../store/wallet';
 import { NetworkPicker } from '../NetworkPicker';
 import { Spinner } from '../shared';
+import { getAddressEmoji } from './utils';
 import type { NetworkPickerVariant } from '../../types';
-
-// Emoji list for wallet avatars
-const WALLET_EMOJIS = [
-  '🦊',
-  '🐸',
-  '🦄',
-  '🐙',
-  '🦋',
-  '🌸',
-  '🍀',
-  '🌈',
-  '⭐',
-  '🔮',
-  '💎',
-  '🎭',
-  '🎨',
-  '🎪',
-  '🎯',
-  '🎲',
-  '🚀',
-  '🌙',
-  '☀️',
-  '🌊',
-  '🔥',
-  '❄️',
-  '⚡',
-  '🌺',
-  '🍄',
-  '🌵',
-  '🎸',
-  '🎺',
-  '🎹',
-  '🥁',
-  '🎧',
-  '🎤',
-];
-
-/**
- * Get a consistent emoji based on wallet address
- */
-export function getAddressEmoji(address: string): string {
-  // Simple hash from address
-  let hash = 0;
-  for (let i = 0; i < address.length; i++) {
-    hash = (hash << 5) - hash + address.charCodeAt(i);
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  const index = Math.abs(hash) % WALLET_EMOJIS.length;
-  return WALLET_EMOJIS[index];
-}
 
 const styles = {
   // Container for network picker + button
@@ -169,6 +120,7 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
   const isConnected = walletState.status === 'connected';
   const isConnecting =
     walletState.status === 'connecting' || walletState.status === 'deploying';
+  const isSwitching = walletState.status === 'switching';
   const address = walletState.account?.getAddress().toString() ?? null;
 
   // Get network picker variant from config
@@ -185,6 +137,27 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({
       openConnectModal();
     }
   }, [isConnected, openAccountModal, openConnectModal]);
+
+  // Switching network state
+  if (isSwitching) {
+    return (
+      <div className={styles.container}>
+        {showNetworkPicker && (
+          <NetworkPicker variant={networkPickerVariant} disabled />
+        )}
+        <Button
+          variant="secondary"
+          disabled
+          className={cn(styles.connectingButton, className)}
+        >
+          <div className={styles.connectingContent}>
+            <Spinner size="sm" />
+            <span>Switching...</span>
+          </div>
+        </Button>
+      </div>
+    );
+  }
 
   // Connecting state
   if (isConnecting) {

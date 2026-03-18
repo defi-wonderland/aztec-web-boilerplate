@@ -44,6 +44,7 @@ const styles = {
   ].join(' '),
   icon: 'text-accent text-sm',
   networkName: 'text-sm font-semibold text-default',
+  disabled: 'opacity-50 pointer-events-none',
 } as const;
 
 export interface NetworkPickerProps {
@@ -53,6 +54,8 @@ export interface NetworkPickerProps {
    * - 'compact' - Icon only, smaller button
    */
   variant?: NetworkPickerVariant;
+  /** Whether the picker is disabled (e.g. during network switching) */
+  disabled?: boolean;
   /** Additional class names */
   className?: string;
 }
@@ -67,6 +70,7 @@ export interface NetworkPickerProps {
  */
 export const NetworkPicker: React.FC<NetworkPickerProps> = ({
   variant = 'full',
+  disabled = false,
   className,
 }) => {
   const { config } = useAztecWalletContext();
@@ -88,8 +92,13 @@ export const NetworkPicker: React.FC<NetworkPickerProps> = ({
     return (
       <button
         type="button"
-        onClick={open}
-        className={cn(styles.buttonCompact, className)}
+        onClick={disabled ? undefined : open}
+        disabled={disabled}
+        className={cn(
+          styles.buttonCompact,
+          disabled && styles.disabled,
+          className
+        )}
         title={displayName}
         data-testid="network-picker"
       >
@@ -107,8 +116,9 @@ export const NetworkPicker: React.FC<NetworkPickerProps> = ({
   return (
     <button
       type="button"
-      onClick={open}
-      className={cn(styles.buttonFull, className)}
+      onClick={disabled ? undefined : open}
+      disabled={disabled}
+      className={cn(styles.buttonFull, disabled && styles.disabled, className)}
       data-testid="network-picker"
     >
       <div className={styles.iconContainer}>

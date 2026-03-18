@@ -1,11 +1,10 @@
-export * from './types';
 export * from './constants';
 export * from './sandbox';
-export * from './devnet';
+export { DEVNET_CONFIG } from './devnet';
 
 import { DEVNET_CONFIG } from './devnet';
 import { SANDBOX_CONFIG } from './sandbox';
-import { NetworkConfig } from './types';
+import type { NetworkConfig } from '../../types/network';
 
 export const AVAILABLE_NETWORKS: NetworkConfig[] = [
   SANDBOX_CONFIG,

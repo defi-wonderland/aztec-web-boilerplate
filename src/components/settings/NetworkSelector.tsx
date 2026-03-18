@@ -2,8 +2,8 @@ import React from 'react';
 import { Lightbulb } from 'lucide-react';
 import { iconSize } from '../../utils';
 import { NetworkCard, type NetworkStatus } from './NetworkCard';
-import type { AztecNetwork } from '../../config/networks/constants';
 import type { AvailabilityStatus, NetworkHealth } from '../../hooks/network';
+import type { AztecNetwork } from '../../types/network';
 
 const getNetworkStatus = (
   network: AztecNetwork,

@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useAztecWallet } from '../../../aztec-wallet';
 import {
   getArtifactStorageService,
   type CachedContract,
@@ -10,7 +11,6 @@ import {
 } from '../../../store';
 import { requestPersistentStorage } from '../../../utils/indexeddb';
 import { useArtifactStateManager } from './useArtifactStateManager';
-import type { AztecNetwork } from '../../../config/networks/constants';
 
 const generateKey = (network?: string): string =>
   `${network ?? 'default'}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -25,7 +25,8 @@ const upsertContract = (
   return [contract, ...filtered].slice(0, 10);
 };
 
-export const useLoadArtifact = (networkName?: AztecNetwork) => {
+export const useLoadArtifact = () => {
+  const { networkName } = useAztecWallet();
   const { setInvokeTarget, pushLog } = useContractActions();
   const { setSavedContracts } = useArtifactActions();
   const { loadAndSetArtifact } = useArtifactStateManager();
@@ -53,6 +54,16 @@ export const useLoadArtifact = (networkName?: AztecNetwork) => {
         title: 'Artifact loaded',
         detail: `Loaded ${parsed.functions.length} functions`,
       });
+
+      // Skip persistence when no network is selected to avoid orphaned data
+      if (!networkName) {
+        pushLog({
+          level: 'info',
+          title: 'Artifact not cached',
+          detail: 'No network selected; artifact loaded in-memory only.',
+        });
+        return;
+      }
 
       // Cache artifact and update contracts list
       const storage = getArtifactStorageService();

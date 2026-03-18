@@ -45,11 +45,11 @@ The Aztec v4 sandbox runs as a Docker container and requires a separate Anvil in
 anvil --host 0.0.0.0 -p 8545 --block-time 12
 
 # Terminal 2: Start the Aztec v4 sandbox (Docker)
-docker pull aztecprotocol/aztec:4.0.0-devnet.1-patch.0
+docker pull aztecprotocol/aztec:4.0.0-devnet.2-patch.1
 docker run -d --name aztec-sandbox \
   -p 8080:8080 -p 8880:8880 \
   -e ETHEREUM_HOSTS=http://host.docker.internal:8545 \
-  aztecprotocol/aztec:4.0.0-devnet.1-patch.0 start --local-network
+  aztecprotocol/aztec:4.0.0-devnet.2-patch.1 start --local-network
 
 # Wait for the sandbox to be ready (check logs)
 docker logs -f aztec-sandbox
@@ -70,7 +70,7 @@ yarn dev
 bash -i <(curl -s https://install.aztec.network)
 
 # Install the specific version
-aztec-up install 4.0.0-devnet.1-patch.0
+aztec-up install 4.0.0-devnet.2-patch.1
 
 # Terminal 1: Start Anvil (local L1 chain)
 anvil --host 0.0.0.0 -p 8545 --block-time 12

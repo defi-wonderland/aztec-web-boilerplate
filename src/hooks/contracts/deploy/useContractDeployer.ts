@@ -13,8 +13,10 @@ import {
   isBrowserWalletConnector,
 } from '../../../aztec-wallet';
 import { createFeePaymentMethod } from '../../../services/aztec/feePayment';
+import { getAvailableFeePaymentMethods } from '../../../services/aztec/feePayment/feePaymentMethods';
 import { useFeePayment } from '../../../store/feePayment';
 import { buildArgsFromInputs } from '../../../utils/contractInteraction';
+import { getNetworkDeployments } from '../../../utils/deployments';
 import { restoreBytecodeBuffers } from '../../../utils/storage';
 import type { DeployResult } from '../../../components/contract-interaction/types';
 import type { SerializedArtifact } from '../../../types/artifactRegistry';
@@ -50,7 +52,7 @@ export interface DeployParams {
  * @returns Object with deploy function, status, and error handling utilities.
  */
 export const useContractDeployer = () => {
-  const { connector, account, currentConfig } = useAztecWallet();
+  const { connector, account, networkName } = useAztecWallet();
   const { method: feePaymentMethod } = useFeePayment();
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,8 +130,13 @@ export const useContractDeployer = () => {
           ctor.name
         );
 
-        const paymentMethod = await createFeePaymentMethod(feePaymentMethod, {
-          config: currentConfig?.feePaymentContracts ?? {},
+        const deploymentConfig = getNetworkDeployments(networkName);
+        const available = getAvailableFeePaymentMethods(deploymentConfig);
+        const effectiveMethod = available.includes(feePaymentMethod)
+          ? feePaymentMethod
+          : 'sponsored';
+        const paymentMethod = await createFeePaymentMethod(effectiveMethod, {
+          config: deploymentConfig,
           getSponsoredFeePaymentMethod: () =>
             connector.getSponsoredFeePaymentMethod(),
         });
@@ -158,7 +165,7 @@ export const useContractDeployer = () => {
         setIsDeploying(false);
       }
     },
-    [connector, account, feePaymentMethod, currentConfig?.feePaymentContracts]
+    [connector, account, feePaymentMethod, networkName]
   );
 
   const clearError = useCallback(() => {

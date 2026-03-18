@@ -18,7 +18,7 @@ import { ArtifactInput } from '../../ArtifactInput';
 import { ContractSourceCard } from '../ContractSourceCard';
 import { ArtifactMethodSelector } from './ArtifactMethodSelector';
 import type { ArtifactInputMethod, ContractSource } from './setup-utils';
-import type { PreconfiguredContract } from '../../../../config/preconfiguredContracts';
+import type { PreconfiguredContract } from '../../../../types/preconfiguredContract';
 
 const styles = {
   section: 'flex flex-col gap-5',

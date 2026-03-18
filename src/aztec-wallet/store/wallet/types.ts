@@ -1,5 +1,5 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import type { AztecNetwork } from '../../../config/networks/constants';
+import type { AztecNetwork } from '../../../types/network';
 import type { ExternalSigner } from '../../signers/types';
 import type { ExternalSignerType, WalletType } from '../../types/aztec';
 import type { IBrowserWalletAdapter } from '../../types/browserWalletAdapter';
@@ -18,13 +18,14 @@ export type NetworkStatus = 'idle' | 'checking' | 'available' | 'error';
  * - initializing → ready (PXE init success)
  * - initializing → error (PXE init failed)
  * - ready → idle (disconnect/reset)
+ * - ready → initializing (network switch — re-init PXE without going through idle)
  * - error → idle (disconnect/reset)
  * - error → initializing (retry)
  */
 export const VALID_PXE_TRANSITIONS: Record<PXEStatus, PXEStatus[]> = {
   idle: ['initializing'],
   initializing: ['ready', 'error'],
-  ready: ['idle'],
+  ready: ['idle', 'initializing'],
   error: ['idle', 'initializing'],
 };
 
@@ -72,7 +73,6 @@ export type WalletActions = {
     connectorId: WalletConnectorId,
     run: (connector: WalletConnector) => Promise<T>
   ) => Promise<T>;
-  _disconnectWith: (cleanup?: () => Promise<void> | void) => Promise<void>;
   // Connector management
   setConnectors: (connectors: WalletConnector[]) => void;
   connect: (connectorId: WalletConnectorId) => Promise<void>;
@@ -110,6 +110,9 @@ export type WalletActions = {
       >
     >
   ) => void;
+
+  // Network switching
+  switchNetwork: (networkName: AztecNetwork) => Promise<void>;
 
   // Shared
   disconnect: (cleanup?: () => Promise<void> | void) => Promise<void>;

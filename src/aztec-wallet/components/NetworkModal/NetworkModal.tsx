@@ -8,7 +8,7 @@ import {
 } from '../../config/networkPresets';
 import { useNetworkStore } from '../../store/network';
 import { NetworkIcon } from '../shared';
-import type { AztecNetwork } from '../../../config/networks/constants';
+import type { AztecNetwork } from '../../../types/network';
 import type { NetworkPreset } from '../../types';
 
 const styles = {
@@ -44,6 +44,8 @@ export interface NetworkModalProps {
   onOpenChange: (open: boolean) => void;
   /** Available networks */
   networks: NetworkPreset[];
+  /** Callback to handle network switching (disconnect/reconnect) */
+  onSwitchNetwork: (networkName: AztecNetwork) => Promise<void>;
   /** Optional title */
   title?: string;
 }
@@ -94,17 +96,17 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
   open,
   onOpenChange,
   networks,
+  onSwitchNetwork,
   title = 'Switch Network',
 }) => {
   const currentConfig = useNetworkStore((state) => state.currentConfig);
-  const switchToNetwork = useNetworkStore((state) => state.switchToNetwork);
 
   const handleNetworkSelect = useCallback(
-    (networkName: AztecNetwork) => {
-      switchToNetwork(networkName);
+    async (networkName: AztecNetwork) => {
       onOpenChange(false);
+      await onSwitchNetwork(networkName);
     },
-    [switchToNetwork, onOpenChange]
+    [onSwitchNetwork, onOpenChange]
   );
 
   const networkList = useMemo(() => {

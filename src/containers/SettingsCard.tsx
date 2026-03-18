@@ -7,7 +7,7 @@ import { DEVNET_CONFIG } from '../config/networks/devnet';
 import { SANDBOX_CONFIG } from '../config/networks/sandbox';
 import { useNetworkAvailability, useNetworkHealth } from '../hooks/network';
 import { iconSize } from '../utils';
-import type { AztecNetwork } from '../config/networks/constants';
+import type { AztecNetwork } from '../types/network';
 
 const styles = {
   container: 'flex flex-col lg:flex-row w-full min-h-[600px]',
@@ -19,12 +19,16 @@ const NETWORK_CONFIGS = {
 } as const;
 
 export const SettingsCard: React.FC = () => {
-  const { networkName, switchNetwork, disconnect, isConnected, connector } =
-    useAztecWallet();
+  const {
+    networkName,
+    switchNetwork,
+    isConnected,
+    connector,
+    isSwitchingNetwork,
+  } = useAztecWallet();
 
   const healthMetrics = useNetworkHealth();
   const networkAvailability = useNetworkAvailability();
-  const [isSwitching, setIsSwitching] = useState(false);
 
   const activeNetwork = (networkName ?? 'sandbox') as AztecNetwork;
   const [selectedNetwork, setSelectedNetwork] =
@@ -43,23 +47,16 @@ export const SettingsCard: React.FC = () => {
 
   const handleSwitchNetwork = useCallback(
     async (network: AztecNetwork) => {
-      if (isSwitching) return;
+      if (isSwitchingNetwork) return;
 
-      setIsSwitching(true);
       try {
-        if (isConnected) {
-          await disconnect();
-        }
-        // Switch to the new network
         await switchNetwork(network);
         setSelectedNetwork(network);
       } catch (error) {
         console.error('Failed to switch network:', error);
-      } finally {
-        setIsSwitching(false);
       }
     },
-    [isSwitching, isConnected, disconnect, switchNetwork]
+    [isSwitchingNetwork, switchNetwork]
   );
 
   const selectedConfig = NETWORK_CONFIGS[selectedNetwork];
@@ -74,8 +71,8 @@ export const SettingsCard: React.FC = () => {
       variant="secondary"
       size="sm"
       icon={<RefreshCw size={iconSize()} />}
-      disabled={isSwitching}
-      isLoading={isSwitching}
+      disabled={isSwitchingNetwork}
+      isLoading={isSwitchingNetwork}
       onClick={() => handleSwitchNetwork(selectedNetwork)}
     >
       {`Switch to ${selectedConfig.displayName}`}

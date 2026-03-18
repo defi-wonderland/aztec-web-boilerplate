@@ -10,9 +10,9 @@ import {
 } from '../../../utils/storage';
 import { getArtifactStorageService } from '../../storage/ArtifactStorageService';
 import { ArtifactRegistryService } from '../artifactRegistry';
-import type { NetworkConfig } from '../../../config/networks/types';
 import type { ContractConfigMap } from '../../../contract-registry/types';
 import type { SerializedArtifact } from '../../../types/artifactRegistry';
+import type { NetworkConfig } from '../../../types/network';
 
 const CACHE_PREFIX = 'cached:v1';
 
@@ -70,8 +70,8 @@ export class ArtifactService {
     const results = await Promise.all(
       contractNames.map((name) => {
         const contractDef = contracts[name];
-        const sources = contractDef.artifactSources(config);
-        const classId = contractDef.classId?.(config);
+        const sources = contractDef.artifactSources;
+        const classId = contractDef.classId;
         return this.loadWithFallback(name, sources, classId);
       })
     );

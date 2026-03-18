@@ -5,12 +5,11 @@ import type { AztecExecutionClient, BatchReadResult } from '../types/execution';
  * Parameters for the `readContracts` action.
  * Subset of `UseReadContractsParams` without query/hook-specific fields.
  */
-export interface ReadContractsActionParams<
-  TAllowFailure extends boolean = true,
-> {
+export type ReadContractsActionParams<TAllowFailure extends boolean = true> = {
   contracts: ReadContractsContract[];
-  allowFailure?: TAllowFailure;
-}
+} & (TAllowFailure extends false
+  ? { allowFailure: false }
+  : { allowFailure?: true });
 
 /**
  * Pure async action for batching multiple Aztec contract reads.

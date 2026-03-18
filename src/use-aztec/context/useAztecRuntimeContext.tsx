@@ -1,5 +1,13 @@
 import { createContext } from 'react';
 import type { AztecExecutionClient } from '../types/execution';
 
+export interface UseAztecRuntimeContextValue {
+  client: AztecExecutionClient | null;
+  networkId: string | undefined;
+}
+
 export const UseAztecRuntimeContext =
-  createContext<AztecExecutionClient | null>(null);
+  createContext<UseAztecRuntimeContextValue>({
+    client: null,
+    networkId: undefined,
+  });

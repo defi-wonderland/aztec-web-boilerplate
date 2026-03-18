@@ -1,11 +1,11 @@
 import React from 'react';
 import { Home, Globe } from 'lucide-react';
-import { AztecNetwork } from '../../config/networks/constants';
 import { cn, iconSize } from '../../utils';
 import {
   NetworkHealthMetrics,
   type NetworkHealthMetricsProps,
 } from './NetworkHealthMetrics';
+import type { AztecNetwork } from '../../types/network';
 
 export type NetworkStatus = 'checking' | 'unavailable' | 'idle' | 'connected';
 

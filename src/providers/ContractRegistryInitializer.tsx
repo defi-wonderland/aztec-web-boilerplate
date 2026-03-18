@@ -12,8 +12,10 @@ import {
 import { useArtifacts, useToast } from '../hooks';
 import { useContractRegistryStore } from '../store/contractRegistry';
 import { iconSize } from '../utils';
-import type { NetworkConfig } from '../config/networks';
+import { getNetworkDeployments } from '../utils/deployments';
+import type { NetworkDeployments } from '../config/deployments/types';
 import type { ResolvedArtifacts } from '../services/aztec/artifact';
+import type { AztecNetwork } from '../types/network';
 
 /**
  * Get contracts to load at initialization (lazyRegister !== true)
@@ -37,10 +39,10 @@ interface ContractRegistryInitializerProps {
 const createRegistry = (
   pxe: PXE,
   contracts: ContractConfigMap,
-  config: NetworkConfig,
+  networkDeployments: NetworkDeployments,
   artifacts: ResolvedArtifacts
 ) => {
-  return new ContractRegistry(pxe, contracts, config, artifacts);
+  return new ContractRegistry(pxe, contracts, networkDeployments, artifacts);
 };
 
 export function ContractRegistryInitializer({
@@ -79,17 +81,15 @@ export function ContractRegistryInitializer({
       async (
         pxeInstance: PXE,
         contractsList: ContractNames<ContractConfigMap>[],
-        networkConfig: NetworkConfig,
-        contractsMap: ContractConfigMap
+        networkName: AztecNetwork
       ): Promise<boolean> => {
         if (contractsList.length === 0) return true;
+        const networkDeploys = getNetworkDeployments(networkName);
         const results = await Promise.all(
           contractsList.map(async (name) => {
-            const contractConfig = contractsMap[name];
-            if (!contractConfig) return false;
-            const expectedAddress = AztecAddress.fromString(
-              contractConfig.address(networkConfig)
-            );
+            const deployment = networkDeploys[name];
+            if (!deployment) return false;
+            const expectedAddress = AztecAddress.fromString(deployment.address);
             const existing =
               await pxeInstance.getContractInstance(expectedAddress);
             return Boolean(existing);
@@ -109,10 +109,13 @@ export function ContractRegistryInitializer({
 
     const initializeRegistry = async () => {
       try {
+        const networkName = currentConfig.name;
+        const networkDeploys = getNetworkDeployments(networkName);
+
         const registry = createRegistry(
           pxe,
           typedContractsConfig,
-          currentConfig,
+          networkDeploys,
           artifacts
         );
         registryRef.current = registry;
@@ -121,8 +124,7 @@ export function ContractRegistryInitializer({
         const allCached = await checkContractsCached(
           pxe,
           initialContracts,
-          currentConfig,
-          typedContractsConfig
+          networkName
         );
         const start = performance.now();
         await registry.registerAll(initialContracts);

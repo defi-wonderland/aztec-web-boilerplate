@@ -6,6 +6,12 @@
  * @returns The chain identifier (e.g., "aztec:testnet")
  */
 export const getChainFromCaipAccount = (caipAccount: string): string => {
-  const [namespace, chainId] = caipAccount.split(':');
+  const parts = caipAccount.split(':');
+  const [namespace, chainId, address] = parts;
+  if (parts.length !== 3 || !namespace || !chainId || !address) {
+    throw new Error(
+      `Invalid CAIP account: expected namespace:chainId:address, got "${caipAccount}"`
+    );
+  }
   return `${namespace}:${chainId}`;
 };

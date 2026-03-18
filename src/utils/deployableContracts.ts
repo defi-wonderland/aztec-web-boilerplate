@@ -1,21 +1,12 @@
+import { ArtifactSourceConfig } from '../types/artifactSource';
 import { parseArtifactSource } from './contractInteraction';
 import { isKnownStructPath, getKnownStructKind } from './knownStructTypes';
 import { toTitleCase } from './string';
-import type { AztecNetwork } from '../config/networks/constants';
+import type { AztecNetwork } from '../types/network';
 import type { ParsedFunction } from '../types/artifact';
-import type { ArtifactSourceConfig } from '../types/artifactSource';
+import type { DeployableContractConfig } from '../types/deployableContract';
 
-export type DeployableContractConfig = {
-  id: string;
-  label: string;
-  network?: AztecNetwork;
-  /** Optional field name to use as the display label in saved contracts. */
-  labelField?: string;
-  artifactSources?: ArtifactSourceConfig[];
-} & (
-  | { artifact: unknown; classId?: never }
-  | { artifact?: never; classId: string }
-);
+export type { DeployableContractConfig } from '../types/deployableContract';
 
 /**
  * Constructor definition - extends ParsedFunction with a friendly label.
@@ -228,14 +219,23 @@ const extractConstructorsFromArtifact = (
 const createDeployableContract = (
   config: DeployableContractConfig
 ): DeployableContract => {
+  // When classId is present, use registry lookup (artifact is optional fallback)
   if ('classId' in config && config.classId) {
+    const artifactJson = config.artifact
+      ? JSON.stringify(config.artifact)
+      : undefined;
+    const constructors = artifactJson
+      ? extractConstructorsFromArtifact(artifactJson)
+      : [];
+
     return {
       id: config.id,
       label: config.label,
-      constructors: [],
+      constructors,
       network: config.network,
       labelField: config.labelField,
       classId: config.classId,
+      artifactJson,
       artifactSources: config.artifactSources,
     };
   }

@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { IBrowserWalletAdapter } from './browserWalletAdapter';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../types/network';
 
 /**
  * Icon type that supports emoji strings, URLs, or React components

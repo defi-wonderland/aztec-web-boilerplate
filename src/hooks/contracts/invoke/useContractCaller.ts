@@ -47,7 +47,7 @@ export const useContractCaller = (
     isExecuting,
     isSimulating,
     error: callerError,
-  } = useDynamicContractCaller(parsed?.artifact);
+  } = useDynamicContractCaller(parsed?.artifact ?? null);
 
   const callFunction = useCallback(
     async (mode: CallMode, functionName: string): Promise<string | null> => {

@@ -11,11 +11,10 @@ import { Contract } from '@aztec/aztec.js/contracts';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { TxStatus } from '@aztec/stdlib/tx';
-import { getChainFromCaipAccount } from './utils/caip';
 import { getContractMethod } from './utils/getContractMethod';
 import { serializeArgs } from './utils/serializeArgs';
 import { waitForReceipt } from './utils/txReceipt';
-import type { WriteContractData } from '../../use-aztec/types/contractTypes';
+import type { WriteContractData } from '../../use-aztec/types';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
@@ -34,7 +33,6 @@ export interface BrowserWalletWriteParams {
   executeOperation: (
     operation: BrowserWalletOperation
   ) => Promise<BrowserWalletOperationResult>;
-  getCaipAccount: () => string | null;
   address: string;
   functionName: string;
   args: unknown[];
@@ -50,7 +48,6 @@ export const executeBrowserWalletWrite = async (
   const {
     sendTransaction,
     executeOperation,
-    getCaipAccount,
     address,
     functionName,
     args,
@@ -71,19 +68,23 @@ export const executeBrowserWalletWrite = async (
     throw new Error(response.error ?? 'Transaction failed');
   }
 
-  const caipAccount = getCaipAccount();
-  if (!caipAccount || !response.txHash) {
+  if (!response.txHash) {
     return {
       txHash: response.txHash,
       result: response.rawResult,
     };
   }
 
-  const chain = getChainFromCaipAccount(caipAccount);
+  if (!response.chain) {
+    throw new Error(
+      'Transaction succeeded but wallet did not return chain info — cannot poll for receipt'
+    );
+  }
+
   const receiptResult = await waitForReceipt({
     executeOperation,
     txHash: response.txHash,
-    chain,
+    chain: response.chain,
     ...receiptPolling,
   });
 

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract } from '@aztec/aztec.js/contracts';
-import type { Wallet } from '@aztec/aztec.js/wallet';
 import {
   useAztecWallet,
   WalletType,
@@ -20,6 +19,7 @@ import {
   useContractRegistryStatus,
 } from '../../store';
 import { queuePxeCall } from '../../utils';
+import { getNetworkDeployments } from '../../utils/deployments';
 
 interface ExternalWalletContractProxy {
   readonly __browserWalletPlaceholder: true;
@@ -88,9 +88,16 @@ export function useContract<K extends ContractName>(
       throw new Error('External wallet account not connected');
     }
 
-    const contractAddress = AztecAddress.fromString(
-      definition.address(currentConfig)
-    );
+    const network = currentConfig?.name;
+    if (!network) {
+      throw new Error('Network not configured');
+    }
+    const deployments = getNetworkDeployments(network);
+    const deployment = deployments[name];
+    if (!deployment?.address) {
+      throw new Error(`No deployment for "${name}" on ${network}`);
+    }
+    const contractAddress = AztecAddress.fromString(deployment.address);
 
     const proxy: ExternalWalletContractProxy = {
       __browserWalletPlaceholder: true,
@@ -101,20 +108,31 @@ export function useContract<K extends ContractName>(
     return proxy as unknown as TContract;
   }, [account, currentConfig, getContractDefinition, name]);
 
-  const hasCreatedContract = useRef(false);
-  const currentWalletRef = useRef<Wallet | null>(null);
+  const networkName = currentConfig?.name;
 
-  useEffect(() => {
-    if (wallet !== currentWalletRef.current) {
-      hasCreatedContract.current = false;
-      currentWalletRef.current = wallet;
-    }
-  }, [wallet]);
+  // React-recommended pattern: reset state when dependencies change by
+  // tracking previous values in state and calling setState during render.
+  // This triggers a synchronous re-render before commit, preventing stale
+  // contract references from being visible to consumers.
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevWallet, setPrevWallet] = useState(wallet);
+  const [prevNetworkName, setPrevNetworkName] = useState(networkName);
+  if (wallet !== prevWallet || networkName !== prevNetworkName) {
+    setPrevWallet(wallet);
+    setPrevNetworkName(networkName);
+    setContract(null);
+    setStatus('idle');
+    setError(null);
+  }
+
+  const hasCreatedContract = useRef(false);
 
   useEffect(() => {
     if (!registry || isBrowserWallet) {
       return;
     }
+
+    hasCreatedContract.current = false;
 
     const updateState = async () => {
       const currentStatus = registry.getStatus(name);
@@ -160,6 +178,7 @@ export function useContract<K extends ContractName>(
     isBrowserWallet,
     getContractDefinition,
     artifacts,
+    networkName,
   ]);
 
   useEffect(() => {
@@ -176,62 +195,31 @@ export function useContract<K extends ContractName>(
     }
   }, [registry, registryStatus, name, isBrowserWallet]);
 
-  useEffect(() => {
-    if (!isBrowserWallet) {
-      return;
+  // Browser wallet: proxy is pure derived state — no async, no subscriptions.
+  // useMemo keeps a stable reference and avoids storing derived values in useState.
+  const browserWalletState = useMemo<{
+    contract: TContract | null;
+    status: ContractStatus;
+    error: Error | null;
+  } | null>(() => {
+    if (!isBrowserWallet) return null;
+    if (!account) return { contract: null, status: 'idle', error: null };
+    try {
+      const proxy = createExternalWalletContractProxy();
+      return { contract: proxy, status: 'ready', error: null };
+    } catch (err) {
+      return {
+        contract: null,
+        status: 'error',
+        error: err instanceof Error ? err : new Error(String(err)),
+      };
     }
-
-    let cancelled = false;
-
-    queueMicrotask(() => {
-      if (cancelled) {
-        return;
-      }
-
-      if (!account) {
-        setContract(null);
-        setStatus('idle');
-        return;
-      }
-
-      try {
-        setStatus('registering');
-        const proxy = createExternalWalletContractProxy();
-        setContract(proxy);
-        setStatus('ready');
-        setError(null);
-      } catch (err) {
-        const hydrationError =
-          err instanceof Error ? err : new Error(String(err));
-        setError(hydrationError);
-        setStatus('error');
-        setContract(null);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [account, createExternalWalletContractProxy, isBrowserWallet]);
+  }, [isBrowserWallet, account, createExternalWalletContractProxy]);
 
   const register = useCallback(async () => {
-    setError(null);
+    if (isBrowserWallet) return;
 
-    if (isBrowserWallet) {
-      try {
-        setStatus('registering');
-        const proxy = createExternalWalletContractProxy();
-        setContract(proxy);
-        setStatus('ready');
-      } catch (err) {
-        const registrationError =
-          err instanceof Error ? err : new Error(String(err));
-        setError(registrationError);
-        setStatus('error');
-        throw registrationError;
-      }
-      return;
-    }
+    setError(null);
 
     if (!registry) {
       throw new Error('Contract registry not initialized');
@@ -245,18 +233,19 @@ export function useContract<K extends ContractName>(
       setError(registrationError);
       throw registrationError;
     }
-  }, [createExternalWalletContractProxy, isBrowserWallet, name, registry]);
+  }, [isBrowserWallet, name, registry]);
 
-  const isReady = status === 'ready' && contract !== null;
+  const resolved = browserWalletState ?? { contract, status, error };
+  const isReady = resolved.status === 'ready' && resolved.contract !== null;
 
   return useMemo(
     () => ({
-      contract,
-      status,
-      error,
+      contract: resolved.contract,
+      status: resolved.status,
+      error: resolved.error,
       isReady,
       register,
     }),
-    [contract, status, error, isReady, register]
+    [resolved.contract, resolved.status, resolved.error, isReady, register]
   );
 }

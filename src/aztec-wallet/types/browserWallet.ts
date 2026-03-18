@@ -95,6 +95,8 @@ export interface ConnectorTransactionRequest {
 export interface ConnectorTransactionResult {
   status: 'success' | 'failed';
   txHash?: string;
+  /** The CAIP-2 chain used when the transaction was submitted. */
+  chain?: string;
   error?: string;
   rawResult?: unknown;
 }

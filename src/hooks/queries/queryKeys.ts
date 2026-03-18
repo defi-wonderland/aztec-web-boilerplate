@@ -1,4 +1,4 @@
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../types/network';
 
 /**
  * Centralized query key factory for React Query.

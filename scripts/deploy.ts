@@ -29,10 +29,8 @@ import { createPXE } from '@aztec/pxe/server';
 import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
 import fs from 'fs';
 import path from 'path';
-import {
-  NETWORK_URLS,
-  type NetworkType,
-} from '../src/config/networks/constants';
+import { NETWORK_URLS } from '../src/config/networks/constants';
+import type { NetworkType } from '../src/types/network';
 
 class MinimalWallet extends BaseWallet {
   private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
@@ -550,7 +548,7 @@ async function createAccountAndDeployContract() {
         address: tokenDeploymentInfo.address,
         salt: tokenDeploymentInfo.salt,
       },
-      deployer: account.getAddress().toString(),
+      deployer: AztecAddress.ZERO.toString(),
     });
   } finally {
     // Always clean up the PXE store, even on failure

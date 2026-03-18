@@ -381,20 +381,49 @@ const { open: openNetwork } = useNetworkModal();
 
 **Contract Configuration** (`src/config/contracts.ts`):
 
+Contract configs define WHAT contracts are (artifact, constructor, sources). Deployment data (WHERE they are) lives in `src/config/deployments/`.
+
 ```typescript
 export const contractsConfig = createContractConfig({
   dripper: {
-    artifact: DripperContract.artifact,
     contract: DripperContract,
-    address: (config) => config.dripperContractAddress,
-    deployParams: (config) => ({ salt, deployer, ... }),
-    lazyRegister: false,  // Register at app startup
+    constructorArtifact: 'constructor',
+    constructorArgs: [],
+    lazyRegister: false,
+    artifactSources: [{ registry: REGISTRY_URL }, { local: DripperContract.artifact }],
+    classId: '0x...',
   },
   token: {
-    // Same structure
-    lazyRegister: true,  // Register on-demand only
+    contract: TokenContract,
+    constructorArtifact: 'constructor_with_minter',
+    constructorArgs: (deployments) => ['WETH', 'WETH', 18, AztecAddress.fromString(deployments.dripper.address!), AztecAddress.ZERO],
+    lazyRegister: true,
+    artifactSources: [{ registry: REGISTRY_URL }, { local: TokenContract.artifact }],
+    classId: '0x...',
   },
 });
+```
+
+`constructorArgs` can be a static array or a function receiving the `NetworkDeployments` map for cross-contract references.
+
+**Deployment Data** (`src/config/deployments/`):
+
+Each network has a deployment file exporting `NetworkDeployments` (a `Record<string, DeployedContractConfig>`):
+
+```typescript
+// src/config/deployments/devnet.ts
+export const devnetDeployments: NetworkDeployments = {
+  dripper: { address: '0x...', salt: '1337', deployer: '0x...' },
+  token:   { address: '0x...', salt: '1337', deployer: '0x...' },
+};
+```
+
+All deployments are aggregated in `src/config/deployments/index.ts`:
+```typescript
+export const deployments: Record<AztecNetwork, NetworkDeployments> = {
+  devnet: devnetDeployments,
+  sandbox: sandboxDeployments,
+};
 ```
 
 **Usage**:
@@ -416,27 +445,37 @@ const balance = await token.methods.balance_of_public(address).simulate();
 - **Sandbox** (`http://localhost:8080`): Local development with Aztec node
 - **Devnet** (`https://devnet.aztec-labs.com/`): Public testnet (default)
 
-**Network Config Structure**:
+**Network Config Structure** (`src/types/network.ts`):
+
+NetworkConfig defines infrastructure only — no contract addresses or deployment data:
 
 ```typescript
-{
-  name: 'sandbox' | 'devnet',
-  displayName: string,
-  nodeUrl: string,
-  proverEnabled: boolean,
-  isTestnet: boolean,
-  deployerAddress: string,  // Account used for deployments
-  dripperContractAddress: string,
-  tokenContractAddress: string,
-  // ... deployment salts
+interface NetworkConfig {
+  name: AztecNetwork;       // 'sandbox' | 'devnet'
+  displayName: string;
+  description: string;
+  nodeUrl: string;
+  proverEnabled: boolean;
+  isTestnet: boolean;
+}
+```
+
+Contract deployment data lives separately in `DeployedContractConfig`:
+
+```typescript
+interface DeployedContractConfig {
+  address?: string;
+  salt?: string;
+  deployer?: string;
 }
 ```
 
 **Switching Networks**:
 
 - Use `switchNetwork(name)` from `useAztecWallet()`
-- Automatically reinitializes PXE and clears contract cache
-- Requires reconnecting wallet
+- Tears down old PXE, clears contract cache, reinitializes on new network
+- Keeps wallet identity intact (re-registers account on new network)
+- On failure, stays connected with `pxeStatus: 'error'` (wallet identity preserved, operations gated by `isPXEInitialized`)
 
 ### Type Guards
 
@@ -512,15 +551,21 @@ Cross-Origin-Resource-Policy: cross-origin
 - Uses `scripts/deploy.ts`
 - Creates deployer account with ECDSA signing
 - Deploys contracts with deterministic addresses (salt-based)
-- Saves deployment info to `src/config/deployments/{network}.json`
+- Saves deployment info to `src/config/deployments/<network>.json`
 
-**4. Configure Registry** (`src/config/contracts.ts`):
+**4. Add Deployment Data** (`src/config/deployments/`):
+
+- Add a TypeScript file (or update existing) with `NetworkDeployments` for your network
+- Include `address`, `salt`, and `deployer` for each contract
+- Re-export from `src/config/deployments/index.ts`
+
+**5. Configure Registry** (`src/config/contracts.ts`):
 
 - Import generated TypeScript contract wrapper
-- Add contract to `contractsConfig`
-- Specify address resolver, deployment params, lazy loading
+- Add contract to `contractsConfig` with `constructorArtifact`, `constructorArgs`, `artifactSources`
+- Optionally set `lazyRegister: true` for on-demand registration
 
-**5. Use in App**:
+**6. Use in App**:
 
 ```typescript
 const { getContract } = useContracts();
@@ -567,6 +612,7 @@ src/
 │   ├── components/      # ConnectButton (public), modals (internal)
 │   ├── config/          # createAztecWalletConfig, presets
 │   ├── connectors/      # Connector implementations (internal)
+│   ├── execution/       # Wallet-specific execution functions
 │   ├── hooks/           # useAztecWallet, useConnectModal, etc. (public)
 │   ├── providers/       # AztecWalletProvider (public)
 │   ├── services/        # Internal services (not exported)
@@ -578,21 +624,24 @@ src/
 │   ├── devnet/          # Devnet-specific artifacts
 │   └── sandbox/         # Sandbox-specific artifacts
 ├── components/
+│   ├── contract-interaction/  # Contract interaction UI + presets
 │   ├── ui/              # Primitive UI components (Button, Input, etc.)
 │   └── ...              # Feature components
 ├── config/
 │   ├── contracts.ts     # Contract registry configuration
 │   ├── aztecWalletConfig.ts  # AztecWallet configuration
-│   ├── networks/        # Network-specific configs
-│   └── deployments/     # Deployed contract addresses (generated)
+│   ├── networks/        # Network infrastructure configs (no deployment data)
+│   └── deployments/     # Per-network deployment data (address, salt, deployer)
 ├── containers/          # Page-level components
 ├── contract-registry/   # Contract registration utilities
 ├── hooks/               # Custom React hooks
+├── integrations/        # Bridge modules (use-aztec-wallet)
 ├── providers/           # App context providers
 ├── styles/
 │   ├── globals.css      # Global styles & Tailwind config
 │   └── theme.ts         # CVA variants for components
-├── types/               # TypeScript type definitions
+├── types/               # TypeScript type definitions (network, contracts, etc.)
+├── use-aztec/           # Wallet-agnostic React hooks for contract interaction
 └── utils/               # Utility functions (cn, etc.)
 
 contracts/               # Noir smart contracts

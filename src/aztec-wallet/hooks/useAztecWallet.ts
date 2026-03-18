@@ -3,15 +3,11 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAztecWalletContext } from '../providers/context';
 import { getEVMWalletService } from '../services/evm/EVMWalletService';
 import { getEVMStore, useEVMStore } from '../store/evm';
-import {
-  buildNetworkOptions,
-  getNetworkStore,
-  useNetworkStore,
-} from '../store/network';
+import { buildNetworkOptions, useNetworkStore } from '../store/network';
 import { useWalletStore } from '../store/wallet';
 import { WalletType } from '../types/aztec';
 import { hasAppManagedPXE } from '../types/walletConnector';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../types/network';
 import type { StoreNetworkPreset } from '../types';
 import type { Hex } from 'viem';
 
@@ -42,9 +38,10 @@ import type { Hex } from 'viem';
  * **Connection State**
  * - `isConnected` - Whether a wallet is connected
  * - `isConnecting` - Whether a connection is in progress
- * - `isLoading` - Whether any operation is in progress
+ * - `isSwitchingNetwork` - Whether a network switch is in progress
+ * - `isLoading` - Whether any operation is in progress (connecting, switching, etc.)
  * - `needsSigner` - Whether External Signer needs EVM wallet connected
- * - `status` - Current connection status ('disconnected' | 'connecting' | 'deploying' | 'connected')
+ * - `status` - Current connection status ('disconnected' | 'connecting' | 'deploying' | 'switching' | 'connected')
  * - `error` - Error message if connection failed
  * - `hasSavedAccount` - Whether there's a saved embedded account
  *
@@ -168,6 +165,7 @@ export function useAztecWallet() {
       connectExternalSigner: state.connectExternalSigner,
       connectBrowserWallet: state.connectBrowserWallet,
       disconnect: state.disconnect,
+      switchNetwork: state.switchNetwork,
       checkNetwork: state.checkNetwork,
     }))
   );
@@ -194,7 +192,11 @@ export function useAztecWallet() {
   const isConnected = walletState.status === 'connected';
   const isConnecting =
     walletState.status === 'connecting' || walletState.status === 'deploying';
-  const isLoading = isConnecting || walletState.connectingConnectorId !== null;
+  const isSwitchingNetwork = walletState.status === 'switching';
+  const isLoading =
+    isConnecting ||
+    isSwitchingNetwork ||
+    walletState.connectingConnectorId !== null;
   const address = walletState.account?.getAddress().toString() ?? null;
 
   // PXE initialization state (for Embedded/ExternalSigner)
@@ -282,11 +284,13 @@ export function useAztecWallet() {
     await walletActions.disconnect();
   }, [walletActions]);
 
-  // Switch network
-  const switchNetwork = useCallback(async (networkName: AztecNetwork) => {
-    const networkStore = getNetworkStore();
-    networkStore.switchToNetwork(networkName);
-  }, []);
+  // Switch network — in-place switch keeping wallet identity intact
+  const switchNetwork = useCallback(
+    async (networkName: AztecNetwork) => {
+      await walletActions.switchNetwork(networkName);
+    },
+    [walletActions]
+  );
 
   // Reset to default network
   const resetToDefault = useCallback(() => {
@@ -377,6 +381,7 @@ export function useAztecWallet() {
     // Connection state
     isConnected,
     isConnecting,
+    isSwitchingNetwork,
     isLoading,
     needsSigner,
     status: walletState.status,

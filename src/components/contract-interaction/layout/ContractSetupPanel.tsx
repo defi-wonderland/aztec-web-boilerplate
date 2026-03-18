@@ -7,8 +7,7 @@ import { LoadTabContent } from './setup/LoadTabContent';
 import { useDeployTab } from './setup/useDeployTab';
 import { useLoadTab } from './setup/useLoadTab';
 import type { SetupTab } from './setup/setup-utils';
-import type { AztecNetwork } from '../../../config/networks/constants';
-import type { PreconfiguredContract } from '../../../config/preconfiguredContracts';
+import type { PreconfiguredContract } from '../../../types/preconfiguredContract';
 
 const styles = {
   panel: 'flex flex-col gap-6 p-8 flex-1 overflow-y-auto',
@@ -22,7 +21,6 @@ const styles = {
 } as const;
 
 interface ContractSetupPanelProps {
-  networkName?: AztecNetwork;
   preconfiguredContracts: PreconfiguredContract[];
   savedContracts: Array<{ address: string; label?: string }>;
   artifactInput: string;
@@ -36,7 +34,6 @@ interface ContractSetupPanelProps {
 }
 
 export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
-  networkName,
   preconfiguredContracts,
   savedContracts,
   artifactInput,
@@ -63,7 +60,7 @@ export const ContractSetupPanel: React.FC<ContractSetupPanelProps> = ({
     onSelectExisting,
   });
 
-  const deployTab = useDeployTab({ networkName });
+  const deployTab = useDeployTab();
 
   return (
     <div className={styles.panel}>

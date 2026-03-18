@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link, FileText, Rocket } from 'lucide-react';
 import { iconSize } from '../../utils';
+import { getNetworkDeployments } from '../../utils/deployments';
 import { ConfigPanelHeader } from './ConfigPanelHeader';
 import { ConfigSection } from './ConfigSection';
 import { ConfigValueRow } from './ConfigValueRow';
-import type { NetworkConfig } from '../../config/networks/types';
+import type { NetworkConfig } from '../../types/network';
 
 export interface ConfigPanelProps {
   config: NetworkConfig;
@@ -20,6 +21,11 @@ const styles = {
 } as const;
 
 export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
+  const networkDeployments = getNetworkDeployments(config.name);
+  const dripper = networkDeployments?.dripper;
+  const token = networkDeployments?.token;
+  const deploymentsCount = [dripper, token].filter(Boolean).length;
+
   return (
     <div className={styles.container}>
       <ConfigPanelHeader
@@ -42,18 +48,27 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
           icon={<FileText size={iconSize()} />}
           iconVariant="purple"
           title="Smart Contracts"
-          badge={{ text: '2 deployed', variant: 'count' }}
+          badge={
+            deploymentsCount > 0
+              ? {
+                  text: `${deploymentsCount} deployed`,
+                  variant: 'count' as const,
+                }
+              : undefined
+          }
         >
           <div className={styles.contractsGap}>
             <ConfigValueRow
               label="Token Contract"
-              value={config.tokenContractAddress}
+              value={token?.address ?? 'Not configured'}
               badge={{ text: 'TOKEN', variant: 'blue' }}
+              showCopy={!!token?.address}
             />
             <ConfigValueRow
               label="Dripper Contract"
-              value={config.dripperContractAddress}
+              value={dripper?.address ?? 'Not configured'}
               badge={{ text: 'FAUCET', variant: 'red' }}
+              showCopy={!!dripper?.address}
             />
           </div>
         </ConfigSection>
@@ -64,16 +79,27 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
           title="Deployment Info"
         >
           <div className={styles.contractsGap}>
-            <ConfigValueRow label="Deployer" value={config.deployerAddress} />
+            <div className={styles.grid2Col}>
+              <ConfigValueRow
+                label="Dripper Deployer"
+                value={dripper?.deployer ?? 'Not configured'}
+                showCopy={!!dripper?.deployer}
+              />
+              <ConfigValueRow
+                label="Token Deployer"
+                value={dripper?.deployer ?? 'Not configured'}
+                showCopy={!!dripper?.deployer}
+              />
+            </div>
             <div className={styles.grid2Col}>
               <ConfigValueRow
                 label="Dripper Salt"
-                value={config.dripperDeploymentSalt}
+                value={dripper?.salt ?? 'Not configured'}
                 showCopy={false}
               />
               <ConfigValueRow
                 label="Token Salt"
-                value={config.tokenDeploymentSalt}
+                value={token?.salt ?? 'Not configured'}
                 showCopy={false}
               />
             </div>

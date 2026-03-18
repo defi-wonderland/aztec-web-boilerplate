@@ -12,9 +12,10 @@ import type { PXE } from '@aztec/pxe/server';
 import { AVAILABLE_NETWORKS } from '../../../../config/networks';
 import { FeePaymentRegister } from '../../../../services/aztec/feePayment/FeePaymentRegister';
 import { MinimalWallet } from '../../../../utils/MinimalWallet';
+import { getNetworkDeployments } from '../../../../utils/deployments';
 import { NetworkService } from '../network';
 import { AztecStorageService } from '../storage';
-import type { AztecNetwork } from '../../../../config/networks/constants';
+import type { AztecNetwork } from '../../../../types/network';
 
 const logger = createLogger('shared-pxe-service');
 const pxeLogger = createLogger('pxe');
@@ -30,7 +31,6 @@ export interface SharedPXEInstance {
   pxe: PXE;
   aztecNode: AztecNode;
   wallet: MinimalWallet;
-  storageService: AztecStorageService;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
@@ -58,7 +58,7 @@ class SharedPXEServiceClass {
 
   /**
    * Get or create a PXE instance for a specific network.
-   * If already initializing, returns the same promise to avoid duplicate initialization.
+   * Deduplicates concurrent callers — all get the same promise.
    */
   async getInstance(
     nodeUrl: string,
@@ -70,17 +70,13 @@ class SharedPXEServiceClass {
     // Return existing instance if available
     const existing = this.instances.get(key);
     if (existing) {
-      // Reuse if URL matches, else replace stale one for this network
-      if (existing.nodeUrl === normalizedNodeUrl) {
-        return existing.instance;
-      }
-      this.clearInstance(existing.networkName);
+      return existing.instance;
     }
 
-    // Return in-progress initialization if exists
-    const initPromise = this.initPromises.get(key);
-    if (initPromise) {
-      return initPromise;
+    // Deduplicate concurrent initializations
+    const pending = this.initPromises.get(key);
+    if (pending) {
+      return pending;
     }
 
     // Start new initialization
@@ -92,8 +88,7 @@ class SharedPXEServiceClass {
     this.initPromises.set(key, promise);
 
     try {
-      const instance = await promise;
-      return instance;
+      return await promise;
     } finally {
       this.initPromises.delete(key);
     }
@@ -124,33 +119,54 @@ class SharedPXEServiceClass {
   }
 
   /**
-   * Clear a specific PXE instance (useful for network switching)
+   * Clear and tear down a specific PXE instance (useful for network switching).
+   * Stops the PXE and closes the IndexedDB store to release resources.
    */
-  clearInstance(networkName: AztecNetwork): void {
+  async clearInstance(networkName: AztecNetwork): Promise<void> {
     const key = this.getInstanceKey(networkName);
+    const entry = this.instances.get(key);
+
     this.instances.delete(key);
     this.cachedPaymentMethods.delete(key);
+    this.storePromises.delete(networkName);
+
+    if (entry) {
+      await this.teardownInstance(entry.instance);
+      NetworkService.clearClient(entry.nodeUrl);
+    }
+
     logger.info(`Cleared PXE instance for ${networkName}`);
   }
 
   /**
-   * Clear all PXE instances
+   * Clear and tear down all PXE instances.
    */
-  clearAll(): void {
+  async clearAll(): Promise<void> {
+    const entries = Array.from(this.instances.values());
+
     this.instances.clear();
     this.cachedPaymentMethods.clear();
+    this.storePromises.clear();
+
+    await Promise.allSettled(
+      entries.map((entry) => this.teardownInstance(entry.instance))
+    );
+
+    NetworkService.clearAll();
+
     logger.info('Cleared all PXE instances');
+  }
+
+  private async teardownInstance(instance: SharedPXEInstance): Promise<void> {
+    try {
+      await instance.pxe.stop();
+    } catch (err) {
+      logger.warn('Failed to stop PXE instance', { err });
+    }
   }
 
   private getInstanceKey(networkName: AztecNetwork | string): string {
     return `${networkName}`;
-  }
-
-  private getFeePaymentConfig(networkName: string) {
-    const networkConfig = AVAILABLE_NETWORKS.find(
-      (n) => n.name === networkName
-    );
-    return networkConfig?.feePaymentContracts;
   }
 
   private normalizeNodeUrl(nodeUrl: string): string {
@@ -186,13 +202,15 @@ class SharedPXEServiceClass {
 
     const wallet = new MinimalWallet(pxe, aztecNode);
 
-    // Register fee payment contracts (look up config by network name)
-    const feePaymentConfig = this.getFeePaymentConfig(networkName);
+    // Register fee payment contracts
     const feePaymentRegister = new FeePaymentRegister();
-    await feePaymentRegister.registerAll(pxe, feePaymentConfig);
+    await feePaymentRegister.registerAll(
+      pxe,
+      getNetworkDeployments(networkName)
+    );
 
-    // Initialize storage service
-    const storageService = new AztecStorageService();
+    // Initialize network-scoped storage service
+    const storageService = new AztecStorageService(networkName);
 
     // Register saved senders
     await this.registerSavedSenders(pxe, storageService);
@@ -204,7 +222,6 @@ class SharedPXEServiceClass {
       pxe,
       aztecNode,
       wallet,
-      storageService,
       getSponsoredFeePaymentMethod: () =>
         this.getSponsoredFeePaymentMethod(key, pxe),
     };
@@ -229,7 +246,13 @@ class SharedPXEServiceClass {
 
     const createPromise = this.createPXEStoreWithFallback(storeName);
     this.storePromises.set(networkName, createPromise);
-    return createPromise;
+
+    try {
+      return await createPromise;
+    } catch (err) {
+      this.storePromises.delete(networkName);
+      throw err;
+    }
   }
 
   private async createPXEStoreWithFallback(

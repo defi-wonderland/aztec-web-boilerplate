@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { Fuel } from 'lucide-react';
-import { FEE_PAYMENT_METHOD_LABELS } from '../config/feePaymentContracts';
+import { FEE_PAYMENT_METHOD_LABELS } from '../services/aztec/feePayment/feePaymentMethods';
 import { useFeePayment } from '../store/feePayment';
 import { iconSize, cn } from '../utils';
 import { Badge } from './ui';

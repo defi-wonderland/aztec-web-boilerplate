@@ -219,17 +219,18 @@ export type ReadContractResult =
   | { status: 'failed'; result?: undefined; error: Error };
 
 /** Params for useReadContracts. */
-export interface UseReadContractsParams<
+export type UseReadContractsParams<
   TAllowFailure extends boolean = true,
   TSelectData = TAllowFailure extends true ? ReadContractResult[] : unknown[],
-> {
+> = {
   contracts: ReadContractsContract[];
-  allowFailure?: TAllowFailure;
   /** Wagmi-style scope key — used as a prefix for the auto-generated query key. */
   scopeKey?: ScopeKey;
   /** TanStack Query options (enabled, staleTime, gcTime, etc.) */
   query?: ContractQueryOptions<TSelectData>;
-}
+} & (TAllowFailure extends false
+  ? { allowFailure: false }
+  : { allowFailure?: true });
 
 // =============================================================================
 // Action param types

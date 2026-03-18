@@ -31,9 +31,8 @@ const styles = {
 } as const;
 
 export const ContractLayout: React.FC = () => {
-  const { isConnected, isPXEInitialized, account, currentConfig } =
+  const { isConnected, isPXEInitialized, account, networkName } =
     useAztecWallet();
-  const networkName = currentConfig?.name;
 
   const viewMode = useViewMode();
   const sidebarSelectedId = useSidebarSelectedId();
@@ -50,7 +49,7 @@ export const ContractLayout: React.FC = () => {
   const functionFilter = useFunctionFilter();
   const { setSelectedFunctionName, setSimulationResult } = useExplorerActions();
 
-  const preconfiguredContracts = usePreconfiguredContracts(networkName);
+  const preconfiguredContracts = usePreconfiguredContracts();
   const connectedAddress = account?.getAddress().toString() ?? '';
 
   const {
@@ -62,11 +61,10 @@ export const ContractLayout: React.FC = () => {
     onSimulate: invokerSimulate,
     onExecute: invokerExecute,
   } = useContractInvoker({
-    networkName: networkName,
     filter: functionFilter,
   });
 
-  const loadArtifactWithData = useLoadArtifact(networkName);
+  const loadArtifactWithData = useLoadArtifact();
 
   const loadSavedContractArtifact = useCallback(
     async (sidebarId: string): Promise<boolean> => {
@@ -344,7 +342,6 @@ export const ContractLayout: React.FC = () => {
 
       {viewMode === 'setup' && (
         <ContractSetupPanel
-          networkName={networkName}
           preconfiguredContracts={preconfiguredContracts}
           savedContracts={savedContracts}
           artifactInput={artifactInput}

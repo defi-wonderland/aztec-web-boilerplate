@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ContractBase } from '@aztec/aztec.js/contracts';
 import { readContract as readContractAction } from '../actions/readContract';
-import { useInternalAztecClient } from '../context/useInternalAztecClient';
+import {
+  useInternalAztecClient,
+  useInternalNetworkId,
+} from '../context/useInternalAztecClient';
 import { AztecClientNotReady } from '../errors';
 import { normalizeQueryKeyValue, normalizeScopeKey } from '../utils/queryKey';
 import type { MethodsOf, UseReadContractParams } from '../types/contractTypes';
@@ -44,6 +47,7 @@ export const useReadContract = <
   } = params.query ?? {};
 
   const client = useInternalAztecClient();
+  const networkId = useInternalNetworkId();
   const isEnabled = Boolean(
     (queryEnabled ?? true) &&
       client &&
@@ -55,6 +59,7 @@ export const useReadContract = <
   const queryKey = [
     ...scopePrefix,
     'readContract',
+    networkId,
     params.address,
     String(params.functionName),
     normalizeQueryKeyValue(params.args),

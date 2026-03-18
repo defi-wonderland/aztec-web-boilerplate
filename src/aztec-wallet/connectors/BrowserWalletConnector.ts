@@ -7,6 +7,7 @@
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import { getChainFromCaipAccount } from '../execution/utils/caip';
 import { getNetworkStore } from '../store/network';
 import { getWalletStore } from '../store/wallet';
 import { WalletType } from '../types/aztec';
@@ -222,11 +223,12 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   ): Promise<ConnectorTransactionResult> {
     const state = getWalletStore();
     const account = state.caipAccount;
-    const chain = state.supportedChains[0] ?? '';
 
     if (!account) {
       throw new Error('No account selected');
     }
+
+    const chain = getChainFromCaipAccount(account);
 
     const operation: SendTransactionOp = {
       kind: 'send_transaction',
@@ -249,6 +251,7 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     return {
       status: 'success',
       txHash: typeof result.result === 'string' ? result.result : undefined,
+      chain,
       rawResult: result.result,
     };
   }

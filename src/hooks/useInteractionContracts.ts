@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { DEPLOYABLE_CONTRACTS } from '../config/deployableContracts';
+import { useAztecWallet } from '../aztec-wallet';
 import {
+  DEPLOYABLE_CONTRACTS,
   PRECONFIGURED_CONTRACTS,
-  type PreconfiguredContract,
-} from '../config/preconfiguredContracts';
+} from '../components/contract-interaction/presets';
 import { ArtifactService } from '../services/aztec/artifact/ArtifactService';
 import {
   getDeployableContractsForNetwork,
@@ -12,9 +12,10 @@ import {
   resolveDeployableContract,
   type DeployableContract,
 } from '../utils/deployableContracts';
-import type { AztecNetwork } from '../config/networks/constants';
+import type { PreconfiguredContract } from '../types/preconfiguredContract';
 
-export const usePreconfiguredContracts = (networkName?: AztecNetwork) => {
+export const usePreconfiguredContracts = () => {
+  const { networkName } = useAztecWallet();
   return useMemo(() => {
     return PRECONFIGURED_CONTRACTS.filter(
       (c) => !c.network || c.network === networkName
@@ -22,16 +23,17 @@ export const usePreconfiguredContracts = (networkName?: AztecNetwork) => {
   }, [networkName]);
 };
 
-export const useDeployableContracts = (networkName?: AztecNetwork) => {
+export const useDeployableContracts = () => {
+  const { networkName } = useAztecWallet();
   return useMemo(() => {
     return getDeployableContractsForNetwork(DEPLOYABLE_CONTRACTS, networkName);
   }, [networkName]);
 };
 
 export const useFindPreconfiguredContract = (
-  id: string | null,
-  networkName?: AztecNetwork
+  id: string | null
 ): PreconfiguredContract | null => {
+  const { networkName } = useAztecWallet();
   return useMemo(() => {
     if (!id) return null;
     return (
@@ -43,9 +45,9 @@ export const useFindPreconfiguredContract = (
 };
 
 export const useFindDeployableById = (
-  id: string | null,
-  networkName?: AztecNetwork
+  id: string | null
 ): DeployableContract | null => {
+  const { networkName } = useAztecWallet();
   return useMemo(() => {
     if (!id) return null;
     const contracts = getDeployableContractsForNetwork(
@@ -72,10 +74,7 @@ export const findConstructorByName = (
 export const resolvePreconfiguredArtifact = async (
   contract: PreconfiguredContract
 ): Promise<string | null> => {
-  if ('artifactJson' in contract && contract.artifactJson) {
-    return contract.artifactJson;
-  }
-
+  // Prefer ArtifactService (registry → local fallback chain) when available
   if (contract.artifactSources && contract.classId) {
     const { artifact } = await ArtifactService.getInstance().loadArtifact(
       contract.id,
@@ -83,6 +82,11 @@ export const resolvePreconfiguredArtifact = async (
       contract.classId
     );
     return JSON.stringify(artifact);
+  }
+
+  // Fall back to local artifactJson when no source chain is configured
+  if ('artifactJson' in contract && contract.artifactJson) {
+    return contract.artifactJson;
   }
 
   return null;
@@ -96,18 +100,15 @@ export const resolvePreconfiguredArtifact = async (
 export const resolveDeployableArtifact = async (
   contract: DeployableContract
 ): Promise<DeployableContract> => {
-  if (!contract.classId || contract.artifactJson) {
-    return contract;
+  // Prefer ArtifactService (registry → local fallback chain) when available
+  if (contract.classId && contract.artifactSources) {
+    const { artifact } = await ArtifactService.getInstance().loadArtifact(
+      contract.id,
+      contract.artifactSources,
+      contract.classId
+    );
+    return resolveDeployableContract(contract, artifact);
   }
 
-  if (!contract.artifactSources) {
-    return contract;
-  }
-
-  const { artifact } = await ArtifactService.getInstance().loadArtifact(
-    contract.id,
-    contract.artifactSources,
-    contract.classId
-  );
-  return resolveDeployableContract(contract, artifact);
+  return contract;
 };

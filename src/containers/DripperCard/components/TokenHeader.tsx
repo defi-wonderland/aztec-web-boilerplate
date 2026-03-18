@@ -4,7 +4,7 @@ import { iconSize } from '../../../utils';
 import { styles } from '../styles';
 
 interface TokenHeaderProps {
-  address: string;
+  address: string | undefined;
   tokenName: string;
   tokenSymbol: string;
   onCopy: () => void;
@@ -28,15 +28,21 @@ export const TokenHeader: React.FC<TokenHeaderProps> = ({
         <span className={styles.tokenName}>
           {tokenName} ({tokenSymbol})
         </span>
-        <button
-          type="button"
-          className={styles.tokenAddress}
-          onClick={onCopy}
-          aria-label="Copy token address"
-        >
-          <span className={styles.tokenAddressText}>{address}</span>
-          <Copy size={iconSize('xs')} className={styles.copyIcon} />
-        </button>
+        {address && (
+          <button
+            type="button"
+            className={styles.tokenAddress}
+            onClick={onCopy}
+            aria-label="Copy token address"
+          >
+            <span className={styles.tokenAddressText}>{address}</span>
+            <Copy size={iconSize('xs')} className={styles.copyIcon} />
+          </button>
+        )}
+
+        {!address && (
+          <span className={styles.tokenAddressText}>No token deployed</span>
+        )}
       </div>
     </div>
   </div>
