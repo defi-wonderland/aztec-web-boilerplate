@@ -62,11 +62,16 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
 
   const availableMethods = getAvailableFeePaymentMethods(feePaymentConfig);
 
+  // Normalize: if the persisted method is not available on this network, fall back
+  const effectiveMethod = availableMethods.includes(method)
+    ? method
+    : availableMethods[0];
+
   const isReady =
     isConnected && isPXEInitialized && hasAppManagedPXE(connector);
 
   const handleMethodChange = (newMethod: FeePaymentMethodType) => {
-    if (availableMethods.includes(newMethod)) {
+    if (newMethod !== effectiveMethod && availableMethods.includes(newMethod)) {
       setMethod(newMethod);
     }
   };
@@ -74,7 +79,7 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
   const appManagedConnector = hasAppManagedPXE(connector) ? connector : null;
 
   const { feePayerAddress } = useFeePayerAddress({
-    selectedMethod: method,
+    selectedMethod: effectiveMethod,
     connector: appManagedConnector,
     feePaymentConfig,
     enabled: isReady,
@@ -116,7 +121,7 @@ export const FeePaymentSelector: React.FC<FeePaymentSelectorProps> = ({
           </Tooltip>
         </div>
         <Select
-          value={method}
+          value={effectiveMethod}
           onValueChange={handleMethodChange}
           disabled={disabled}
         >
