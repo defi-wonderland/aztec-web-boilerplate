@@ -4,6 +4,7 @@
  * Hook selectors for accessing fee payment state per network.
  */
 
+import { useEffect } from 'react';
 import { useAztecWallet } from '../../aztec-wallet';
 import { getAvailableFeePaymentMethods } from '../../services/aztec/feePayment/feePaymentMethods';
 import { getNetworkDeployments } from '../../utils/deployments';
@@ -34,10 +35,11 @@ export const useFeePayment = () => {
     : availableMethods[0];
 
   // Sync corrected value back to store so other consumers read the valid method
-  if (method !== persisted) {
-    // Use queueMicrotask to avoid setting state during render
-    queueMicrotask(() => setMethodForNetwork(networkName, method));
-  }
+  useEffect(() => {
+    if (method !== persisted) {
+      setMethodForNetwork(networkName, method);
+    }
+  }, [method, persisted, networkName, setMethodForNetwork]);
 
   return {
     method,
