@@ -23,6 +23,7 @@ import type {
   ConnectorStatus,
   WalletConnectorId,
 } from '../../types/walletConnector';
+import { clearDemoWalletRegistrationCache } from '../../hooks/contracts/demoWalletRegistration';
 import type { DemoWalletAdapter } from '../adapters/demo-wallet';
 
 interface DemoWalletConnectorConfig {
@@ -154,6 +155,7 @@ export class DemoWalletConnector implements WalletConnector {
       }
       this._adapter = null;
       this._initPromise = null;
+      clearDemoWalletRegistrationCache();
     });
   }
 

@@ -5,6 +5,7 @@ import {
   type NetworkConfig,
 } from '../../../config/networks';
 import { getContractRegistryStore } from '../../../store/contractRegistry';
+import { clearDemoWalletRegistrationCache } from '../../../hooks/contracts/demoWalletRegistration';
 import { isValidConfig } from '../../../utils';
 import { getWalletStore } from '../wallet';
 import type { AztecNetwork } from '../../../config/networks/constants';
@@ -82,6 +83,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
     const config = configuredNetworks[name as AztecNetwork];
     if (config && config.name !== currentConfig.name) {
       getContractRegistryStore().reset();
+      clearDemoWalletRegistrationCache();
       getWalletStore().setPXEStatus('idle');
       set({ currentConfig: config });
       localStorage.setItem(STORAGE_KEY, name);

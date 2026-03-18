@@ -33,7 +33,7 @@ export const aztecWalletConfig = createAztecWalletConfig({
   // Wallet groups - the single source of truth for which wallets to enable
   walletGroups: {
     embedded: true,
-    aztecWallets: ['azguard', 'aztec-keychain'],
+    aztecWallets: ['azguard', 'aztec-keychain', 'aztec-tutorial-wallet'],
     // TODO: Re-enable when EcdsaKEthSignerAccount contract can be compiled in CI
     // evmWallets: ['metamask', 'rabby'],
   },

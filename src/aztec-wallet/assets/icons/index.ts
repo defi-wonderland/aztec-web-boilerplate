@@ -24,6 +24,7 @@ export { MetaMaskIcon } from './MetaMaskIcon';
 export { RabbyIcon } from './RabbyIcon';
 export { AzguardIcon } from './AzguardIcon';
 export { KeychainIcon } from './KeychainIcon';
+export { TutorialWalletIcon } from './TutorialWalletIcon';
 
 // Wrapper utilities
 export {

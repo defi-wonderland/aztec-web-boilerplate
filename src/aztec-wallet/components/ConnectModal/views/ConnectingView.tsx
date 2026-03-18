@@ -32,11 +32,8 @@ const styles = {
 export const ConnectingView: React.FC = () => {
   const { connectingState } = useConnectModalContext();
 
-  if (!connectingState) {
-    return null;
-  }
-
-  const { walletName, walletType } = connectingState;
+  const walletName = connectingState?.walletName;
+  const walletType = connectingState?.walletType;
 
   // Show info card for embedded and EVM wallets (account deployment info)
   const showDeploymentInfo = walletType === 'embedded' || walletType === 'evm';

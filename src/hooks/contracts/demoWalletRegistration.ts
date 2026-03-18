@@ -8,14 +8,18 @@
  * Flow: Aztec Node → getContract(address) → wallet.registerContract(instance, artifact)
  */
 
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { NetworkService } from '../../aztec-wallet/services/aztec/network/NetworkService';
 import { getNetworkStore } from '../../aztec-wallet/store/network';
 
 /** Addresses we've already registered on the current demo wallet session */
 const registeredContracts = new Set<string>();
+
+/** Cached SponsoredFPC address once registered */
+let sponsoredFPCAddress: AztecAddress | null = null;
 
 /**
  * Ensure a contract is registered on the demo wallet's remote PXE.
@@ -43,16 +47,46 @@ export async function ensureDemoWalletContractRegistered(
     );
   }
 
-  console.log(
-    `[DemoWallet] Registering contract on remote PXE: ${artifact.name} at ${address}`
-  );
-
   await wallet.registerContract(instance, artifact);
   registeredContracts.add(address);
+}
 
-  console.log(
-    `[DemoWallet] Contract registered successfully: ${artifact.name}`
+/**
+ * Ensure the SponsoredFPC contract is registered on the demo wallet's remote PXE.
+ * This is required for fee payment — the wallet needs to know about the SponsoredFPC
+ * contract to construct fee payment proofs for transactions.
+ *
+ * Returns the SponsoredFPC contract address for use with SponsoredFeePaymentMethod.
+ */
+export async function ensureSponsoredFPCRegistered(
+  wallet: Wallet
+): Promise<AztecAddress> {
+  if (sponsoredFPCAddress) {
+    return sponsoredFPCAddress;
+  }
+
+  const { SPONSORED_FPC_SALT } = await import('@aztec/constants');
+  const { SponsoredFPCContractArtifact } = await import(
+    '@aztec/noir-contracts.js/SponsoredFPC'
   );
+  const { getContractInstanceFromInstantiationParams } = await import(
+    '@aztec/aztec.js/contracts'
+  );
+
+  const instance = await getContractInstanceFromInstantiationParams(
+    SponsoredFPCContractArtifact,
+    { salt: new Fr(SPONSORED_FPC_SALT) }
+  );
+
+  // Check if already registered on the remote PXE to avoid duplicate registration
+  const key = instance.address.toString();
+  if (!registeredContracts.has(key)) {
+    await wallet.registerContract(instance, SponsoredFPCContractArtifact);
+    registeredContracts.add(key);
+  }
+
+  sponsoredFPCAddress = instance.address;
+  return sponsoredFPCAddress;
 }
 
 /**
@@ -60,4 +94,5 @@ export async function ensureDemoWalletContractRegistered(
  */
 export function clearDemoWalletRegistrationCache(): void {
   registeredContracts.clear();
+  sponsoredFPCAddress = null;
 }

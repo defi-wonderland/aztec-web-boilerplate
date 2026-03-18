@@ -127,8 +127,8 @@ function createConnectorsFromWalletGroups(walletGroups: {
     for (const wallet of walletGroups.aztecWallets.wallets) {
       const preset = AZTEC_WALLET_PRESETS[wallet.id];
       if (preset) {
-        // Use DemoWalletConnector for aztec-keychain (returns full Wallet proxy)
-        if (wallet.id === 'aztec-keychain') {
+        // Use DemoWalletConnector for wallet-sdk wallets (returns full Wallet proxy)
+        if (preset.usesWalletSdk) {
           connectors.push(
             () =>
               new DemoWalletConnector({

@@ -5,7 +5,7 @@
  * This simplifies the config - devs just pass ['metamask', 'rabby'] instead of full configs.
  */
 
-import { MetaMaskIcon, RabbyIcon, AzguardIcon, KeychainIcon } from '../assets/icons';
+import { MetaMaskIcon, RabbyIcon, AzguardIcon, KeychainIcon, TutorialWalletIcon } from '../assets/icons';
 import type { IBrowserWalletAdapter } from '../../types/browserWallet';
 import type { IconType } from '../types';
 
@@ -24,6 +24,8 @@ export interface AztecWalletPreset {
   id: string;
   name: string;
   icon: IconType;
+  /** Whether this wallet uses the wallet-sdk protocol (discovery + secure channel) */
+  usesWalletSdk?: boolean;
   /** Lazy adapter factory - only imported when needed (async for dynamic imports) */
   getAdapter: () => Promise<IBrowserWalletAdapter>;
   /** Check if wallet extension is installed (optional, async) */
@@ -73,11 +75,24 @@ export const AZTEC_WALLET_PRESETS: Record<string, AztecWalletPreset> = {
     id: 'aztec-keychain',
     name: 'Aztec Keychain',
     icon: KeychainIcon,
+    usesWalletSdk: true,
     getAdapter: async () => {
       const { DemoWalletAdapter } = await import('../adapters/demo-wallet');
       return new DemoWalletAdapter();
     },
-    // No checkInstalled — the extension doesn't inject detectable globals
+    // No checkInstalled — wallet-sdk discovery requires chainInfo and doesn't
+    // reliably detect the extension in a short timeout. The wallet will be
+    // shown as available and errors are handled during the connection flow.
+  },
+  'aztec-tutorial-wallet': {
+    id: 'aztec-tutorial-wallet',
+    name: 'Aztec Tutorial Wallet',
+    icon: TutorialWalletIcon,
+    usesWalletSdk: true,
+    getAdapter: async () => {
+      const { DemoWalletAdapter } = await import('../adapters/demo-wallet');
+      return new DemoWalletAdapter({ id: 'aztec-tutorial-wallet', label: 'Aztec Tutorial Wallet' });
+    },
   },
 };
 

@@ -30,13 +30,16 @@ const saveWalletConnection = (data: StoredWalletConnection): void => {
   }
 };
 
-const clearWalletConnection = (): void => {
+export const clearStoredWalletConnection = (): void => {
   try {
     localStorage.removeItem(WALLET_CONNECTION_STORAGE_KEY);
   } catch {
     // Ignore
   }
 };
+
+/** @deprecated Use clearStoredWalletConnection instead */
+const clearWalletConnection = clearStoredWalletConnection;
 
 export const getStoredWalletConnection = (): StoredWalletConnection | null => {
   try {

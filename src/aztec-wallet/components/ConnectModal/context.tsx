@@ -14,6 +14,7 @@ import type {
   ModalWalletType,
 } from '../../types';
 import { useVerificationStore } from '../../store/verification';
+import { getModalStore } from '../../store/modal';
 
 interface ConnectingState {
   walletId: string;
@@ -72,7 +73,9 @@ export const ConnectModalProvider: React.FC<ConnectModalProviderProps> = ({
   onConnect,
   children,
 }) => {
-  const [view, setView] = useState<ModalView>('main');
+  const [view, setView] = useState<ModalView>(() => {
+    return getModalStore().consumeConnectInitialView() ?? 'main';
+  });
   const [connectingState, setConnectingState] =
     useState<ConnectingState | null>(null);
   const [successState, setSuccessState] = useState<SuccessState | null>(null);

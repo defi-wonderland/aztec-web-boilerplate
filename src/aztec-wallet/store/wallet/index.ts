@@ -3,6 +3,7 @@ export {
   getWalletStore,
   setupWalletCrossTabSync,
   getStoredWalletConnection,
+  clearStoredWalletConnection,
 } from './store';
 export type { WalletStore, PXEStatus, NetworkStatus } from './store';
 export { isValidPXETransition, VALID_PXE_TRANSITIONS } from './types';

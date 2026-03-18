@@ -1,8 +1,9 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { ShieldCheck, X } from 'lucide-react';
+import React, { useMemo } from 'react';
 import { useSyncExternalStore } from 'react';
-import { iconSize } from '../../../../utils';
+import { ShieldCheck, X } from 'lucide-react';
+import { hashToEmoji } from '@aztec/wallet-sdk/crypto';
 import { Button } from '../../../../components/ui';
+import { iconSize } from '../../../../utils';
 import { useVerificationStore } from '../../../store/verification';
 
 const styles = {
@@ -45,32 +46,26 @@ const styles = {
  */
 export const EmojiVerificationView: React.FC = () => {
   const store = useVerificationStore;
-  const { verificationHash, walletName, confirmVerification, cancelVerification } =
-    useSyncExternalStore(
-      store.subscribe,
-      store.getState,
-      store.getState
-    );
+  const {
+    verificationHash,
+    walletName,
+    confirmVerification,
+    cancelVerification,
+  } = useSyncExternalStore(store.subscribe, store.getState, store.getState);
 
-  // Dynamically import hashToEmoji and convert hash to emoji grid
-  const [emojis, setEmojis] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!verificationHash) {
-      setEmojis([]);
-      return;
+  // Convert verification hash to emoji grid synchronously.
+  // Using useMemo (not useEffect + dynamic import) so emojis render
+  // on the very first paint — critical because the wallet extension popup
+  // may be in the foreground, and async module loads can be deferred by
+  // the browser when the page is not focused.
+  const emojis = useMemo(() => {
+    if (!verificationHash) return [];
+    try {
+      return [...hashToEmoji(verificationHash)];
+    } catch {
+      // Fallback: show hex pairs if emoji conversion fails
+      return verificationHash.slice(0, 18).match(/.{1,2}/g) ?? [];
     }
-
-    import('@aztec/wallet-sdk/crypto')
-      .then(({ hashToEmoji }) => {
-        const emojiString = hashToEmoji(verificationHash, 9);
-        setEmojis([...emojiString]);
-      })
-      .catch(() => {
-        // Fallback: show hex pairs if emoji conversion fails
-        const hexPairs = verificationHash.slice(0, 18).match(/.{1,2}/g) ?? [];
-        setEmojis(hexPairs);
-      });
   }, [verificationHash]);
 
   if (!verificationHash) {

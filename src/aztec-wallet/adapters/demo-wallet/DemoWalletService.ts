@@ -23,12 +23,17 @@ export class DemoWalletService {
 
   /**
    * Discover available wallet providers on the network.
-   * Returns the first discovered provider, or throws on timeout.
+   * Returns the first discovered provider matching targetWalletId (if specified),
+   * or the first discovered provider if no target is given. Throws on timeout.
+   *
+   * @param targetWalletId - Optional wallet ID to filter discovery results.
+   *   When set, only a provider whose `id` matches will be accepted.
    */
   async discover(
     chainInfo: ChainInfo,
     appId: string,
-    timeout = DISCOVERY_TIMEOUT
+    timeout = DISCOVERY_TIMEOUT,
+    targetWalletId?: string
   ): Promise<WalletProvider> {
     const { WalletManager } = await import('@aztec/wallet-sdk/manager');
 
@@ -42,15 +47,18 @@ export class DemoWalletService {
       timeout,
     });
 
-    // Take the first discovered wallet
+    // Take the first discovered wallet matching the target (or any wallet if no target)
     for await (const provider of discovery.wallets) {
-      discovery.cancel();
-      this.provider = provider;
-      return provider;
+      if (!targetWalletId || provider.id === targetWalletId) {
+        discovery.cancel();
+        this.provider = provider;
+        return provider;
+      }
     }
 
+    const walletLabel = targetWalletId ?? 'Aztec wallet';
     throw new Error(
-      'No Aztec Keychain wallet found. Make sure the Aztec Keychain app is running and the browser extension is installed.'
+      `No ${walletLabel} found. Make sure the wallet app is running and the browser extension is installed.`
     );
   }
 

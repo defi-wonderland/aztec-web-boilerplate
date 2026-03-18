@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Contract, type ContractBase } from '@aztec/aztec.js/contracts';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { TxStatus } from '@aztec/stdlib/tx';
 import {
   useAztecWallet,
@@ -11,8 +12,11 @@ import {
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { DEFAULT_FEE_PAYMENT_METHOD } from '../../store/feePayment';
 import { waitForBrowserWalletReceipt } from '../../utils/txReceipt';
+import {
+  ensureDemoWalletContractRegistered,
+  ensureSponsoredFPCRegistered,
+} from './demoWalletRegistration';
 import { getContractMethod, resolveArtifact } from './utils';
-import { ensureDemoWalletContractRegistered } from './demoWalletRegistration';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type {
   ContractClassFor,
@@ -105,7 +109,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
       setError(null);
 
       try {
-        // Handle DemoWalletConnector (Aztec Keychain) — uses full Wallet proxy
+        // Handle DemoWalletConnector (Aztec Keychain) — uses full Wallet proxy.
+        // The wallet-sdk proxy routes .send() to the wallet extension for user approval.
+        // Key requirements:
+        //   1. `from` must be passed so the proxy knows which account to use
+        //   2. SponsoredFPC must be registered on the remote PXE for fee payment
+        //   3. Fee payment method must be provided explicitly
+        //   4. Do NOT pass `wait` options — the proxy returns TxReceipt directly
         if (isDemoWalletConnector(connector)) {
           const wallet = connector.getWallet();
           if (!wallet) {
@@ -114,11 +124,15 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
             return { success: false, error: errorMsg };
           }
 
-          // Register contract on remote PXE before interaction
+          // Register the target contract on remote PXE before interaction
           await ensureDemoWalletContractRegistered(wallet, address, artifact);
 
+          // Register SponsoredFPC on remote PXE — required for fee payment
+          const sponsoredFPCAddress =
+            await ensureSponsoredFPCRegistered(wallet);
+
           const contractAddress = AztecAddress.fromString(address);
-          const contractInstance = Contract.at(
+          const contractInstance = await Contract.at(
             contractAddress,
             artifact,
             wallet
@@ -136,8 +150,13 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
 
           const tx = method(...(args as unknown[]));
 
+          // Send through wallet proxy with explicit `from` and fee payment.
+          // The wallet extension will prompt the user for approval.
           const result = await tx.send({
-            wait: { timeout, waitForStatus: TxStatus.PROPOSED },
+            from: account.getAddress(),
+            fee: {
+              paymentMethod: new SponsoredFeePaymentMethod(sponsoredFPCAddress),
+            },
           });
 
           return { success: true, data: result };
@@ -213,7 +232,7 @@ export const useWriteContract = (options: UseWriteContractOptions = {}) => {
           const contractAddress = AztecAddress.fromString(address);
 
           // Create contract instance
-          const contractInstance = Contract.at(
+          const contractInstance = await Contract.at(
             contractAddress,
             artifact,
             wallet

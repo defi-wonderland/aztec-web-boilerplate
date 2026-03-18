@@ -10,10 +10,10 @@
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { Fr } from '@aztec/aztec.js/fields';
-import { CAPABILITY_VERSION } from '@aztec/aztec.js/wallet';
 import type { AppCapabilities } from '@aztec/aztec.js/wallet';
 import type { AztecNetwork } from '../../../config/networks/constants';
 import { CHAIN_IDS } from '../../../config/networks/constants';
+import { DEMO_WALLET_APP_ID } from '../../config/defaults';
 import { getVerificationStore } from '../../store/verification';
 import { getNetworkStore } from '../../store/network';
 import { NetworkService } from '../../services/aztec/network/NetworkService';
@@ -25,17 +25,17 @@ import type {
   BrowserWalletOperation,
 } from '../../../types/browserWallet';
 
-const APP_ID = 'aztec-web-boilerplate';
-
 export class DemoWalletAdapter implements IBrowserWalletAdapter {
-  readonly id = 'aztec-keychain';
-  readonly label = 'Aztec Keychain';
+  readonly id: string;
+  readonly label: string;
 
   private service: DemoWalletService;
   private accountsChangedCallbacks: Array<(accounts: string[]) => void> = [];
   private disconnectedCallbacks: Array<() => void> = [];
 
-  constructor() {
+  constructor(config?: { id?: string; label?: string }) {
+    this.id = config?.id ?? 'aztec-keychain';
+    this.label = config?.label ?? 'Aztec Keychain';
     this.service = new DemoWalletService();
   }
 
@@ -66,8 +66,6 @@ export class DemoWalletAdapter implements IBrowserWalletAdapter {
     // Query the Aztec node for the real ChainInfo (l1ChainId + rollupVersion).
     // The wallet worker matches sessions by chainId-version, so these must be exact.
     const { nodeUrl } = getNetworkStore().currentConfig;
-    console.log('[DemoWallet] Fetching chain info from node:', nodeUrl);
-
     const nodeClient = NetworkService.getNodeClient(nodeUrl);
     const nodeInfo = await nodeClient.getNodeInfo();
 
@@ -75,33 +73,28 @@ export class DemoWalletAdapter implements IBrowserWalletAdapter {
       chainId: new Fr(nodeInfo.l1ChainId),
       version: new Fr(nodeInfo.rollupVersion),
     };
-    console.log('[DemoWallet] Chain info:', {
-      l1ChainId: nodeInfo.l1ChainId,
-      rollupVersion: nodeInfo.rollupVersion,
-    });
 
-    // Step 1: Discovery — find the wallet extension
-    console.log('[DemoWallet] Step 1: Starting discovery...');
-    const provider = await this.service.discover(chainInfo, APP_ID);
-    console.log('[DemoWallet] Step 1: Discovery complete, provider:', provider.name);
+    // Step 1: Discovery — find the wallet extension (filtered by adapter id)
+    const provider = await this.service.discover(
+      chainInfo,
+      DEMO_WALLET_APP_ID,
+      undefined,
+      this.id
+    );
 
     // Step 2: Establish secure channel (ECDH key exchange)
-    console.log('[DemoWallet] Step 2: Establishing secure channel...');
     const pending = await this.service.establishSecureChannel(
       provider,
-      APP_ID
+      DEMO_WALLET_APP_ID
     );
-    console.log('[DemoWallet] Step 2: Secure channel established, verificationHash:', pending.verificationHash);
 
     // Step 3: Request emoji verification from the UI
-    console.log('[DemoWallet] Step 3: Requesting emoji verification...');
     const verificationStore = getVerificationStore();
     const confirmed = await verificationStore.requestVerification(
       pending.verificationHash,
       provider.name,
       provider.icon
     );
-    console.log('[DemoWallet] Step 3: Emoji verification result:', confirmed);
 
     if (!confirmed) {
       this.service.cancelConnection(pending);
@@ -109,15 +102,12 @@ export class DemoWalletAdapter implements IBrowserWalletAdapter {
     }
 
     // Step 4: Confirm connection — get the Wallet proxy
-    console.log('[DemoWallet] Step 4: Confirming connection...');
     const wallet = await this.service.confirmConnection(pending);
-    console.log('[DemoWallet] Step 4: Connection confirmed, wallet proxy received');
 
     // Step 5: Request capabilities — required before the wallet responds to other RPC calls.
     // The wallet worker uses capabilities to determine what the app is allowed to do.
-    console.log('[DemoWallet] Step 5: Requesting capabilities...');
     const manifest: AppCapabilities = {
-      version: CAPABILITY_VERSION,
+      version: '1.0',
       metadata: {
         name: 'Aztec Web Boilerplate',
         version: '1.0.0',
@@ -132,19 +122,16 @@ export class DemoWalletAdapter implements IBrowserWalletAdapter {
       behavior: { mode: 'permissive' },
     };
 
-    const capResult = await wallet.requestCapabilities(manifest);
-    console.log('[DemoWallet] Step 5: Capabilities granted:', capResult);
+    await wallet.requestCapabilities(manifest);
 
     // Step 6: Get accounts
-    console.log('[DemoWallet] Step 6: Getting accounts...');
     const accounts = await wallet.getAccounts();
-    console.log('[DemoWallet] Step 6: Accounts received:', accounts.length, accounts);
     // getAccounts() returns Aliased<AztecAddress>[] = { alias: string, item: AztecAddress }[]
     const accountAddresses = accounts.map((a) => a.item.toString());
 
     if (accountAddresses.length === 0) {
       throw new Error(
-        'No accounts found in Aztec Keychain. ' +
+        `No accounts found in ${this.label}. ` +
         'Make sure you have created an account in the wallet app.'
       );
     }

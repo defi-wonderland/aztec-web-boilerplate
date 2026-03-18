@@ -1,22 +1,27 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import {
+  isDemoWalletConnector,
+  type ExternalSignerWalletConnector,
+} from '../../types/walletConnector';
 import { isValidConfig } from '../../utils';
 import { AztecWalletModals } from '../components/AztecWalletModals';
 import { createAztecWalletConfig } from '../config';
 import { createConnectorRegistry } from '../connectors/registry';
 import { useEIP6963Discovery } from '../hooks/useEIP6963Discovery';
 import { getEIP6963Service, getEVMWalletService } from '../services/evm';
+import { getModalStore } from '../store/modal';
 import { getNetworkStore, useNetworkStore } from '../store/network';
 import {
   useWalletStore,
   getWalletStore,
   getStoredWalletConnection,
+  clearStoredWalletConnection,
   setupWalletCrossTabSync,
 } from '../store/wallet';
 import { WalletType } from '../types/aztec';
 import { AztecWalletContext } from './context';
 import type { AztecNetwork } from '../../config/networks/constants';
-import type { ExternalSignerWalletConnector } from '../../types/walletConnector';
 import type {
   AztecWalletConfig,
   NetworkPreset,
@@ -108,7 +113,41 @@ const AutoReconnect: React.FC = () => {
             break;
 
           case WalletType.BROWSER_WALLET:
-            // For browser wallets, try to reconnect - if session exists it will be silent
+            // DemoWalletConnector (wallet-sdk) does NOT support session persistence.
+            // Every page reload requires the full discovery + ECDH + emoji verification flow,
+            // which needs the ConnectModal open for the user to confirm emojis.
+            // Open the modal first so that when the verification hash arrives,
+            // the ConnectModalProvider navigates to the emoji-verification view.
+            if (isDemoWalletConnector(savedConnector)) {
+              console.log(
+                'AztecWallet: DemoWallet (wallet-sdk) requires emoji verification. ' +
+                  'Opening ConnectModal before auto-reconnect...'
+              );
+
+              // Open the ConnectModal at 'connecting' view so the user doesn't
+              // see a flash of the wallet selection screen
+              getModalStore().openConnectModal('connecting');
+
+              try {
+                await walletActions.connect(connectorId);
+                console.log(
+                  'AztecWallet: DemoWallet auto-reconnect succeeded.'
+                );
+              } catch (err) {
+                console.warn(
+                  'AztecWallet: DemoWallet auto-reconnect failed:',
+                  err
+                );
+                // Clear stored connection so we don't retry on next load
+                clearStoredWalletConnection();
+              } finally {
+                // Always close the modal when reconnect finishes (success or failure)
+                getModalStore().closeModal();
+              }
+              return;
+            }
+
+            // For other browser wallets (e.g., Azguard), try to reconnect
             console.log('AztecWallet: Auto-reconnecting to browser wallet...');
             await walletActions.connect(connectorId);
             break;
