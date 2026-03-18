@@ -5,4 +5,4 @@ export {
   waitForReceipt,
   type WaitForReceiptParams,
   type WaitForReceiptResult,
-} from '../../../use-aztec/utils';
+} from './txReceipt';

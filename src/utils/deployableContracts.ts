@@ -2,7 +2,7 @@ import { ArtifactSourceConfig } from '../types/artifactSource';
 import { parseArtifactSource } from './contractInteraction';
 import { isKnownStructPath, getKnownStructKind } from './knownStructTypes';
 import { toTitleCase } from './string';
-import type { AztecNetwork } from '../config/networks/constants';
+import type { AztecNetwork } from '../types/network';
 import type { ParsedFunction } from '../types/artifact';
 import type { DeployableContractConfig } from '../types/deployableContract';
 

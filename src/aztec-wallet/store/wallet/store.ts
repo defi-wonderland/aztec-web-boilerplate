@@ -13,7 +13,7 @@ import { createEmbeddedActions } from './actions/embedded';
 import { createExternalSignerActions } from './actions/externalSigner';
 import { isValidPXETransition } from './types';
 import type { WalletStore, WalletState } from './types';
-import type { AztecNetwork } from '../../../config/networks/constants';
+import type { AztecNetwork } from '../../../types/network';
 import type { BrowserWalletConnector } from '../../connectors/BrowserWalletConnector';
 import type {
   WalletConnector,

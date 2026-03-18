@@ -11,10 +11,10 @@ import { Contract } from '@aztec/aztec.js/contracts';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { TxStatus } from '@aztec/stdlib/tx';
-import { waitForReceipt } from '../../use-aztec/utils/txReceipt';
 import { getContractMethod } from './utils/getContractMethod';
 import { serializeArgs } from './utils/serializeArgs';
-import type { WriteContractData } from '../../use-aztec/types/contractTypes';
+import { waitForReceipt } from './utils/txReceipt';
+import type { WriteContractData } from '../../use-aztec/types';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,

@@ -23,7 +23,7 @@ import type {
   BatchReadExecutionParams,
   ReadExecutionParams,
   WriteExecutionParams,
-} from '../../use-aztec/types/execution';
+} from '../../use-aztec/types';
 import type { WalletConnector } from '../types/walletConnector';
 
 interface CreateWalletExecutionClientParams {

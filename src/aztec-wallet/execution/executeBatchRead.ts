@@ -10,11 +10,11 @@ import { Contract } from '@aztec/aztec.js/contracts';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import { getContractMethod } from './utils/getContractMethod';
 import { serializeArgs } from './utils/serializeArgs';
-import type { ReadContractResult } from '../../use-aztec/types/contractTypes';
 import type {
+  ReadContractResult,
   BatchReadResult,
   ReadExecutionParams,
-} from '../../use-aztec/types/execution';
+} from '../../use-aztec/types';
 import type { SimulateViewsOp } from '../types/browserWallet';
 import type {
   BrowserWalletOperation,

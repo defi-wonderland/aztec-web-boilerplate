@@ -15,7 +15,7 @@ import {
 } from '../store/wallet';
 import { WalletType } from '../types/aztec';
 import { AztecWalletContext } from './context';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../types/network';
 import type {
   AztecWalletConfig,
   NetworkPreset,

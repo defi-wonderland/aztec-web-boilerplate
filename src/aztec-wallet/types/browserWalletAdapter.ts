@@ -10,7 +10,7 @@ import type {
   BrowserWalletOperationResult,
 } from './browserWallet';
 import type { ConnectionStatus } from './walletConnector';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../types/network';
 
 /**
  * Generic state for any browser wallet extension.

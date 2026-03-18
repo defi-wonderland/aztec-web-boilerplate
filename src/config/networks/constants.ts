@@ -23,8 +23,6 @@ export const DEFAULT_ARTIFACT_REGISTRY_URL =
 export const ARTIFACT_REGISTRY_URL: string =
   import.meta?.env?.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL;
 
-export type { AztecChainId, AztecNetwork } from '../../types/network';
-
 /**
  * Default network used when none is specified
  */

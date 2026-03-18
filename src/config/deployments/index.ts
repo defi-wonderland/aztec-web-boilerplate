@@ -5,7 +5,7 @@ export { sandboxDeployments } from './sandbox';
 import { devnetDeployments } from './devnet';
 import { sandboxDeployments } from './sandbox';
 import type { NetworkDeployments } from './types';
-import type { AztecNetwork } from '../networks/constants';
+import type { AztecNetwork } from '../../types/network';
 
 /**
  * All deployment data keyed by network name.

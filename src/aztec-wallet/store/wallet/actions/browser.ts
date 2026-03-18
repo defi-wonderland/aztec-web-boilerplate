@@ -1,6 +1,6 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import { WalletType } from '../../../types/aztec';
-import type { AztecNetwork } from '../../../../config/networks/constants';
+import type { AztecNetwork } from '../../../../types/network';
 import type { IBrowserWalletAdapter } from '../../../types/browserWalletAdapter';
 import type { WalletConnectorId } from '../../../types/walletConnector';
 import type { SetState, GetState, WalletState } from '../types';

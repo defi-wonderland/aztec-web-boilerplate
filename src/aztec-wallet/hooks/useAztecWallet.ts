@@ -7,7 +7,7 @@ import { buildNetworkOptions, useNetworkStore } from '../store/network';
 import { useWalletStore } from '../store/wallet';
 import { WalletType } from '../types/aztec';
 import { hasAppManagedPXE } from '../types/walletConnector';
-import type { AztecNetwork } from '../../config/networks/constants';
+import type { AztecNetwork } from '../../types/network';
 import type { StoreNetworkPreset } from '../types';
 import type { Hex } from 'viem';
 
