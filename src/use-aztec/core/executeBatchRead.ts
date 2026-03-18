@@ -123,7 +123,19 @@ export const executeBrowserWalletBatch = async <TAllowFailure extends boolean>(
     throw new Error(errorMsg);
   }
 
-  const results = parseBatchResult(result.result, contracts.length);
+  let results: unknown[];
+  try {
+    results = parseBatchResult(result.result, contracts.length);
+  } catch (err) {
+    if (allowFailure) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      return contracts.map(() => ({
+        status: 'failed' as const,
+        error,
+      })) as BatchReadResult<TAllowFailure>;
+    }
+    throw err;
+  }
 
   if (allowFailure) {
     return results.map((r) => ({
