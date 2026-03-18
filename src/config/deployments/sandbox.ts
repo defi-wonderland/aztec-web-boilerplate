@@ -8,7 +8,7 @@
 import sandboxJson from './sandbox.json';
 import type { NetworkDeployments } from './types';
 
-export const sandboxDeployments: NetworkDeployments = {
+export const sandboxDeployments = {
   dripper: {
     address: sandboxJson.dripperContract.address,
     salt: sandboxJson.dripperContract.salt,
@@ -19,4 +19,4 @@ export const sandboxDeployments: NetworkDeployments = {
     salt: sandboxJson.tokenContract.salt,
     deployer: sandboxJson.deployer,
   },
-};
+} as const satisfies NetworkDeployments;

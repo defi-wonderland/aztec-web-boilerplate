@@ -8,12 +8,10 @@
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { NetworkDeployments } from './types';
 
-const DRIPPER_ADDRESS =
-  '0x14fc6329654486ae793a6ba5b4ac0479fd09902e98f928bfd0ef05d103ea402a';
-
-export const devnetDeployments: NetworkDeployments = {
+export const devnetDeployments = {
   dripper: {
-    address: DRIPPER_ADDRESS,
+    address:
+      '0x14fc6329654486ae793a6ba5b4ac0479fd09902e98f928bfd0ef05d103ea402a',
     salt: '1337',
     deployer: AztecAddress.ZERO.toString(),
   },
@@ -23,4 +21,4 @@ export const devnetDeployments: NetworkDeployments = {
     salt: '1337',
     deployer: AztecAddress.ZERO.toString(),
   },
-};
+} as const satisfies NetworkDeployments;

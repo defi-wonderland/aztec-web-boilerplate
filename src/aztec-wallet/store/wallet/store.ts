@@ -152,8 +152,12 @@ async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
   const store = getWalletStore();
   const networkStore = getNetworkStore();
 
-  if (store.status === 'switching') {
-    throw new Error('Network switch already in progress');
+  if (store.status === 'switching' || store.status === 'connecting') {
+    throw new Error(
+      store.status === 'switching'
+        ? 'Network switch already in progress'
+        : 'Cannot switch network while connecting'
+    );
   }
 
   const oldConfigName = networkStore.currentConfig.name;
