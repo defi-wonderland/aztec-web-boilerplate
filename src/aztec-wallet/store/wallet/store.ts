@@ -167,12 +167,15 @@ async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
   if (!networkStore.updateNetworkConfig(networkName)) return;
 
   // Set switching status BEFORE any async work so concurrent calls see the guard
+  // Also reset network availability so checkNetwork() re-validates the new node
   if (wasConnected) {
     useWalletStore.setState({
       status: 'switching',
       error: null,
       pxeStatus: 'initializing',
       pxeError: null,
+      networkStatus: 'idle',
+      networkError: null,
     });
   }
 
@@ -180,9 +183,14 @@ async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
   await SharedPXEService.clearInstance(oldConfigName);
   getContractRegistryStore().reset();
 
-  // If not connected, just reset PXE status — no wallet reconnection needed
+  // If not connected, just reset PXE and network status — no wallet reconnection needed
   if (!wasConnected) {
-    useWalletStore.setState({ pxeStatus: 'idle', pxeError: null });
+    useWalletStore.setState({
+      pxeStatus: 'idle',
+      pxeError: null,
+      networkStatus: 'idle',
+      networkError: null,
+    });
     return;
   }
 
@@ -200,11 +208,13 @@ async function performNetworkSwitch(networkName: AztecNetwork): Promise<void> {
       err instanceof Error ? err.message : 'Failed to switch network';
     console.error('[switchNetwork] Failed:', message);
 
-    // Stay on new network with error state — wallet identity is preserved,
-    // but PXE is unusable until retry. Consumers gate on isPXEInitialized.
+    // Stay on new network with error state — don't surface as 'connected'
+    // since PXE is unusable. Callers gate on isConnected so this prevents
+    // acting on stale account data after a failed switch.
     useWalletStore.setState({
-      status: 'connected',
+      status: 'disconnected',
       error: message,
+      account: null,
       pxeStatus: 'error',
       pxeError: message,
     });

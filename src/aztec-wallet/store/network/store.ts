@@ -125,7 +125,9 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
           walletStore.switchNetwork(savedNetwork).catch((err) => {
             console.warn('[network-sync] Cross-tab switch failed:', err);
           });
-        } else {
+        } else if (walletStore.status === 'disconnected') {
+          // Only run the direct switch when truly disconnected to avoid
+          // racing an in-flight connection, deployment, or switch
           switchToNetwork(savedNetwork).catch((err) => {
             console.warn('[network-sync] Cross-tab switch failed:', err);
           });
