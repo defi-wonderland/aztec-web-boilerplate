@@ -96,6 +96,15 @@ export const useSavedContractManager = (
 
   const handleDeleteSaved = useCallback(
     async (targetAddress: string) => {
+      if (!networkName) {
+        pushLog({
+          level: 'error',
+          title: 'Cannot delete saved contract',
+          detail: 'No network selected',
+        });
+        return;
+      }
+
       const storage = getArtifactStorageService();
       const currentContracts = getContractInteractionStore().savedContracts;
 
@@ -125,6 +134,15 @@ export const useSavedContractManager = (
   );
 
   const handleClearCache = useCallback(async () => {
+    if (!networkName) {
+      pushLog({
+        level: 'error',
+        title: 'Cannot clear cache',
+        detail: 'No network selected',
+      });
+      return;
+    }
+
     const storage = getArtifactStorageService();
     await storage.clearArtifactsForNetwork(networkName);
     await storage.clearContracts(networkName);
