@@ -79,11 +79,18 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
           title="Deployment Info"
         >
           <div className={styles.contractsGap}>
-            <ConfigValueRow
-              label="Deployer"
-              value={dripper?.deployer ?? 'Not configured'}
-              showCopy={!!dripper?.deployer}
-            />
+            <div className={styles.grid2Col}>
+              <ConfigValueRow
+                label="Dripper Deployer"
+                value={dripper?.deployer ?? 'Not configured'}
+                showCopy={!!dripper?.deployer}
+              />
+              <ConfigValueRow
+                label="Token Deployer"
+                value={token?.deployer ?? 'Not configured'}
+                showCopy={!!token?.deployer}
+              />
+            </div>
             <div className={styles.grid2Col}>
               <ConfigValueRow
                 label="Dripper Salt"
