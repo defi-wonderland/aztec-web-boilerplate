@@ -41,19 +41,19 @@ export const buildRegisterContractOperations = async ({
     if (!definition) {
       continue;
     }
+    const deployment = deployments[name];
+    if (!deployment?.address || !deployment.salt || !deployment.deployer) {
+      console.warn(
+        `Skipping contract "${name}": missing deployment data for the "${config.name}" network.`
+      );
+      continue;
+    }
+
     const artifact = artifacts[name];
     if (!artifact) {
       throw new Error(
         `Missing resolved artifact for contract "${name}". ` +
           `Ensure artifact sources are configured and resolved before registering.`
-      );
-    }
-
-    const deployment = deployments[name];
-    if (!deployment?.address || !deployment.salt || !deployment.deployer) {
-      throw new Error(
-        `Missing deployment data for contract "${name}". ` +
-          `Add it to the deployment file for the "${config.name}" network.`
       );
     }
 
