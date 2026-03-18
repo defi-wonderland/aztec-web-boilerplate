@@ -195,62 +195,31 @@ export function useContract<K extends ContractName>(
     }
   }, [registry, registryStatus, name, isBrowserWallet]);
 
-  useEffect(() => {
-    if (!isBrowserWallet) {
-      return;
+  // Browser wallet: proxy is pure derived state — no async, no subscriptions.
+  // useMemo keeps a stable reference and avoids storing derived values in useState.
+  const browserWalletState = useMemo<{
+    contract: TContract | null;
+    status: ContractStatus;
+    error: Error | null;
+  } | null>(() => {
+    if (!isBrowserWallet) return null;
+    if (!account) return { contract: null, status: 'idle', error: null };
+    try {
+      const proxy = createExternalWalletContractProxy();
+      return { contract: proxy, status: 'ready', error: null };
+    } catch (err) {
+      return {
+        contract: null,
+        status: 'error',
+        error: err instanceof Error ? err : new Error(String(err)),
+      };
     }
-
-    let cancelled = false;
-
-    queueMicrotask(() => {
-      if (cancelled) {
-        return;
-      }
-
-      if (!account) {
-        setContract(null);
-        setStatus('idle');
-        return;
-      }
-
-      try {
-        setStatus('registering');
-        const proxy = createExternalWalletContractProxy();
-        setContract(proxy);
-        setStatus('ready');
-        setError(null);
-      } catch (err) {
-        const hydrationError =
-          err instanceof Error ? err : new Error(String(err));
-        setError(hydrationError);
-        setStatus('error');
-        setContract(null);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [account, createExternalWalletContractProxy, isBrowserWallet]);
+  }, [isBrowserWallet, account, createExternalWalletContractProxy]);
 
   const register = useCallback(async () => {
-    setError(null);
+    if (isBrowserWallet) return;
 
-    if (isBrowserWallet) {
-      try {
-        setStatus('registering');
-        const proxy = createExternalWalletContractProxy();
-        setContract(proxy);
-        setStatus('ready');
-      } catch (err) {
-        const registrationError =
-          err instanceof Error ? err : new Error(String(err));
-        setError(registrationError);
-        setStatus('error');
-        throw registrationError;
-      }
-      return;
-    }
+    setError(null);
 
     if (!registry) {
       throw new Error('Contract registry not initialized');
@@ -264,18 +233,19 @@ export function useContract<K extends ContractName>(
       setError(registrationError);
       throw registrationError;
     }
-  }, [createExternalWalletContractProxy, isBrowserWallet, name, registry]);
+  }, [isBrowserWallet, name, registry]);
 
-  const isReady = status === 'ready' && contract !== null;
+  const resolved = browserWalletState ?? { contract, status, error };
+  const isReady = resolved.status === 'ready' && resolved.contract !== null;
 
   return useMemo(
     () => ({
-      contract,
-      status,
-      error,
+      contract: resolved.contract,
+      status: resolved.status,
+      error: resolved.error,
       isReady,
       register,
     }),
-    [contract, status, error, isReady, register]
+    [resolved.contract, resolved.status, resolved.error, isReady, register]
   );
 }

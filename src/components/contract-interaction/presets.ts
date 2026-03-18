@@ -7,9 +7,7 @@ import type { DeployableContractConfig } from '../../types/deployableContract';
 import type { AztecNetwork } from '../../types/network';
 import type { PreconfiguredContract } from '../../types/preconfiguredContract';
 
-const getWonderlandsTokenAddress = (
-  network: AztecNetwork
-): string | null => {
+const getWonderlandsTokenAddress = (network: AztecNetwork): string | null => {
   const deployments = getNetworkDeployments(network);
   return deployments.token?.address ?? null;
 };
@@ -43,25 +41,30 @@ export const DEPLOYABLE_CONTRACTS = loadDeployableContracts(
   DEPLOYABLE_CONTRACTS_CONFIG
 );
 
-export const PRECONFIGURED_CONTRACTS: PreconfiguredContract[] = (
-  [
-    {
-      id: 'wonderlands-token-devnet',
-      label: 'Wonderlands Token (Devnet)',
-      address: getWonderlandsTokenAddress('devnet'),
-      classId: CLASS_IDS.token,
-      artifactJson: JSON.stringify(tokenSandbox),
-      network: 'devnet' as const,
-    },
-    {
-      id: 'wonderlands-token-sandbox',
-      label: 'Wonderlands Token (Sandbox)',
-      address: getWonderlandsTokenAddress('sandbox'),
-      classId: CLASS_IDS.token,
-      artifactJson: JSON.stringify(tokenSandbox),
-      network: 'sandbox' as const,
-    },
-  ] as const
-).filter(
-  (c): c is PreconfiguredContract => c.address != null
-);
+type MaybePreconfigured = Omit<PreconfiguredContract, 'address'> & {
+  address: string | null;
+};
+
+const PRECONFIGURED_CANDIDATES: MaybePreconfigured[] = [
+  {
+    id: 'wonderlands-token-devnet',
+    label: 'Wonderlands Token (Devnet)',
+    address: getWonderlandsTokenAddress('devnet'),
+    classId: CLASS_IDS.token,
+    artifactJson: JSON.stringify(tokenSandbox),
+    network: 'devnet',
+  },
+  {
+    id: 'wonderlands-token-sandbox',
+    label: 'Wonderlands Token (Sandbox)',
+    address: getWonderlandsTokenAddress('sandbox'),
+    classId: CLASS_IDS.token,
+    artifactJson: JSON.stringify(tokenSandbox),
+    network: 'sandbox',
+  },
+];
+
+export const PRECONFIGURED_CONTRACTS: PreconfiguredContract[] =
+  PRECONFIGURED_CANDIDATES.filter(
+    (c): c is PreconfiguredContract => c.address != null
+  );
