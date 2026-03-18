@@ -87,8 +87,8 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, action }) => {
               />
               <ConfigValueRow
                 label="Token Deployer"
-                value={token?.deployer ?? 'Not configured'}
-                showCopy={!!token?.deployer}
+                value={dripper?.deployer ?? 'Not configured'}
+                showCopy={!!dripper?.deployer}
               />
             </div>
             <div className={styles.grid2Col}>
