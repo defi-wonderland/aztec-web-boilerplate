@@ -7,15 +7,11 @@ import type { DeployableContractConfig } from '../../types/deployableContract';
 import type { AztecNetwork } from '../../types/network';
 import type { PreconfiguredContract } from '../../types/preconfiguredContract';
 
-const getWonderlandsTokenAddress = (network: AztecNetwork): string => {
+const getWonderlandsTokenAddress = (
+  network: AztecNetwork
+): string | null => {
   const deployments = getNetworkDeployments(network);
-  const token = deployments.token;
-  if (!token?.address) {
-    throw new Error(
-      `No token deployment address found for network "${network}"`
-    );
-  }
-  return token.address;
+  return deployments.token?.address ?? null;
 };
 
 const DEPLOYABLE_CONTRACTS_CONFIG: DeployableContractConfig[] = [
@@ -47,21 +43,25 @@ export const DEPLOYABLE_CONTRACTS = loadDeployableContracts(
   DEPLOYABLE_CONTRACTS_CONFIG
 );
 
-export const PRECONFIGURED_CONTRACTS: PreconfiguredContract[] = [
-  {
-    id: 'wonderlands-token-devnet',
-    label: 'Wonderlands Token (Devnet)',
-    address: getWonderlandsTokenAddress('devnet'),
-    classId: CLASS_IDS.token,
-    artifactJson: JSON.stringify(tokenSandbox),
-    network: 'devnet',
-  },
-  {
-    id: 'wonderlands-token-sandbox',
-    label: 'Wonderlands Token (Sandbox)',
-    address: getWonderlandsTokenAddress('sandbox'),
-    classId: CLASS_IDS.token,
-    artifactJson: JSON.stringify(tokenSandbox),
-    network: 'sandbox',
-  },
-];
+export const PRECONFIGURED_CONTRACTS: PreconfiguredContract[] = (
+  [
+    {
+      id: 'wonderlands-token-devnet',
+      label: 'Wonderlands Token (Devnet)',
+      address: getWonderlandsTokenAddress('devnet'),
+      classId: CLASS_IDS.token,
+      artifactJson: JSON.stringify(tokenSandbox),
+      network: 'devnet' as const,
+    },
+    {
+      id: 'wonderlands-token-sandbox',
+      label: 'Wonderlands Token (Sandbox)',
+      address: getWonderlandsTokenAddress('sandbox'),
+      classId: CLASS_IDS.token,
+      artifactJson: JSON.stringify(tokenSandbox),
+      network: 'sandbox' as const,
+    },
+  ] as const
+).filter(
+  (c): c is PreconfiguredContract => c.address != null
+);
