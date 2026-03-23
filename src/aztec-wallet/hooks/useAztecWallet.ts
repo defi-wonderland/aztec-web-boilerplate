@@ -157,7 +157,7 @@ export function useAztecWallet() {
   const isConnected = walletState.status === 'connected';
   const isConnecting =
     walletState.status === 'connecting' || walletState.status === 'deploying';
-  const isLoading = isConnecting || walletState.connectingConnectorId !== null;
+  const isLoading = isConnected || walletState.connectingConnectorId !== null;
   const address = walletState.account?.getAddress().toString() ?? null;
 
   // PXE initialization state (for Embedded wallets)
@@ -233,7 +233,7 @@ export function useAztecWallet() {
 
   // Disconnect current wallet
   const disconnect = useCallback(async () => {
-    await walletActions.disconnect();
+    walletActions.disconnect();
   }, [walletActions]);
 
   // Switch network

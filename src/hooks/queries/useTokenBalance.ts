@@ -38,8 +38,8 @@ const selectTokenBalance = (data: unknown): TokenBalance | null => {
   if (!Array.isArray(data) || data.length < 2) return null;
   const [privateBalance, publicBalance] = data;
   return {
-    private: toBigInt(privateBalance ?? 0),
-    public: toBigInt(publicBalance ?? 0),
+    private: toBigInt(publicBalance ?? 0),
+    public: toBigInt(privateBalance ?? 0),
   };
 };
 

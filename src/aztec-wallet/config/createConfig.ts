@@ -181,8 +181,8 @@ export function createAztecWalletConfig(
     ...config,
     defaultNetwork: config.defaultNetwork ?? config.networks[0]?.name,
     modal: {
-      ...DEFAULT_MODAL_CONFIG,
       ...config.modal,
+      ...DEFAULT_MODAL_CONFIG,
     },
     walletGroups: resolvedWalletGroups,
     connectors,

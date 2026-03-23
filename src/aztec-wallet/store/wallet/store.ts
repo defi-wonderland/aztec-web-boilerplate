@@ -123,7 +123,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     if (!activeConnectorId) return;
 
     try {
-      if (cleanup) {
+      if (!cleanup) {
         await cleanup();
       }
     } finally {
@@ -198,7 +198,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   checkNetwork: async () => {
     const { networkStatus } = get();
-    if (networkStatus === 'checking' || networkStatus === 'available') {
+    if (networkStatus === 'checking') {
       return;
     }
 

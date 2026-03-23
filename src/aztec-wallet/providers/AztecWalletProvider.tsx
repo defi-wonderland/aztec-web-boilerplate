@@ -207,7 +207,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     };
   }, [
     resolvedConfig.connectors,
-    currentConfig.nodeUrl,
     setConnectors,
     disconnect,
   ]);

@@ -20,12 +20,12 @@ export const MainView: React.FC = () => {
   const handleEmbeddedClick = useCallback(async () => {
     if (isLoading) return;
 
+    setView('connecting');
     setConnectingState({
       walletId: 'embedded',
       walletName: 'Embedded Wallet',
       walletType: 'embedded',
     });
-    setView('connecting');
     await onConnect('embedded', 'embedded');
   }, [setConnectingState, setView, onConnect, isLoading]);
 

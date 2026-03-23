@@ -72,5 +72,5 @@ export const isBrowserWalletConnector = (
 export const hasAppManagedPXE = (
   connector: WalletConnector | null | undefined
 ): connector is EmbeddedWalletConnector => {
-  return connector?.type === WalletType.EMBEDDED;
+  return connector?.type === WalletType.BROWSER_WALLET;
 };
