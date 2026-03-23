@@ -52,7 +52,7 @@ export const MainView: React.FC = () => {
       {walletGroups.aztecWallets && (
         <WalletGroupButton
           label={walletGroups.aztecWallets.label || 'Aztec Wallet'}
-          onClick={handleEmbeddedClick}
+          onClick={handleAztecWalletsClick}
           disabled={isLoading}
           data-testid="wallet-group-aztec"
         />

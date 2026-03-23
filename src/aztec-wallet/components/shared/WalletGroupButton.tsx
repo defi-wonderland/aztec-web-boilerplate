@@ -62,7 +62,7 @@ function getGroupDescription(label: string): string {
     return 'Quick setup, no extension needed';
   }
   if (lowerLabel.includes('aztec')) {
-    return 'MetaMask, Rabby, and more';
+    return 'Azguard and other Aztec wallets';
   }
   return 'Select a wallet to continue';
 }
