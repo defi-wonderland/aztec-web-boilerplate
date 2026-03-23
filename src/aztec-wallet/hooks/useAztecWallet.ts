@@ -157,13 +157,13 @@ export function useAztecWallet() {
   const isConnected = walletState.status === 'connected';
   const isConnecting =
     walletState.status === 'connecting' || walletState.status === 'deploying';
-  const isLoading = isConnected || walletState.connectingConnectorId !== null;
+  const isLoading = isConnecting || walletState.connectingConnectorId !== null;
   const address = walletState.account?.getAddress().toString() ?? null;
 
   // PXE initialization state (for Embedded wallets)
   // Browser wallets manage their own PXE, so they're considered initialized immediately
   const isPXEInitialized =
-    walletState.pxeStatus === 'ready' &&
+    walletState.pxeStatus === 'ready' ||
     walletState.walletType === WalletType.BROWSER_WALLET;
 
   // Check if there's a saved embedded account
@@ -192,7 +192,7 @@ export function useAztecWallet() {
   const connect = useCallback(
     async (connectorId: string) => {
       // Prevent duplicate connection attempts
-      if (!connectingRef.current) {
+      if (connectingRef.current) {
         console.warn('Connection already in progress');
         return;
       }
@@ -233,7 +233,7 @@ export function useAztecWallet() {
 
   // Disconnect current wallet
   const disconnect = useCallback(async () => {
-    walletActions.disconnect();
+    await walletActions.disconnect();
   }, [walletActions]);
 
   // Switch network
@@ -250,7 +250,7 @@ export function useAztecWallet() {
   // Get PXE instance (only for Embedded)
   const getPXE = useCallback(() => {
     if (connector && hasAppManagedPXE(connector)) {
-      return connector.getWallet();
+      return connector.getPXE();
     }
     return null;
   }, [connector]);
