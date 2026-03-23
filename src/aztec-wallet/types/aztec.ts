@@ -11,7 +11,7 @@ export interface AccountData {
   signingKey: string;
   secretKey: string;
   salt: string;
-  evmAddress?: string; // Links account to EVM wallet identity
+  evmAddress?: string;
 }
 
 export interface IAztecStorageService {
@@ -51,7 +51,6 @@ export interface AccountCredentials {
  * Wallet type enumeration for different wallet implementations
  *
  * - EMBEDDED: App manages PXE + internal signing (keys stored in app)
- * - EXTERNAL_SIGNER: App manages PXE + external signing (MetaMask, WalletConnect, Ledger)
  * - BROWSER_WALLET: External PXE + external signing (Azguard extension)
  */
 export enum WalletType {
@@ -61,24 +60,13 @@ export enum WalletType {
 }
 
 /**
- * External signer types for wallets that delegate signing to external wallets
- * while the app manages the PXE connection
- */
-export enum ExternalSignerType {
-  EVM_WALLET = 'evm',
-  // Future possible signers:
-  // WALLET_CONNECT = 'walletconnect',
-}
-
-/**
  * Wallet type for connect modal UI
  *
  * Used in the connect modal to categorize wallet options:
  * - 'embedded': Built-in wallet with keys stored in the app
  * - 'aztec': Native Aztec browser wallets (e.g., Azguard)
- * - 'evm': External signers using EVM wallets (e.g., MetaMask)
  */
-export type ModalWalletType = 'embedded' | 'aztec' | 'evm';
+export type ModalWalletType = 'embedded' | 'aztec';
 
 // ============================================================================
 // AZGUARD WALLET INTERFACES

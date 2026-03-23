@@ -20,23 +20,18 @@ export const MainView: React.FC = () => {
   const handleEmbeddedClick = useCallback(async () => {
     if (isLoading) return;
 
+    setView('connecting');
     setConnectingState({
       walletId: 'embedded',
       walletName: 'Embedded Wallet',
       walletType: 'embedded',
     });
-    setView('connecting');
     await onConnect('embedded', 'embedded');
   }, [setConnectingState, setView, onConnect, isLoading]);
 
   const handleAztecWalletsClick = useCallback(() => {
     if (isLoading) return;
     setView('aztec-wallets');
-  }, [setView, isLoading]);
-
-  const handleEvmWalletsClick = useCallback(() => {
-    if (isLoading) return;
-    setView('evm-wallets');
   }, [setView, isLoading]);
 
   return (
@@ -63,14 +58,6 @@ export const MainView: React.FC = () => {
         />
       )}
 
-      {walletGroups.evmWallets && (
-        <WalletGroupButton
-          label={walletGroups.evmWallets.label || 'EVM Wallet'}
-          onClick={handleEvmWalletsClick}
-          disabled={isLoading}
-          data-testid="wallet-group-evm"
-        />
-      )}
     </div>
   );
 };

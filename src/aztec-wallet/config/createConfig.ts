@@ -1,8 +1,6 @@
 import { isStringArray } from '../../utils';
 import { BrowserWalletConnector } from '../connectors/BrowserWalletConnector';
 import { createEmbeddedConnector } from '../connectors/EmbeddedConnector';
-import { ExternalSignerConnector } from '../connectors/ExternalSignerConnector';
-import { ExternalSignerType } from '../types/aztec';
 import {
   DEFAULT_LABELS,
   DEFAULT_MODAL_CONFIG,
@@ -10,7 +8,6 @@ import {
 } from './defaults';
 import {
   getAztecWalletPreset,
-  getEVMWalletPreset,
   AZTEC_WALLET_PRESETS,
 } from './walletPresets';
 import type { ConnectorFactory } from '../connectors/registry';
@@ -19,8 +16,6 @@ import type {
   AztecBrowserWalletConfig,
   AztecWalletsGroupConfig,
   EmbeddedGroupConfig,
-  EVMWalletConfig,
-  EVMWalletsGroupConfig,
   ResolvedAztecWalletConfig,
 } from '../types';
 
@@ -36,31 +31,6 @@ function isFullGroupConfig(
     'wallets' in value &&
     Array.isArray((value as { wallets: unknown }).wallets)
   );
-}
-
-/**
- * Resolve EVM wallet IDs to full wallet configs
- */
-function resolveEVMWallets(ids: string[]): EVMWalletConfig[] {
-  const wallets: EVMWalletConfig[] = [];
-
-  for (const id of ids) {
-    const preset = getEVMWalletPreset(id);
-    if (preset) {
-      wallets.push({
-        id: preset.id,
-        name: preset.name,
-        icon: preset.icon,
-        rdns: preset.rdns,
-      });
-    } else {
-      console.warn(
-        `AztecWallet: Unknown EVM wallet "${id}". Available: metamask, rabby`
-      );
-    }
-  }
-
-  return wallets;
 }
 
 /**
@@ -97,28 +67,12 @@ function resolveAztecWallets(ids: string[]): AztecBrowserWalletConfig[] {
 function createConnectorsFromWalletGroups(walletGroups: {
   embedded: EmbeddedGroupConfig | false;
   aztecWallets: AztecWalletsGroupConfig | false;
-  evmWallets: EVMWalletsGroupConfig | false;
 }): ConnectorFactory[] {
   const connectors: ConnectorFactory[] = [];
 
   // Add embedded connector
   if (walletGroups.embedded !== false) {
     connectors.push(createEmbeddedConnector);
-  }
-
-  // Add EVM wallet connectors (external signers)
-  if (walletGroups.evmWallets !== false) {
-    for (const wallet of walletGroups.evmWallets.wallets) {
-      connectors.push(
-        () =>
-          new ExternalSignerConnector({
-            id: wallet.id,
-            label: wallet.name,
-            signerType: ExternalSignerType.EVM_WALLET,
-            rdns: wallet.rdns,
-          })
-      );
-    }
   }
 
   // Add Aztec browser wallet connectors
@@ -155,7 +109,6 @@ function createConnectorsFromWalletGroups(walletGroups: {
  *   networks: [{ name: 'devnet', nodeUrl: '...' }],
  *   walletGroups: {
  *     embedded: true,
- *     evmWallets: ['metamask', 'rabby'],
  *     aztecWallets: ['azguard'],
  *   },
  * });
@@ -167,9 +120,9 @@ function createConnectorsFromWalletGroups(walletGroups: {
  *   networks: [{ name: 'devnet', nodeUrl: '...' }],
  *   walletGroups: {
  *     embedded: { label: 'Create Account' },
- *     evmWallets: {
- *       label: 'Connect EVM',
- *       wallets: [{ id: 'custom', name: 'Custom', icon: '...', rdns: '...' }],
+ *     aztecWallets: {
+ *       label: 'Connect Aztec',
+ *       wallets: [{ id: 'azguard', name: 'Azguard', icon: AzguardIcon, adapter: ... }],
  *     },
  *   },
  * });
@@ -216,32 +169,9 @@ export function createAztecWalletConfig(
     resolvedAztecWallets = false;
   }
 
-  // Resolve EVM wallets config
-  // Accepts: false, ['metamask', 'rabby'], or { label?: string, wallets: [...] }
-  let resolvedEvmWallets: EVMWalletsGroupConfig | false;
-  if (walletGroups.evmWallets === false || !walletGroups.evmWallets) {
-    resolvedEvmWallets = false;
-  } else if (isStringArray(walletGroups.evmWallets)) {
-    // Simple config: ['metamask', 'rabby']
-    const wallets = resolveEVMWallets(walletGroups.evmWallets);
-    resolvedEvmWallets =
-      wallets.length > 0
-        ? { label: DEFAULT_LABELS.evmWallets, wallets }
-        : false;
-  } else if (isFullGroupConfig(walletGroups.evmWallets)) {
-    // Full config: { label: '...', wallets: [...] }
-    resolvedEvmWallets = {
-      label: walletGroups.evmWallets.label ?? DEFAULT_LABELS.evmWallets,
-      wallets: walletGroups.evmWallets.wallets,
-    };
-  } else {
-    resolvedEvmWallets = false;
-  }
-
   const resolvedWalletGroups: ResolvedAztecWalletConfig['walletGroups'] = {
     embedded: resolvedEmbedded,
     aztecWallets: resolvedAztecWallets,
-    evmWallets: resolvedEvmWallets,
   };
 
   // Auto-create connectors from wallet groups
@@ -251,8 +181,8 @@ export function createAztecWalletConfig(
     ...config,
     defaultNetwork: config.defaultNetwork ?? config.networks[0]?.name,
     modal: {
-      ...DEFAULT_MODAL_CONFIG,
       ...config.modal,
+      ...DEFAULT_MODAL_CONFIG,
     },
     walletGroups: resolvedWalletGroups,
     connectors,

@@ -4,7 +4,6 @@ import { NetworkService } from '../../services/aztec/network';
 import { getNetworkStore } from '../network';
 import { createBrowserActions } from './actions/browser';
 import { createEmbeddedActions } from './actions/embedded';
-import { createExternalSignerActions } from './actions/externalSigner';
 import { isValidPXETransition } from './types';
 import type { WalletStore, WalletState } from './types';
 import type { WalletType } from '../../types/aztec';
@@ -56,8 +55,6 @@ const INITIAL_STATE: WalletState = {
   networkError: null,
   pxeStatus: 'idle',
   pxeError: null,
-  signerType: null,
-  connectedRdns: null,
   caipAccount: null,
   caipAccounts: [],
   supportedChains: [],
@@ -137,8 +134,6 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         walletType: null,
         status: 'disconnected',
         error: null,
-        signerType: null,
-        connectedRdns: null,
         caipAccount: null,
         caipAccounts: [],
         supportedChains: [],
@@ -159,8 +154,8 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
    *
    * NOTE: This does NOT wrap in `_connectWith` because each connector's
    * `connect()` method is responsible for calling the appropriate store action
-   * (e.g., `connectEmbedded`, `connectExternalSigner`) which already uses
-   * `_connectWith` internally. This avoids double-wrapping.
+   * (e.g., `connectEmbedded`) which already uses `_connectWith` internally.
+   * This avoids double-wrapping.
    */
   connect: async (connectorId) => {
     const connector = get().connectors.find((c) => c.id === connectorId);
@@ -176,9 +171,6 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   // Embedded actions
   ...createEmbeddedActions(set, get),
-
-  // External Signer actions
-  ...createExternalSignerActions(set, get),
 
   // Browser Wallet actions
   ...createBrowserActions(set, get),
@@ -206,7 +198,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   checkNetwork: async () => {
     const { networkStatus } = get();
-    if (networkStatus === 'checking' || networkStatus === 'available') {
+    if (networkStatus === 'checking') {
       return;
     }
 

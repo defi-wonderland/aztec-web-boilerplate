@@ -2,23 +2,16 @@
  * Wallet Presets Registry
  *
  * Pre-configured wallet definitions that developers can reference by ID.
- * This simplifies the config - devs just pass ['metamask', 'rabby'] instead of full configs.
+ * This simplifies the config - devs just pass ['azguard'] instead of full configs.
  */
 
-import { MetaMaskIcon, RabbyIcon, AzguardIcon } from '../assets/icons';
+import { AzguardIcon, MetaMaskIcon } from '../assets/icons';
 import type { IconType } from '../types';
 import type { IBrowserWalletAdapter } from '../types/browserWalletAdapter';
 
 // =============================================================================
 // Types
 // =============================================================================
-
-export interface EVMWalletPreset {
-  id: string;
-  name: string;
-  icon: IconType;
-  rdns: string;
-}
 
 export interface AztecWalletPreset {
   id: string;
@@ -29,25 +22,6 @@ export interface AztecWalletPreset {
   /** Check if wallet extension is installed (optional, async) */
   checkInstalled?: () => Promise<boolean>;
 }
-
-// =============================================================================
-// EVM Wallet Presets
-// =============================================================================
-
-export const EVM_WALLET_PRESETS: Record<string, EVMWalletPreset> = {
-  metamask: {
-    id: 'metamask',
-    name: 'MetaMask',
-    icon: MetaMaskIcon,
-    rdns: 'io.metamask',
-  },
-  rabby: {
-    id: 'rabby',
-    name: 'Rabby',
-    icon: RabbyIcon,
-    rdns: 'io.rabby',
-  },
-};
 
 // =============================================================================
 // Aztec Wallet Presets
@@ -90,26 +64,12 @@ export const AZTEC_WALLET_PRESETS: Record<string, AztecWalletPreset> = {
 // =============================================================================
 
 /**
- * Get EVM wallet preset by ID
- */
-export function getEVMWalletPreset(id: string): EVMWalletPreset | undefined {
-  return EVM_WALLET_PRESETS[id];
-}
-
-/**
  * Get Aztec wallet preset by ID
  */
 export function getAztecWalletPreset(
   id: string
 ): AztecWalletPreset | undefined {
   return AZTEC_WALLET_PRESETS[id];
-}
-
-/**
- * Get all available EVM wallet IDs
- */
-export function getAvailableEVMWalletIds(): string[] {
-  return Object.keys(EVM_WALLET_PRESETS);
 }
 
 /**
@@ -122,9 +82,6 @@ export function getAvailableAztecWalletIds(): string[] {
 // =============================================================================
 // Type helpers for config
 // =============================================================================
-
-/** Known EVM wallet IDs */
-export type EVMWalletId = keyof typeof EVM_WALLET_PRESETS;
 
 /** Known Aztec wallet IDs */
 export type AztecWalletId = keyof typeof AZTEC_WALLET_PRESETS;

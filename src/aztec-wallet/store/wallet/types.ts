@@ -1,7 +1,6 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { AztecNetwork } from '../../../config/networks/constants';
-import type { ExternalSigner } from '../../signers/types';
-import type { ExternalSignerType, WalletType } from '../../types/aztec';
+import type { WalletType } from '../../types/aztec';
 import type { IBrowserWalletAdapter } from '../../types/browserWalletAdapter';
 import type {
   ConnectionStatus,
@@ -51,10 +50,6 @@ export type WalletState = {
   pxeStatus: PXEStatus;
   pxeError: string | null;
 
-  // ExternalSigner-specific (only read when walletType === EXTERNAL_SIGNER)
-  signerType: ExternalSignerType | null;
-  connectedRdns: string | null;
-
   // BrowserWallet-specific (only read when walletType === BROWSER_WALLET)
   caipAccount: string | null;
   caipAccounts: string[];
@@ -85,12 +80,6 @@ export type WalletActions = {
     connectorId?: WalletConnectorId
   ) => Promise<AccountWithSecretKey | null>;
   hasSavedEmbeddedAccount: () => boolean;
-
-  // External Signer
-  connectExternalSigner: (
-    signer: ExternalSigner,
-    connectorId?: WalletConnectorId
-  ) => Promise<AccountWithSecretKey>;
 
   // Browser Wallet
   connectBrowserWallet: (

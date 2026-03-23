@@ -6,23 +6,23 @@
  *
  * @example
  * ```tsx
- * import { MetaMaskIcon, RabbyIcon, AzguardIcon } from './aztec-wallet/assets/icons';
+ * import { AzguardIcon } from './aztec-wallet/assets/icons';
  *
  * // Basic usage
- * <MetaMaskIcon />
+ * <AzguardIcon />
  *
  * // With custom size
- * <MetaMaskIcon size={32} />
+ * <AzguardIcon size={32} />
  *
  * // With className
- * <MetaMaskIcon className="opacity-50" />
+ * <AzguardIcon className="opacity-50" />
  * ```
  */
 
 // Icon components
+export { AzguardIcon } from './AzguardIcon';
 export { MetaMaskIcon } from './MetaMaskIcon';
 export { RabbyIcon } from './RabbyIcon';
-export { AzguardIcon } from './AzguardIcon';
 
 // Wrapper utilities
 export {

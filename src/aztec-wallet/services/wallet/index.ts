@@ -31,6 +31,3 @@ export type {
   StoredAccountData,
 } from './embeddedAccount';
 
-// External signer account
-export { createExternalSignerAccount } from './externalSignerAccount';
-export type { CreateExternalSignerAccountResult } from './externalSignerAccount';

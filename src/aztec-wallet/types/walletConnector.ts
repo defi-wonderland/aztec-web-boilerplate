@@ -2,7 +2,7 @@ import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
-import { WalletType, ExternalSignerType } from './aztec';
+import { WalletType } from './aztec';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
@@ -45,17 +45,6 @@ export interface EmbeddedWalletConnector extends WalletConnector {
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
-export interface ExternalSignerWalletConnector extends WalletConnector {
-  readonly type: typeof WalletType.EXTERNAL_SIGNER;
-  readonly signerType: ExternalSignerType;
-  /** RDNS identifier for the EVM wallet (e.g., 'io.metamask') */
-  readonly rdns?: string;
-
-  getPXE: () => PXE | null;
-  getWallet: () => Wallet | null;
-  getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
-}
-
 export interface BrowserWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.BROWSER_WALLET;
 
@@ -74,12 +63,6 @@ export const isEmbeddedConnector = (
   return connector?.type === WalletType.EMBEDDED;
 };
 
-export const isExternalSignerConnector = (
-  connector: WalletConnector | null | undefined
-): connector is ExternalSignerWalletConnector => {
-  return connector?.type === WalletType.EXTERNAL_SIGNER;
-};
-
 export const isBrowserWalletConnector = (
   connector: WalletConnector | null | undefined
 ): connector is BrowserWalletConnector => {
@@ -88,9 +71,6 @@ export const isBrowserWalletConnector = (
 
 export const hasAppManagedPXE = (
   connector: WalletConnector | null | undefined
-): connector is EmbeddedWalletConnector | ExternalSignerWalletConnector => {
-  return (
-    connector?.type === WalletType.EMBEDDED ||
-    connector?.type === WalletType.EXTERNAL_SIGNER
-  );
+): connector is EmbeddedWalletConnector => {
+  return connector?.type === WalletType.EMBEDDED;
 };

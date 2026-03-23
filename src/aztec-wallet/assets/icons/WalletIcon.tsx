@@ -32,7 +32,7 @@ export interface WalletIconWrapperProps {
  * @example
  * ```tsx
  * // Using with a custom icon element
- * <WalletIconWrapper icon={<MetaMaskIcon size={24} />} size="md" />
+ * <WalletIconWrapper icon={<AzguardIcon size={24} />} size="md" />
  *
  * // Using as a container for consistency
  * <WalletIconWrapper icon={<img src="/icon.png" alt="wallet" />} size="lg" />

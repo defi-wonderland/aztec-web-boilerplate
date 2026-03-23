@@ -72,31 +72,6 @@ export interface AztecWalletsGroupConfig {
   wallets: AztecBrowserWalletConfig[];
 }
 
-/**
- * Configuration for a single EVM wallet
- * Used when providing custom wallet config instead of preset IDs
- */
-export interface EVMWalletConfig {
-  /** Unique identifier */
-  id: string;
-  /** Display name */
-  name: string;
-  /** Icon - emoji string, URL, or React component */
-  icon?: IconType;
-  /** EIP-6963 reverse domain name (e.g., 'io.metamask') */
-  rdns: string;
-}
-
-/**
- * Configuration for EVM wallets group (full config version)
- */
-export interface EVMWalletsGroupConfig {
-  /** Button label (default: "EVM Wallet") */
-  label?: string;
-  /** List of EVM wallets to show */
-  wallets: EVMWalletConfig[];
-}
-
 // =============================================================================
 // Simplified Config Types (using preset IDs)
 // =============================================================================
@@ -108,12 +83,6 @@ export interface EVMWalletsGroupConfig {
 export type AztecWalletsSimpleConfig = string[];
 
 /**
- * Simplified EVM wallets config - just pass wallet IDs
- * @example ['metamask', 'rabby', 'coinbase']
- */
-export type EVMWalletsSimpleConfig = string[];
-
-/**
  * Wallet groups configuration
  *
  * Supports both simple and advanced configuration:
@@ -122,7 +91,6 @@ export type EVMWalletsSimpleConfig = string[];
  * ```ts
  * walletGroups: {
  *   embedded: true,
- *   evmWallets: ['metamask', 'rabby'],
  *   aztecWallets: ['azguard'],
  * }
  * ```
@@ -131,9 +99,9 @@ export type EVMWalletsSimpleConfig = string[];
  * ```ts
  * walletGroups: {
  *   embedded: { label: 'Create Account' },
- *   evmWallets: {
- *     label: 'Connect EVM',
- *     wallets: [{ id: 'custom', name: 'Custom', icon: '🔧', rdns: 'com.custom' }],
+ *   aztecWallets: {
+ *     label: 'Connect Aztec',
+ *     wallets: [{ id: 'azguard', name: 'Azguard', adapter: () => import(...) }],
  *   },
  * }
  * ```
@@ -155,13 +123,6 @@ export interface WalletGroupsConfig {
    */
   aztecWallets?: AztecWalletsGroupConfig | AztecWalletsSimpleConfig | false;
 
-  /**
-   * EVM wallets configuration
-   * - `['metamask', 'rabby']` = simple config with preset IDs
-   * - `{ wallets: [...] }` = advanced config with custom wallets
-   * - `false` = disabled
-   */
-  evmWallets?: EVMWalletsGroupConfig | EVMWalletsSimpleConfig | false;
 }
 
 /**
@@ -173,7 +134,6 @@ export interface WalletGroupsConfig {
  *   networks: [{ name: 'devnet', nodeUrl: 'https://devnet.aztec.network' }],
  *   walletGroups: {
  *     embedded: true,
- *     evmWallets: ['metamask', 'rabby'],
  *     aztecWallets: ['azguard'],
  *   },
  * });
@@ -231,7 +191,6 @@ export interface ResolvedAztecWalletConfig
   walletGroups: {
     embedded: EmbeddedGroupConfig | false;
     aztecWallets: AztecWalletsGroupConfig | false;
-    evmWallets: EVMWalletsGroupConfig | false;
   };
   /** Auto-created connector factories from walletGroups (internal use only) */
   connectors: import('../connectors/registry').ConnectorFactory[];

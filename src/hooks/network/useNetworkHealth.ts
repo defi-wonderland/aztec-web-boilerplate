@@ -30,7 +30,7 @@ function getAztecNode() {
 /**
  * Hook to fetch network health metrics from PXE.
  *
- * Only works for app-managed PXE connectors (Embedded/ExternalSigner).
+ * Only works for app-managed PXE connectors (Embedded).
  * Returns null values for browser wallets (Azguard) since they manage their own PXE.
  *
  * @param refreshInterval - How often to refresh metrics in milliseconds (default: 10000)

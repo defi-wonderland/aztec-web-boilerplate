@@ -5,4 +5,3 @@ export * from './ui';
 export * from './azguard';
 export * from './browserWallet';
 export * from './walletConnector';
-export * from './evm';

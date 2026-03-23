@@ -32,7 +32,6 @@ import {
   ChevronDown,
   ChevronRight,
   Key,
-  CreditCard,
   LogOut,
   Globe,
   FlaskConical,
@@ -617,24 +616,6 @@ export const UIComponentsShowcase: React.FC = () => {
                   </div>
                 </button>
 
-                {/* EVM Wallet Option */}
-                <button type="button" className={styles.walletGroupButton}>
-                  <div className={styles.walletGroupIconContainer}>
-                    <CreditCard size={iconSize('md')} />
-                  </div>
-                  <div className={styles.walletGroupContent}>
-                    <span className={styles.walletGroupLabel}>EVM Wallet</span>
-                    <span className={styles.walletGroupDescription}>
-                      MetaMask, Rabby, and more
-                    </span>
-                  </div>
-                  <div className={styles.walletGroupRightSection}>
-                    <ChevronRight
-                      size={iconSize('md')}
-                      className={styles.walletGroupArrow}
-                    />
-                  </div>
-                </button>
               </div>
             </div>
           </div>
@@ -860,7 +841,6 @@ const { open: openNetwork } = useNetworkModal();
   ],
   walletGroups: {
     embedded: true,
-    evmWallets: ['metamask', 'rabby'],
     aztecWallets: ['azguard'],
   },
   showNetworkPicker: 'full', // or 'compact'

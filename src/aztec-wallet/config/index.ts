@@ -5,15 +5,10 @@ export {
   DEFAULT_EMBEDDED_CONFIG,
 } from './defaults';
 export {
-  EVM_WALLET_PRESETS,
   AZTEC_WALLET_PRESETS,
-  getEVMWalletPreset,
   getAztecWalletPreset,
-  getAvailableEVMWalletIds,
   getAvailableAztecWalletIds,
-  type EVMWalletPreset,
   type AztecWalletPreset,
-  type EVMWalletId,
   type AztecWalletId,
 } from './walletPresets';
 export {

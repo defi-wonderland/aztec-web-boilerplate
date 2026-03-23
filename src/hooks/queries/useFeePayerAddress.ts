@@ -9,7 +9,6 @@ import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { queryKeys } from './queryKeys';
 import type {
   EmbeddedWalletConnector,
-  ExternalSignerWalletConnector,
 } from '../../aztec-wallet/types/walletConnector';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
 import type { FeePaymentContractsConfig } from '../../config/networks/types';
@@ -18,7 +17,7 @@ interface UseFeePayerAddressOptions {
   /** The selected fee payment method */
   selectedMethod: FeePaymentMethodType;
   /** The wallet connector (must have app-managed PXE) */
-  connector: EmbeddedWalletConnector | ExternalSignerWalletConnector | null;
+  connector: EmbeddedWalletConnector | null;
   /** The fee payment contracts configuration */
   feePaymentConfig: FeePaymentContractsConfig | undefined;
   /** Whether the query should be enabled */

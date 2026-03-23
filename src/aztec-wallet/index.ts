@@ -19,7 +19,6 @@
  *   showNetworkPicker: 'full',
  *   walletGroups: {
  *     embedded: true,
- *     evmWallets: ['metamask', 'rabby'],
  *     aztecWallets: ['azguard'],
  *   },
  * });
@@ -36,7 +35,6 @@
  * ## Wallet Types
  *
  * - **Embedded**: App manages PXE + internal signing (keys in localStorage)
- * - **External Signer**: App manages PXE + external signing (MetaMask, Rabby)
  * - **Browser Wallet**: Extension manages everything (Azguard)
  *
  * ## Deep Imports
@@ -86,7 +84,6 @@ export {
  *   networks: [{ name: 'devnet', nodeUrl: 'https://devnet.aztec.network' }],
  *   walletGroups: {
  *     embedded: true,
- *     evmWallets: ['metamask'],
  *   },
  * });
  * ```
@@ -121,10 +118,6 @@ export { useAccountModal } from './hooks';
  */
 export { useNetworkModal } from './hooks';
 
-/**
- * Hook to check if a specific EVM wallet is installed/available.
- */
-export { useIsEvmWalletInstalled } from './hooks';
 
 // =============================================================================
 // COMPONENTS
@@ -197,18 +190,6 @@ export type {
 export { isEmbeddedConnector } from './types/walletConnector';
 
 /**
- * Type guard to check if a connector is an external signer connector (EVM wallet).
- *
- * @example
- * ```ts
- * if (isExternalSignerConnector(connector)) {
- *   const pxe = connector.getPXE();
- * }
- * ```
- */
-export { isExternalSignerConnector } from './types/walletConnector';
-
-/**
  * Type guard to check if a connector is a browser wallet connector (Azguard).
  *
  * @example
@@ -222,7 +203,7 @@ export { isBrowserWalletConnector } from './types/walletConnector';
 
 /**
  * Type guard to check if a connector has app-managed PXE.
- * Returns true for embedded and external signer connectors.
+ * Returns true for embedded connectors.
  *
  * @example
  * ```ts

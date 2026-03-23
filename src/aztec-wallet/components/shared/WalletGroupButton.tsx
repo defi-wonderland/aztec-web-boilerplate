@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Wallet, Key, CreditCard } from 'lucide-react';
+import { ChevronRight, Wallet, Key } from 'lucide-react';
 import { Badge } from '../../../components/ui';
 import { cn, iconSize } from '../../../utils';
 
@@ -46,9 +46,6 @@ function getGroupIcon(label: string): React.ReactNode {
   ) {
     return <Key size={iconSize('md')} />;
   }
-  if (lowerLabel.includes('evm') || lowerLabel.includes('metamask')) {
-    return <CreditCard size={iconSize('md')} />;
-  }
   return <Wallet size={iconSize('md')} />;
 }
 
@@ -63,9 +60,6 @@ function getGroupDescription(label: string): string {
     lowerLabel.includes('new')
   ) {
     return 'Quick setup, no extension needed';
-  }
-  if (lowerLabel.includes('evm')) {
-    return 'MetaMask, Rabby, and more';
   }
   if (lowerLabel.includes('aztec')) {
     return 'Azguard and other Aztec wallets';

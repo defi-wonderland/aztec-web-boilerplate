@@ -3,7 +3,6 @@
  *
  * Simple API - just pass wallet IDs and we handle the rest.
  * Available wallets:
- *   - EVM: 'metamask', 'rabby'
  *   - Aztec: 'azguard'
  */
 
@@ -15,7 +14,6 @@ import { DEFAULT_NETWORK, NETWORK_URLS } from './networks';
  *
  * Simple API - just pass wallet IDs:
  * - embedded: true/false
- * - evmWallets: ['metamask', 'rabby', ...]
  * - aztecWallets: ['azguard', ...]
  */
 export const aztecWalletConfig = createAztecWalletConfig({
@@ -32,10 +30,8 @@ export const aztecWalletConfig = createAztecWalletConfig({
 
   // Wallet groups - the single source of truth for which wallets to enable
   walletGroups: {
-    embedded: true,
+    embedded: false,
     aztecWallets: ['azguard'],
-    // TODO: Re-enable when EcdsaKEthSignerAccount contract can be compiled in CI
-    // evmWallets: ['metamask', 'rabby'],
   },
 
   // Show network picker in header ('full' | 'compact' | undefined)

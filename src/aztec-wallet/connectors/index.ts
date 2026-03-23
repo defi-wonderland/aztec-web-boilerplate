@@ -5,9 +5,8 @@ export {
   createEmbeddedConnector,
 } from './EmbeddedConnector';
 
-export { ExternalSignerConnector } from './ExternalSignerConnector';
-
 export { BrowserWalletConnector } from './BrowserWalletConnector';
+export { ExternalSignerConnector } from './ExternalSignerConnector';
 
 // Registry (internal use only - not part of public API)
 export { createConnectorRegistry } from './registry';

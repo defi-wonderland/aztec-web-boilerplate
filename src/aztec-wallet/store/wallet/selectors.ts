@@ -28,7 +28,6 @@ export const useWalletActions = () =>
       connectEmbedded: state.connectEmbedded,
       connectExistingEmbedded: state.connectExistingEmbedded,
       hasSavedEmbeddedAccount: state.hasSavedEmbeddedAccount,
-      connectExternalSigner: state.connectExternalSigner,
       connectBrowserWallet: state.connectBrowserWallet,
       setBrowserWalletState: state.setBrowserWalletState,
       disconnect: state.disconnect,

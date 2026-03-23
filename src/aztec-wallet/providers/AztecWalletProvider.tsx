@@ -4,8 +4,6 @@ import { isValidConfig } from '../../utils';
 import { AztecWalletModals } from '../components/AztecWalletModals';
 import { createAztecWalletConfig } from '../config';
 import { createConnectorRegistry } from '../connectors/registry';
-import { useEIP6963Discovery } from '../hooks/useEIP6963Discovery';
-import { getEIP6963Service, getEVMWalletService } from '../services/evm';
 import { getNetworkStore, useNetworkStore } from '../store/network';
 import {
   useWalletStore,
@@ -21,7 +19,6 @@ import type {
   NetworkPreset,
   StoreNetworkPreset,
 } from '../types';
-import type { ExternalSignerWalletConnector } from '../types/walletConnector';
 
 export interface AztecWalletProviderProps {
   /** AztecWallet configuration */
@@ -102,11 +99,6 @@ const AutoReconnect: React.FC = () => {
             }
             break;
 
-          case WalletType.EXTERNAL_SIGNER:
-            // For external signer (MetaMask, etc.), try silent reconnection
-            await tryExternalSignerReconnect(savedConnector, connectorId);
-            break;
-
           case WalletType.BROWSER_WALLET:
             // For browser wallets, try to reconnect - if session exists it will be silent
             console.log('AztecWallet: Auto-reconnecting to browser wallet...');
@@ -118,56 +110,6 @@ const AutoReconnect: React.FC = () => {
         }
       } catch (err) {
         console.warn('AztecWallet: Auto-reconnect failed:', err);
-      }
-    };
-
-    /**
-     * Try to silently reconnect to an external signer wallet.
-     * Uses eth_accounts (no popup) to check if we still have permissions.
-     */
-    const tryExternalSignerReconnect = async (
-      connector: (typeof connectors)[0],
-      id: string
-    ) => {
-      const externalConnector = connector as ExternalSignerWalletConnector;
-      const rdns = externalConnector.rdns;
-
-      if (!rdns) {
-        console.log(
-          'AztecWallet: External signer has no rdns, skipping auto-reconnect'
-        );
-        return;
-      }
-
-      // Check if the wallet is available via EIP-6963
-      const eip6963 = getEIP6963Service();
-      const provider = eip6963.getProviderByRdns(rdns);
-
-      if (!provider) {
-        console.log(
-          `AztecWallet: Wallet ${rdns} not found via EIP-6963, cannot auto-reconnect`
-        );
-        return;
-      }
-
-      try {
-        // Use eth_accounts to check if we have permissions (no popup)
-        const accounts = (await provider.request({
-          method: 'eth_accounts',
-        })) as string[];
-
-        if (accounts && accounts.length > 0) {
-          console.log(
-            `AztecWallet: Found existing permission for ${rdns}, auto-reconnecting...`
-          );
-          await walletActions.connect(id);
-        } else {
-          console.log(
-            `AztecWallet: No existing permission for ${rdns}, user needs to reconnect manually`
-          );
-        }
-      } catch (err) {
-        console.warn(`AztecWallet: Failed to check ${rdns} permissions:`, err);
       }
     };
 
@@ -218,11 +160,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
   );
   const currentConfig = useNetworkStore((state) => state.currentConfig);
 
-  // Trigger EIP-6963 wallet discovery for EVM wallets
-  // This populates the EVM store with discovered wallets
-  const evmServiceAvailable = getEVMWalletService().isAvailable();
-  useEIP6963Discovery(evmServiceAvailable);
-
   // Resolve config with defaults
   const resolvedConfig = useMemo(
     () => createAztecWalletConfig(userConfig),
@@ -270,7 +207,6 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
     };
   }, [
     resolvedConfig.connectors,
-    currentConfig.nodeUrl,
     setConnectors,
     disconnect,
   ]);

@@ -5,12 +5,10 @@ export type {
   ConnectorStatus,
   WalletConnector,
   EmbeddedWalletConnector,
-  ExternalSignerWalletConnector,
   BrowserWalletConnector as BrowserWalletConnectorInterface,
 } from './walletConnector';
 export {
   isEmbeddedConnector,
-  isExternalSignerConnector,
   isBrowserWalletConnector,
   hasAppManagedPXE,
 } from './walletConnector';
@@ -47,8 +45,6 @@ export type {
   EmbeddedGroupConfig,
   AztecWalletsGroupConfig,
   AztecBrowserWalletConfig,
-  EVMWalletsGroupConfig,
-  EVMWalletConfig,
 } from './config';
 
 // Aztec wallet types
@@ -81,7 +77,6 @@ export type NetworkPickerVariant = 'full' | 'compact';
 export type ModalView =
   | 'main'
   | 'aztec-wallets'
-  | 'evm-wallets'
   | 'connecting'
   | 'success';
 
