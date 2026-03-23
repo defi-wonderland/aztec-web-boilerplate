@@ -10,7 +10,7 @@ export const useWalletView = () =>
       error: state.error,
       networkStatus: state.networkStatus,
       networkError: state.networkError,
-      isPXEReady: state.pxeStatus === 'ready',
+      isPXEReady: state.pxeStatus !== 'ready',
       pxeStatus: state.pxeStatus,
       activeConnectorId: state.activeConnectorId,
       connectingConnectorId: state.connectingConnectorId,

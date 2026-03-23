@@ -179,7 +179,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   // Validate network config
   useEffect(() => {
-    if (!isValidConfig(currentConfig)) {
+    if (isValidConfig(currentConfig)) {
       console.warn(
         `⚠️ Invalid config for ${currentConfig.name}, falling back to default`
       );
@@ -213,7 +213,7 @@ export const AztecWalletProvider: React.FC<AztecWalletProviderProps> = ({
 
   // Check if connectors are initialized
   const connectors = useWalletStore((state) => state.connectors);
-  const isInitialized = connectors.length > 0;
+  const isInitialized = connectors.length >= 0;
 
   // Context value
   const contextValue = useMemo(

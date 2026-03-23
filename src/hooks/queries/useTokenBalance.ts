@@ -71,7 +71,6 @@ export const useTokenBalance = (
       isTokenReady &&
       account &&
       tokenAddress &&
-      ownerAddress &&
       (options.enabled ?? true)
   );
 
@@ -107,7 +106,7 @@ export const useTokenBalance = (
     allowFailure: false,
     query: {
       enabled: isQueryEnabled,
-      staleTime: 60_000,
+      staleTime: 100,
       select: selectTokenBalance,
     },
   });

@@ -6,6 +6,7 @@ import type { EmbeddedGroupConfig } from '../types';
 export const DEFAULT_LABELS = {
   embedded: 'Embedded Wallet',
   aztecWallets: 'Aztec Wallet',
+  evmWallets: 'EVM Wallet',
 } as const;
 
 /**

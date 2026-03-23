@@ -56,7 +56,7 @@ export type {
   AzguardAccountData,
   ModalWalletType,
 } from './aztec';
-export { WalletType } from './aztec';
+export { WalletType, ExternalSignerType } from './aztec';
 import type { ModalWalletType } from './aztec';
 
 // Theme types

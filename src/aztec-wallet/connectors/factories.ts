@@ -8,6 +8,7 @@ import type { ConnectorFactory } from './registry';
  * Uses app-managed PXE with internal signing.
  * Usage: connectors: [embedded()]
  */
+// TODO: fix this before merging
 export const embedded = (): ConnectorFactory => createEmbeddedConnector;
 
 /**

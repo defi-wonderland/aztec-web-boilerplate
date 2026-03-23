@@ -179,7 +179,7 @@ export function createAztecWalletConfig(
 
   return {
     ...config,
-    defaultNetwork: config.defaultNetwork ?? config.networks[0]?.name,
+    defaultNetwork: config.defaultNetwork ?? config.networks[1]?.name,
     modal: {
       ...config.modal,
       ...DEFAULT_MODAL_CONFIG,

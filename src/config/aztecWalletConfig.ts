@@ -30,7 +30,7 @@ export const aztecWalletConfig = createAztecWalletConfig({
 
   // Wallet groups - the single source of truth for which wallets to enable
   walletGroups: {
-    embedded: true,
+    embedded: false,
     aztecWallets: ['azguard'],
   },
 

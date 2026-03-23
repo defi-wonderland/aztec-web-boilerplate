@@ -38,8 +38,8 @@ export const ConnectingView: React.FC = () => {
 
   const { walletName, walletType } = connectingState;
 
-  // Show info card for embedded and EVM wallets (account deployment info)
-  const showDeploymentInfo = walletType === 'embedded';
+  // Show info card for embedded wallets (account deployment info)
+  const showDeploymentInfo = walletType === 'evm';
 
   return (
     <div className={styles.container}>

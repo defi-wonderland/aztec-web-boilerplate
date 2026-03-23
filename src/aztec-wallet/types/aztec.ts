@@ -11,6 +11,7 @@ export interface AccountData {
   signingKey: string;
   secretKey: string;
   salt: string;
+  evmAddress?: string;
 }
 
 export interface IAztecStorageService {
@@ -54,6 +55,7 @@ export interface AccountCredentials {
  */
 export enum WalletType {
   EMBEDDED = 'embedded',
+  EXTERNAL_SIGNER = 'external',
   BROWSER_WALLET = 'browser',
 }
 

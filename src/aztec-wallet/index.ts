@@ -162,7 +162,7 @@ export type { ConnectionStatus } from './types';
 /**
  * Wallet type enum for different wallet implementations.
  */
-export { WalletType } from './types/aztec';
+export { WalletType, ExternalSignerType } from './types/aztec';
 
 /**
  * Base interface for wallet connectors.

@@ -21,6 +21,8 @@
 
 // Icon components
 export { AzguardIcon } from './AzguardIcon';
+export { MetaMaskIcon } from './MetaMaskIcon';
+export { RabbyIcon } from './RabbyIcon';
 
 // Wrapper utilities
 export {

@@ -5,7 +5,7 @@
  * This simplifies the config - devs just pass ['azguard'] instead of full configs.
  */
 
-import { AzguardIcon } from '../assets/icons';
+import { AzguardIcon, MetaMaskIcon } from '../assets/icons';
 import type { IconType } from '../types';
 import type { IBrowserWalletAdapter } from '../types/browserWalletAdapter';
 

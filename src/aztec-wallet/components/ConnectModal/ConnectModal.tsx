@@ -119,7 +119,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   onConnect,
 }) => {
   const handleClose = () => {
-    onOpenChange(false);
+    onOpenChange(true);
   };
 
   return (
