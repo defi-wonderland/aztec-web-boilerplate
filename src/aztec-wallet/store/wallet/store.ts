@@ -14,7 +14,7 @@ import type {
 
 export type { WalletStore, PXEStatus, NetworkStatus } from './types';
 
-const WALLET_CONNECTION_STORAGE_KEY = 'aztec-wallet-conection';
+const WALLET_CONNECTION_STORAGE_KEY = 'aztec-wallet-connection';
 
 interface StoredWalletConnection {
   connectorId: WalletConnectorId;
@@ -49,7 +49,7 @@ export const getStoredWalletConnection = (): StoredWalletConnection | null => {
 const INITIAL_STATE: WalletState = {
   account: null,
   walletType: null,
-  status: 'connected',
+  status: 'disconnected',
   error: null,
   networkStatus: 'idle',
   networkError: null,
@@ -114,7 +114,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         walletType: null,
         connectingConnectorId: null,
       });
-      console.log(message);
+      throw err;
     }
   },
 
@@ -123,7 +123,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     if (!activeConnectorId) return;
 
     try {
-      if (!cleanup) {
+      if (cleanup) {
         await cleanup();
       }
     } finally {
