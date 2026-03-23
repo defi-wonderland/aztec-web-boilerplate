@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUniversalWallet } from '../hooks';
-import { WalletType } from '../types/aztec';
 import {
   isEmbeddedConnector,
   isBrowserWalletConnector,
-  isExternalSignerConnector,
   type WalletConnector,
-  type ExternalSignerWalletConnector,
 } from '../types/walletConnector';
 
 interface ConnectWalletModalProps {
@@ -43,12 +40,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   const hasSavedEmbeddedAccount = embeddedConnector && isEmbeddedConnector(embeddedConnector)
     ? embeddedConnector.hasSavedAccount()
     : false;
-
-  // Get external signer connectors (MetaMask, etc.)
-  const externalSignerConnectors = connectors.filter(
-    (conn): conn is ExternalSignerWalletConnector =>
-      isExternalSignerConnector(conn)
-  );
 
   // Get browser wallet connectors (Azguard, etc.)
   const browserWalletConnectors = connectors.filter((conn) =>
@@ -134,21 +125,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
       return;
     }
 
-    setConnectingId(connector.id);
-    try {
-      await connector.connect();
-      onWalletConnected?.();
-      onClose();
-    } catch (err) {
-      console.error(`Failed to connect ${connector.label}:`, err);
-    } finally {
-      setConnectingId(null);
-    }
-  };
-
-  const handleExternalSignerConnect = async (
-    connector: ExternalSignerWalletConnector
-  ) => {
     setConnectingId(connector.id);
     try {
       await connector.connect();
@@ -278,40 +254,6 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                   <button
                     key={connector.id}
                     onClick={() => handleBrowserWalletConnect(connector)}
-                    type="button"
-                    disabled={isConnectorDisabled(connector)}
-                    className="modal-action-button browser-wallet-connect"
-                    title={
-                      !isNetworkSelected
-                        ? 'Please select a network first'
-                        : isNetworkInitializing
-                          ? 'Network is initializing...'
-                          : isNetworkFailed
-                            ? 'Network connection failed'
-                            : ''
-                    }
-                  >
-                    {isThisConnecting || status.status === 'connecting'
-                      ? 'Connecting...'
-                      : status.status === 'connected'
-                        ? `${connector.label} Connected`
-                        : `Connect ${connector.label}`}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {externalSignerConnectors.length > 0 && (
-            <div className="browser-wallet-section">
-              <label className="wallet-section-label">External Signer</label>
-              {externalSignerConnectors.map((connector) => {
-                const status = getConnectorStatus(connector);
-                const isThisConnecting = connectingId === connector.id;
-                return (
-                  <button
-                    key={connector.id}
-                    onClick={() => handleExternalSignerConnect(connector)}
                     type="button"
                     disabled={isConnectorDisabled(connector)}
                     className="modal-action-button browser-wallet-connect"

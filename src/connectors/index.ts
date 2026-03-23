@@ -6,11 +6,6 @@ export {
 } from './EmbeddedConnector';
 
 export {
-  ExternalSignerConnector,
-  EXTERNAL_SIGNER_CONNECTOR_ID,
-} from './ExternalSignerConnector';
-
-export {
   BrowserWalletConnector,
   BROWSER_WALLET_CONNECTOR_ID,
 } from './BrowserWalletConnector';
@@ -18,4 +13,4 @@ export {
 // Registry and factories
 export { createConnectorRegistry } from './registry';
 export type { ConnectorFactory, ConnectorRegistryOptions } from './registry';
-export { embedded, azguard, evmWallet } from './factories';
+export { embedded, azguard } from './factories';

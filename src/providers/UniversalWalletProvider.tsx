@@ -2,22 +2,17 @@
  * Universal Wallet Provider
  *
  * Provides wallet context for all wallet types:
- * - EVM: MetaMask, Rabby, etc. (for external signing)
  * - Embedded: App PXE + internal signing
- * - External Signer: App PXE + external signing (MetaMask, etc.)
  * - Browser Wallet: External PXE (Azguard, Obsidian, etc.)
  */
 
 import React, { createContext, ReactNode, useRef, useMemo } from 'react';
-import type { Hex } from 'viem';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { WalletType, ExternalSignerType } from '../types/aztec';
+import { WalletType } from '../types/aztec';
 import {
   useEmbeddedWallet,
-  useExternalSignerWallet,
   useBrowserWallet,
   useNetworkInternal,
-  useEVMWalletInternal,
 } from './hooks';
 import type {
   WalletConnector,
@@ -25,15 +20,11 @@ import type {
 } from '../types/walletConnector';
 import {
   EmbeddedConnector,
-  ExternalSignerConnector,
   BrowserWalletConnector,
 } from '../connectors';
 import { createAztecWalletKit, AztecWalletKit } from '../sdk/walletKit';
 import type { WalletKitConfig } from '../sdk/walletKitConfig';
 import type { NetworkConfig } from '../config/networks';
-import { createEVMSigner } from '../signers';
-import type { ExternalSigner } from '../signers/types';
-import type { EVMWalletService } from '../services/evm/EVMWalletService';
 import type { IBrowserWalletAdapter } from '../types/browserWallet';
 
 export interface NetworkContextType {
@@ -48,19 +39,10 @@ export interface NetworkContextType {
   resetToDefault: () => void;
 }
 
-export interface SignerContextType {
-  address: Hex | null;
-  isAvailable: boolean;
-  connect: () => Promise<Hex | undefined>;
-  disconnect: () => void;
-  getService: () => EVMWalletService;
-}
-
 export interface WalletContextType {
   isConnected: boolean;
   isInitialized: boolean;
   isLoading: boolean;
-  needsSigner: boolean;
   error: string | null;
   walletType: WalletType | null;
   account: AccountWithSecretKey | null;
@@ -75,9 +57,7 @@ export interface WalletContextType {
 // Combined context type
 export interface UniversalWalletContextType
   extends NetworkContextType,
-    WalletContextType {
-  signer: SignerContextType;
-}
+    WalletContextType {}
 
 export const UniversalWalletContext = createContext<
   UniversalWalletContextType | undefined
@@ -94,26 +74,6 @@ export const UniversalWalletProvider: React.FC<
   const network = useNetworkInternal({
     networks: walletKitConfig.networks,
   });
-
-  const evmWallet = useEVMWalletInternal();
-
-  // Store signers by rdns for EIP-6963 multi-wallet support
-  const signersRef = useRef<Map<string, ExternalSigner>>(new Map());
-  const getSignerForConnector = (
-    connector: ExternalSignerConnector
-  ): ExternalSigner => {
-    if (connector.signerType !== ExternalSignerType.EVM_WALLET) {
-      throw new Error(`Unknown signer type: ${connector.signerType}`);
-    }
-
-    const key = connector.rdns ?? 'default';
-    let signer = signersRef.current.get(key);
-    if (!signer) {
-      signer = createEVMSigner(evmWallet.service, connector.rdns);
-      signersRef.current.set(key, signer);
-    }
-    return signer;
-  };
 
   // Create wallet kit once
   const walletKitRef = useRef<AztecWalletKit | null>(null);
@@ -143,11 +103,6 @@ export const UniversalWalletProvider: React.FC<
     resetToDefault: network.actions.resetToDefault,
   });
 
-  // External signer wallet hook
-  const externalSigner = useExternalSignerWallet({
-    config: network.state.currentConfig,
-  });
-
   // Browser wallet hook (only if we have a browser wallet connector)
   const browserWalletAdapter = browserWalletAdapterRef.current;
   const browserWallet = useBrowserWallet(
@@ -164,11 +119,6 @@ export const UniversalWalletProvider: React.FC<
     ) {
       if (connector.type === WalletType.EMBEDDED) {
         (connector as EmbeddedConnector).updateState(embedded);
-      }
-      if (connector.type === WalletType.EXTERNAL_SIGNER) {
-        const extConnector = connector as ExternalSignerConnector;
-        const signer = getSignerForConnector(extConnector);
-        extConnector.updateState(externalSigner, signer);
       }
       if (
         connector.type === WalletType.BROWSER_WALLET &&
@@ -193,8 +143,6 @@ export const UniversalWalletProvider: React.FC<
   }, [
     connectors,
     embedded.state.embeddedAccount,
-    externalSigner.state.aztecAccount,
-    externalSigner.state.connectedRdns,
     browserWallet.state.status,
     browserWallet.accountWallet,
   ]);
@@ -202,18 +150,11 @@ export const UniversalWalletProvider: React.FC<
   const activeAccount = activeConnector?.getAccount() ?? null;
   const activeWalletType = activeConnector?.type ?? null;
 
-  // Check if External Signer wallet needs EVM signer to be connected
-  const needsSigner =
-    activeWalletType === WalletType.EXTERNAL_SIGNER &&
-    !evmWallet.state.isConnected;
-
-  // isConnected means "ready to use" - for External Signer, requires both Aztec + EVM connected
-  const isConnected = activeConnector !== null && !needsSigner;
+  const isConnected = activeConnector !== null;
 
   // Determine initialization status based on any initialized wallet
   const isInitialized =
     embedded.state.isInitialized ||
-    externalSigner.state.isInitialized ||
     browserWallet.state.status === 'connected';
 
   const connectWith = async (
@@ -235,42 +176,20 @@ export const UniversalWalletProvider: React.FC<
   };
 
   // Compute loading state
-  const isLoading =
-    embedded.isLoading ||
-    browserWallet.isLoading ||
-    externalSigner.state.status === 'connecting' ||
-    externalSigner.state.status === 'deploying' ||
-    (activeWalletType === WalletType.EXTERNAL_SIGNER &&
-      evmWallet.state.isConnecting);
+  const isLoading = embedded.isLoading || browserWallet.isLoading;
 
   // Compute error state
-  const walletError =
-    embedded.error || browserWallet.error || externalSigner.error;
-  const signerError =
-    activeWalletType === WalletType.EXTERNAL_SIGNER
-      ? evmWallet.state.error
-      : null;
-  const error = walletError || signerError;
+  const error = embedded.error || browserWallet.error;
 
   const contextValue: UniversalWalletContextType = {
     // Network context
     currentConfig: network.state.currentConfig,
     ...network.actions,
 
-    // Signer context
-    signer: {
-      address: evmWallet.state.address,
-      isAvailable: evmWallet.state.isAvailable,
-      connect: evmWallet.actions.connect,
-      disconnect: evmWallet.actions.disconnect,
-      getService: () => evmWallet.service,
-    },
-
     // Wallet context
     isConnected,
     isInitialized,
     isLoading,
-    needsSigner,
     error,
     walletType: activeWalletType,
     account: activeAccount,

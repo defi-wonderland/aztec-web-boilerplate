@@ -9,6 +9,7 @@ import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
 import type { SimulateViewsOp } from '../../types/browserWallet';
 import { WalletType } from '../../types/aztec';
 import { isBrowserWalletConnector } from '../../types/walletConnector';
+
 import type { ContractConfigMap } from '../../contract-registry';
 import type { TokenContract } from '../../artifacts/Token';
 
@@ -67,21 +68,8 @@ export const useTokenBalance = (
 
   // Wallet type detection
   const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
-  const isExternalSigner = walletType === WalletType.EXTERNAL_SIGNER;
   const tokenAddress = token?.address.toString() ?? '';
   const ownerAddress = account?.getAddress().toString() ?? '';
-
-  if (isExternalSigner) {
-    console.log('[useTokenBalance] EXTERNAL_SIGNER detected', {
-      walletType,
-      hasToken: !!token,
-      isTokenReady,
-      hasAccount: !!account,
-      tokenAddress,
-      ownerAddress,
-      registryStatus,
-    });
-  }
 
   const isRegistryReady = isBrowserWallet || registryStatus === 'ready';
   const isWalletReady = !isWalletLoading;
@@ -103,15 +91,6 @@ export const useTokenBalance = (
     queryFn: async (): Promise<TokenBalance> => {
       if (!token || !ownerAddress) {
         throw new Error('Token contract or owner address not available');
-      }
-
-      // Log when external signer fetches balance
-      if (isExternalSigner) {
-        console.log('[useTokenBalance] EXTERNAL_SIGNER fetching balance...', {
-          tokenAddress,
-          ownerAddress,
-          tokenType: token?.constructor?.name,
-        });
       }
 
       const useOperationsFlow =

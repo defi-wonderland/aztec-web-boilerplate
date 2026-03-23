@@ -3,8 +3,7 @@ import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { PXE } from '@aztec/pxe/server';
 import type { CaipAccount } from '@azguardwallet/types';
-import { WalletType, ExternalSignerType } from './aztec';
-import type { ExternalSigner } from '../signers/types';
+import { WalletType } from './aztec';
 import type {
   BrowserWalletOperation,
   BrowserWalletOperationResult,
@@ -68,24 +67,6 @@ export interface EmbeddedWalletConnector extends WalletConnector {
   isDeploying: () => boolean;
 }
 
-export interface ExternalSignerConnectorCapabilities {
-  signerType: ExternalSignerType;
-  hasPXE: true;
-  hasSponsoredFees: boolean;
-}
-
-export interface ExternalSignerWalletConnector extends WalletConnector {
-  readonly type: typeof WalletType.EXTERNAL_SIGNER;
-  readonly signerType: ExternalSignerType;
-
-  getPXE: () => PXE | null;
-  getWallet: () => Wallet | null;
-  getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
-  isDeploying: () => boolean;
-  getEVMAddress: () => string | null;
-  getSigner: () => ExternalSigner | null;
-}
-
 export interface BrowserWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.BROWSER_WALLET;
 
@@ -101,12 +82,6 @@ export const isEmbeddedConnector = (
   return connector?.type === WalletType.EMBEDDED;
 };
 
-export const isExternalSignerConnector = (
-  connector: WalletConnector | null | undefined
-): connector is ExternalSignerWalletConnector => {
-  return connector?.type === WalletType.EXTERNAL_SIGNER;
-};
-
 export const isBrowserWalletConnector = (
   connector: WalletConnector | null | undefined
 ): connector is BrowserWalletConnector => {
@@ -115,9 +90,6 @@ export const isBrowserWalletConnector = (
 
 export const hasAppManagedPXE = (
   connector: WalletConnector | null | undefined
-): connector is EmbeddedWalletConnector | ExternalSignerWalletConnector => {
-  return (
-    connector?.type === WalletType.EMBEDDED ||
-    connector?.type === WalletType.EXTERNAL_SIGNER
-  );
+): connector is EmbeddedWalletConnector => {
+  return connector?.type === WalletType.EMBEDDED;
 };
