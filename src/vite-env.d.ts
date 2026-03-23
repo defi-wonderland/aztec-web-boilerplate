@@ -5,6 +5,7 @@ declare global {
     // Network configuration
     readonly VITE_AZTEC_NODE_URL?: string;
     readonly VITE_PROVER_ENABLED?: string;
+    readonly VITE_ARTIFACT_REGISTRY_URL?: string;
 
     // Embedded account credentials
     readonly VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE?: string;

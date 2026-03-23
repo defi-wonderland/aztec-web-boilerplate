@@ -1,12 +1,12 @@
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import {
   type AccountWithSecretKey,
   type Account,
   SignerlessAccount,
 } from '@aztec/aztec.js/account';
-import { BaseWallet } from '@aztec/aztec.js/wallet';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { AztecNode } from '@aztec/aztec.js/node';
 import type { PXE } from '@aztec/pxe/server';
+import { BaseWallet } from '@aztec/wallet-sdk/base-wallet';
 
 /**
  * MinimalWallet extends BaseWallet to bootstrap account creation.
@@ -32,8 +32,7 @@ export class MinimalWallet extends BaseWallet {
     address: AztecAddress
   ): Promise<Account> {
     if (address.equals(AztecAddress.ZERO)) {
-      const chainInfo = await this.getChainInfo();
-      return new SignerlessAccount(chainInfo);
+      return new SignerlessAccount();
     }
 
     const account = this.addressToAccount.get(address.toString());
@@ -52,5 +51,3 @@ export class MinimalWallet extends BaseWallet {
     }));
   }
 }
-
-

@@ -1,17 +1,13 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback } from 'react';
-import { useContractRegistration } from '../context/useContractRegistration';
-import { useContractRegistry } from '../context/useContractRegistry';
-import { useUniversalWallet } from '../context/useUniversalWallet';
-import { queryKeys } from './queryKeys';
+import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
+import { useQueryClient } from '@tanstack/react-query';
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
-import { isBrowserWalletPlaceholder, queuePxeCall } from '../../utils';
-import type { SimulateViewsOp } from '../../types/browserWallet';
-import { WalletType } from '../../types/aztec';
-import { isBrowserWalletConnector } from '../../types/walletConnector';
-
-import type { ContractConfigMap } from '../../contract-registry';
-import type { TokenContract } from '../../artifacts/Token';
+import { useReadContracts } from '../../use-aztec';
+import { toBigInt } from '../../utils';
+import { useContract } from '../context/useContract';
+import { queryKeys } from './queryKeys';
 
 export interface TokenBalance {
   private: bigint;
@@ -38,12 +34,19 @@ interface UseTokenBalanceReturn {
   formattedBalances: FormattedBalances | null;
 }
 
+const selectTokenBalance = (data: unknown): TokenBalance | null => {
+  if (!Array.isArray(data) || data.length < 2) return null;
+  const [privateBalance, publicBalance] = data;
+  return {
+    private: toBigInt(privateBalance ?? 0),
+    public: toBigInt(publicBalance ?? 0),
+  };
+};
+
 /**
  * Hook to fetch token balance for the connected account.
- * Uses the Token contract directly via useContractRegistration hook.
+ * Delegates to useReadContracts for batched wallet-agnostic contract reads.
  * Uses React Query for caching and automatic refetching.
- *
- * For Azguard wallets, uses simulate_views operation instead of direct contract calls.
  *
  * @param options - Configuration options
  * @param options.enabled - Whether to enable the query (defaults to true when wallet is connected)
@@ -51,134 +54,75 @@ interface UseTokenBalanceReturn {
 export const useTokenBalance = (
   options: UseTokenBalanceOptions = {}
 ): UseTokenBalanceReturn => {
-  const { contract: token, isReady: isTokenReady } = useContractRegistration<
-    ContractConfigMap,
-    TokenContract
-  >('token');
+  const { isReady: isTokenReady } = useContract('token');
 
   const {
     account,
-    connector,
     isLoading: isWalletLoading,
     currentConfig,
-    walletType,
-  } = useUniversalWallet();
-  const { status: registryStatus } = useContractRegistry();
+  } = useAztecWallet();
   const queryClient = useQueryClient();
 
-  // Wallet type detection
-  const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
-  const tokenAddress = token?.address.toString() ?? '';
+  const tokenAddress = contractsConfig.token.address(currentConfig);
   const ownerAddress = account?.getAddress().toString() ?? '';
 
-  const isRegistryReady = isBrowserWallet || registryStatus === 'ready';
-  const isWalletReady = !isWalletLoading;
-
   const isQueryEnabled = Boolean(
-    isRegistryReady &&
-      isWalletReady &&
-      token &&
+    !isWalletLoading &&
       isTokenReady &&
       account &&
       tokenAddress &&
       ownerAddress &&
-      (options.enabled ?? true) &&
-      (!isBrowserWallet || Boolean(connector?.getCaipAccount?.()))
+      (options.enabled ?? true)
   );
 
-  const query = useQuery({
-    queryKey: queryKeys.token.balance(tokenAddress, ownerAddress),
-    queryFn: async (): Promise<TokenBalance> => {
-      if (!token || !ownerAddress) {
-        throw new Error('Token contract or owner address not available');
-      }
+  const args = useMemo(
+    () => (ownerAddress ? [AztecAddress.fromString(ownerAddress)] : undefined),
+    [ownerAddress]
+  );
 
-      const useOperationsFlow =
-        isBrowserWallet && isBrowserWalletPlaceholder(token);
-
-      // Type guard needed here to access browser wallet specific methods
-      if (useOperationsFlow && isBrowserWalletConnector(connector)) {
-        const selectedAccount = connector.getCaipAccount();
-        if (!selectedAccount) {
-          throw new Error('External wallet account not selected');
-        }
-
-        const tokenContractAddress =
-          contractsConfig.token.address(currentConfig);
-        const accountAddress = account!.getAddress().toString();
-
-        const operation: SimulateViewsOp = {
-          kind: 'simulate_views',
-          account: selectedAccount,
-          calls: [
-            {
-              kind: 'call',
-              contract: tokenContractAddress,
-              method: 'balance_of_private',
-              args: [accountAddress],
-            },
-            {
-              kind: 'call',
-              contract: tokenContractAddress,
-              method: 'balance_of_public',
-              args: [accountAddress],
-            },
-          ],
-        };
-
-        const result = await connector.executeOperation(operation);
-
-        if (result.status !== 'ok') {
-          const errorMessage =
-            'error' in result ? result.error : 'Failed to fetch balance';
-          throw new Error(errorMessage || 'Balance query failed');
-        }
-
-        // Result contains decoded values for each call
-        const viewResult = result.result as { decoded: unknown[] };
-        const privateBalance = BigInt(String(viewResult.decoded[0] ?? 0));
-        const publicBalance = BigInt(String(viewResult.decoded[1] ?? 0));
-
-        return {
-          private: privateBalance,
-          public: publicBalance,
-        };
-      }
-
-      const fromAddress = account!.getAddress();
-
-      const privateBalance = await queuePxeCall(() =>
-        (token as TokenContract).methods
-          .balance_of_private(fromAddress)
-          .simulate({ from: fromAddress })
-      );
-
-      const publicBalance = await queuePxeCall(() =>
-        (token as TokenContract).methods
-          .balance_of_public(fromAddress)
-          .simulate({ from: fromAddress })
-      );
-
-      return {
-        private: privateBalance as bigint,
-        public: publicBalance as bigint,
-      };
+  const {
+    data: tokenBalance,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useReadContracts({
+    scopeKey: queryKeys.token.balance(tokenAddress, ownerAddress),
+    contracts: args
+      ? [
+          {
+            contract: TokenContract,
+            address: tokenAddress,
+            functionName: 'balance_of_private',
+            args,
+          },
+          {
+            contract: TokenContract,
+            address: tokenAddress,
+            functionName: 'balance_of_public',
+            args,
+          },
+        ]
+      : [],
+    allowFailure: false,
+    query: {
+      enabled: isQueryEnabled,
+      staleTime: 60_000,
+      select: selectTokenBalance,
     },
-    enabled: isQueryEnabled,
-    staleTime: 60_000,
   });
 
   const formattedBalances = useMemo((): FormattedBalances | null => {
-    if (!query.data) return null;
+    if (!tokenBalance) return null;
 
     const formatBalance = (balance: bigint): string => balance.toString();
 
     return {
-      private: formatBalance(query.data.private),
-      public: formatBalance(query.data.public),
-      total: formatBalance(query.data.private + query.data.public),
+      private: formatBalance(tokenBalance.private),
+      public: formatBalance(tokenBalance.public),
+      total: formatBalance(tokenBalance.private + tokenBalance.public),
     };
-  }, [query.data]);
+  }, [tokenBalance]);
 
   const refetch = useCallback(async () => {
     await queryClient.invalidateQueries({
@@ -187,37 +131,12 @@ export const useTokenBalance = (
   }, [queryClient, tokenAddress, ownerAddress]);
 
   return {
-    tokenBalance: query.data ?? null,
-    isLoading: query.isLoading,
-    isFetching: query.isFetching, // True during background refetch
-    isError: query.isError,
-    error: query.error,
+    tokenBalance: tokenBalance ?? null,
+    isLoading,
+    isFetching,
+    isError,
+    error,
     refetch,
     formattedBalances,
-  };
-};
-
-/**
- * Hook to manage token balance utilities.
- */
-export const useTokenWithAddress = () => {
-  const { contract: token } = useContractRegistration<
-    ContractConfigMap,
-    TokenContract
-  >('token');
-
-  const queryClient = useQueryClient();
-
-  const tokenAddress = token?.address.toString() ?? '';
-
-  const invalidateAllBalances = useCallback(async () => {
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.token.balances(),
-    });
-  }, [queryClient]);
-
-  return {
-    tokenAddress,
-    invalidateAllBalances,
   };
 };

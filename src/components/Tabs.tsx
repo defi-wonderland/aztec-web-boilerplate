@@ -1,5 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { TabType, TabConfig } from '../types';
+import { Tabs as RadixTabs, TabsList, TabsTrigger, TabsContent } from './ui';
+
+const styles = {
+  tabs: 'w-full',
+  tabLabel: 'hidden sm:inline',
+  content: 'mt-4',
+} as const;
 
 interface TabsProps {
   tabs: TabConfig[];
@@ -8,51 +15,49 @@ interface TabsProps {
   children?: React.ReactNode;
 }
 
-export const Tabs: React.FC<TabsProps> = ({ 
-  tabs, 
-  defaultTab = 'mint', 
+/**
+ * Application tabs component.
+ * Uses Radix UI Tabs under the hood with Tailwind styling.
+ *
+ * Uses uncontrolled mode - Radix manages the active tab state internally.
+ * The parent can still be notified of changes via onTabChange.
+ */
+export const Tabs: React.FC<TabsProps> = ({
+  tabs,
+  defaultTab = 'mint',
   onTabChange,
-  children 
+  children,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
-
-  // Update active tab when defaultTab prop changes
-  useEffect(() => {
-    setActiveTab(defaultTab);
-  }, [defaultTab]);
-
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
-    onTabChange?.(tab);
-  };
-
-  const renderTabContent = () => {
-    const activeTabConfig = tabs.find(tab => tab.id === activeTab);
-    return activeTabConfig?.component || tabs[0]?.component;
+  const handleTabChange = (value: string) => {
+    onTabChange?.(value as TabType);
   };
 
   return (
-    <div className="tabs-wrapper">
+    <RadixTabs
+      defaultValue={defaultTab}
+      onValueChange={handleTabChange}
+      className={styles.tabs}
+    >
       {/* Tab Navigation */}
-      <div className="tabs-container">
-        <div className="tabs-list">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`tab-trigger ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => handleTabChange(tab.id)}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <TabsList>
+        {tabs.map((tab) => (
+          <TabsTrigger key={tab.id} value={tab.id}>
+            {tab.icon}
+            <span className={styles.tabLabel}>{tab.label}</span>
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
       {/* Tab Content */}
-      <div className="tab-content-wrapper">
-        {children || renderTabContent()}
-      </div>
-    </div>
+      {children ? (
+        <div className={styles.content}>{children}</div>
+      ) : (
+        tabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id}>
+            {tab.component}
+          </TabsContent>
+        ))
+      )}
+    </RadixTabs>
   );
 };

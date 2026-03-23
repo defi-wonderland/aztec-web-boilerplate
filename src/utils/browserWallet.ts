@@ -1,43 +1,53 @@
 import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { Fr } from '@aztec/aztec.js/fields';
-import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
-import type { NetworkConfig } from '../config/networks';
-import { getChainId, type AztecChainId } from '../config/networks/constants';
+import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { contractsConfig } from '../config/contracts';
-import { getNetworkArtifacts } from '../config/networkArtifacts';
-import { getContractsForConfig, type ContractNames } from '../contract-registry';
-import type { RegisterContractOp } from '../types/browserWallet';
+import { getChainId, type AztecChainId } from '../config/networks/constants';
+import { type ContractNames } from '../contract-registry';
+import type { RegisterContractOp } from '../aztec-wallet/types/browserWallet';
+import type { NetworkConfig } from '../config/networks';
+import type { ResolvedArtifacts } from '../services/aztec/artifact';
+
+interface BuildRegisterContractOperationsOptions {
+  config: NetworkConfig;
+  artifacts: ResolvedArtifacts;
+  chainOverride?: AztecChainId;
+}
 
 /**
  * Build all contract registration operations for browser wallets.
  * Registers ALL app contracts (lazyRegister is ignored for browser wallets
  * since they manage their own PXE and don't support lazy loading).
  */
-export const buildRegisterContractOperations = async (
-  config: NetworkConfig,
-  chainOverride?: AztecChainId
-): Promise<RegisterContractOp[]> => {
+export const buildRegisterContractOperations = async ({
+  config,
+  artifacts,
+  chainOverride,
+}: BuildRegisterContractOperationsOptions): Promise<RegisterContractOp[]> => {
   const chain = chainOverride ?? getChainId(config.name);
   const operations: RegisterContractOp[] = [];
-  const contracts = getContractsForConfig(
-    contractsConfig,
-    getNetworkArtifacts(config.name)
-  );
 
-  const contractNames = Object.keys(contracts) as ContractNames<
+  const contractNames = Object.keys(contractsConfig) as ContractNames<
     typeof contractsConfig
   >[];
 
   for (const name of contractNames) {
-    const definition = contracts[name];
+    const definition = contractsConfig[name];
     if (!definition) {
       continue;
+    }
+    const artifact = artifacts[name];
+    if (!artifact) {
+      throw new Error(
+        `Missing resolved artifact for contract "${name}". ` +
+          `Ensure artifact sources are configured and resolved before registering.`
+      );
     }
 
     const deployParams = definition.deployParams(config);
     const instance = await getContractInstanceFromInstantiationParams(
-      definition.artifact,
+      artifact,
       {
         salt: deployParams.salt,
         deployer: deployParams.deployer,
@@ -51,7 +61,7 @@ export const buildRegisterContractOperations = async (
       chain,
       address: definition.address(config),
       instance,
-      artifact: definition.artifact,
+      artifact,
     });
   }
 

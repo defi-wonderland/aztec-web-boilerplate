@@ -1,42 +1,103 @@
-import React, { useState } from 'react';
-import { ConfigDisplay } from '../components/settings';
+import React, { useState, useCallback, useEffect } from 'react';
+import { RefreshCw } from 'lucide-react';
+import { useAztecWallet, hasAppManagedPXE } from '../aztec-wallet';
+import { NetworkSelector, ConfigPanel } from '../components/settings';
+import { Button } from '../components/ui';
+import { DEVNET_CONFIG } from '../config/networks/devnet';
+import { SANDBOX_CONFIG } from '../config/networks/sandbox';
+import { useNetworkAvailability, useNetworkHealth } from '../hooks/network';
+import { iconSize } from '../utils';
 import type { AztecNetwork } from '../config/networks/constants';
 
+const styles = {
+  container: 'flex flex-col lg:flex-row w-full min-h-[600px]',
+} as const;
+
+const NETWORK_CONFIGS = {
+  sandbox: SANDBOX_CONFIG,
+  devnet: DEVNET_CONFIG,
+} as const;
+
 export const SettingsCard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AztecNetwork>('sandbox');
+  const { networkName, switchNetwork, disconnect, isConnected, connector } =
+    useAztecWallet();
+
+  const healthMetrics = useNetworkHealth();
+  const networkAvailability = useNetworkAvailability();
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  const activeNetwork = (networkName ?? 'sandbox') as AztecNetwork;
+  const [selectedNetwork, setSelectedNetwork] =
+    useState<AztecNetwork>(activeNetwork);
+
+  useEffect(() => {
+    setSelectedNetwork(activeNetwork);
+  }, [activeNetwork]);
+
+  const handleSelectNetwork = useCallback((network: AztecNetwork) => {
+    setSelectedNetwork(network);
+  }, []);
+
+  const showHealthMetrics =
+    isConnected && connector && hasAppManagedPXE(connector);
+
+  const handleSwitchNetwork = useCallback(
+    async (network: AztecNetwork) => {
+      if (isSwitching) return;
+
+      setIsSwitching(true);
+      try {
+        if (isConnected) {
+          await disconnect();
+        }
+        // Switch to the new network
+        await switchNetwork(network);
+        setSelectedNetwork(network);
+      } catch (error) {
+        console.error('Failed to switch network:', error);
+      } finally {
+        setIsSwitching(false);
+      }
+    },
+    [isSwitching, isConnected, disconnect, switchNetwork]
+  );
+
+  const selectedConfig = NETWORK_CONFIGS[selectedNetwork];
+  const selectedAvailability = networkAvailability.networks[selectedNetwork];
+  const canSwitch =
+    selectedNetwork !== activeNetwork &&
+    selectedAvailability !== 'unavailable' &&
+    selectedAvailability !== 'checking';
+
+  const switchAction = canSwitch && (
+    <Button
+      variant="secondary"
+      size="sm"
+      icon={<RefreshCw size={iconSize()} />}
+      disabled={isSwitching}
+      isLoading={isSwitching}
+      onClick={() => handleSwitchNetwork(selectedNetwork)}
+    >
+      {`Switch to ${selectedConfig.displayName}`}
+    </Button>
+  );
 
   return (
-    <div className="settings-content">
-      <div className="content-header">
-        <div className="icon-container">
-          <span className="icon">⚙️</span>
-        </div>
-        <div>
-          <h3>Network Configuration</h3>
-          <p>View and configure network settings</p>
-        </div>
-      </div>
-
-      <div className="settings-tabs">
-        <button
-          className={`settings-tab ${activeTab === 'sandbox' ? 'active' : ''}`}
-          onClick={() => setActiveTab('sandbox')}
-        >
-          <span className="tab-icon">🏠</span>
-          <span className="tab-label">Sandbox</span>
-        </button>
-        <button
-          className={`settings-tab ${activeTab === 'devnet' ? 'active' : ''}`}
-          onClick={() => setActiveTab('devnet')}
-        >
-          <span className="tab-icon">🌐</span>
-          <span className="tab-label">Devnet</span>
-        </button>
-      </div>
-
-      <div className="settings-tab-content">
-        <ConfigDisplay networkName={activeTab} />
-      </div>
+    <div className={styles.container}>
+      <NetworkSelector
+        activeNetwork={activeNetwork}
+        selectedNetwork={selectedNetwork}
+        connectedNetwork={isConnected ? activeNetwork : null}
+        networkAvailability={networkAvailability.networks}
+        healthMetrics={healthMetrics}
+        showHealthMetrics={!!showHealthMetrics}
+        onSelectNetwork={handleSelectNetwork}
+        networkConfigs={{
+          sandbox: { proverEnabled: NETWORK_CONFIGS.sandbox.proverEnabled },
+          devnet: { proverEnabled: NETWORK_CONFIGS.devnet.proverEnabled },
+        }}
+      />
+      <ConfigPanel config={selectedConfig} action={switchAction} />
     </div>
   );
 };

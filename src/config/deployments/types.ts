@@ -28,8 +28,10 @@ export interface DeploymentConfig {
 /**
  * Placeholder values for undeployed contracts
  */
-export const PLACEHOLDER_ADDRESS = '0x0000000000000000000000000000000000000000000000000000000000000000';
-export const PLACEHOLDER_SALT = '0x0000000000000000000000000000000000000000000000000000000000000000';
+export const PLACEHOLDER_ADDRESS =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';
+export const PLACEHOLDER_SALT =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 /**
  * Check if a deployment config has valid (non-placeholder) contract addresses
@@ -79,6 +81,3 @@ export const DEFAULT_DEVNET_DEPLOYMENT: DeploymentConfig = {
   proverEnabled: true,
   deployedAt: '',
 };
-
-
-

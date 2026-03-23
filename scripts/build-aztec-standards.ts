@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // Run with: tsx scripts/build-aztec-standards.ts [commit-or-tag]
 // This script builds @defi-wonderland/aztec-standards from the specified commit/tag
 // and stores artifacts in ARTIFACTS_OUTPUT_DIR and target in TARGET_OUTPUT_DIR
@@ -13,12 +12,13 @@ const REPO = 'https://github.com/defi-wonderland/aztec-standards.git';
 // Output directory for artifacts in the current repository (NOT Aztec Standards)
 const ARTIFACTS_OUTPUT_DIR = 'src/artifacts';
 // Output directory for target in the current repository (NOT Aztec Standards)
-const TARGET_OUTPUT_DIR = 'target';
+// This project stores compiled JSONs in src/target/ (wrappers import from ../target/)
+const TARGET_OUTPUT_DIR = 'src/target';
 
 /**
  * Run a command
  */
-function run(cmd: string, opts: Record<string, any> = {}) {
+function run(cmd: string, opts: Record<string, unknown> = {}) {
   const res = spawnSync(cmd, { stdio: 'inherit', shell: true, ...opts });
   if (res.status !== 0) {
     throw new Error(`Command failed (${res.status}): ${cmd}`);
@@ -28,7 +28,7 @@ function run(cmd: string, opts: Record<string, any> = {}) {
 /**
  * Try to run a command
  */
-function tryRun(cmd: string, opts: Record<string, any> = {}) {
+function tryRun(cmd: string, opts: Record<string, unknown> = {}) {
   try {
     const res = spawnSync(cmd, { stdio: 'inherit', shell: true, ...opts });
     return res.status === 0;
@@ -45,18 +45,9 @@ function ensureDir(p: string) {
 }
 
 /**
- * Copy a file or directory
- */
-function cp(src: string, dst: string) {
-  if (!fs.existsSync(src)) return;
-  ensureDir(path.dirname(dst));
-  fs.cpSync(src, dst, { recursive: true });
-}
-
-/**
  * Read a JSON file
  */
-function readJSON<T = any>(file: string): T | null {
+function readJSON<T = unknown>(file: string): T | null {
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8')) as T;
   } catch {
@@ -68,7 +59,9 @@ function readJSON<T = any>(file: string): T | null {
  * Detect the preferred package manager for a repository
  */
 function detectPackageManager(repoDir: string): string {
-  const pkgJson = readJSON<{ packageManager?: string }>(path.join(repoDir, 'package.json'));
+  const pkgJson = readJSON<{ packageManager?: string }>(
+    path.join(repoDir, 'package.json')
+  );
 
   if (pkgJson?.packageManager) {
     // Extract package manager from packageManager field (e.g., "yarn@1.22.22" -> "yarn")
@@ -97,22 +90,6 @@ function detectPackageManager(repoDir: string): string {
 }
 
 /**
- * Run a command with the appropriate package manager
- */
-function runWithPackageManager(repoDir: string, command: string): boolean {
-  const pm = detectPackageManager(repoDir);
-  switch (pm) {
-    case 'yarn':
-      return tryRun(`cd "${repoDir}" && yarn ${command}`);
-    case 'pnpm':
-      return tryRun(`cd "${repoDir}" && pnpm ${command}`);
-    case 'npm':
-    default:
-      return tryRun(`cd "${repoDir}" && npm run ${command}`);
-  }
-}
-
-/**
  * Install dependencies with the appropriate package manager
  */
 function installDependencies(repoDir: string): boolean {
@@ -129,12 +106,36 @@ function installDependencies(repoDir: string): boolean {
 }
 
 /**
- * Run aztec codegen
+ * Run aztec codegen.
+ * Reads compiled JSONs from src/target/ (after we copy them from target/)
+ * so that generated wrappers import from ../target/ which resolves correctly
+ * in this project's structure (src/artifacts/ → src/target/).
  */
 function runCodegen(repoDir: string): boolean {
   console.log('🔧 Running aztec codegen...');
 
-  const command = `cd "${repoDir}" && aztec codegen target --outdir ${ARTIFACTS_OUTPUT_DIR} --force`;
+  // Copy compiled JSONs from target/ to src/target/ so codegen generates
+  // relative imports that match our project structure (../target/ from src/artifacts/)
+  const compileOutput = path.join(repoDir, 'target');
+  const codegenInput = path.join(repoDir, TARGET_OUTPUT_DIR);
+  ensureDir(codegenInput);
+
+  if (fs.existsSync(compileOutput)) {
+    const files = fs.readdirSync(compileOutput);
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        fs.copyFileSync(
+          path.join(compileOutput, file),
+          path.join(codegenInput, file)
+        );
+      }
+    }
+    console.log(
+      `   Copied compiled JSONs from target/ to ${TARGET_OUTPUT_DIR}/`
+    );
+  }
+
+  const command = `cd "${repoDir}" && aztec codegen ${TARGET_OUTPUT_DIR} --outdir ${ARTIFACTS_OUTPUT_DIR} --force`;
   console.log(`🔧 Running: ${command}`);
 
   if (tryRun(command)) {
@@ -142,14 +143,18 @@ function runCodegen(repoDir: string): boolean {
     return true;
   }
 
-  console.error('❌ All codegen approaches failed');
+  console.error('❌ Codegen failed');
   return false;
 }
 
 /**
  * Copy files without overwriting existing ones
  */
-function copyFiles(sourceDir: string, targetDir: string, forceOverwrite = false): number {
+function copyFiles(
+  sourceDir: string,
+  targetDir: string,
+  forceOverwrite = false
+): number {
   if (!fs.existsSync(sourceDir)) {
     console.log(`⚠️ Source directory ${sourceDir} does not exist`);
     return 0;
@@ -161,11 +166,6 @@ function copyFiles(sourceDir: string, targetDir: string, forceOverwrite = false)
   let skippedCount = 0;
 
   for (const file of files) {
-    // Only copy files that contain "Dripper" in the filename
-    if (!file.includes('Dripper') && !file.includes('Token')) {
-      continue;
-    }
-
     const srcPath = path.join(sourceDir, file);
     const dstPath = path.join(targetDir, file);
 
@@ -183,8 +183,43 @@ function copyFiles(sourceDir: string, targetDir: string, forceOverwrite = false)
     copiedCount++;
   }
 
-  console.log(`✅ Copied ${copiedCount} items, skipped ${skippedCount} existing items`);
+  console.log(
+    `✅ Copied ${copiedCount} items, skipped ${skippedCount} existing items`
+  );
   return copiedCount;
+}
+
+/**
+ * Strip the __aztec_nr_internals__ prefix from function names in compiled artifact JSONs.
+ * Replicates the Docker-only strip_aztec_nr_prefix.sh script.
+ */
+function stripAztecNrPrefix(targetDir: string): void {
+  if (!fs.existsSync(targetDir)) return;
+
+  const PREFIX = '__aztec_nr_internals__';
+  const jsonFiles = fs
+    .readdirSync(targetDir)
+    .filter((f) => f.endsWith('.json'));
+
+  for (const file of jsonFiles) {
+    const filePath = path.join(targetDir, file);
+    const artifact = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+    if (!Array.isArray(artifact.functions)) continue;
+
+    let modified = false;
+    for (const fn of artifact.functions) {
+      if (typeof fn.name === 'string' && fn.name.startsWith(PREFIX)) {
+        fn.name = fn.name.slice(PREFIX.length);
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      fs.writeFileSync(filePath, JSON.stringify(artifact));
+      console.log(`   🔧 Stripped __aztec_nr_internals__ prefix from ${file}`);
+    }
+  }
 }
 
 async function main() {
@@ -194,7 +229,9 @@ async function main() {
 
   if (!commitOrTag) {
     console.error('❌ Please provide a commit or tag as the first argument');
-    console.error('Usage: tsx scripts/build-aztec-standards.ts <commit-or-tag>');
+    console.error(
+      'Usage: tsx scripts/build-aztec-standards.ts <commit-or-tag>'
+    );
     process.exit(1);
   }
 
@@ -205,64 +242,94 @@ async function main() {
     const repoDir = path.join(tmp, 'repo');
 
     try {
-      console.log(`\n🔨 Building aztec-standards from ${REPO} @ ${commitOrTag}`);
+      console.log(
+        `\n🔨 Building aztec-standards from ${REPO} @ ${commitOrTag}`
+      );
       console.log(` Using temp directory: ${tmp}`);
       run(`git clone ${REPO} "${repoDir}" --quiet`);
       run(`git -C "${repoDir}" checkout ${commitOrTag} --quiet`);
 
       // Install dependencies using detected package manager
       if (!installDependencies(repoDir)) {
-        console.warn('⚠️ Primary package manager install failed, trying npm as fallback');
+        console.warn(
+          '⚠️ Primary package manager install failed, trying npm as fallback'
+        );
         run(`cd "${repoDir}" && npm install --no-audit --no-fund`);
       }
 
-      // 2) Load the package.json
-      const pkgJson = readJSON<{
-        scripts?: Record<string, string>;
-        config?: any;
-      }>(path.join(repoDir, 'package.json'));
-
-      // 3) Compile sources if repo exposes a compile script
-      if (pkgJson?.scripts?.compile) {
-        if (!runWithPackageManager(repoDir, 'compile')) {
-          throw new Error(`Failed to compile with detected package manager: ${detectPackageManager(repoDir)}`);
+      // 2) Compile sources: `aztec compile` runs nargo compile + bb aztec_process
+      //    in one step (transpile public bytecode and generate VKs).
+      //    We run this directly instead of the repo's compile script, which may
+      //    include post-processing steps that reference Docker-internal paths.
+      console.log('\n🔨 Compiling contracts...');
+      if (!tryRun(`cd "${repoDir}" && aztec compile`)) {
+        // Check if compilation partially succeeded (target/*.json files exist)
+        const targetDir = path.join(repoDir, 'target');
+        const hasArtifacts =
+          fs.existsSync(targetDir) &&
+          fs.readdirSync(targetDir).some((f) => f.endsWith('.json'));
+        if (hasArtifacts) {
+          console.warn(
+            '⚠️ Compile command exited with error but artifacts were generated, continuing...'
+          );
+        } else {
+          throw new Error('Compilation failed and no artifacts were generated');
         }
       }
 
-      // 4) Codegen - assume sandbox is running
+      // 3) Strip __aztec_nr_internals__ prefix from function names in artifact JSONs.
+      //    This replicates what strip_aztec_nr_prefix.sh (Docker-only) does.
+      //    Without this, v4 SDK can't find 'constructor' (it's named __aztec_nr_internals__constructor).
+      stripAztecNrPrefix(path.join(repoDir, 'target'));
+
+      // 4) Codegen - copies target/ → src/target/ then generates wrappers
       ensureDir(path.join(repoDir, ARTIFACTS_OUTPUT_DIR));
 
       try {
         if (!runCodegen(repoDir)) {
-          throw new Error('All codegen approaches failed');
+          throw new Error('Codegen failed');
         }
       } catch (error) {
         console.error('❌ Codegen failed:', error);
         throw error;
       }
 
-      // 5) Copy artifacts to ARTIFACTS_OUTPUT_DIR (without overwriting)
+      // 5) Copy artifacts to ARTIFACTS_OUTPUT_DIR
       const targetArtifactsDir = path.join(process.cwd(), ARTIFACTS_OUTPUT_DIR);
       console.log(`\n📁 Copying artifacts to: ${targetArtifactsDir}`);
-      copyFiles(path.join(repoDir, ARTIFACTS_OUTPUT_DIR), targetArtifactsDir, forceOverwrite);
+      copyFiles(
+        path.join(repoDir, ARTIFACTS_OUTPUT_DIR),
+        targetArtifactsDir,
+        forceOverwrite
+      );
 
-      // 6) Copy target to TARGET_OUTPUT_DIR (without overwriting)
+      // 6) Copy target JSONs to TARGET_OUTPUT_DIR (src/target/)
       const targetTargetDir = path.join(process.cwd(), TARGET_OUTPUT_DIR);
       console.log(`\n📁 Copying target to: ${targetTargetDir}`);
-      copyFiles(path.join(repoDir, TARGET_OUTPUT_DIR), targetTargetDir, forceOverwrite);
+      copyFiles(
+        path.join(repoDir, TARGET_OUTPUT_DIR),
+        targetTargetDir,
+        forceOverwrite
+      );
 
-      console.log('\n✅ aztec-standards artifacts and target built and stored successfully.');
-    } catch (err: any) {
-      console.error('\n❌ Build script failed:', err?.message || err);
+      console.log(
+        '\n✅ aztec-standards artifacts and target built and stored successfully.'
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('\n❌ Build script failed:', msg);
       process.exit(1);
     } finally {
       // cleanup temp directory
       try {
         fs.rmSync(tmp, { recursive: true, force: true });
-      } catch {}
+      } catch {
+        // ignore cleanup errors
+      }
     }
-  } catch (err: any) {
-    console.error('\n❌ Build script failed:', err?.message || err);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('\n❌ Build script failed:', msg);
     process.exit(1);
   }
 }

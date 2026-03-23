@@ -2,23 +2,24 @@
 export type {
   ContractStatus,
   ContractDeployParams,
+  ContractClass,
   ContractConfigDefinition,
   ContractConfigMap,
   ContractNames,
   RegisteredContract,
   UseContractReturn,
   UseContractRegistryReturn,
-  ContractRegistryContextValue,
   IContractRegistry,
 } from './types';
 
-export {
-  createContractConfig,
-  getDeployerAddress,
-  getTokenConstructorArgs,
-  getContractsForConfig,
-  type ArtifactOverrides,
-} from './helpers';
+export type {
+  ContractsConfig,
+  ContractName,
+  ContractTypeMap,
+  ContractType,
+} from './contractTypes';
+
+export { createContractConfig, getDeployerAddress } from './helpers';
 
 // Registry class
 export { ContractRegistry } from './ContractRegistry';

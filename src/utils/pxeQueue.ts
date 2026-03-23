@@ -40,10 +40,14 @@ let pxeOperationQueue: Promise<void> = Promise.resolve();
  * );
  * ```
  */
-export const queuePxeCall = async <T>(operation: () => Promise<T>): Promise<T> => {
+export const queuePxeCall = async <T>(
+  operation: () => Promise<T>
+): Promise<T> => {
   const previousOperation = pxeOperationQueue;
   let resolve: () => void;
-  pxeOperationQueue = new Promise((r) => { resolve = r; });
+  pxeOperationQueue = new Promise((r) => {
+    resolve = r;
+  });
 
   try {
     await previousOperation;
@@ -52,4 +56,3 @@ export const queuePxeCall = async <T>(operation: () => Promise<T>): Promise<T> =
     resolve!();
   }
 };
-

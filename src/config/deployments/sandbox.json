@@ -2,14 +2,14 @@
   "network": "sandbox",
   "nodeUrl": "http://localhost:8080",
   "dripperContract": {
-    "address": "0x2cfae8b665d7ca71afc04a2f8b78211c388474b7b2e43d4d010217f8b2c76160",
+    "address": "0x14fc6329654486ae793a6ba5b4ac0479fd09902e98f928bfd0ef05d103ea402a",
     "salt": "0x0000000000000000000000000000000000000000000000000000000000000539"
   },
   "tokenContract": {
-    "address": "0x0bec4e78b7c136c097f6de98fd60d83daddcbb05992fb3e0333ecd690c641048",
+    "address": "0x15a9fec4a47541e2717c007e046837208e9383a9b66ca5bda8dfe63f785f4c47",
     "salt": "0x0000000000000000000000000000000000000000000000000000000000000539"
   },
-  "deployer": "0x2ce6a551e9aa03f6735d9ab959d515bca47aec1e7611406cfa8009980066400a",
-  "proverEnabled": true,
-  "deployedAt": "2025-12-11T05:59:30.430Z"
+  "deployer": "0x244676109328309909c56988be891290bac5deb5ed483a3349f82cdd90187e90",
+  "proverEnabled": false,
+  "deployedAt": "2026-02-27T20:46:55.057Z"
 }

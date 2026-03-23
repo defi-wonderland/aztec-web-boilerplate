@@ -19,15 +19,14 @@ export interface AppEnv {
   readonly commonSalt?: string;
 }
 
-const getRawEnv = (): RawEnv =>
-  (import.meta as unknown as { env: RawEnv }).env;
+const getRawEnv = (): RawEnv => (import.meta as unknown as { env: RawEnv }).env;
 
 export const getEnv = (): AppEnv => {
   const raw = getRawEnv();
 
   return {
     aztecNodeUrl: raw.VITE_AZTEC_NODE_URL,
-    proverEnabled: raw.VITE_PROVER_ENABLED !== 'false',
+    proverEnabled: raw.VITE_PROVER_ENABLED?.toLowerCase() !== 'false',
     embeddedAccountSecretPhrase: raw.VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE,
     embeddedAccountSecretKey: raw.VITE_EMBEDDED_ACCOUNT_SECRET_KEY,
     commonSalt: raw.VITE_COMMON_SALT,

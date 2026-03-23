@@ -24,11 +24,14 @@ dist-ssr
 
 tsconfig.tsbuildinfo
 
-scripts/.store
+scripts/.store*
 ./deployed-contract.json
 ./wallet-info.json
 
 contracts/target
+target/
+src/target/
+src/artifacts/
 codegenCache.json
 
 # Playwright
@@ -38,3 +41,6 @@ blob-report/
 playwright/.cache/
 
 .env
+
+.cursor/*
+.claude/*

@@ -1,1 +1,0 @@
-export { AztecStorageService } from './aztec';

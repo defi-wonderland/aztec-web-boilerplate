@@ -1,28 +1,94 @@
-import { AztecAddress } from "@aztec/aztec.js/addresses";
-import { Fr } from "@aztec/aztec.js/fields";
+import { AztecAddress } from '@aztec/aztec.js/addresses';
+import { Fr } from '@aztec/aztec.js/fields';
 import { hasHexPrefix } from '@aztec/foundation/string';
-import { PLACEHOLDER_ADDRESS } from "../config/deployments";
-import type { WalletConnector } from "../types/walletConnector";
-import { isBrowserWalletConnector } from "../types/walletConnector";
-import { CHAIN_ID_TO_NETWORK, NETWORK_NAMES } from '../config/networks/constants';
+import { isBrowserWalletConnector } from '../aztec-wallet/types/walletConnector';
+import { PLACEHOLDER_ADDRESS } from '../config/deployments';
+import {
+  CHAIN_ID_TO_NETWORK,
+  NETWORK_NAMES,
+} from '../config/networks/constants';
+import type { WalletConnector } from '../aztec-wallet/types/walletConnector';
+export { cn } from './cn';
+export { downloadAsFile } from './file';
+export {
+  formatBalance,
+  formatFeeJuiceBalance,
+  formatRelativeTime,
+  formatTime,
+  formatDate,
+  toBigInt,
+} from './format';
+export {
+  formatNumberCompact,
+  formatNumberFull,
+  formatPercentage,
+} from './formatters';
+export { getMimeType } from './mime';
+export { iconSize, type IconSize } from './iconSize';
 export { MinimalWallet } from './MinimalWallet';
 export { queuePxeCall } from './pxeQueue';
+export { toTitleCase } from './string';
 
 /** CAIP account format: "namespace:chainId:address" (e.g., "aztec:1:0x123...") */
 type CaipAccountString = string;
+
+/** Parsed CAIP account parts */
+export interface CaipParts {
+  namespace: string;
+  chainId: string;
+  address: string;
+}
+
+/**
+ * Parses a CAIP account string into its components.
+ * @param value - The string to parse
+ * @returns Parsed parts or null if not a valid CAIP format
+ */
+export const parseCaipAddress = (value: string): CaipParts | null => {
+  const parts = value.split(':');
+  if (parts.length !== 3) return null;
+  const [namespace, chainId, address] = parts;
+  if (!namespace || !chainId || !address) return null;
+  return { namespace, chainId, address };
+};
+
+/**
+ * Type guard to check if a string is a valid CAIP account format.
+ * @param value - The string to check
+ */
+export const isCaipAddress = (value: string): boolean => {
+  return parseCaipAddress(value) !== null;
+};
+
+// ============================================================================
+// TYPE GUARDS
+// ============================================================================
+
+/**
+ * Check if value is an array of strings
+ */
+export function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === 'string')
+  );
+}
 
 // ============================================================================
 // ADDRESS UTILITIES
 // ============================================================================
 
-const TRUNCATE_START = 6;
-const TRUNCATE_END = 4;
+const DEFAULT_TRUNCATE_START = 6;
+const DEFAULT_TRUNCATE_END = 4;
 
-export const truncateAddress = (address: string | undefined): string => {
+export const truncateAddress = (
+  address: string | undefined,
+  startChars = DEFAULT_TRUNCATE_START,
+  endChars = DEFAULT_TRUNCATE_END
+): string => {
   if (!address) return '';
   const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
-  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END) return formattedAddress;
-  return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
+  if (formattedAddress.length <= startChars + endChars) return formattedAddress;
+  return `${formattedAddress.slice(0, startChars)}...${formattedAddress.slice(-endChars)}`;
 };
 
 export const formatAddress = (address: string | undefined): string => {
@@ -30,12 +96,15 @@ export const formatAddress = (address: string | undefined): string => {
   return hasHexPrefix(address) ? address : `0x${address}`;
 };
 
-export const truncateCaipAddress = (caipAccount: CaipAccountString | undefined): string => {
+export const truncateCaipAddress = (
+  caipAccount: CaipAccountString | undefined
+): string => {
   if (!caipAccount) return '';
   const address = caipAccount.split(':')[2];
   const formattedAddress = hasHexPrefix(address) ? address : `0x${address}`;
-  if (formattedAddress.length <= TRUNCATE_START + TRUNCATE_END) return formattedAddress;
-  return `${formattedAddress.slice(0, TRUNCATE_START)}...${formattedAddress.slice(-TRUNCATE_END)}`;
+  if (formattedAddress.length <= DEFAULT_TRUNCATE_START + DEFAULT_TRUNCATE_END)
+    return formattedAddress;
+  return `${formattedAddress.slice(0, DEFAULT_TRUNCATE_START)}...${formattedAddress.slice(-DEFAULT_TRUNCATE_END)}`;
 };
 
 export const getCaipChainName = (caipAccount: CaipAccountString): string => {
@@ -57,14 +126,15 @@ export const isBrowserWalletPlaceholder = (contract: unknown): boolean => {
     typeof contract === 'object' &&
     contract !== null &&
     '__browserWalletPlaceholder' in contract &&
-    (contract as { __browserWalletPlaceholder: boolean }).__browserWalletPlaceholder === true
+    (contract as { __browserWalletPlaceholder: boolean })
+      .__browserWalletPlaceholder === true
   );
 };
 
 /**
  * Determines if the operations-based flow should be used for transactions.
  * This is typically for browser wallets where contracts are proxy markers.
- * 
+ *
  * @param connector - The wallet connector
  * @param contracts - The contracts to check (all must be proxy contracts)
  * @returns true if operations flow should be used
@@ -74,11 +144,11 @@ export const shouldUseOperationsFlow = (
   ...contracts: unknown[]
 ): boolean => {
   if (!connector) return false;
-  
+
   // Must be a browser wallet that supports operations execution
   if (!isBrowserWalletConnector(connector)) return false;
   if (typeof connector.sendTransaction !== 'function') return false;
-  
+
   // All provided contracts must be browser wallet placeholders
   return contracts.every(isBrowserWalletPlaceholder);
 };
@@ -107,11 +177,11 @@ export const isValidConfig = (config: {
     return false;
   }
 
-  // Check for placeholder addresses (not deployed yet)
+  // Check for placeholder contract addresses (not deployed yet)
+  // Note: deployerAddress can be zero for public networks where deployer is unknown
   if (
     config.tokenContractAddress === PLACEHOLDER_ADDRESS ||
-    config.dripperContractAddress === PLACEHOLDER_ADDRESS ||
-    config.deployerAddress === PLACEHOLDER_ADDRESS
+    config.dripperContractAddress === PLACEHOLDER_ADDRESS
   ) {
     return false;
   }

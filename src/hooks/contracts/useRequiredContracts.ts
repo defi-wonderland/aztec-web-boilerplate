@@ -1,109 +1,170 @@
-import { useMemo } from 'react';
-import { useContractRegistration } from '../context/useContractRegistration';
-import type {
-  ContractConfigMap,
-  ContractStatus,
-} from '../../contract-registry';
+import { useMemo, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useAztecWallet, WalletType } from '../../aztec-wallet';
+import { useContractRegistry } from '../context/useContractRegistry';
+import { useToast, type LoadingToastResult } from '../context/useToast';
+import type { ContractStatus, ContractName } from '../../contract-registry';
 
-type ContractStatusMap<T extends readonly string[]> = {
+type ContractStatusMap<T extends readonly ContractName[]> = {
   [K in T[number]]: ContractStatus;
 };
 
-interface UseRequiredContractsReturn<T extends readonly string[]> {
-  /** Are all required contracts ready? */
+interface UseRequiredContractsOptions {
+  /** Show a loading toast while contracts are registering with PXE. Default: false */
+  showLoadingToast?: boolean;
+}
+
+interface UseRequiredContractsReturn<T extends readonly ContractName[]> {
   isReady: boolean;
-  /** Are any contracts still loading? */
   isLoading: boolean;
-  /** Did any contract fail to register? */
   hasError: boolean;
-  /** List of contracts that failed to register */
   failedContracts: T[number][];
-  /** List of contracts still loading */
   pendingContracts: T[number][];
-  /** Individual status per contract */
   statuses: ContractStatusMap<T>;
 }
 
-interface ContractResult {
-  name: string;
-  status: ContractStatus;
-  error: Error | null;
-}
-
 /**
- * Hook to ensure multiple contracts are registered before use.
- * Automatically triggers registration for any unregistered contracts.
+ * Hook to check if multiple contracts are registered and ready.
+ * Automatically triggers registration for unregistered contracts.
  *
- * @param contractNames - Array of contract names to register
- * @returns Object with loading state, errors, and individual statuses
+ * This hook only checks STATUS - it does NOT return contract instances.
+ * Use `useContractRegistration` to get callable contract instances.
  *
  * @example
  * ```tsx
- * const { isReady, isLoading, failedContracts, pendingContracts } = useRequiredContracts(['dripper', 'token'] as const);
+ * const { isReady, isLoading, hasError } = useRequiredContracts(
+ *   ['dripper', 'token'] as const,
+ *   { showLoadingToast: true }
+ * );
  *
- * if (isLoading) {
- *   return <Spinner message={`Loading: ${pendingContracts.join(', ')}`} />;
- * }
- *
- * if (failedContracts.length > 0) {
- *   return <Error message={`Failed to register: ${failedContracts.join(', ')}`} />;
- * }
- *
- * // Safe to use contracts now - isReady is true
+ * if (isLoading) return <Spinner />;
+ * if (hasError) return <Error />;
+ * // Now safe to render UI that uses these contracts
  * ```
  */
-export function useRequiredContracts<
-  T extends readonly string[],
-  TConfig extends ContractConfigMap = ContractConfigMap,
->(contractNames: T): UseRequiredContractsReturn<T> {
-  // Get registration status for each contract
-  // Note: hooks are called unconditionally in the same order each render
-  const contract0 = useContractRegistration<TConfig>(contractNames[0] ?? '');
-  const contract1 = useContractRegistration<TConfig>(contractNames[1] ?? '');
-  const contract2 = useContractRegistration<TConfig>(contractNames[2] ?? '');
-  const contract3 = useContractRegistration<TConfig>(contractNames[3] ?? '');
-  const contract4 = useContractRegistration<TConfig>(contractNames[4] ?? '');
+export function useRequiredContracts<T extends readonly ContractName[]>(
+  contractNames: T,
+  options?: UseRequiredContractsOptions
+): UseRequiredContractsReturn<T> {
+  const { walletType, isConnected } = useAztecWallet();
+  const isBrowserWallet = walletType === WalletType.BROWSER_WALLET;
+  const showLoadingToast = options?.showLoadingToast ?? false;
 
-  // Map results based on actual contract count
-  const allResults = [contract0, contract1, contract2, contract3, contract4];
+  const {
+    subscribe,
+    registerMany,
+    getStatus,
+    status: registryStatus,
+  } = useContractRegistry();
 
-  return useMemo(() => {
-    const results: ContractResult[] = contractNames.map((name, index) => ({
-      name,
-      status: allResults[index]?.status ?? 'idle',
-      error: allResults[index]?.error ?? null,
-    }));
+  const { loading: toastLoading } = useToast();
+  const toastRef = useRef<LoadingToastResult | null>(null);
 
+  // Get snapshot of current statuses (serialized for comparison)
+  const getSnapshot = (): string => {
     const statuses = Object.fromEntries(
-      results.map((r) => [r.name, r.status])
-    ) as ContractStatusMap<T>;
+      contractNames.map((name) => [name, getStatus(name)])
+    );
+    return JSON.stringify(statuses);
+  };
 
-    const pendingContracts = results
-      .filter((r) => r.status === 'idle' || r.status === 'registering')
-      .map((r) => r.name) as T[number][];
+  // React will re-render when snapshot changes
+  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-    const failedContracts = results
-      .filter((r) => r.status === 'error')
-      .map((r) => r.name) as T[number][];
+  // Trigger registration when registry is ready
+  useEffect(() => {
+    if (registryStatus !== 'ready' || contractNames.length === 0) {
+      return;
+    }
 
-    const isReady = results.every((r) => r.status === 'ready');
-    const isLoading = pendingContracts.length > 0;
-    const hasError = failedContracts.length > 0;
+    registerMany([...contractNames]).catch((err) => {
+      console.error('[useRequiredContracts] Registration failed:', err);
+    });
+  }, [contractNames, registerMany, registryStatus]);
+
+  // Compute derived state
+  const result = useMemo(() => {
+    // For browser wallets, contracts are always "ready" since useContractRegistration
+    // handles them with proxies - no PXE registration needed on app side
+    if (isBrowserWallet && isConnected) {
+      const statuses = contractNames.reduce((acc, name) => {
+        acc[name as T[number]] = 'ready';
+        return acc;
+      }, {} as ContractStatusMap<T>);
+
+      return {
+        isReady: true,
+        isLoading: false,
+        hasError: false,
+        failedContracts: [] as T[number][],
+        pendingContracts: [] as T[number][],
+        statuses,
+      };
+    }
+
+    const statuses = contractNames.reduce((acc, name) => {
+      acc[name as T[number]] = getStatus(name);
+      return acc;
+    }, {} as ContractStatusMap<T>);
+
+    const pendingContracts = contractNames.filter((name) => {
+      const status = statuses[name as T[number]];
+      return status === 'idle' || status === 'registering';
+    }) as T[number][];
+
+    const failedContracts = contractNames.filter(
+      (name) => statuses[name as T[number]] === 'error'
+    ) as T[number][];
+
+    const isRegistryActive = isConnected && registryStatus === 'ready';
+    const isRegistryInitializing =
+      isConnected && registryStatus === 'initializing';
 
     return {
-      isReady,
-      isLoading,
-      hasError,
+      isReady: contractNames.every(
+        (name) => statuses[name as T[number]] === 'ready'
+      ),
+      isLoading:
+        isRegistryInitializing ||
+        (isRegistryActive && pendingContracts.length > 0),
+      hasError: failedContracts.length > 0,
       failedContracts,
       pendingContracts,
       statuses,
     };
-  }, [
-    contractNames,
-    allResults[0]?.status,
-    allResults[1]?.status,
-    allResults[2]?.status,
-    allResults[3]?.status,
-    allResults[4]?.status,
-  ]);
+  }, [contractNames, getStatus, isBrowserWallet, isConnected, registryStatus]);
+
+  // Loading toast lifecycle
+  useEffect(() => {
+    if (!showLoadingToast) return;
+
+    if (result.isLoading && !toastRef.current) {
+      toastRef.current = toastLoading(
+        'Loading contracts...',
+        'Registering contracts with PXE'
+      );
+    }
+
+    if (!result.isLoading && toastRef.current) {
+      if (result.hasError) {
+        toastRef.current.error(
+          'Contract registration failed',
+          `Failed: ${result.failedContracts.join(', ')}`
+        );
+      } else {
+        toastRef.current.dismiss();
+      }
+      toastRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLoadingToast, result.isLoading, result.hasError]);
+
+  // Dismiss toast on unmount
+  useEffect(() => {
+    return () => {
+      toastRef.current?.dismiss();
+      toastRef.current = null;
+    };
+  }, []);
+
+  return result;
 }

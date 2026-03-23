@@ -2,9 +2,11 @@ import { Fr } from '@aztec/aztec.js/fields';
 import type { AccountCredentials } from '../types/aztec';
 
 const getEnv = () =>
-  (import.meta as unknown as {
-    env: Record<string, string | undefined>;
-  }).env;
+  (
+    import.meta as unknown as {
+      env: Record<string, string | undefined>;
+    }
+  ).env;
 
 /**
  * Normalize hex string by removing 0x prefix if present
@@ -22,7 +24,10 @@ const createFromSecretKey = (
   salt: string
 ): AccountCredentials => {
   const secretKey = Fr.fromString(secretKeyHex);
-  const signingKeyBuffer = Buffer.from(normalizeHex(secretKeyHex).slice(0, 64), 'hex');
+  const signingKeyBuffer = Buffer.from(
+    normalizeHex(secretKeyHex).slice(0, 64),
+    'hex'
+  );
 
   return {
     secretKey,
@@ -44,7 +49,7 @@ export const hasConfiguredCredentials = (): boolean => {
  *
  * Required: VITE_EMBEDDED_ACCOUNT_SECRET_KEY (the Fr hex value)
  * Optional: VITE_COMMON_SALT (defaults to '1337')
- * 
+ *
  * SigningKey is automatically derived as first 32 bytes of secretKey.
  */
 export const getConfiguredAccountCredentials =

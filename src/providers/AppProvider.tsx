@@ -1,11 +1,12 @@
 import React, { ReactNode } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { AztecWalletProvider } from '../aztec-wallet';
+import { TooltipProvider, Toaster } from '../components/ui';
+import { aztecWalletConfig } from '../config/aztecWalletConfig';
+import { ModalProvider, ToastProvider } from '../hooks';
 import { queryClient } from '../lib/queryClient';
-import { ErrorProvider } from './ErrorProvider';
-import { UniversalWalletProvider } from './UniversalWalletProvider';
-import { ThemeProvider } from './ThemeProvider';
-import { EmbeddedContractProvider } from './EmbeddedContractProvider';
-import { walletKitConfig } from '../config/walletKit';
+import { ContractRegistryInitializer } from './ContractRegistryInitializer';
+import { UseAztecClientProvider } from './UseAztecClientProvider';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -14,13 +15,20 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ErrorProvider>
-          <UniversalWalletProvider config={walletKitConfig}>
-            <EmbeddedContractProvider>{children}</EmbeddedContractProvider>
-          </UniversalWalletProvider>
-        </ErrorProvider>
-      </ThemeProvider>
+      <TooltipProvider delayDuration={300}>
+        <ToastProvider>
+          <ModalProvider>
+            <AztecWalletProvider config={aztecWalletConfig}>
+              <UseAztecClientProvider>
+                <ContractRegistryInitializer>
+                  {children}
+                </ContractRegistryInitializer>
+              </UseAztecClientProvider>
+            </AztecWalletProvider>
+          </ModalProvider>
+          <Toaster />
+        </ToastProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 };

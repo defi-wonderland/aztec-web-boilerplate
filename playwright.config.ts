@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './tests',
+  testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   workers: process.env.PLAYWRIGHT_NUM_WORKERS
@@ -12,7 +12,11 @@ export default defineConfig({
     : 1,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: 'http://localhost:3000',
+    headless: !!process.env.CI,
+    launchOptions: {
+      devtools: !process.env.CI,
+    },
   },
   expect: {
     timeout: 20_000,
@@ -35,7 +39,7 @@ export default defineConfig({
 
   webServer: {
     command: 'PORT=3000 yarn serve',
-    url: 'http://127.0.0.1:3000',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },
