@@ -1,0 +1,17 @@
+---
+title: Private Read Flow
+---
+sequenceDiagram
+    participant D as Dapp SDK
+    participant I as Iframe (PXE)
+    participant P as Popup
+    participant A as Authenticator
+
+    D->>I: encrypt(keyA, { method: "executeUtility", params })
+    I->>P: postMessage({ type: "derive-keys" })
+    P->>A: credentials.get() + PRF
+    A-->>P: PRF(32B) — biometric required
+    P->>P: HKDF(PRF) → protocol keys
+    P->>I: postMessage({ protocolKeys })
+    I->>I: PXE decrypts notes → computes result → discards keys
+    I-->>D: encrypt(keyB, { result })

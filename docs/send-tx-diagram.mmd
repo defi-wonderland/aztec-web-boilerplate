@@ -1,0 +1,23 @@
+---
+title: Send Transaction Flow
+---
+sequenceDiagram
+    participant D as Dapp SDK
+    participant I as Iframe (PXE)
+    participant P as Popup
+    participant A as Authenticator
+    participant N as Aztec Node
+
+    D->>I: encrypt(keyA, { method: "sendTx", params })
+    I->>I: Build execution payload → compute outer_hash
+    I->>P: postMessage({ type: "sign-tx", outer_hash, txDetails })
+    P->>P: Show tx approval UI
+    P->>A: credentials.get({ challenge: outer_hash }) + PRF
+    A-->>P: signature + authData + clientDataJSON + PRF(32B)
+    P->>P: HKDF(PRF) → protocol keys
+    P->>I: postMessage({ authWitness, protocolKeys })
+    I->>I: Prove tx (ZK proof generation)
+    I->>N: Submit proven tx
+    N-->>I: txHash
+    I->>I: Discard keys
+    I-->>D: encrypt(keyB, { result: { txHash } })

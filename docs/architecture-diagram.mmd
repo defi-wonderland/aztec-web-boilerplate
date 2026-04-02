@@ -1,0 +1,21 @@
+---
+title: Architecture Overview
+---
+flowchart TB
+    subgraph Dapp ["Dapp (any origin)"]
+        SDK["SDK<br/>React hooks + Wallet Proxy"]
+    end
+
+    subgraph WalletHost ["wallet.aztec.network"]
+        Iframe["Hidden Iframe /pxe<br/>PXE WASM · Note sync<br/>Encrypted IndexedDB"]
+        Popup["Popup /auth<br/>Passkey ceremonies<br/>Tx approval UI"]
+    end
+
+    Node["Aztec Node"]
+    User["User"]
+
+    User -->|"Biometric (Face ID / Touch ID)"| Popup
+    SDK -->|"Encrypted MessagePort<br/>(ECDH + AES-256-GCM)"| Iframe
+    SDK -->|"postMessage"| Popup
+    Popup -->|"postMessage (same-origin)"| Iframe
+    Iframe -->|"WebSocket"| Node
