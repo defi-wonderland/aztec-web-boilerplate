@@ -1,0 +1,79 @@
+import type { ContractArtifact } from '@aztec/stdlib/abi';
+import type { AztecAddress } from '@aztec/stdlib/aztec-address';
+import type { Fr } from '@aztec/foundation/curves/bn254';
+
+/** Configuration for the passkey wallet SDK. */
+export interface PasskeyWalletConfig {
+  network: 'devnet' | 'sandbox';
+  walletHost?: string;
+  contracts: ContractConfig[];
+}
+
+export interface ContractConfig {
+  artifact: ContractArtifact;
+  salt: Fr;
+  deployer: AztecAddress;
+  constructorArtifact: string;
+  constructorArgs: unknown[];
+}
+
+export interface ChannelMessage {
+  id: string;
+  dir: 'p2i' | 'i2p';
+  iv: ArrayBuffer;
+  ct: ArrayBuffer;
+  version: 1;
+}
+
+export interface RPCRequest {
+  method: string;
+  params: unknown[];
+}
+
+export type RPCResponse =
+  | { ok: true; result: unknown }
+  | { ok: false; error: string };
+
+export type PopupResponse =
+  | {
+      type: 'auth-keys';
+      publicKey: ArrayBuffer;
+      credentialId: ArrayBuffer;
+      masterSecret: string;
+      // TIER-2-UPGRADE: Remove signingKey. Tier 2 uses hardware-bound WebAuthn signing.
+      signingKey: ArrayBuffer;
+      encryptionKey: ArrayBuffer;
+      accountSalt: string;
+    }
+  | { type: 'tx-approved' }
+    // TIER-2-UPGRADE: Changes to { type: 'auth-witness'; signature: ArrayBuffer;
+    //   authData: ArrayBuffer; clientDataJSON: ArrayBuffer }
+  | { type: 'tx-cancelled' }
+  | { type: 'read-approved' }
+  | { type: 'read-cancelled' };
+
+export type PopupFlow = 'connect' | 'sign' | 'read';
+
+export interface TxSummary {
+  contractAddress: string;
+  methodName: string;
+  args: unknown[];
+  dappOrigin: string;
+}
+
+export interface ReadSummary {
+  contractAddress: string;
+  methodName: string;
+  dappOrigin: string;
+}
+
+export interface InitMessage {
+  type: 'INIT';
+}
+
+export interface PopupInitMessage {
+  type: 'POPUP_INIT';
+  flow: PopupFlow;
+  context?: TxSummary | ReadSummary;
+  credentialId?: ArrayBuffer;
+}
