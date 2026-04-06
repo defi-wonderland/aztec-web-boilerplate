@@ -88,7 +88,7 @@ export class RPCHandler {
   }
 
   private async getAztecNode(): Promise<any> {
-    const { createAztecNodeClient } = await import('@aztec/aztec.js');
+    const { createAztecNodeClient } = await import('@aztec/aztec.js/node');
     return createAztecNodeClient('https://devnet.aztec-labs.com/');
   }
 }
