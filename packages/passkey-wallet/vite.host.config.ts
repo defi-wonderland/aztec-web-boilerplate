@@ -1,4 +1,3 @@
-import { resolve } from 'path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
@@ -132,32 +131,6 @@ const fixStaticFieldInit = (): Plugin => ({
   },
 });
 
-/**
- * Plugin to replace @aztec/foundation/crypto/poseidon with our async Worker-based
- * implementation. Uses resolveId to intercept both bare specifier and resolved paths.
- * More robust than resolve.alias for package subpath exports.
- */
-const asyncPoseidonReplace = (): Plugin => {
-  const replacement = resolve(__dirname, 'src/host/async-poseidon.ts');
-  return {
-    name: 'async-poseidon-replace',
-    enforce: 'pre',
-    resolveId(source, importer) {
-      // Intercept the bare specifier used in @aztec/* internal imports
-      if (source === '@aztec/foundation/crypto/poseidon') {
-        console.log(`[async-poseidon-replace] Redirecting: ${source} (from ${importer})`);
-        return replacement;
-      }
-      // Intercept the resolved file path (in case something resolves it before us)
-      if (source.includes('@aztec/foundation/dest/crypto/poseidon')) {
-        console.log(`[async-poseidon-replace] Redirecting resolved path: ${source} (from ${importer})`);
-        return replacement;
-      }
-      return null;
-    },
-  };
-};
-
 // Cross-origin isolation headers shared between server and preview.
 // CORP: cross-origin allows the parent (different origin) to embed us.
 // COEP: credentialless for sub-resource loading within the iframe.
@@ -173,7 +146,6 @@ const crossOriginHeaders = {
 export default defineConfig({
   plugins: [
     nodeBuiltinsShim(), // Must be first to intercept before nodePolyfills
-    asyncPoseidonReplace(), // Intercept poseidon before other resolution
     react(),
     wasm(),
     topLevelAwait(),

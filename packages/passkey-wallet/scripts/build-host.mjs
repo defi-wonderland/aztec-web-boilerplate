@@ -1,10 +1,19 @@
 /**
- * esbuild-based build for the passkey wallet host iframe and popup.
+ * esbuild-based build for the passkey wallet host iframe, popup, and PXE Worker.
  *
  * We use esbuild instead of Vite/Rollup because Rollup hoists class
  * declarations which breaks Aztec's circular static field initializers
  * (e.g. `static ZERO = new AztecAddress(...)`). esbuild preserves
  * class order correctly.
+ *
+ * Three entry points:
+ * 1. host-entry.js  — Iframe main thread (SecureChannel, popup coordination, Worker relay)
+ * 2. popup-entry.js — Popup window (React + passkey UI)
+ * 3. pxe-worker.js  — Web Worker (PXE, BarretenbergSync, account registration)
+ *
+ * The PXE Worker runs in a context with crossOriginIsolated=true and
+ * SharedArrayBuffer, so it doesn't need the BarretenbergSync shim or
+ * async-poseidon workarounds that the main thread previously required.
  */
 import esbuild from 'esbuild';
 import { writeFileSync, mkdirSync } from 'fs';
@@ -16,87 +25,12 @@ const root = resolve(__dirname, '..');
 
 mkdirSync(resolve(root, 'dist/host'), { recursive: true });
 
-/**
- * esbuild plugin: replace BarretenbergSync with our async Worker-based shim.
- *
- * All @aztec/* packages import BarretenbergSync from @aztec/bb.js.
- * In a credentialless iframe, BarretenbergSync can't initialize (needs
- * SharedArrayBuffer). Our shim wraps the async Barretenberg backend
- * (runs in a Worker) with the BarretenbergSync API surface.
- *
- * We intercept the specific file that exports BarretenbergSync and
- * redirect to our shim. This way all consumers get the shim transparently.
- */
-/**
- * esbuild plugin: patch BarretenbergSync to use async Worker backend.
- *
- * Instead of replacing the whole @aztec/bb.js module (which exports many
- * things), we intercept the specific file that defines BarretenbergSync
- * and make its initSingleton() use the async Barretenberg backend.
- *
- * The key insight: all code does `await BarretenbergSync.initSingleton()`
- * before using the singleton. We make initSingleton() initialize the
- * async Worker-based backend instead of the sync WASM one.
- */
-const bbSyncShimPlugin = {
-  name: 'bb-sync-shim',
-  setup(build) {
-    // Intercept the BarretenbergSync class definition file
-    const syncClassPath = 'barretenberg_wasm/barretenberg_wasm_main/index';
-    build.onLoad({ filter: /bb\.js\/dest\/browser\/barretenberg\/index\.js$/ }, async (args) => {
-      const fs = await import('fs');
-      let contents = fs.readFileSync(args.path, 'utf8');
-
-      // Patch: after the original exports, add our override
-      contents += `
-;// BB-SYNC-SHIM: Override BarretenbergSync to use async Worker backend
-const _origInitSingleton = BarretenbergSync.initSingleton;
-let _asyncInstance = null;
-let _asyncInitPromise = null;
-
-BarretenbergSync.initSingleton = async function() {
-  if (_asyncInstance) return;
-  if (_asyncInitPromise) { await _asyncInitPromise; return; }
-
-  _asyncInitPromise = (async () => {
-    console.log('[bb-sync-shim] Using async Barretenberg (Worker backend)');
-    const bb = await Barretenberg.new();
-    _asyncInstance = { _bb: bb };
-
-    // Monkey-patch getSingleton to return a proxy that delegates to async bb
-    const origGetSingleton = BarretenbergSync.getSingleton;
-    BarretenbergSync.getSingleton = function() {
-      return new Proxy({}, {
-        get(target, prop) {
-          if (prop === '_bb') return bb;
-          const method = bb[prop];
-          if (typeof method === 'function') return method.bind(bb);
-          return method;
-        }
-      });
-    };
-  })();
-
-  await _asyncInitPromise;
-};
-`;
-      return { contents, loader: 'js' };
-    });
-  },
-};
-
-// Build host entry (heavy — includes Aztec PXE, bb.js, crypto)
-console.log('[build-host] Building host entry...');
-await esbuild.build({
-  entryPoints: [resolve(root, 'src/host/entry.tsx')],
+const commonOptions = {
   bundle: true,
-  outfile: resolve(root, 'dist/host/host-entry.js'),
   format: 'esm',
   platform: 'browser',
   target: 'esnext',
-  jsx: 'automatic',
   inject: [resolve(root, 'scripts/browser-shims.js')],
-  plugins: [bbSyncShimPlugin],
   alias: {
     'fs': resolve(root, 'scripts/shims/fs.js'),
     'fs/promises': resolve(root, 'scripts/shims/fs.js'),
@@ -107,28 +41,36 @@ await esbuild.build({
   loader: { '.wasm': 'file' },
   minify: true,
   keepNames: true,
+};
+
+// Build PXE Worker (heavy — Aztec PXE, BarretenbergSync, crypto)
+// This runs in a Worker with crossOriginIsolated=true, so BarretenbergSync
+// works natively — no shims needed.
+console.log('[build-host] Building PXE Worker...');
+await esbuild.build({
+  ...commonOptions,
+  entryPoints: [resolve(root, 'src/host/pxe-worker.ts')],
+  outfile: resolve(root, 'dist/host/pxe-worker.js'),
+});
+console.log('[build-host] PXE Worker built.');
+
+// Build host entry (lighter now — no Aztec PXE, just SecureChannel + Worker management)
+console.log('[build-host] Building host entry...');
+await esbuild.build({
+  ...commonOptions,
+  entryPoints: [resolve(root, 'src/host/entry.tsx')],
+  outfile: resolve(root, 'dist/host/host-entry.js'),
+  jsx: 'automatic',
 });
 console.log('[build-host] Host entry built.');
 
 // Build popup entry (lightweight — React + styles, no Aztec deps)
 console.log('[build-host] Building popup entry...');
 await esbuild.build({
+  ...commonOptions,
   entryPoints: [resolve(root, 'src/popup/entry.tsx')],
-  bundle: true,
   outfile: resolve(root, 'dist/host/popup-entry.js'),
-  format: 'esm',
-  platform: 'browser',
-  target: 'esnext',
   jsx: 'automatic',
-  inject: [resolve(root, 'scripts/browser-shims.js')],
-  alias: {
-    'fs': resolve(root, 'scripts/shims/fs.js'),
-    'net': resolve(root, 'scripts/shims/net.js'),
-    'tty': resolve(root, 'scripts/shims/tty.js'),
-    'pino': 'pino/browser.js',
-  },
-  loader: { '.wasm': 'file' },
-  minify: true,
 });
 console.log('[build-host] Popup entry built.');
 
