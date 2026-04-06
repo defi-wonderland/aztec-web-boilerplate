@@ -26,6 +26,7 @@ export class RPCHandler {
     private pxeManager: PXEManager,
     private credentialStore: CredentialStore,
     private contractConfigs: any[],
+    private nodeUrl: string,
   ) {}
 
   register(channel: SecureChannel): void {
@@ -99,6 +100,6 @@ export class RPCHandler {
 
   private async getAztecNode(): Promise<any> {
     const { createAztecNodeClient } = await import('@aztec/aztec.js/node');
-    return createAztecNodeClient('https://devnet.aztec-labs.com/');
+    return createAztecNodeClient(this.nodeUrl);
   }
 }

@@ -8,7 +8,7 @@ export class IframeManager {
 
   constructor(private walletHost: string = DEFAULT_WALLET_HOST) {}
 
-  async connect(contracts: ContractConfig[]): Promise<SecureChannel> {
+  async connect(contracts: ContractConfig[], nodeUrl: string): Promise<SecureChannel> {
     // Parse the wallet host to separate origin from path
     const hostUrl = new URL(this.walletHost);
     const origin = hostUrl.origin; // e.g. "http://localhost:3001"
@@ -60,7 +60,7 @@ export class IframeManager {
     // report origin as 'null'. Safe because INIT only transfers a
     // MessagePort — the encrypted SecureChannel provides authentication.
     this.iframe.contentWindow.postMessage(
-      { type: 'INIT', contracts },
+      { type: 'INIT', contracts, nodeUrl },
       '*',
       [port2],
     );

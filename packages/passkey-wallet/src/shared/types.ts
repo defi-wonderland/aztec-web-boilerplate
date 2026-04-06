@@ -5,6 +5,8 @@ import type { Fr } from '@aztec/foundation/curves/bn254';
 /** Configuration for the passkey wallet SDK. */
 export interface PasskeyWalletConfig {
   network: 'devnet' | 'sandbox';
+  /** Aztec node URL. Defaults based on network ('sandbox' → localhost:8080, 'devnet' → devnet.aztec-labs.com). */
+  nodeUrl?: string;
   walletHost?: string;
   contracts: ContractConfig[];
 }
@@ -75,6 +77,8 @@ export interface ReadSummary {
 
 export interface InitMessage {
   type: 'INIT';
+  contracts?: ContractConfig[];
+  nodeUrl?: string;
 }
 
 export interface PopupInitMessage {

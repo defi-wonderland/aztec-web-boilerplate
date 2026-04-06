@@ -30,3 +30,9 @@ export const CHANNEL_VERSION = 1 as const;
 
 /** Default wallet host URL. */
 export const DEFAULT_WALLET_HOST = 'https://wallet.aztec.network';
+
+/** Default Aztec node URLs per network. */
+export const NETWORK_URLS: Record<string, string> = {
+  sandbox: 'http://localhost:8080',
+  devnet: 'https://devnet.aztec-labs.com/',
+};

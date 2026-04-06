@@ -27,7 +27,8 @@ export function WalletHost() {
       channelRef.current = channel;
 
       const contractConfigs = event.data.contracts ?? [];
-      const handler = new RPCHandler(pxeManager, credentialStore, contractConfigs);
+      const nodeUrl = event.data.nodeUrl ?? 'http://localhost:8080';
+      const handler = new RPCHandler(pxeManager, credentialStore, contractConfigs, nodeUrl);
       handler.register(channel);
     };
 

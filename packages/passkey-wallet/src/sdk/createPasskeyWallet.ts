@@ -1,6 +1,6 @@
 import type { Wallet } from '@aztec/aztec.js';
 import type { PasskeyWalletConfig, PopupResponse } from '../shared/types';
-import { DEFAULT_WALLET_HOST } from '../shared/constants';
+import { DEFAULT_WALLET_HOST, NETWORK_URLS } from '../shared/constants';
 import { IframeManager } from './IframeManager';
 import { PXEProxy } from './PXEProxy';
 import { PopupManager } from './PopupManager';
@@ -17,8 +17,11 @@ export class PasskeyWallet {
   private _address: string | null = null;
   private _isConnecting = false;
 
+  private nodeUrl: string;
+
   constructor(private config: PasskeyWalletConfig) {
     const host = config.walletHost ?? DEFAULT_WALLET_HOST;
+    this.nodeUrl = config.nodeUrl ?? NETWORK_URLS[config.network] ?? NETWORK_URLS.devnet;
     this.iframeManager = new IframeManager(host);
     this.popupManager = new PopupManager(host);
   }
@@ -48,7 +51,7 @@ export class PasskeyWallet {
       }
 
       // Step 2: Create iframe and encrypted channel
-      const channel = await this.iframeManager.connect(this.config.contracts);
+      const channel = await this.iframeManager.connect(this.config.contracts, this.nodeUrl);
       this.pxeProxy = new PXEProxy(channel);
 
       // Step 3: Send the keys to the host to initialize PXE

@@ -5,7 +5,8 @@ import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, Badg
 import { cn, iconSize } from '../utils';
 
 const config: PasskeyWalletConfig = {
-  network: 'devnet',
+  network: 'sandbox',
+  nodeUrl: 'http://localhost:8080',
   walletHost: 'http://localhost:3001',
   contracts: [],
 };
