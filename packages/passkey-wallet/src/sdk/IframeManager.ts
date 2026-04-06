@@ -25,6 +25,11 @@ export class IframeManager {
     // WebSocket, and window.open for popups. Cross-origin isolation
     // provides the security boundary.
     this.iframe.setAttribute('allow', 'publickey-credentials-get; publickey-credentials-create');
+    // Required for cross-origin iframe under parent's COEP: credentialless.
+    // Without this, Chrome blocks the iframe load entirely.
+    // Note: credentialless iframes don't share cookies/storage with their
+    // origin, but that's OK — the host creates its own IndexedDB partition.
+    (this.iframe as any).credentialless = true;
     document.body.appendChild(this.iframe);
 
     // Wait for the iframe's React app to mount and signal readiness.
