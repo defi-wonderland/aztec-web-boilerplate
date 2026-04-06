@@ -126,10 +126,12 @@ export default defineConfig({
   server: {
     port: 3001,
     headers: {
-      // No COOP — this page is embedded in an iframe, COOP: same-origin
-      // would prevent the parent from communicating with us.
       // CORP: cross-origin allows the parent (different port) to embed us.
       'Cross-Origin-Resource-Policy': 'cross-origin',
+      // COEP + COOP enable crossOriginIsolated for SharedArrayBuffer (BB WASM).
+      // COOP on an iframe is ignored by the browser, but COEP is inherited
+      // when the parent has COEP: credentialless.
+      'Cross-Origin-Embedder-Policy': 'credentialless',
     },
   },
   optimizeDeps: {

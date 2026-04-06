@@ -9,23 +9,6 @@
 </head>
 <body>
   <div id="root"></div>
-  <script>
-    // Signal READY to the opener (SDK) so it knows popup.html has loaded.
-    // This runs synchronously before React — the SDK waits for this before
-    // sending POPUP_INIT with the MessagePort.
-    //
-    // Also buffer any POPUP_INIT that arrives before React mounts.
-    if (window.opener) {
-      window.opener.postMessage({ type: 'POPUP_READY' }, '*');
-    }
-    window.__earlyMessages = [];
-    window.addEventListener('message', function __earlyHandler(event) {
-      if (event.data && event.data.type === 'POPUP_INIT') {
-        window.__earlyMessages.push(event);
-        window.removeEventListener('message', __earlyHandler);
-      }
-    });
-  </script>
   <script type="module" src="./src/popup/entry.tsx"></script>
 </body>
 </html>

@@ -31,30 +31,37 @@ export class PasskeyWallet {
 
   /**
    * Connect flow:
-   * 1. Open popup for passkey ceremony (must happen in user gesture context)
-   * 2. Popup returns derived keys
-   * 3. Create iframe + encrypted channel
-   * 4. Send keys to host via channel
-   * 5. Host initializes PXE, registers account
-   * 6. Returns Wallet
+   * 1. Create iframe + encrypted channel FIRST (needs crossOriginIsolated for WASM)
+   * 2. Tell iframe to listen for popup result via BroadcastChannel
+   * 3. Open popup (user gesture) — popup does passkey ceremony
+   * 4. Popup sends keys to iframe via BroadcastChannel (same origin)
+   * 5. Iframe receives keys, SDK gets them via SecureChannel
+   * 6. SDK sends initWithKeys to iframe
+   * 7. Iframe initializes PXE, registers account, returns address
    */
   async connect(): Promise<Wallet> {
     if (this.wallet) return this.wallet;
     this._isConnecting = true;
 
     try {
-      // Step 1: Open popup FIRST (we're in user gesture context from button click)
-      const popupResponse = await this.popupManager.openPopup('connect');
+      // Step 1: Create iframe and encrypted channel
+      const channel = await this.iframeManager.connect(this.config.contracts, this.nodeUrl);
+      this.pxeProxy = new PXEProxy(channel);
+
+      // Step 2: Tell iframe to wait for popup result (starts BroadcastChannel listener)
+      const popupResultPromise = this.pxeProxy.call('waitForPopup', []) as Promise<PopupResponse>;
+
+      // Step 3: Open popup (we're in user gesture context from button click)
+      this.popupManager.openPopup('connect');
+
+      // Step 4-5: Wait for popup result (relayed via iframe's BroadcastChannel)
+      const popupResponse = await popupResultPromise;
 
       if (popupResponse.type !== 'auth-keys') {
         throw new Error('Passkey authentication cancelled');
       }
 
-      // Step 2: Create iframe and encrypted channel
-      const channel = await this.iframeManager.connect(this.config.contracts, this.nodeUrl);
-      this.pxeProxy = new PXEProxy(channel);
-
-      // Step 3: Send the keys to the host to initialize PXE
+      // Step 6-7: Send keys to iframe to initialize PXE
       const result = (await this.pxeProxy.call('initWithKeys', [popupResponse])) as { address: string };
       this._address = result.address;
 

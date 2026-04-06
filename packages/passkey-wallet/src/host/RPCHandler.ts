@@ -1,22 +1,19 @@
 import type { SecureChannel } from '../shared/SecureChannel';
-import type { PopupResponse, TxSummary } from '../shared/types';
+import type { PopupResponse } from '../shared/types';
 import type { PXEManager } from './PXEManager';
 import type { CredentialStore } from './CredentialStore';
 import { fromBase64 } from '../shared/encoding';
 import { Fr } from '@aztec/foundation/curves/bn254';
 
-const TX_METHODS = new Set(['proveTx', 'sendTx']);
-// TIER-2-UPGRADE: TX_METHODS trigger WebAuthn signing ceremony in popup, not just consent.
+const BROADCAST_CHANNEL_NAME = 'aztec-wallet-popup';
 
 /**
  * Processes RPC messages from the SDK over the SecureChannel.
  *
  * - initWithKeys: receives passkey-derived keys, initializes PXE, registers account
+ * - requestPopup: waits for popup result via BroadcastChannel (same origin as iframe)
  * - disconnect: tears down PXE
  * - All other methods: forwarded to the PXE instance
- *
- * Note: Popups are opened by the SDK (dapp side) because browsers require
- * user gesture context for window.open(). The iframe has no user gesture.
  */
 export class RPCHandler {
   // TIER-2-UPGRADE: Remove signingKey field.
@@ -33,21 +30,47 @@ export class RPCHandler {
     channel.onRequest(async (method, params) => {
       try {
         if (method === 'initWithKeys') return await this.handleInitWithKeys(params[0] as PopupResponse);
+        if (method === 'waitForPopup') return await this.waitForPopupResult();
         if (method === 'disconnect') return await this.handleDisconnect();
 
-      const pxe = this.pxeManager.getPXE();
-      if (!pxe) throw new Error('PXE not initialized. Call connect() first.');
+        const pxe = this.pxeManager.getPXE();
+        if (!pxe) throw new Error('PXE not initialized. Call connect() first.');
 
-      // TX methods would need approval — for Tier 1, the SDK handles this
-      // by opening a popup before calling proveTx/sendTx
-      if (typeof (pxe as any)[method] !== 'function') {
-        throw new Error(`Unknown PXE method: ${method}`);
-      }
-      return (pxe as any)[method](...params);
+        if (typeof (pxe as any)[method] !== 'function') {
+          throw new Error(`Unknown PXE method: ${method}`);
+        }
+        return (pxe as any)[method](...params);
       } catch (err) {
         console.error(`[RPCHandler] Error in ${method}:`, err);
         throw err;
       }
+    });
+  }
+
+  /**
+   * Waits for the popup to send its result via BroadcastChannel.
+   * The popup and iframe are same-origin (both wallet host), so
+   * BroadcastChannel works regardless of the dapp's COOP setting.
+   */
+  private waitForPopupResult(): Promise<PopupResponse> {
+    return new Promise((resolve, reject) => {
+      const bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+      const timeout = setTimeout(() => {
+        bc.close();
+        reject(new Error('Popup did not respond within 120 seconds'));
+      }, 120_000);
+
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'popup-result') {
+          clearTimeout(timeout);
+          bc.close();
+          resolve(event.data.response as PopupResponse);
+        } else if (event.data?.type === 'popup-cancelled') {
+          clearTimeout(timeout);
+          bc.close();
+          reject(new Error('User cancelled'));
+        }
+      };
     });
   }
 

@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 import type {
-  PopupInitMessage,
   PopupResponse,
   PopupFlow,
   TxSummary,
@@ -11,9 +10,7 @@ import { SignFlow } from './SignFlow';
 import { ReadFlow } from './ReadFlow';
 import { loadingStyles } from './styles';
 
-/* ---------------------------------------------------------------------------
-   Styles
-   --------------------------------------------------------------------------- */
+const BROADCAST_CHANNEL_NAME = 'aztec-wallet-popup';
 
 const styles = {
   loadingShell: loadingStyles.shell,
@@ -21,74 +18,64 @@ const styles = {
   loadingText: loadingStyles.text,
 } as const;
 
-/* ---------------------------------------------------------------------------
-   Component
-   --------------------------------------------------------------------------- */
-
 export function PopupShell() {
-  const [port, setPort] = useState<MessagePort | null>(null);
   const [flow, setFlow] = useState<PopupFlow | null>(null);
   const [rpId, setRpId] = useState<string | undefined>();
   const [context, setContext] = useState<TxSummary | ReadSummary | undefined>();
   const [credentialId, setCredentialId] = useState<ArrayBuffer | undefined>();
+  const [channel, setChannel] = useState<BroadcastChannel | null>(null);
 
   useEffect(() => {
-    const handleInit = (event: MessageEvent) => {
-      const data = event.data as PopupInitMessage;
-      if (data?.type !== 'POPUP_INIT') return false;
-      setFlow(data.flow);
-      setRpId(data.rpId);
-      setContext(data.context);
-      setCredentialId(data.credentialId);
-      if (event.ports[0]) setPort(event.ports[0]);
-      return true;
-    };
+    // Read flow and context from URL params (set by PopupManager)
+    const params = new URLSearchParams(window.location.search);
+    const flowParam = params.get('flow') as PopupFlow | null;
+    const rpIdParam = params.get('rpId');
+    const contextParam = params.get('context');
 
-    // Check for early messages captured before React mounted.
-    // The SDK sends POPUP_INIT immediately after window.open(), which often
-    // arrives before useEffect runs. popup.html buffers these in __earlyMessages.
-    const earlyMessages = (window as any).__earlyMessages as MessageEvent[] | undefined;
-    if (earlyMessages && earlyMessages.length > 0) {
-      for (const msg of earlyMessages) {
-        if (handleInit(msg)) {
-          earlyMessages.length = 0;
-          return;
-        }
+    if (flowParam) {
+      setFlow(flowParam);
+      if (rpIdParam) setRpId(rpIdParam);
+      if (contextParam) {
+        try { setContext(JSON.parse(atob(contextParam))); } catch {}
       }
     }
 
-    // No early message found — listen for late arrivals
-    const onMessage = (event: MessageEvent) => {
-      if (handleInit(event)) {
-        window.removeEventListener('message', onMessage);
+    // Open BroadcastChannel to communicate with the iframe (same origin)
+    const bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+    setChannel(bc);
+
+    // Listen for credentialId from iframe (for returning users)
+    bc.onmessage = (event) => {
+      if (event.data?.type === 'credential-id') {
+        setCredentialId(event.data.credentialId);
       }
     };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
+
+    // Tell iframe the popup is open
+    bc.postMessage({ type: 'popup-opened', flow: flowParam });
+
+    return () => bc.close();
   }, []);
 
   const handleComplete = useCallback(
     (response: PopupResponse) => {
-      port?.postMessage(response);
+      // Send result to iframe via BroadcastChannel (same origin, COOP-safe)
+      channel?.postMessage({ type: 'popup-result', response });
       window.close();
     },
-    [port],
+    [channel],
   );
 
   const handleCancel = useCallback(() => {
+    channel?.postMessage({ type: 'popup-cancelled' });
     window.close();
-  }, []);
+  }, [channel]);
 
-  // Waiting for POPUP_INIT — show a minimal loading shell
-  if (!flow || !port) {
+  if (!flow || !channel) {
     return (
       <div className={styles.loadingShell} data-testid="popup-loading">
-        <span
-          className={styles.loadingSpinner}
-          role="status"
-          aria-label="Loading wallet"
-        />
-        <p className={styles.loadingText}>Loading wallet…</p>
+        <span className={styles.loadingSpinner} role="status" aria-label="Loading wallet" />
+        <p className={styles.loadingText}>Loading wallet...</p>
       </div>
     );
   }
