@@ -32,9 +32,10 @@ export function PopupShell() {
   const [credentialId, setCredentialId] = useState<ArrayBuffer | undefined>();
 
   useEffect(() => {
-    // Signal to the host that the popup is ready to receive POPUP_INIT
-    if (window.opener) window.opener.postMessage({ type: 'POPUP_READY' }, '*');
-
+    // Listen for POPUP_INIT from the SDK (dapp).
+    // Note: window.opener is null because the dapp has COOP: same-origin.
+    // The SDK sends POPUP_INIT directly via popup.postMessage() on a retry
+    // loop, so we just need to listen — no POPUP_READY handshake needed.
     const onMessage = (event: MessageEvent) => {
       const data = event.data as PopupInitMessage;
       if (data?.type !== 'POPUP_INIT') return;

@@ -3,16 +3,12 @@ import type { PopupFlow, PopupResponse, PopupInitMessage, TxSummary, ReadSummary
 /**
  * Opens popup windows from the SDK (dapp) context.
  *
- * Popups must be opened from the dapp, not the iframe, because browsers
- * only allow window.open() from a direct user gesture context. The iframe
- * host has no user gesture — it received an RPC message over MessagePort.
+ * Communication challenge: the main app has COOP: same-origin (required for
+ * SharedArrayBuffer), which makes window.opener null in cross-origin popups.
+ * So the popup can't signal back to us via opener.postMessage().
  *
- * Flow:
- * 1. SDK calls connect() → user clicks button (user gesture)
- * 2. SDK opens popup immediately (within gesture context)
- * 3. SDK transfers a MessagePort to the popup
- * 4. Popup does its work (passkey ceremony, approval, etc.)
- * 5. Popup sends result back via the port
+ * Solution: SDK sends POPUP_INIT to the popup on a retry interval until
+ * the popup acknowledges by sending a response on the transferred MessagePort.
  */
 export class PopupManager {
   constructor(private walletHost: string) {}
@@ -29,34 +25,53 @@ export class PopupManager {
       throw new Error('Popup blocked. Please allow popups for this site to use the Aztec wallet.');
     }
 
+    const popupOrigin = new URL(this.walletHost).origin;
+
     return new Promise<PopupResponse>((resolve, reject) => {
       const { port1, port2 } = new MessageChannel();
 
-      const onReady = (event: MessageEvent) => {
-        if (event.source !== popup || event.data?.type !== 'POPUP_READY') return;
-        window.removeEventListener('message', onReady);
-
-        const initMsg: PopupInitMessage = {
-          type: 'POPUP_INIT',
-          flow,
-          context,
-          credentialId: credentialId?.buffer,
-        };
-        popup.postMessage(initMsg, new URL(this.walletHost).origin, [port2]);
+      const initMsg: PopupInitMessage = {
+        type: 'POPUP_INIT',
+        flow,
+        context,
+        credentialId: credentialId?.buffer,
       };
-      window.addEventListener('message', onReady);
 
+      // Retry sending POPUP_INIT until the popup is loaded and listening.
+      // We can't rely on POPUP_READY from the popup because COOP: same-origin
+      // on our page makes window.opener null in the cross-origin popup.
+      let portTransferred = false;
+      const sendInit = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(sendInit);
+          return;
+        }
+        if (!portTransferred) {
+          try {
+            // Transfer the port on the first successful send
+            popup.postMessage(initMsg, popupOrigin, [port2]);
+            portTransferred = true;
+            clearInterval(sendInit);
+          } catch {
+            // popup not ready yet, retry
+          }
+        }
+      }, 200);
+
+      // Detect popup close without response
       const pollClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(pollClosed);
-          window.removeEventListener('message', onReady);
+          clearInterval(sendInit);
           port1.close();
           reject(new Error('Popup closed without completing'));
         }
       }, 500);
 
+      // Listen for response from popup
       port1.onmessage = (event: MessageEvent) => {
         clearInterval(pollClosed);
+        clearInterval(sendInit);
         port1.close();
         resolve(event.data as PopupResponse);
       };
