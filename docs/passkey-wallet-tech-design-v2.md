@@ -547,80 +547,17 @@ Total passkey loss = funds locked (same as losing a seed phrase).
 
 ---
 
-## Cross-Origin Isolation & SharedArrayBuffer
+## Cross-Origin Isolation Note
 
-**This section documents a constraint discovered during POC implementation that the original design did not cover.**
+Cross-origin iframes cannot get `crossOriginIsolated` regardless of headers — this is a browser spec constraint. Barretenberg's synchronous Poseidon2 (`BarretenbergSync`) runs on the iframe main thread and needs `SharedArrayBuffer`, which is gated behind `crossOriginIsolated`.
 
-### The problem
+ZK proof generation is unaffected — it already runs in Web Workers that handle their own isolation. The only blocker is synchronous hashing during `registerAccount()` / `deriveKeys()`.
 
-Barretenberg (BB WASM) requires `SharedArrayBuffer` for multi-threaded proving AND for synchronous Poseidon2 hashing on the main thread. `SharedArrayBuffer` is only available when `self.crossOriginIsolated === true`.
+`@aztec/bb.js` exposes both sync and async backends. The async one delegates to a Worker and doesn't need main-thread isolation. `@aztec/foundation` currently only uses the sync path.
 
-For top-level pages, this is straightforward: set `COOP: same-origin` + `COEP: credentialless` headers.
+**Fix options:** (a) Vite alias to swap the sync Poseidon2 import with an async wrapper at build time, (b) pure JS Poseidon2 implementation for the few hashes needed during registration, or (c) pre-compute the address on the SDK side (the dapp page IS isolated) and send it to the iframe.
 
-For cross-origin iframes (our architecture: dapp at `dapp.com`, iframe at `wallet.aztec.network`), **there is no header combination that enables `crossOriginIsolated` in the iframe**:
-
-| Setup | Iframe loads? | crossOriginIsolated? | SharedArrayBuffer? |
-|---|---|---|---|
-| Parent has COOP+COEP, iframe is cross-origin | **Blocked by COEP** | N/A | N/A |
-| Parent has COOP+COEP, iframe has `credentialless` attr | Yes | **false** | **No** |
-| Iframe sends `Document-Isolation-Policy: isolate-and-credentialless` | Yes | Spec says yes, **tested false on Chrome 143** | **No** |
-| Iframe sends its own COOP+COEP | Yes (COOP ignored on iframes) | **false** | **No** |
-| Same-origin iframe under isolated parent | Yes | **true** | **Yes** |
-
-This was verified empirically on Chrome 143 (Playwright headless) with every combination of headers and iframe attributes.
-
-### What actually fails
-
-The crash occurs during `pxe.registerAccount()` → `deriveKeys()` → `poseidon2HashBytes()` → `BarretenbergSync.initSingleton()`. The `BarretenbergSync` API initializes WASM on the **iframe's main thread** and requires `SharedArrayBuffer` for its memory model. Without it, the WASM binary calls `proc_exit` and crashes.
-
-Notably, **ZK proof generation** (the heavy computation) already runs in Web Workers spawned by the PXE. Workers loaded from the iframe's origin (`wallet.aztec.network`) can set their own response headers and get `crossOriginIsolated` independently. The only blocker is the synchronous `BarretenbergSync` usage on the main thread for Poseidon2 hashing during account registration and address computation.
-
-### Why `@aztec/foundation` uses BarretenbergSync
-
-`@aztec/foundation/crypto/poseidon` wraps `BarretenbergSync` (synchronous, main thread). There is no async alternative in the foundation layer, even though `@aztec/bb.js` exposes both:
-
-- `sync.d.ts` → `BarretenbergSync` → main thread → **needs SharedArrayBuffer**
-- `async.d.ts` → `Barretenberg` → uses a dedicated Worker internally → **Worker handles its own isolation**
-
-The Aztec SDK team built the synchronous path for simplicity (Poseidon2 is used pervasively for hashing addresses, nullifiers, note commitments). Converting to async would require changes across `@aztec/foundation`, `@aztec/stdlib`, and `@aztec/pxe`.
-
-### Solutions (ordered by feasibility)
-
-**1. Vite alias to async Poseidon2 (build-time, SDK-controlled)**
-
-Replace `@aztec/foundation/crypto/poseidon` at build time with a wrapper that uses the async `Barretenberg` API (which delegates to a Worker). The PXE and all consumers call `poseidon2Hash()` the same way — the async version has the same signature. No changes to Aztec packages needed.
-
-Risk: The async Barretenberg may initialize differently than `BarretenbergSync`. Needs testing with the full PXE lifecycle.
-
-**2. Pure JavaScript Poseidon2 (no WASM dependency)**
-
-Implement Poseidon2 over BN254 in pure JavaScript. The algorithm is well-specified. Only used for a few hashes during account registration (address computation, key derivation). Performance is not critical for these operations — proof generation (the heavy part) still uses BB WASM in Workers.
-
-Risk: Must exactly match Barretenberg's Poseidon2 output. Off-by-one in field arithmetic = different addresses.
-
-**3. Pre-compute address on the SDK side (dapp IS isolated)**
-
-The dapp page has COOP+COEP (required for any Aztec dapp). The SDK runs in the dapp's context, which IS `crossOriginIsolated`. Pre-compute the account address in the SDK using `BarretenbergSync` (which works there), then send the pre-computed address to the iframe. The iframe PXE skips the hash computation.
-
-Risk: Requires changes to PXE's `registerAccount` flow. The PXE currently computes the address internally.
-
-**4. Upstream PR to Aztec (long-term)**
-
-Add an async Poseidon2 path to `@aztec/foundation` that uses the Worker-based `Barretenberg` instead of `BarretenbergSync`. This benefits all iframe-based wallets, not just ours.
-
-Risk: Requires buy-in from the Aztec SDK team. Changes are pervasive.
-
-**5. Require dapp COOP+COEP headers (current POC approach)**
-
-All Aztec dapps already need these headers for client-side proving. If the dapp and iframe are same-origin (via reverse proxy or SDK-provided build plugin), the iframe inherits isolation. This works but requires dapp server configuration, which is not acceptable for a universal SDK.
-
-### Current POC status
-
-The POC uses same-origin (dapp and iframe both at `localhost:3000`) to sidestep the issue. This validates the full flow (passkey → PRF → keys → encrypted channel → PXE → account registration) but does not represent the production cross-origin architecture.
-
-### Recommendation
-
-Solution **1** (Vite alias) or **2** (pure JS Poseidon2) should be implemented before moving to production. Solution 1 is lower risk if the async Barretenberg API is compatible. Solution 2 is more self-contained but requires cryptographic correctness verification.
+The POC sidesteps this by using same-origin (dapp and iframe both at `localhost:3000`). Production cross-origin requires one of the fixes above.
 
 ---
 
