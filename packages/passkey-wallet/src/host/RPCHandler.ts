@@ -8,7 +8,7 @@ import { fromBase64 } from '../shared/encoding';
  * Processes RPC messages from the SDK over the SecureChannel.
  *
  * - initWithKeys: receives passkey-derived keys, initializes PXE Worker, registers account
- * - requestPopup: waits for popup result via BroadcastChannel (same origin as iframe)
+ * - disconnect: tears down PXE Worker
  * - disconnect: tears down PXE Worker
  * - All other methods: forwarded to the PXE Worker
  */
