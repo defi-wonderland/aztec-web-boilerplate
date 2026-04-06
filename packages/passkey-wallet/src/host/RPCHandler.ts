@@ -31,8 +31,9 @@ export class RPCHandler {
 
   register(channel: SecureChannel): void {
     channel.onRequest(async (method, params) => {
-      if (method === 'initWithKeys') return this.handleInitWithKeys(params[0] as PopupResponse);
-      if (method === 'disconnect') return this.handleDisconnect();
+      try {
+        if (method === 'initWithKeys') return await this.handleInitWithKeys(params[0] as PopupResponse);
+        if (method === 'disconnect') return await this.handleDisconnect();
 
       const pxe = this.pxeManager.getPXE();
       if (!pxe) throw new Error('PXE not initialized. Call connect() first.');
@@ -43,6 +44,10 @@ export class RPCHandler {
         throw new Error(`Unknown PXE method: ${method}`);
       }
       return (pxe as any)[method](...params);
+      } catch (err) {
+        console.error(`[RPCHandler] Error in ${method}:`, err);
+        throw err;
+      }
     });
   }
 
