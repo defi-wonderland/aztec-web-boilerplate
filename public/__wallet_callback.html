@@ -1,4 +1,13 @@
 <!DOCTYPE html>
 <html><head><title>Aztec Wallet</title></head>
-<body><p>Completing authentication...</p></body>
+<body>
+<p>Completing authentication...</p>
+<script>
+  var hash = window.location.hash.substring(1);
+  if (hash) {
+    localStorage.setItem('aztec-wallet:callback-result', hash);
+  }
+  setTimeout(function() { window.close(); }, 300);
+</script>
+</body>
 </html>

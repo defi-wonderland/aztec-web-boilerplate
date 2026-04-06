@@ -106,7 +106,10 @@ export default defineConfig({
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
       // Swap sync Poseidon2 (needs SharedArrayBuffer on main thread) with async
       // version (runs in a Worker). This enables cross-origin iframe operation.
+      // Both the package export path and the resolved file path are aliased
+      // to ensure Vite catches it regardless of resolution order.
       '@aztec/foundation/crypto/poseidon': resolve(__dirname, 'src/host/async-poseidon.ts'),
+      '@aztec/foundation/dest/crypto/poseidon/index.js': resolve(__dirname, 'src/host/async-poseidon.ts'),
     },
   },
   css: {

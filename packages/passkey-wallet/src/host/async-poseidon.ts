@@ -19,8 +19,11 @@ async function getBarretenberg() {
   if (bbInitPromise) return bbInitPromise;
 
   bbInitPromise = (async () => {
+    console.log('[async-poseidon] Importing @aztec/bb.js...');
     const { Barretenberg } = await import('@aztec/bb.js');
+    console.log('[async-poseidon] Creating Barretenberg instance (Worker backend)...');
     bbInstance = await Barretenberg.new();
+    console.log('[async-poseidon] Barretenberg ready');
     return bbInstance;
   })();
 
