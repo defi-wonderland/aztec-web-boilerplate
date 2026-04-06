@@ -13,18 +13,23 @@ export class IframeManager {
     nodeUrl: string,
   ): Promise<SecureChannel> {
     const hostUrl = new URL(this.walletHost);
+    const isCrossOrigin = hostUrl.origin !== window.location.origin;
 
     // Build the iframe URL
     if (hostUrl.pathname === '/') {
-      // Same-origin: use /wallet-host.html (served alongside the dapp)
-      // Cross-origin: use /host.html (wallet host's own entry point)
-      const isSameOrigin = hostUrl.origin === window.location.origin;
-      hostUrl.pathname = isSameOrigin ? '/wallet-host.html' : '/host.html';
+      hostUrl.pathname = isCrossOrigin ? '/host.html' : '/wallet-host.html';
     }
 
     this.iframe = document.createElement('iframe');
     this.iframe.src = hostUrl.toString();
     this.iframe.style.display = 'none';
+
+    // credentialless: allows cross-origin iframe to load under parent's
+    // COEP. The iframe won't have crossOriginIsolated on its main thread,
+    // but that's OK — poseidon2 uses the async BB backend (runs in Worker).
+    if (isCrossOrigin) {
+      (this.iframe as any).credentialless = true;
+    }
     // No sandbox attribute — the iframe needs full access to IndexedDB,
     // WebSocket, and window.open for popups. Cross-origin isolation
     // provides the security boundary.

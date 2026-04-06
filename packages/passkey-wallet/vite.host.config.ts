@@ -1,3 +1,4 @@
+import { resolve } from 'path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
@@ -103,6 +104,9 @@ export default defineConfig({
       'lodash.isequal': 'lodash.isequal/index.js',
       'lodash.pickby': 'lodash.pickby/index.js',
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
+      // Swap sync Poseidon2 (needs SharedArrayBuffer on main thread) with async
+      // version (runs in a Worker). This enables cross-origin iframe operation.
+      '@aztec/foundation/crypto/poseidon': resolve(__dirname, 'src/host/async-poseidon.ts'),
     },
   },
   css: {
