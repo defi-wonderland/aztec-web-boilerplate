@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Coins, Wrench, Settings, Layers, Menu, X, Globe } from 'lucide-react';
+import { Coins, Wrench, Settings, Layers, Menu, X, Globe, Fingerprint } from 'lucide-react';
 import { ConnectButton, NetworkPicker } from '../aztec-wallet';
 import { useAppNavigation } from '../hooks';
 import { cn, iconSize } from '../utils';
@@ -20,6 +20,11 @@ const NAV_TABS: NavTab[] = [
     id: 'components',
     label: 'UI Components',
     icon: <Layers size={iconSize()} />,
+  },
+  {
+    id: 'passkey',
+    label: 'Passkey Wallet',
+    icon: <Fingerprint size={iconSize()} />,
   },
 ];
 

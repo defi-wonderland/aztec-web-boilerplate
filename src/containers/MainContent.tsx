@@ -4,6 +4,7 @@ import { SecurityWarning } from '../components';
 import { ContractLayout } from '../components/contract-interaction';
 import { useAppNavigation } from '../hooks';
 import { DripperCard } from './DripperCard';
+import { PasskeyDemo } from './PasskeyDemo';
 import { SettingsCard } from './SettingsCard';
 import { UIComponentsShowcase } from './UIComponentsShowcase';
 
@@ -49,6 +50,12 @@ export const MainContent: React.FC = () => {
         return (
           <div className={styles.contentWrapper}>
             <UIComponentsShowcase />
+          </div>
+        );
+      case 'passkey':
+        return (
+          <div className={styles.contentWrapper}>
+            <PasskeyDemo />
           </div>
         );
       default:
