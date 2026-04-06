@@ -9,8 +9,11 @@ export class IframeManager {
   constructor(private walletHost: string = DEFAULT_WALLET_HOST) {}
 
   async connect(contracts: ContractConfig[]): Promise<SecureChannel> {
-    // Build the host URL — append /host.html if the path is just root
+    // Parse the wallet host to separate origin from path
     const hostUrl = new URL(this.walletHost);
+    const origin = hostUrl.origin; // e.g. "http://localhost:3001"
+
+    // Build the full iframe URL — append /host.html if path is just root
     if (hostUrl.pathname === '/') {
       hostUrl.pathname = '/host.html';
     }
@@ -21,7 +24,6 @@ export class IframeManager {
     // No sandbox attribute — the iframe needs full access to IndexedDB,
     // WebSocket, and window.open for popups. Cross-origin isolation
     // provides the security boundary.
-    // Allow cross-origin embedding under COEP: credentialless
     this.iframe.setAttribute('allow', 'publickey-credentials-get; publickey-credentials-create');
     document.body.appendChild(this.iframe);
 
@@ -29,10 +31,16 @@ export class IframeManager {
       this.iframe!.addEventListener('load', () => resolve(), { once: true });
     });
 
+    // Verify the iframe actually loaded (load fires even on error pages)
+    if (!this.iframe.contentWindow) {
+      throw new Error(`Wallet host iframe failed to load: ${hostUrl.toString()}`);
+    }
+
     const { port1, port2 } = new MessageChannel();
-    this.iframe.contentWindow!.postMessage(
+    // postMessage targetOrigin must be the origin (scheme+host+port), not the full URL
+    this.iframe.contentWindow.postMessage(
       { type: 'INIT', contracts },
-      this.walletHost,
+      origin,
       [port2],
     );
 
