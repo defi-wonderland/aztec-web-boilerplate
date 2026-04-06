@@ -44,15 +44,16 @@ export class PasskeyWallet {
     this._isConnecting = true;
 
     try {
-      // Step 1: Create iframe and encrypted channel
+      // Step 1: Open popup FIRST — must be synchronous within user gesture.
+      // Any await before window.open() causes browsers to block the popup.
+      this.popupManager.openPopup('connect');
+
+      // Step 2: Create iframe and encrypted channel (async, runs while popup loads)
       const channel = await this.iframeManager.connect(this.config.contracts, this.nodeUrl);
       this.pxeProxy = new PXEProxy(channel);
 
-      // Step 2: Tell iframe to wait for popup result (starts BroadcastChannel listener)
+      // Step 3: Tell iframe to wait for popup result via BroadcastChannel
       const popupResultPromise = this.pxeProxy.call('waitForPopup', []) as Promise<PopupResponse>;
-
-      // Step 3: Open popup (we're in user gesture context from button click)
-      this.popupManager.openPopup('connect');
 
       // Step 4-5: Wait for popup result (relayed via iframe's BroadcastChannel)
       const popupResponse = await popupResultPromise;

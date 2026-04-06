@@ -126,12 +126,15 @@ export default defineConfig({
   server: {
     port: 3001,
     headers: {
-      // CORP: cross-origin allows the parent (different port) to embed us.
+      // CORP: cross-origin allows the parent (different origin) to embed us.
       'Cross-Origin-Resource-Policy': 'cross-origin',
-      // COEP + COOP enable crossOriginIsolated for SharedArrayBuffer (BB WASM).
-      // COOP on an iframe is ignored by the browser, but COEP is inherited
-      // when the parent has COEP: credentialless.
+      // COEP for sub-resource loading within the iframe.
       'Cross-Origin-Embedder-Policy': 'credentialless',
+      // Document-Isolation-Policy (Chrome 137+): gives this iframe its own
+      // crossOriginIsolated context for SharedArrayBuffer WITHOUT requiring
+      // the parent to be cross-origin isolated. This is the key header that
+      // makes the passkey wallet architecture viable.
+      'Document-Isolation-Policy': 'isolate-and-credentialless',
     },
   },
   optimizeDeps: {
