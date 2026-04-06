@@ -186,9 +186,8 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       headers: {
-        // COEP/COOP removed from parent — the passkey wallet runs PXE in the
-        // iframe (which has its own isolation headers), not in the main page.
-        // This allows cross-origin iframes to load without credentialless attr.
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'credentialless',
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },
       fs: {
@@ -199,9 +198,8 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 3000,
       headers: {
-        // COEP/COOP removed from parent — the passkey wallet runs PXE in the
-        // iframe (which has its own isolation headers), not in the main page.
-        // This allows cross-origin iframes to load without credentialless attr.
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'credentialless',
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },
       proxy: proxyConfig,

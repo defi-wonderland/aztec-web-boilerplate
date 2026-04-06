@@ -16,7 +16,9 @@ const config: PasskeyWalletConfig = {
   network: 'sandbox',
   nodeUrl: 'http://localhost:8080',
   rpId: 'localhost',
-  walletHost: 'http://localhost:3001',
+  // Same origin as the dapp — avoids cross-origin isolation issues.
+  // In production, this would be 'https://wallet.aztec.network'.
+  walletHost: window.location.origin,
   contracts: [],
 };
 

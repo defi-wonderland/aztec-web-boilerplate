@@ -5,6 +5,8 @@ import { IframeManager } from './IframeManager';
 import { PXEProxy } from './PXEProxy';
 import { PopupManager } from './PopupManager';
 
+const BROADCAST_CHANNEL_NAME = 'aztec-wallet-popup';
+
 export function createPasskeyWallet(config: PasskeyWalletConfig): PasskeyWallet {
   return new PasskeyWallet(config);
 }
@@ -31,42 +33,43 @@ export class PasskeyWallet {
 
   /**
    * Connect flow:
-   * 1. Create iframe + encrypted channel FIRST (needs crossOriginIsolated for WASM)
-   * 2. Tell iframe to listen for popup result via BroadcastChannel
-   * 3. Open popup (user gesture) — popup does passkey ceremony
-   * 4. Popup sends keys to iframe via BroadcastChannel (same origin)
-   * 5. Iframe receives keys, SDK gets them via SecureChannel
-   * 6. SDK sends initWithKeys to iframe
-   * 7. Iframe initializes PXE, registers account, returns address
+   * 1. Start BroadcastChannel listener (before anything async)
+   * 2. Open popup (must be synchronous — user gesture context)
+   * 3. Create iframe + encrypted channel (async, runs while popup is open)
+   * 4. Popup sends result via BroadcastChannel → SDK receives it
+   * 5. SDK sends initWithKeys to iframe via encrypted channel
+   * 6. Iframe initializes PXE, registers account, returns address
    */
   async connect(): Promise<Wallet> {
     if (this.wallet) return this.wallet;
     this._isConnecting = true;
 
     try {
-      // Step 1: Open popup FIRST — must be synchronous within user gesture.
-      // Any await before window.open() causes browsers to block the popup.
+      // Step 1: Start listening for popup result via BroadcastChannel.
+      // Must be set up BEFORE popup opens to avoid race condition.
+      const popupResultPromise = this.waitForPopupResult();
+
+      // Step 2: Open popup SYNCHRONOUSLY (user gesture context).
+      // Any await before this would expire the gesture and block the popup.
       this.popupManager.openPopup('connect');
 
-      // Step 2: Create iframe and encrypted channel (async, runs while popup loads)
-      const channel = await this.iframeManager.connect(this.config.contracts, this.nodeUrl);
-      this.pxeProxy = new PXEProxy(channel);
-
-      // Step 3: Tell iframe to wait for popup result via BroadcastChannel
-      const popupResultPromise = this.pxeProxy.call('waitForPopup', []) as Promise<PopupResponse>;
-
-      // Step 4-5: Wait for popup result (relayed via iframe's BroadcastChannel)
-      const popupResponse = await popupResultPromise;
+      // Step 3: Create iframe + encrypted channel IN PARALLEL with popup.
+      // The user is interacting with the popup while the iframe loads.
+      const [popupResponse, channel] = await Promise.all([
+        popupResultPromise,
+        this.iframeManager.connect(this.config.contracts, this.nodeUrl),
+      ]);
 
       if (popupResponse.type !== 'auth-keys') {
         throw new Error('Passkey authentication cancelled');
       }
 
-      // Step 6-7: Send keys to iframe to initialize PXE
+      // Step 4: Send keys to iframe to initialize PXE
+      this.pxeProxy = new PXEProxy(channel);
       const result = (await this.pxeProxy.call('initWithKeys', [popupResponse])) as { address: string };
       this._address = result.address;
 
-      this.wallet = this.pxeProxy.createInterface<any>() as Wallet;
+      this.wallet = this.pxeProxy.createInterface<Wallet>();
       return this.wallet;
     } finally {
       this._isConnecting = false;
@@ -83,4 +86,27 @@ export class PasskeyWallet {
 
   getWallet(): Wallet | null { return this.wallet; }
   getAddress(): string | null { return this._address; }
+
+  /** Listen for popup result via BroadcastChannel (same-origin). */
+  private waitForPopupResult(): Promise<PopupResponse> {
+    return new Promise((resolve, reject) => {
+      const bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+      const timeout = setTimeout(() => {
+        bc.close();
+        reject(new Error('Popup did not respond within 120 seconds'));
+      }, 120_000);
+
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'popup-result') {
+          clearTimeout(timeout);
+          bc.close();
+          resolve(event.data.response as PopupResponse);
+        } else if (event.data?.type === 'popup-cancelled') {
+          clearTimeout(timeout);
+          bc.close();
+          reject(new Error('User cancelled'));
+        }
+      };
+    });
+  }
 }

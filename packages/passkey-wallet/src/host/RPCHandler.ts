@@ -5,8 +5,6 @@ import type { CredentialStore } from './CredentialStore';
 import { fromBase64 } from '../shared/encoding';
 import { Fr } from '@aztec/foundation/curves/bn254';
 
-const BROADCAST_CHANNEL_NAME = 'aztec-wallet-popup';
-
 /**
  * Processes RPC messages from the SDK over the SecureChannel.
  *
@@ -30,7 +28,6 @@ export class RPCHandler {
     channel.onRequest(async (method, params) => {
       try {
         if (method === 'initWithKeys') return await this.handleInitWithKeys(params[0] as PopupResponse);
-        if (method === 'waitForPopup') return await this.waitForPopupResult();
         if (method === 'disconnect') return await this.handleDisconnect();
 
         const pxe = this.pxeManager.getPXE();
@@ -44,33 +41,6 @@ export class RPCHandler {
         console.error(`[RPCHandler] Error in ${method}:`, err);
         throw err;
       }
-    });
-  }
-
-  /**
-   * Waits for the popup to send its result via BroadcastChannel.
-   * The popup and iframe are same-origin (both wallet host), so
-   * BroadcastChannel works regardless of the dapp's COOP setting.
-   */
-  private waitForPopupResult(): Promise<PopupResponse> {
-    return new Promise((resolve, reject) => {
-      const bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
-      const timeout = setTimeout(() => {
-        bc.close();
-        reject(new Error('Popup did not respond within 120 seconds'));
-      }, 120_000);
-
-      bc.onmessage = (event) => {
-        if (event.data?.type === 'popup-result') {
-          clearTimeout(timeout);
-          bc.close();
-          resolve(event.data.response as PopupResponse);
-        } else if (event.data?.type === 'popup-cancelled') {
-          clearTimeout(timeout);
-          bc.close();
-          reject(new Error('User cancelled'));
-        }
-      };
     });
   }
 

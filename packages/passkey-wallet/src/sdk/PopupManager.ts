@@ -25,7 +25,9 @@ export class PopupManager {
   constructor(private walletHost: string, private rpId?: string) {}
 
   openPopup(flow: PopupFlow, context?: TxSummary | ReadSummary): void {
-    const url = new URL(`/popup.html`, this.walletHost);
+    const isSameOrigin = new URL(this.walletHost).origin === window.location.origin;
+    const popupPath = isSameOrigin ? '/wallet-popup.html' : '/popup.html';
+    const url = new URL(popupPath, this.walletHost);
     url.searchParams.set('flow', flow);
     if (this.rpId) url.searchParams.set('rpId', this.rpId);
     if (context) {

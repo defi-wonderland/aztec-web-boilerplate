@@ -6,7 +6,7 @@ export class IframeManager {
   private iframe: HTMLIFrameElement | null = null;
   private channel: SecureChannel | null = null;
 
-  constructor(private walletHost: string = DEFAULT_WALLET_HOST) {}
+  constructor(private walletHost: string = DEFAULT_WALLET_HOST) { }
 
   async connect(
     contracts: ContractConfig[],
@@ -14,9 +14,12 @@ export class IframeManager {
   ): Promise<SecureChannel> {
     const hostUrl = new URL(this.walletHost);
 
-    // Build the full iframe URL — append /host.html if path is just root
+    // Build the iframe URL
     if (hostUrl.pathname === '/') {
-      hostUrl.pathname = '/host.html';
+      // Same-origin: use /wallet-host.html (served alongside the dapp)
+      // Cross-origin: use /host.html (wallet host's own entry point)
+      const isSameOrigin = hostUrl.origin === window.location.origin;
+      hostUrl.pathname = isSameOrigin ? '/wallet-host.html' : '/host.html';
     }
 
     this.iframe = document.createElement('iframe');
