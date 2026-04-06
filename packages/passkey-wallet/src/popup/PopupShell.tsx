@@ -21,6 +21,7 @@ export function PopupShell() {
   const [rpId, setRpId] = useState<string | undefined>();
   const [callbackOrigin, setCallbackOrigin] = useState<string>('');
   const [context, setContext] = useState<TxSummary | ReadSummary | undefined>();
+  const [credentialId, setCredentialId] = useState<ArrayBuffer | undefined>();
 
   // Inject global CSS on mount
   useEffect(() => {
@@ -37,9 +38,20 @@ export function PopupShell() {
     const callbackParam = params.get('callback');
     const contextParam = params.get('context');
 
+    const credentialIdParam = params.get('credentialId');
+
     if (flowParam) setFlow(flowParam);
     if (rpIdParam) setRpId(rpIdParam);
     if (callbackParam) setCallbackOrigin(callbackParam);
+    if (credentialIdParam) {
+      // Decode base64 credential ID to ArrayBuffer for ConnectFlow
+      try {
+        const binary = atob(credentialIdParam);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        setCredentialId(bytes.buffer);
+      } catch { /* invalid base64, treat as new user */ }
+    }
     if (contextParam) {
       try { setContext(JSON.parse(atob(contextParam))); } catch { /* ignore */ }
     }

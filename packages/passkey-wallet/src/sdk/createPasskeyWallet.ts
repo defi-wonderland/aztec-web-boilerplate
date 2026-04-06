@@ -43,10 +43,16 @@ export class PasskeyWallet {
     this._isConnecting = true;
 
     try {
+      // Check for stored credential ID (returning user)
+      const storedCredentialId = localStorage.getItem('aztec-wallet:sdk-credential-id');
+
       // Step 1: Open popup and start listening for result.
       // openPopup must be called synchronously (user gesture).
-      // It returns a promise that resolves when the popup redirects back.
-      const popupResultPromise = this.popupManager.openPopup('connect');
+      const popupResultPromise = this.popupManager.openPopup(
+        'connect',
+        undefined,
+        storedCredentialId ?? undefined,
+      );
 
       // Step 2: Create iframe + encrypted channel in parallel with popup
       const [popupResponse, channel] = await Promise.all([
@@ -58,7 +64,12 @@ export class PasskeyWallet {
         throw new Error('Passkey authentication cancelled');
       }
 
-      // Step 3: Send keys to iframe to initialize PXE
+      // Step 3: Store credential ID for returning visits
+      if (popupResponse.credentialId) {
+        localStorage.setItem('aztec-wallet:sdk-credential-id', popupResponse.credentialId);
+      }
+
+      // Step 4: Send keys to iframe to initialize PXE
       this.pxeProxy = new PXEProxy(channel);
       const result = (await this.pxeProxy.call('initWithKeys', [popupResponse])) as { address: string };
       this._address = result.address;

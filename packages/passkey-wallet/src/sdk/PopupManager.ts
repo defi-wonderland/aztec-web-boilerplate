@@ -26,6 +26,7 @@ export class PopupManager {
   openPopup(
     flow: PopupFlow,
     context?: TxSummary | ReadSummary,
+    credentialId?: string,
   ): Promise<PopupResponse> {
     // Clear any stale result before opening
     localStorage.removeItem(CALLBACK_KEY);
@@ -34,6 +35,7 @@ export class PopupManager {
     url.searchParams.set('flow', flow);
     url.searchParams.set('callback', window.location.origin);
     if (this.rpId) url.searchParams.set('rpId', this.rpId);
+    if (credentialId) url.searchParams.set('credentialId', credentialId);
     if (context) url.searchParams.set('context', btoa(JSON.stringify(context)));
 
     const popup = window.open(url.toString(), '_blank', 'width=420,height=520,popup=yes');
