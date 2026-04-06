@@ -37,12 +37,18 @@ export type RPCResponse =
 export type PopupResponse =
   | {
       type: 'auth-keys';
-      publicKey: ArrayBuffer;
-      credentialId: ArrayBuffer;
+      /** Base64-encoded uncompressed P-256 public key */
+      publicKey: string;
+      /** Base64-encoded credential ID */
+      credentialId: string;
+      /** Hex-encoded Fr (master secret for protocol keys) */
       masterSecret: string;
       // TIER-2-UPGRADE: Remove signingKey. Tier 2 uses hardware-bound WebAuthn signing.
-      signingKey: ArrayBuffer;
-      encryptionKey: ArrayBuffer;
+      /** Base64-encoded 32-byte P-256 signing key */
+      signingKey: string;
+      /** Base64-encoded 32-byte AES encryption key */
+      encryptionKey: string;
+      /** Hex-encoded Fr (account salt) */
       accountSalt: string;
     }
   | { type: 'tx-approved' }

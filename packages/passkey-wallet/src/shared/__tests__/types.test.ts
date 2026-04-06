@@ -24,11 +24,11 @@ describe('shared types and constants', () => {
   it('PopupResponse discriminates on type field', () => {
     const authKeys: PopupResponse = {
       type: 'auth-keys',
-      publicKey: new ArrayBuffer(65),
-      credentialId: new ArrayBuffer(32),
+      publicKey: 'AAAA',
+      credentialId: 'BBBB',
       masterSecret: '0x1234',
-      signingKey: new ArrayBuffer(32),
-      encryptionKey: new ArrayBuffer(32),
+      signingKey: 'CCCC',
+      encryptionKey: 'DDDD',
       accountSalt: '0x5678',
     };
     expect(authKeys.type).toBe('auth-keys');

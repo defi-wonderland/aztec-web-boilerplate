@@ -2,6 +2,7 @@ import type { SecureChannel } from '../shared/SecureChannel';
 import type { PopupResponse, TxSummary } from '../shared/types';
 import type { PXEManager } from './PXEManager';
 import type { CredentialStore } from './CredentialStore';
+import { fromBase64 } from '../shared/encoding';
 import { Fr } from '@aztec/foundation/curves/bn254';
 
 const TX_METHODS = new Set(['proveTx', 'sendTx']);
@@ -49,17 +50,23 @@ export class RPCHandler {
       throw new Error(`Expected auth-keys, got: ${authKeys.type}`);
     }
 
+    // Decode base64-encoded binary fields
+    const credentialIdBytes = fromBase64(authKeys.credentialId);
+    const publicKeyBytes = fromBase64(authKeys.publicKey);
+    const signingKeyBytes = fromBase64(authKeys.signingKey);
+    const encryptionKeyBytes = fromBase64(authKeys.encryptionKey);
+
     // Store credential for future visits
-    this.credentialStore.saveCredentialId(new Uint8Array(authKeys.credentialId));
-    this.credentialStore.savePublicKey(new Uint8Array(authKeys.publicKey));
+    this.credentialStore.saveCredentialId(credentialIdBytes);
+    this.credentialStore.savePublicKey(publicKeyBytes);
 
     // TIER-2-UPGRADE: Remove signingKey storage.
-    this.signingKey = new Uint8Array(authKeys.signingKey);
+    this.signingKey = signingKeyBytes;
 
     // Import encryption key
     const encryptionKey = await crypto.subtle.importKey(
       'raw',
-      new Uint8Array(authKeys.encryptionKey),
+      encryptionKeyBytes,
       { name: 'AES-GCM' },
       false,
       ['encrypt', 'decrypt'],

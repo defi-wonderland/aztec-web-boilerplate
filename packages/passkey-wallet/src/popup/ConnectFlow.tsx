@@ -8,6 +8,7 @@ import {
 } from '../shared/passkey';
 import { deriveAllKeys } from '../shared/crypto';
 import { HKDF_INFO_ENCRYPTION_KEY } from '../shared/constants';
+import { toBase64 } from '../shared/encoding';
 import type { PopupResponse } from '../shared/types';
 import {
   layoutStyles,
@@ -115,12 +116,12 @@ export function ConnectFlow({ credentialId, onComplete, onCancel }: ConnectFlowP
 
       onComplete({
         type: 'auth-keys',
-        publicKey: publicKey.buffer,
-        credentialId: credential.rawId,
+        publicKey: toBase64(publicKey),
+        credentialId: toBase64(new Uint8Array(credential.rawId)),
         masterSecret: `0x${keys.masterSecret.toString(16)}`,
         // TIER-2-UPGRADE: Remove signingKey from this response.
-        signingKey: keys.signingKey.buffer,
-        encryptionKey: encKeyBytes.buffer,
+        signingKey: toBase64(keys.signingKey),
+        encryptionKey: toBase64(encKeyBytes),
         accountSalt: `0x${keys.accountSalt.toString(16)}`,
       });
     } catch (err: unknown) {
