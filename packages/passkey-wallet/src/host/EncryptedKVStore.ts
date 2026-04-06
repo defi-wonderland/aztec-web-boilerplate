@@ -109,50 +109,92 @@ class EncryptedMap<K extends Key, V extends Value> implements AztecAsyncMap<K, V
 // EncryptedMultiMap
 // ---------------------------------------------------------------------------
 
-class EncryptedMultiMap<K extends Key, V extends Value>
-  extends EncryptedMap<K, V>
-  implements AztecAsyncMultiMap<K, V>
-{
+class EncryptedMultiMap<K extends Key, V extends Value> implements AztecAsyncMultiMap<K, V> {
+  private readonly backing: AztecAsyncMultiMap<K, Uint8Array>;
+
   constructor(
     backingStore: AztecAsyncKVStore,
     name: string,
-    encryptionKey: CryptoKey,
+    private readonly encryptionKey: CryptoKey,
   ) {
-    super(backingStore, name, encryptionKey);
-    this._backingStore = backingStore;
-    this._name = name;
-    this._encryptionKey = encryptionKey;
+    this.backing = backingStore.openMultiMap<K, Uint8Array>(name);
   }
 
-  private _backingStore: AztecAsyncKVStore;
-  private _name: string;
-  private _encryptionKey: CryptoKey;
+  async set(key: K, val: V): Promise<void> {
+    const encrypted = await encrypt(this.encryptionKey, val);
+    await this.backing.set(key, encrypted);
+  }
 
-  private get multiMapBacking(): AztecAsyncMultiMap<K, Uint8Array> {
-    return this._backingStore.openMultiMap<K, Uint8Array>(this._name);
+  async setMany(entries: { key: K; value: V }[]): Promise<void> {
+    const encryptedEntries = await Promise.all(
+      entries.map(async ({ key, value }) => ({
+        key,
+        value: await encrypt(this.encryptionKey, value),
+      })),
+    );
+    await this.backing.setMany(encryptedEntries);
+  }
+
+  async setIfNotExists(key: K, val: V): Promise<boolean> {
+    const encrypted = await encrypt(this.encryptionKey, val);
+    return this.backing.setIfNotExists(key, encrypted);
+  }
+
+  async delete(key: K): Promise<void> {
+    return this.backing.delete(key);
+  }
+
+  async getAsync(key: K): Promise<V | undefined> {
+    const raw = await this.backing.getAsync(key);
+    if (raw === undefined) return undefined;
+    return decrypt<V>(this.encryptionKey, raw);
+  }
+
+  async hasAsync(key: K): Promise<boolean> {
+    return this.backing.hasAsync(key);
+  }
+
+  async *keysAsync(range?: Range<K>): AsyncIterableIterator<K> {
+    yield* this.backing.keysAsync(range);
+  }
+
+  async *valuesAsync(range?: Range<K>): AsyncIterableIterator<V> {
+    for await (const raw of this.backing.valuesAsync(range)) {
+      yield decrypt<V>(this.encryptionKey, raw);
+    }
+  }
+
+  async *entriesAsync(range?: Range<K>): AsyncIterableIterator<[K, V]> {
+    for await (const [key, raw] of this.backing.entriesAsync(range)) {
+      yield [key, await decrypt<V>(this.encryptionKey, raw)];
+    }
+  }
+
+  async sizeAsync(): Promise<number> {
+    return this.backing.sizeAsync();
   }
 
   async *getValuesAsync(key: K): AsyncIterableIterator<V> {
-    for await (const raw of this.multiMapBacking.getValuesAsync(key)) {
-      yield decrypt<V>(this._encryptionKey, raw);
+    for await (const raw of this.backing.getValuesAsync(key)) {
+      yield decrypt<V>(this.encryptionKey, raw);
     }
   }
 
   async getValueCountAsync(key: K): Promise<number> {
-    return this.multiMapBacking.getValueCountAsync(key);
+    return this.backing.getValueCountAsync(key);
   }
 
   async deleteValue(key: K, val: V): Promise<void> {
     // We can't find the exact ciphertext to delete (different IV each time),
     // so we must decrypt all values and find the match
     const allRaw: Uint8Array[] = [];
-    for await (const raw of this.multiMapBacking.getValuesAsync(key)) {
+    for await (const raw of this.backing.getValuesAsync(key)) {
       allRaw.push(raw);
     }
     for (const raw of allRaw) {
-      const decrypted = await decrypt<V>(this._encryptionKey, raw);
+      const decrypted = await decrypt<V>(this.encryptionKey, raw);
       if (JSON.stringify(decrypted) === JSON.stringify(val)) {
-        await this.multiMapBacking.deleteValue(key, raw);
+        await this.backing.deleteValue(key, raw);
         return;
       }
     }

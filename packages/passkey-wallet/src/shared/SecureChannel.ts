@@ -273,6 +273,9 @@ export class SecureChannel {
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const ct = await this.encrypt(this.sendKey, iv, msg.id, response);
 
+        // Re-check after the async encrypt — destroy() may have run during the await
+        if (!this.port || !this.sendKey) return;
+
         // Responses share the same id so the sender can match them
         const responseMsg: ChannelMessage = {
           id: msg.id,

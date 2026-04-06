@@ -376,20 +376,19 @@ describe('CredentialStore — edge cases', () => {
     expect(store.getCredentialId()).toEqual(new Uint8Array([2]));
   });
 
-  it('empty Uint8Array produces empty base64 string which reads back as null', () => {
-    // NOTE: uint8ArrayToBase64(empty) → btoa('') → ''
-    // The storage.getItem() returns '' which is falsy,
-    // so getCredentialId() returns null (not an empty Uint8Array).
-    // This is the actual behavior of the current implementation.
+  it('empty Uint8Array roundtrips correctly as an empty Uint8Array', () => {
+    // uint8ArrayToBase64(empty) → btoa('') → ''
+    // getItem returns '' which is an empty string (not null),
+    // so getCredentialId() correctly returns an empty Uint8Array (not null).
     const storage = new MockStorage();
     const store = new CredentialStore(storage);
 
     const empty = new Uint8Array(0);
     store.saveCredentialId(empty);
 
-    // btoa('') = '' → stored as '' → getItem returns '' → falsy → returns null
+    // '' stored → getItem returns '' → stored !== null → base64ToUint8Array('') → empty Uint8Array
     const result = store.getCredentialId();
-    expect(result).toBeNull();
+    expect(result).toEqual(new Uint8Array(0));
   });
 
   it('stores independently in separate CredentialStore instances with same storage', () => {

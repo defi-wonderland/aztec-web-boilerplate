@@ -10,7 +10,7 @@ export class CredentialStore {
 
   getCredentialId(): Uint8Array | null {
     const stored = this.storage?.getItem(CRED_ID_KEY);
-    if (!stored) return null;
+    if (stored === null || stored === undefined) return null;
     return base64ToUint8Array(stored);
   }
 
@@ -20,7 +20,7 @@ export class CredentialStore {
 
   getPublicKey(): Uint8Array | null {
     const stored = this.storage?.getItem(PUB_KEY_KEY);
-    if (!stored) return null;
+    if (stored === null || stored === undefined) return null;
     return base64ToUint8Array(stored);
   }
 

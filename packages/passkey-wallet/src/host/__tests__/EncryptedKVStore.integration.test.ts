@@ -250,16 +250,13 @@ describe('EncryptedKVStore — MultiMap operations', () => {
     expect(values).toHaveLength(0);
   });
 
-  it('openMultiMap returns the same instance for the same name', async () => {
+  it('openMultiMap set() and getValueCountAsync() use the same backing multi-map', async () => {
     const m1 = store.openMultiMap<string, number>('same_multi');
     const m2 = store.openMultiMap<string, number>('same_multi');
-    // Both should reference the same encrypted wrapper (idempotent open)
-    // Write via m1, check count via m2
+    // Write via m1, check count via m2 — both wrap the same openMultiMap backing
     await m1.set('k', 1);
-    // Count reflects the underlying multimap, not the regular map
-    // (set() writes to openMap, multimap operations use openMultiMap)
     const count = await m2.getValueCountAsync('k');
-    expect(count).toBe(0); // documents the current split-backing behavior
+    expect(count).toBe(1); // set() and getValueCountAsync() share the same backing
   });
 
   it('deleteValue on a non-existent key does not throw', async () => {
