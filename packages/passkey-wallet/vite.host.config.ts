@@ -78,23 +78,54 @@ const fixStaticFieldInit = (): Plugin => ({
     const path = await import('path');
     const outDir = options.dir || 'dist/host';
 
+    // All static field patterns that break when Rollup hoists class declarations.
+    // Each pattern becomes a lazy getter to defer initialization until the class exists.
+    const patches: Array<{ pattern: RegExp; replacement: string; tag: string }> = [
+      {
+        // static ZERO=new X(Y.alloc(32,0))
+        pattern: /static ZERO=new (\w+)\((\w+)\.alloc\(32,0\)\)/g,
+        replacement: 'static get ZERO(){return this._ZC||(this._ZC=new $1($2.alloc(32,0)))}',
+        tag: 'ZERO(alloc)',
+      },
+      {
+        // static ZERO=new X(0n)
+        pattern: /static ZERO=new (\w+)\(0n\)/g,
+        replacement: 'static get ZERO(){return this._Z0||(this._Z0=new $1(0n))}',
+        tag: 'ZERO(0n)',
+      },
+      {
+        // static ONE=new X(1n)
+        pattern: /static ONE=new (\w+)\(1n\)/g,
+        replacement: 'static get ONE(){return this._O1||(this._O1=new $1(1n))}',
+        tag: 'ONE(1n)',
+      },
+      {
+        // static MAX_FIELD_VALUE=new X(this.MODULUS-1n)
+        pattern: /static MAX_FIELD_VALUE=new (\w+)\(this\.MODULUS-1n\)/g,
+        replacement: 'static get MAX_FIELD_VALUE(){return this._MFV||(this._MFV=new $1(this.MODULUS-1n))}',
+        tag: 'MAX_FIELD_VALUE',
+      },
+    ];
+
     for (const [fileName, chunk] of Object.entries(bundle)) {
       if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
         const filePath = path.default.join(outDir, fileName);
         let code = fs.default.readFileSync(filePath, 'utf-8');
+        let patched = false;
 
-        // Pattern for minified code: static ZERO=new X(Y.alloc(32,0))
-        // Both class name and Buffer get minified to short identifiers
-        const minifiedPattern =
-          /static ZERO=new (\w+)\((\w+)\.alloc\(32,0\)\)/g;
+        for (const { pattern, replacement, tag } of patches) {
+          // Reset lastIndex since we reuse the regex
+          pattern.lastIndex = 0;
+          if (pattern.test(code)) {
+            pattern.lastIndex = 0;
+            code = code.replace(pattern, replacement);
+            console.log(`[fix-static-field-init] Patched ${tag} in ${fileName}`);
+            patched = true;
+          }
+        }
 
-        if (minifiedPattern.test(code)) {
-          code = code.replace(
-            /static ZERO=new (\w+)\((\w+)\.alloc\(32,0\)\)/g,
-            'static get ZERO(){return this._ZC||(this._ZC=new $1($2.alloc(32,0)))}'
-          );
+        if (patched) {
           fs.default.writeFileSync(filePath, code);
-          console.log(`[fix-static-field-init] Patched ${fileName}`);
         }
       }
     }
@@ -204,7 +235,7 @@ export default defineConfig({
     outDir: 'dist/host',
     sourcemap: false,
     target: 'esnext',
-    minify: 'esbuild',
+    minify: false,
     chunkSizeWarningLimit: 2000,
     commonjsOptions: {
       // Forces @aztec packages to be treated as ESM to prevent class identity errors
