@@ -246,6 +246,11 @@ export default defineConfig({
       exclude: ['@aztec/stdlib/**', '@aztec/foundation/**', '@aztec/aztec.js/**'],
     },
     rollupOptions: {
+      // Disable tree-shaking to prevent Rollup from reordering class
+      // declarations. Aztec packages have circular deps with static
+      // field initializers (Fr.ZERO, AztecAddress.ZERO, etc.) that
+      // break when classes are hoisted before their dependencies.
+      treeshake: false,
       input: {
         host: './host.html',
         popup: './popup.html',
@@ -255,6 +260,8 @@ export default defineConfig({
         preserveModules: false,
         inlineDynamicImports: false,
         interop: 'auto',
+        // Don't hoist imports into shared chunks — keeps class init order
+        hoistTransitiveImports: false,
         assetFileNames: (assetInfo) => {
           if (assetInfo.names?.some((name: string) => name.endsWith('.wasm'))) {
             return 'assets/[name]-[hash][extname]';
