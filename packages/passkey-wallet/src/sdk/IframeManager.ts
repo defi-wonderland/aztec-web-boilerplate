@@ -37,10 +37,15 @@ export class IframeManager {
     }
 
     const { port1, port2 } = new MessageChannel();
-    // postMessage targetOrigin must be the origin (scheme+host+port), not the full URL
+    // Use '*' for the initial INIT message because cross-origin iframes under
+    // COEP: credentialless report origin as 'null'. This is safe because:
+    // 1. The INIT message only transfers a MessagePort — no secrets
+    // 2. All subsequent communication happens over the encrypted SecureChannel
+    //    (ECDH + AES-256-GCM) which provides its own authentication
+    // 3. The MessagePort is point-to-point and invisible to other listeners
     this.iframe.contentWindow.postMessage(
       { type: 'INIT', contracts },
-      origin,
+      '*',
       [port2],
     );
 
