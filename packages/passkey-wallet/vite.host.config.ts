@@ -126,8 +126,9 @@ export default defineConfig({
   server: {
     port: 3001,
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
+      // No COOP — this page is embedded in an iframe, COOP: same-origin
+      // would prevent the parent from communicating with us.
+      // CORP: cross-origin allows the parent (different port) to embed us.
       'Cross-Origin-Resource-Policy': 'cross-origin',
     },
   },

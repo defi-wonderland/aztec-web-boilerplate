@@ -9,10 +9,20 @@ export class IframeManager {
   constructor(private walletHost: string = DEFAULT_WALLET_HOST) {}
 
   async connect(contracts: ContractConfig[]): Promise<SecureChannel> {
+    // Build the host URL — append /host.html if the path is just root
+    const hostUrl = new URL(this.walletHost);
+    if (hostUrl.pathname === '/') {
+      hostUrl.pathname = '/host.html';
+    }
+
     this.iframe = document.createElement('iframe');
-    this.iframe.src = this.walletHost;
+    this.iframe.src = hostUrl.toString();
     this.iframe.style.display = 'none';
-    this.iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
+    // No sandbox attribute — the iframe needs full access to IndexedDB,
+    // WebSocket, and window.open for popups. Cross-origin isolation
+    // provides the security boundary.
+    // Allow cross-origin embedding under COEP: credentialless
+    this.iframe.setAttribute('allow', 'publickey-credentials-get; publickey-credentials-create');
     document.body.appendChild(this.iframe);
 
     await new Promise<void>((resolve) => {
