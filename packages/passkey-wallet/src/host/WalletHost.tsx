@@ -30,6 +30,12 @@ export function WalletHost() {
     };
 
     window.addEventListener('message', onMessage);
+
+    // Signal to the parent SDK that we're ready to receive INIT
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'WALLET_HOST_READY' }, '*');
+    }
+
     return () => {
       window.removeEventListener('message', onMessage);
       channelRef.current?.destroy();

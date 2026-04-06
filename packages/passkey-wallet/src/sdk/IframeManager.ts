@@ -27,22 +27,33 @@ export class IframeManager {
     this.iframe.setAttribute('allow', 'publickey-credentials-get; publickey-credentials-create');
     document.body.appendChild(this.iframe);
 
-    await new Promise<void>((resolve) => {
-      this.iframe!.addEventListener('load', () => resolve(), { once: true });
+    // Wait for the iframe's React app to mount and signal readiness.
+    // The iframe 'load' event fires when the HTML loads, but React's
+    // useEffect (which registers the message listener) runs later.
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        window.removeEventListener('message', onReady);
+        reject(new Error('Wallet host did not signal READY within 15s'));
+      }, 15_000);
+
+      const onReady = (event: MessageEvent) => {
+        if (event.data?.type !== 'WALLET_HOST_READY') return;
+        window.removeEventListener('message', onReady);
+        clearTimeout(timeout);
+        resolve();
+      };
+
+      window.addEventListener('message', onReady);
     });
 
-    // Verify the iframe actually loaded (load fires even on error pages)
     if (!this.iframe.contentWindow) {
       throw new Error(`Wallet host iframe failed to load: ${hostUrl.toString()}`);
     }
 
     const { port1, port2 } = new MessageChannel();
-    // Use '*' for the initial INIT message because cross-origin iframes under
-    // COEP: credentialless report origin as 'null'. This is safe because:
-    // 1. The INIT message only transfers a MessagePort — no secrets
-    // 2. All subsequent communication happens over the encrypted SecureChannel
-    //    (ECDH + AES-256-GCM) which provides its own authentication
-    // 3. The MessagePort is point-to-point and invisible to other listeners
+    // Use '*' because cross-origin iframes under COEP: credentialless
+    // report origin as 'null'. Safe because INIT only transfers a
+    // MessagePort — the encrypted SecureChannel provides authentication.
     this.iframe.contentWindow.postMessage(
       { type: 'INIT', contracts },
       '*',
