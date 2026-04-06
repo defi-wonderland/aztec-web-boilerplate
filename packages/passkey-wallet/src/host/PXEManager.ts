@@ -117,6 +117,16 @@ export class PXEManager {
   // ---------------------------------------------------------------------------
 
   private handleWorkerMessage(data: any): void {
+    // Relay Worker logs to parent (so we can see them from the dapp/Playwright)
+    if (data.type === 'log') {
+      console.log(data.message);
+      // Also relay to parent window
+      if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'worker-log', message: data.message }, '*');
+      }
+      return;
+    }
+
     if (data.type === 'init-result') {
       if (!this.pendingInit) return;
       if (data.success) {

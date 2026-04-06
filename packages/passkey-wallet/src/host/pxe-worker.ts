@@ -24,6 +24,12 @@ declare const self: DedicatedWorkerGlobalScope;
 
 let pxe: any = null;
 
+function log(msg: string) {
+  console.log(msg);
+  // Also relay to main thread so it can forward to parent
+  self.postMessage({ type: 'log', message: msg });
+}
+
 // ---------------------------------------------------------------------------
 // Init handler
 // ---------------------------------------------------------------------------
@@ -69,13 +75,14 @@ async function handleInit(data: {
   const compositeStore = new CompositeKVStore(encryptedStore, ramStore, EPHEMERAL_STORE_NAMES);
 
   // Create Aztec node client
-  console.log('[pxe-worker] Creating node client for', data.nodeUrl);
+  log('[pxe-worker] crossOriginIsolated=' + self.crossOriginIsolated + ' SAB=' + (typeof SharedArrayBuffer !== 'undefined'));
+  log('[pxe-worker] Creating node client for ' + data.nodeUrl);
   const node = createAztecNodeClient(data.nodeUrl);
 
   // Create PXE (lazy — defers prover download until needed)
-  console.log('[pxe-worker] Creating PXE (lazy)...');
+  log('[pxe-worker] Creating PXE (lazy)...');
   pxe = await createPXE(node, {}, { store: compositeStore });
-  console.log('[pxe-worker] PXE created!');
+  log('[pxe-worker] PXE created!');
 
   // Register account
   const secretKey = new Fr(BigInt(data.masterSecret));
@@ -89,7 +96,7 @@ async function handleInit(data: {
   // Get registered address
   const accounts = await pxe.getRegisteredAccounts();
   const address = accounts[0]?.address?.toString() ?? 'unknown';
-  console.log('[pxe-worker] Account registered:', address);
+  log('[pxe-worker] Account registered: ' + address);
 
   return { address };
 }
