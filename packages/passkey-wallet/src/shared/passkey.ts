@@ -28,7 +28,14 @@ export async function buildCreateOptions(rpId?: string): Promise<CredentialCreat
         residentKey: 'required',
         userVerification: 'preferred',
       },
-      extensions: { prf: {} } as any,
+      extensions: {
+        prf: {
+          // Request PRF evaluation during creation.
+          // Some authenticators support this (returns results.first),
+          // others only report prf.enabled. We handle both cases.
+          eval: { first: encoder.encode(PRF_SALT) },
+        },
+      } as any,
     },
   };
 }

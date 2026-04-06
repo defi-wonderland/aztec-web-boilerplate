@@ -89,18 +89,47 @@ export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: Connec
       let publicKey: Uint8Array;
 
       if (isReturningUser) {
+        // Returning user: authenticate with existing passkey + PRF eval
         const options = buildGetOptions(new Uint8Array(credentialId!), rpId);
         credential = (await navigator.credentials.get(options)) as PublicKeyCredential;
         prfOutput = extractPRFOutput(credential);
         publicKey = new Uint8Array(0); // Host has it in CredentialStore
       } else {
-        const options = await buildCreateOptions(rpId);
-        credential = (await navigator.credentials.create(options)) as PublicKeyCredential;
-        prfOutput = extractPRFOutput(credential);
+        // New user: create passkey first, then authenticate to get PRF output.
+        // credentials.create() only checks PRF capability (prf.enabled),
+        // it does NOT evaluate PRF. We need credentials.get() for that.
+        const createOptions = await buildCreateOptions(rpId);
+        credential = (await navigator.credentials.create(createOptions)) as PublicKeyCredential;
         publicKey = extractPublicKey(credential);
+
+        // Check if PRF output came back from create (some authenticators support eval during create)
+        prfOutput = extractPRFOutput(credential);
+
+        if (!prfOutput) {
+          // PRF wasn't evaluated during create — check if it's at least supported
+          const createExtensions = credential.getClientExtensionResults() as any;
+          if (!createExtensions?.prf?.enabled) {
+            throw new Error(
+              'Your authenticator does not support the PRF extension required for key derivation. ' +
+              'Please use a platform authenticator (Touch ID, Windows Hello) or a FIDO2 security key with PRF support.'
+            );
+          }
+
+          // PRF supported but not evaluated during create — do a second get() call
+          const newCredentialId = new Uint8Array(credential.rawId);
+          const getOptions = buildGetOptions(newCredentialId, rpId);
+          const authCredential = (await navigator.credentials.get(getOptions)) as PublicKeyCredential;
+          prfOutput = extractPRFOutput(authCredential);
+          credential = authCredential;
+        }
       }
 
-      if (!prfOutput) throw new Error('PRF extension not supported by this authenticator');
+      if (!prfOutput) {
+        throw new Error(
+          'Failed to derive PRF output from the authenticator. ' +
+          'Please ensure you are using a PRF-capable authenticator.'
+        );
+      }
 
       const keys = await deriveAllKeys(prfOutput);
 

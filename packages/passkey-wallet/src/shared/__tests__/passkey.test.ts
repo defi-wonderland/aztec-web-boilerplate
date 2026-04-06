@@ -14,7 +14,8 @@ describe('passkey config builders', () => {
       residentKey: 'required',
       userVerification: 'preferred',
     });
-    expect((options.publicKey!.extensions as any)).toEqual({ prf: {} });
+    expect((options.publicKey!.extensions as any).prf).toBeDefined();
+    expect((options.publicKey!.extensions as any).prf.eval.first).toBeInstanceOf(Uint8Array);
     expect(options.publicKey!.challenge).toBeInstanceOf(Uint8Array);
   });
 
