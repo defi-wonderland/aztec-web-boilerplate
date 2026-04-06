@@ -549,15 +549,11 @@ Total passkey loss = funds locked (same as losing a seed phrase).
 
 ## Cross-Origin Isolation Note
 
-Cross-origin iframes cannot get `crossOriginIsolated` regardless of headers — this is a browser spec constraint. Barretenberg's synchronous Poseidon2 (`BarretenbergSync`) runs on the iframe main thread and needs `SharedArrayBuffer`, which is gated behind `crossOriginIsolated`.
+Cross-origin iframes cannot get `crossOriginIsolated` — this is a browser spec constraint, not configurable via headers. Barretenberg uses `BarretenbergSync` (synchronous WASM) for Poseidon2 hashing on the iframe main thread, which requires `SharedArrayBuffer`.
 
-ZK proof generation is unaffected — it already runs in Web Workers that handle their own isolation. The only blocker is synchronous hashing during `registerAccount()` / `deriveKeys()`.
+ZK proof generation is unaffected — it runs in Web Workers that handle their own isolation independently. The blocker is only synchronous hashing during account registration and address computation.
 
-`@aztec/bb.js` exposes both sync and async backends. The async one delegates to a Worker and doesn't need main-thread isolation. `@aztec/foundation` currently only uses the sync path.
-
-**Fix options:** (a) Vite alias to swap the sync Poseidon2 import with an async wrapper at build time, (b) pure JS Poseidon2 implementation for the few hashes needed during registration, or (c) pre-compute the address on the SDK side (the dapp page IS isolated) and send it to the iframe.
-
-The POC sidesteps this by using same-origin (dapp and iframe both at `localhost:3000`). Production cross-origin requires one of the fixes above.
+**Solution:** `@aztec/bb.js` exposes an async Barretenberg backend that delegates to a Worker internally and does not require main-thread `SharedArrayBuffer`. Replace the `BarretenbergSync` Poseidon2 calls in the iframe with the async backend. Same API, same output, no cross-origin constraint.
 
 ---
 
