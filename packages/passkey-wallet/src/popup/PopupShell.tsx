@@ -8,7 +8,7 @@ import type {
 import { ConnectFlow } from './ConnectFlow';
 import { SignFlow } from './SignFlow';
 import { ReadFlow } from './ReadFlow';
-import { loadingStyles } from './styles';
+import { loadingStyles, popupGlobalCSS } from './styles';
 
 const styles = {
   loadingShell: loadingStyles.shell,
@@ -21,6 +21,14 @@ export function PopupShell() {
   const [rpId, setRpId] = useState<string | undefined>();
   const [callbackOrigin, setCallbackOrigin] = useState<string>('');
   const [context, setContext] = useState<TxSummary | ReadSummary | undefined>();
+
+  // Inject global CSS on mount
+  useEffect(() => {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = popupGlobalCSS;
+    document.head.appendChild(styleEl);
+    return () => { document.head.removeChild(styleEl); };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -56,9 +64,9 @@ export function PopupShell() {
 
   if (!flow) {
     return (
-      <div className={styles.loadingShell} data-testid="popup-loading">
-        <span className={styles.loadingSpinner} role="status" aria-label="Loading wallet" />
-        <p className={styles.loadingText}>Loading wallet...</p>
+      <div style={styles.loadingShell} data-testid="popup-loading">
+        <span style={styles.loadingSpinner} role="status" aria-label="Loading wallet" />
+        <p style={styles.loadingText}>Loading wallet...</p>
       </div>
     );
   }

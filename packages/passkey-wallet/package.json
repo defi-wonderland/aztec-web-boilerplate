@@ -10,8 +10,11 @@
     "./popup": "./src/popup/index.ts"
   },
   "scripts": {
-    "dev:host": "vite --config vite.host.config.ts",
-    "build": "vite build --config vite.sdk.config.ts && vite build --config vite.host.config.ts",
+    "dev:host": "node scripts/build-host.mjs && node scripts/serve-host.mjs",
+    "build:host": "node scripts/build-host.mjs",
+    "serve:host": "node scripts/serve-host.mjs",
+    "dev:host:vite": "vite --config vite.host.config.ts",
+    "build": "vite build --config vite.sdk.config.ts && node scripts/build-host.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -31,6 +34,7 @@
     "react-dom": ">=18"
   },
   "devDependencies": {
+    "esbuild": "^0.27.0",
     "typescript": "~5.3.3",
     "vite": "^7.3.1",
     "vitest": "^3.2.4",

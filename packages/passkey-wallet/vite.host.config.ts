@@ -224,13 +224,6 @@ export default defineConfig({
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
     },
   },
-  css: {
-    postcss: {
-      plugins: [
-        (await import('@tailwindcss/postcss')).default,
-      ],
-    },
-  },
   build: {
     outDir: 'dist/host',
     sourcemap: false,

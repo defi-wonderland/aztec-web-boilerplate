@@ -1,215 +1,454 @@
 /**
  * =============================================================================
- * POPUP SHARED STYLES
+ * POPUP INLINE STYLES
  * =============================================================================
  *
- * Reusable style tokens for the passkey popup window components.
- * Follows the project's mandatory "styles object" pattern:
- *   - All Tailwind classes defined as const objects BEFORE components
- *   - Uses custom theme utilities from popup.css (bg-surface, text-accent, etc.)
- *   - Never inline className strings in JSX
+ * Native CSS-in-JS styles for the passkey popup window. Uses React
+ * CSSProperties instead of Tailwind classes so the popup can be built
+ * with esbuild without any PostCSS/Tailwind processing.
+ *
+ * Theme tokens are embedded directly as CSS variable references matching
+ * the CSS custom properties injected via <style> in popupGlobalCSS below.
  */
+
+import type { CSSProperties } from 'react';
+
+/* ---------------------------------------------------------------------------
+   GLOBAL CSS (injected into <head> at mount time)
+   --------------------------------------------------------------------------- */
+
+/**
+ * Global CSS string injected into the popup document's <head>.
+ * Contains CSS variables, base resets, animations, and font import.
+ */
+export const popupGlobalCSS = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #eeedf1;
+  --bg-tertiary: #f8f7fa;
+  --bg-gradient-start: #f8f7fa;
+  --bg-gradient-end: #ffffff;
+  --text-primary: #321e4c;
+  --text-secondary: #5a4a6b;
+  --text-muted: #8b7a9b;
+  --accent-primary: #8c7eff;
+  --accent-secondary: #eda1ff;
+  --border-color: #d4d1db;
+  --shadow-color: rgba(50, 30, 76, 0.1);
+  --button-text: #eeedf1;
+  --bg-page: #f8f7fa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  color: var(--text-primary);
+}
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ring-pulse {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+`;
 
 /* ---------------------------------------------------------------------------
    LAYOUT
    --------------------------------------------------------------------------- */
 
 export const layoutStyles = {
-  /** Outer shell — fills the popup window */
-  shell: 'min-h-screen bg-page flex items-center justify-center p-4',
-  /** Content card — centered, constrained width */
-  card: [
-    'w-full max-w-sm',
-    'bg-surface border border-default rounded-2xl',
-    'shadow-theme-lg',
-    'p-6',
-    'animate-fade-slide-up',
-  ].join(' '),
-  /** Section with vertical rhythm */
-  section: 'flex flex-col gap-3',
-} as const;
+  shell: {
+    minHeight: '100vh',
+    backgroundColor: 'var(--bg-page)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '16px',
+  } as CSSProperties,
+
+  card: {
+    width: '100%',
+    maxWidth: '384px',
+    backgroundColor: 'var(--bg-primary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '16px',
+    boxShadow: '0 0.5rem 1.5rem var(--shadow-color)',
+    padding: '24px',
+    animation: 'fade-slide-up 0.3s ease-out forwards',
+  } as CSSProperties,
+
+  section: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
    HEADER / BRANDING
    --------------------------------------------------------------------------- */
 
 export const headerStyles = {
-  /** Top row: icon + wordmark */
-  row: 'flex items-center gap-2 mb-6',
-  /** Aztec "A" icon container */
-  logoWrap: [
-    'w-8 h-8 rounded-lg',
-    'gradient-primary',
-    'flex items-center justify-center',
-    'shadow-theme',
-  ].join(' '),
-  logoText: 'text-on-accent font-bold text-sm',
-  /** Wordmark */
-  wordmark: 'text-base font-semibold text-default',
-} as const;
+  row: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '24px',
+  } as CSSProperties,
+
+  logoWrap: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    background: 'linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 2px 8px var(--shadow-color)',
+  } as CSSProperties,
+
+  logoText: {
+    color: 'var(--button-text)',
+    fontWeight: 700,
+    fontSize: '14px',
+  } as CSSProperties,
+
+  wordmark: {
+    fontSize: '16px',
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
    ILLUSTRATION AREA (biometric icon etc.)
    --------------------------------------------------------------------------- */
 
 export const illustrationStyles = {
-  wrap: 'flex flex-col items-center gap-3 py-4',
-  /** Outer ring — animated pulse */
-  ringOuter: [
-    'relative flex items-center justify-center',
-    'w-20 h-20',
-  ].join(' '),
-  /** Animated ring that pulses behind the icon */
-  ringPulse: [
-    'absolute inset-0 rounded-full',
-    'border-2 border-accent/30',
-    'animate-ring-pulse',
-  ].join(' '),
-  /** Icon container */
-  iconWrap: [
-    'relative z-10',
-    'w-16 h-16 rounded-2xl',
-    'bg-accent/10 border border-accent/20',
-    'flex items-center justify-center',
-    'text-accent',
-  ].join(' '),
-  title: 'text-xl font-semibold text-default text-center',
-  description: 'text-sm text-muted text-center leading-relaxed',
-} as const;
+  wrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '16px 0',
+  } as CSSProperties,
+
+  ringOuter: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80px',
+    height: '80px',
+  } as CSSProperties,
+
+  ringPulse: {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: '50%',
+    border: '2px solid rgba(140, 126, 255, 0.3)',
+    animation: 'ring-pulse 1.5s ease-out infinite',
+  } as CSSProperties,
+
+  iconWrap: {
+    position: 'relative',
+    zIndex: 10,
+    width: '64px',
+    height: '64px',
+    borderRadius: '16px',
+    backgroundColor: 'rgba(140, 126, 255, 0.1)',
+    border: '1px solid rgba(140, 126, 255, 0.2)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'var(--accent-primary)',
+  } as CSSProperties,
+
+  title: {
+    fontSize: '20px',
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    textAlign: 'center',
+  } as CSSProperties,
+
+  description: {
+    fontSize: '14px',
+    color: 'var(--text-muted)',
+    textAlign: 'center',
+    lineHeight: 1.6,
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
    ORIGIN BADGE (dapp URL indicator)
    --------------------------------------------------------------------------- */
 
 export const originStyles = {
-  wrap: 'flex items-center gap-2 mb-4',
-  label: 'text-xs text-muted',
-  badge: [
-    'inline-flex items-center gap-1.5',
-    'px-2.5 py-1 rounded-full',
-    'bg-blue-500/10 text-blue-500',
-    'text-xs font-medium',
-    'border border-blue-500/20',
-  ].join(' '),
-} as const;
+  wrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '16px',
+  } as CSSProperties,
+
+  label: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+  } as CSSProperties,
+
+  badge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '4px 10px',
+    borderRadius: '9999px',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    color: '#3b82f6',
+    fontSize: '12px',
+    fontWeight: 500,
+    border: '1px solid rgba(59, 130, 246, 0.2)',
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
    DETAIL CARD (tx / read summary)
    --------------------------------------------------------------------------- */
 
 export const detailCardStyles = {
-  card: [
-    'rounded-xl',
-    'bg-surface-secondary border border-default',
-    'p-4',
-    'flex flex-col gap-2.5',
-  ].join(' '),
-  row: 'flex items-start justify-between gap-2',
-  label: 'text-xs font-medium text-muted shrink-0 pt-0.5',
-  value: [
-    'text-xs font-mono text-default',
-    'text-right break-all',
-  ].join(' '),
-  methodBadge: [
-    'inline-flex items-center',
-    'px-2 py-0.5 rounded-md',
-    'bg-accent/10 text-accent',
-    'text-xs font-medium',
-  ].join(' '),
-} as const;
+  card: {
+    borderRadius: '12px',
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-color)',
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  } as CSSProperties,
+
+  row: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '8px',
+  } as CSSProperties,
+
+  label: {
+    fontSize: '12px',
+    fontWeight: 500,
+    color: 'var(--text-muted)',
+    flexShrink: 0,
+    paddingTop: '2px',
+  } as CSSProperties,
+
+  value: {
+    fontSize: '12px',
+    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+    color: 'var(--text-primary)',
+    textAlign: 'right',
+    wordBreak: 'break-all',
+  } as CSSProperties,
+
+  methodBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '2px 8px',
+    borderRadius: '6px',
+    backgroundColor: 'rgba(140, 126, 255, 0.1)',
+    color: 'var(--accent-primary)',
+    fontSize: '12px',
+    fontWeight: 500,
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
    BUTTONS
    --------------------------------------------------------------------------- */
 
 export const buttonStyles = {
-  /** Full-width primary CTA */
-  primary: [
-    'w-full flex items-center justify-center gap-2',
-    'px-4 py-3 rounded-xl',
-    'gradient-primary text-on-accent',
-    'text-sm font-semibold',
-    'shadow-theme hover:shadow-theme-hover',
-    'hover:scale-[1.01] active:scale-[0.99]',
-    'transition-all duration-200',
-    'cursor-pointer',
-    'disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100',
-  ].join(' '),
-  /** Full-width ghost / cancel button */
-  ghost: [
-    'w-full flex items-center justify-center gap-2',
-    'px-4 py-2.5 rounded-xl',
-    'bg-transparent text-muted',
-    'text-sm font-medium',
-    'hover:bg-surface-secondary hover:text-default',
-    'transition-all duration-200',
-    'cursor-pointer',
-    'border border-transparent hover:border-default',
-  ].join(' '),
-  /** Full-width danger (reject) button */
-  danger: [
-    'w-full flex items-center justify-center gap-2',
-    'px-4 py-2.5 rounded-xl',
-    'bg-transparent text-red-500',
-    'text-sm font-medium',
-    'border border-red-500/30',
-    'hover:bg-red-500/10 hover:border-red-500/60',
-    'transition-all duration-200',
-    'cursor-pointer',
-  ].join(' '),
-  /** Loading spinner inline */
-  spinner: 'inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent',
-} as const;
+  primary: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '12px 16px',
+    borderRadius: '12px',
+    background: 'linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%)',
+    color: 'var(--button-text)',
+    fontSize: '14px',
+    fontWeight: 600,
+    boxShadow: '0 2px 8px var(--shadow-color)',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  } as CSSProperties,
+
+  ghost: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    borderRadius: '12px',
+    backgroundColor: 'transparent',
+    color: 'var(--text-muted)',
+    fontSize: '14px',
+    fontWeight: 500,
+    border: '1px solid transparent',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  } as CSSProperties,
+
+  danger: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    borderRadius: '12px',
+    backgroundColor: 'transparent',
+    color: '#ef4444',
+    fontSize: '14px',
+    fontWeight: 500,
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  } as CSSProperties,
+
+  spinner: {
+    display: 'inline-block',
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    border: '2px solid currentColor',
+    borderTopColor: 'transparent',
+    animation: 'spin 0.6s linear infinite',
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
    ERROR STATE
    --------------------------------------------------------------------------- */
 
 export const errorStyles = {
-  wrap: [
-    'flex items-start gap-2.5',
-    'px-3 py-2.5 rounded-lg',
-    'bg-red-500/8 border border-red-500/20',
-  ].join(' '),
-  icon: 'text-red-500 shrink-0 mt-0.5',
-  message: 'text-xs text-red-500 leading-relaxed',
-} as const;
+  wrap: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    border: '1px solid rgba(239, 68, 68, 0.2)',
+  } as CSSProperties,
+
+  icon: {
+    color: '#ef4444',
+    flexShrink: 0,
+    marginTop: '2px',
+  } as CSSProperties,
+
+  message: {
+    fontSize: '12px',
+    color: '#ef4444',
+    lineHeight: 1.6,
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
    TRUST / SECURITY BADGE
    --------------------------------------------------------------------------- */
 
 export const trustBadgeStyles = {
-  wrap: 'flex items-center justify-center gap-1.5 mt-2',
-  icon: 'text-muted',
-  text: 'text-xs text-muted',
-} as const;
+  wrap: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    marginTop: '8px',
+  } as CSSProperties,
+
+  icon: {
+    color: 'var(--text-muted)',
+  } as CSSProperties,
+
+  text: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
-   INFO ROW (for read flow — less alarming)
+   INFO ROW (for read flow -- less alarming)
    --------------------------------------------------------------------------- */
 
 export const infoStyles = {
-  wrap: [
-    'flex items-start gap-2.5',
-    'px-3 py-2.5 rounded-lg',
-    'bg-blue-500/8 border border-blue-500/20',
-    'mb-4',
-  ].join(' '),
-  icon: 'text-blue-500 shrink-0 mt-0.5',
-  text: 'text-xs text-blue-600 leading-relaxed',
-} as const;
+  wrap: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    border: '1px solid rgba(59, 130, 246, 0.2)',
+    marginBottom: '16px',
+  } as CSSProperties,
+
+  icon: {
+    color: '#3b82f6',
+    flexShrink: 0,
+    marginTop: '2px',
+  } as CSSProperties,
+
+  text: {
+    fontSize: '12px',
+    color: '#2563eb',
+    lineHeight: 1.6,
+  } as CSSProperties,
+};
 
 /* ---------------------------------------------------------------------------
    LOADING SHELL (waiting for POPUP_INIT)
    --------------------------------------------------------------------------- */
 
 export const loadingStyles = {
-  shell: 'min-h-screen bg-page flex flex-col items-center justify-center gap-4',
-  spinner: [
-    'w-8 h-8 rounded-full',
-    'border-2 border-default border-t-accent',
-    'animate-spin',
-  ].join(' '),
-  text: 'text-sm text-muted',
-} as const;
+  shell: {
+    minHeight: '100vh',
+    backgroundColor: 'var(--bg-page)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '16px',
+  } as CSSProperties,
+
+  spinner: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    border: '2px solid var(--border-color)',
+    borderTopColor: 'var(--accent-primary)',
+    animation: 'spin 0.6s linear infinite',
+  } as CSSProperties,
+
+  text: {
+    fontSize: '14px',
+    color: 'var(--text-muted)',
+  } as CSSProperties,
+};

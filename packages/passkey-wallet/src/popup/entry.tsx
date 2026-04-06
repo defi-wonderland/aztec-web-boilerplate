@@ -1,4 +1,3 @@
-import './popup.css';
 import { createRoot } from 'react-dom/client';
 import { PopupShell } from './PopupShell';
 

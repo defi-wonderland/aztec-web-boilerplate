@@ -25,10 +25,25 @@ const styles = {
   wordmark: headerStyles.wordmark,
 
   // Page title
-  titleRow: 'flex items-center gap-2 mb-1',
-  titleIcon: 'text-accent',
-  title: 'text-lg font-semibold text-default',
-  subtitle: 'text-sm text-muted mb-4',
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '4px',
+  } as const,
+  titleIcon: {
+    color: 'var(--accent-primary)',
+  } as const,
+  title: {
+    fontSize: '18px',
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  } as const,
+  subtitle: {
+    fontSize: '14px',
+    color: 'var(--text-muted)',
+    marginBottom: '16px',
+  } as const,
 
   // Origin
   originWrap: originStyles.wrap,
@@ -64,7 +79,7 @@ interface SignFlowProps {
 /** Truncate a contract address for display */
 function truncateAddress(address: string): string {
   if (address.length <= 16) return address;
-  return `${address.slice(0, 8)}…${address.slice(-6)}`;
+  return `${address.slice(0, 8)}...${address.slice(-6)}`;
 }
 
 /* ---------------------------------------------------------------------------
@@ -77,51 +92,51 @@ export function SignFlow({ summary, onComplete, onCancel }: SignFlowProps) {
   const handleReject = () => onComplete({ type: 'tx-cancelled' });
 
   return (
-    <div className={styles.shell}>
-      <div className={styles.card}>
+    <div style={styles.shell}>
+      <div style={styles.card}>
 
         {/* Header */}
-        <div className={styles.headerRow}>
-          <div className={styles.logoWrap} aria-hidden="true">
-            <span className={styles.logoText}>A</span>
+        <div style={styles.headerRow}>
+          <div style={styles.logoWrap} aria-hidden="true">
+            <span style={styles.logoText}>A</span>
           </div>
-          <span className={styles.wordmark}>Aztec Wallet</span>
+          <span style={styles.wordmark}>Aztec Wallet</span>
         </div>
 
         {/* Page title */}
-        <div className={styles.titleRow}>
-          <Zap size={18} strokeWidth={2} className={styles.titleIcon} aria-hidden="true" />
-          <h1 className={styles.title}>Approve Transaction</h1>
+        <div style={styles.titleRow}>
+          <Zap size={18} strokeWidth={2} style={styles.titleIcon} aria-hidden="true" />
+          <h1 style={styles.title}>Approve Transaction</h1>
         </div>
-        <p className={styles.subtitle}>Review the details before approving.</p>
+        <p style={styles.subtitle}>Review the details before approving.</p>
 
         {/* Origin badge */}
-        <div className={styles.originWrap}>
-          <span className={styles.originLabel}>Requested by</span>
-          <span className={styles.originBadge} data-testid="sign-dapp-origin">
+        <div style={styles.originWrap}>
+          <span style={styles.originLabel}>Requested by</span>
+          <span style={styles.originBadge} data-testid="sign-dapp-origin">
             <Globe size={10} strokeWidth={2} aria-hidden="true" />
             {summary.dappOrigin}
           </span>
         </div>
 
         {/* Transaction details card */}
-        <div className={styles.detailCard} data-testid="sign-details-card">
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Contract</span>
-            <span className={styles.detailValue} title={summary.contractAddress}>
+        <div style={styles.detailCard} data-testid="sign-details-card">
+          <div style={styles.detailRow}>
+            <span style={styles.detailLabel}>Contract</span>
+            <span style={styles.detailValue} title={summary.contractAddress}>
               {truncateAddress(summary.contractAddress)}
             </span>
           </div>
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Method</span>
-            <span className={styles.methodBadge} data-testid="sign-method-name">
+          <div style={styles.detailRow}>
+            <span style={styles.detailLabel}>Method</span>
+            <span style={styles.methodBadge} data-testid="sign-method-name">
               {summary.methodName}
             </span>
           </div>
           {summary.args && summary.args.length > 0 && (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Args</span>
-              <span className={styles.detailValue}>
+            <div style={styles.detailRow}>
+              <span style={styles.detailLabel}>Args</span>
+              <span style={styles.detailValue}>
                 {summary.args.length} argument{summary.args.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -129,11 +144,11 @@ export function SignFlow({ summary, onComplete, onCancel }: SignFlowProps) {
         </div>
 
         {/* Actions */}
-        <div className={[styles.section, 'mt-4'].join(' ')}>
+        <div style={{ ...styles.section, marginTop: '16px' }}>
           <button
             type="button"
             onClick={handleApprove}
-            className={styles.approveButton}
+            style={styles.approveButton}
             data-testid="sign-approve-button"
           >
             <CheckCircle size={16} strokeWidth={2} aria-hidden="true" />
@@ -143,7 +158,7 @@ export function SignFlow({ summary, onComplete, onCancel }: SignFlowProps) {
           <button
             type="button"
             onClick={handleReject}
-            className={styles.rejectButton}
+            style={styles.rejectButton}
             data-testid="sign-reject-button"
           >
             <X size={16} strokeWidth={2} aria-hidden="true" />

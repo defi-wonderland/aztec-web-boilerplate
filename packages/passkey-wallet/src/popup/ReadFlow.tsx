@@ -26,10 +26,25 @@ const styles = {
   wordmark: headerStyles.wordmark,
 
   // Page title
-  titleRow: 'flex items-center gap-2 mb-1',
-  titleIcon: 'text-blue-500',
-  title: 'text-lg font-semibold text-default',
-  subtitle: 'text-sm text-muted mb-4',
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '4px',
+  } as const,
+  titleIcon: {
+    color: '#3b82f6',
+  } as const,
+  title: {
+    fontSize: '18px',
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  } as const,
+  subtitle: {
+    fontSize: '14px',
+    color: 'var(--text-muted)',
+    marginBottom: '16px',
+  } as const,
 
   // Origin
   originWrap: originStyles.wrap,
@@ -70,7 +85,7 @@ interface ReadFlowProps {
 /** Truncate a contract address for display */
 function truncateAddress(address: string): string {
   if (address.length <= 16) return address;
-  return `${address.slice(0, 8)}…${address.slice(-6)}`;
+  return `${address.slice(0, 8)}...${address.slice(-6)}`;
 }
 
 /* ---------------------------------------------------------------------------
@@ -82,63 +97,63 @@ export function ReadFlow({ summary, onComplete, onCancel }: ReadFlowProps) {
   const handleDeny = () => onComplete({ type: 'read-cancelled' });
 
   return (
-    <div className={styles.shell}>
-      <div className={styles.card}>
+    <div style={styles.shell}>
+      <div style={styles.card}>
 
         {/* Header */}
-        <div className={styles.headerRow}>
-          <div className={styles.logoWrap} aria-hidden="true">
-            <span className={styles.logoText}>A</span>
+        <div style={styles.headerRow}>
+          <div style={styles.logoWrap} aria-hidden="true">
+            <span style={styles.logoText}>A</span>
           </div>
-          <span className={styles.wordmark}>Aztec Wallet</span>
+          <span style={styles.wordmark}>Aztec Wallet</span>
         </div>
 
         {/* Page title */}
-        <div className={styles.titleRow}>
-          <Eye size={18} strokeWidth={2} className={styles.titleIcon} aria-hidden="true" />
-          <h1 className={styles.title}>Private Data Request</h1>
+        <div style={styles.titleRow}>
+          <Eye size={18} strokeWidth={2} style={styles.titleIcon} aria-hidden="true" />
+          <h1 style={styles.title}>Private Data Request</h1>
         </div>
-        <p className={styles.subtitle}>A dapp wants to read private data from your wallet.</p>
+        <p style={styles.subtitle}>A dapp wants to read private data from your wallet.</p>
 
         {/* Origin badge */}
-        <div className={styles.originWrap}>
-          <span className={styles.originLabel}>Requested by</span>
-          <span className={styles.originBadge} data-testid="read-dapp-origin">
+        <div style={styles.originWrap}>
+          <span style={styles.originLabel}>Requested by</span>
+          <span style={styles.originBadge} data-testid="read-dapp-origin">
             <Globe size={10} strokeWidth={2} aria-hidden="true" />
             {summary.dappOrigin}
           </span>
         </div>
 
         {/* Info message (read-only, less alarming than sign) */}
-        <div className={styles.infoWrap} role="note">
-          <Info size={14} strokeWidth={2} className={styles.infoIcon} aria-hidden="true" />
-          <p className={styles.infoText}>
+        <div style={styles.infoWrap} role="note">
+          <Info size={14} strokeWidth={2} style={styles.infoIcon} aria-hidden="true" />
+          <p style={styles.infoText}>
             This is a read-only request. No transaction will be sent and no funds will move.
           </p>
         </div>
 
         {/* Read details card */}
-        <div className={styles.detailCard} data-testid="read-details-card">
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Contract</span>
-            <span className={styles.detailValue} title={summary.contractAddress}>
+        <div style={styles.detailCard} data-testid="read-details-card">
+          <div style={styles.detailRow}>
+            <span style={styles.detailLabel}>Contract</span>
+            <span style={styles.detailValue} title={summary.contractAddress}>
               {truncateAddress(summary.contractAddress)}
             </span>
           </div>
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>View</span>
-            <span className={styles.methodBadge} data-testid="read-method-name">
+          <div style={styles.detailRow}>
+            <span style={styles.detailLabel}>View</span>
+            <span style={styles.methodBadge} data-testid="read-method-name">
               {summary.methodName}
             </span>
           </div>
         </div>
 
         {/* Actions */}
-        <div className={[styles.section, 'mt-4'].join(' ')}>
+        <div style={{ ...styles.section, marginTop: '16px' }}>
           <button
             type="button"
             onClick={handleAllow}
-            className={styles.allowButton}
+            style={styles.allowButton}
             data-testid="read-allow-button"
           >
             <CheckCircle size={16} strokeWidth={2} aria-hidden="true" />
@@ -148,7 +163,7 @@ export function ReadFlow({ summary, onComplete, onCancel }: ReadFlowProps) {
           <button
             type="button"
             onClick={handleDeny}
-            className={styles.denyButton}
+            style={styles.denyButton}
             data-testid="read-deny-button"
           >
             <X size={16} strokeWidth={2} aria-hidden="true" />

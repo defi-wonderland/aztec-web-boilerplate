@@ -162,31 +162,31 @@ export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: Connec
   };
 
   return (
-    <div className={styles.shell}>
-      <div className={styles.card}>
+    <div style={styles.shell}>
+      <div style={styles.card}>
 
         {/* Header */}
-        <div className={styles.headerRow}>
-          <div className={styles.logoWrap} aria-hidden="true">
-            <span className={styles.logoText}>A</span>
+        <div style={styles.headerRow}>
+          <div style={styles.logoWrap} aria-hidden="true">
+            <span style={styles.logoText}>A</span>
           </div>
-          <span className={styles.wordmark}>Aztec Wallet</span>
+          <span style={styles.wordmark}>Aztec Wallet</span>
         </div>
 
         {/* Biometric illustration */}
-        <div className={styles.illustrationWrap}>
-          <div className={styles.ringOuter}>
+        <div style={styles.illustrationWrap}>
+          <div style={styles.ringOuter}>
             {isAuthenticating && (
-              <span className={styles.ringPulse} aria-hidden="true" />
+              <span style={styles.ringPulse} aria-hidden="true" />
             )}
-            <div className={styles.iconWrap} aria-hidden="true">
+            <div style={styles.iconWrap} aria-hidden="true">
               <Fingerprint size={32} strokeWidth={1.5} />
             </div>
           </div>
-          <h1 className={styles.illustrationTitle}>
+          <h1 style={styles.illustrationTitle}>
             {isReturningUser ? 'Unlock Your Wallet' : 'Create Your Wallet'}
           </h1>
-          <p className={styles.illustrationDesc}>
+          <p style={styles.illustrationDesc}>
             {isReturningUser
               ? 'Authenticate with your passkey to restore your wallet.'
               : 'Create a passkey to secure your Aztec wallet. Your biometric stays on your device.'}
@@ -195,25 +195,28 @@ export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: Connec
 
         {/* Error state */}
         {error && (
-          <div className={styles.errorWrap} role="alert" data-testid="connect-error">
-            <AlertTriangle size={14} strokeWidth={2} className={styles.errorIcon} />
-            <p className={styles.errorMessage}>{error}</p>
+          <div style={styles.errorWrap} role="alert" data-testid="connect-error">
+            <AlertTriangle size={14} strokeWidth={2} style={styles.errorIcon} />
+            <p style={styles.errorMessage}>{error}</p>
           </div>
         )}
 
         {/* Actions */}
-        <div className={styles.section}>
+        <div style={styles.section}>
           <button
             type="button"
             onClick={handleAuth}
             disabled={isAuthenticating}
-            className={styles.primaryButton}
+            style={{
+              ...styles.primaryButton,
+              ...(isAuthenticating ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+            }}
             data-testid="connect-passkey-button"
           >
             {isAuthenticating ? (
               <>
-                <span className={styles.spinner} aria-hidden="true" />
-                <span>Authenticating…</span>
+                <span style={styles.spinner} aria-hidden="true" />
+                <span>Authenticating...</span>
               </>
             ) : (
               <>
@@ -226,7 +229,7 @@ export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: Connec
           <button
             type="button"
             onClick={onCancel}
-            className={styles.ghostButton}
+            style={styles.ghostButton}
             data-testid="connect-cancel-button"
           >
             Cancel
@@ -234,9 +237,9 @@ export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: Connec
         </div>
 
         {/* Trust badge */}
-        <div className={styles.trustWrap} aria-label="Secured by WebAuthn">
-          <ShieldCheck size={12} strokeWidth={2} className={styles.trustIcon} aria-hidden="true" />
-          <span className={styles.trustText}>Secured by WebAuthn</span>
+        <div style={styles.trustWrap} aria-label="Secured by WebAuthn">
+          <ShieldCheck size={12} strokeWidth={2} style={styles.trustIcon} aria-hidden="true" />
+          <span style={styles.trustText}>Secured by WebAuthn</span>
         </div>
 
       </div>
