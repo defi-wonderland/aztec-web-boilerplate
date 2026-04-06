@@ -34,7 +34,7 @@ packages/passkey-wallet/
 
 | Design | POC | Status |
 |---|---|---|
-| Cross-origin iframe (`wallet.aztec.network`) | Iframe at `localhost:3001`, `credentialless` attribute for COEP compat | **Done** |
+| Cross-origin iframe (`wallet.aztec.network`) | Cross-origin only (no same-origin fallback). Iframe at `localhost:3001` with `credentialless` attribute for COEP compat. esbuild-built host served with CORP/COEP headers | **Done** |
 | PXE (WASM) in iframe | PXE runs in a **Web Worker** inside the iframe (Workers have `crossOriginIsolated=true` even in credentialless iframes) | **Done** — Worker architecture solves the SharedArrayBuffer constraint |
 | Popup for passkey ceremonies + tx approval | Popup at wallet host origin, opened by SDK | **Done** |
 | SDK = thin RPC client, no keys, no PXE | `createPasskeyWallet()` → `PasskeyWalletProvider` → `usePasskeyWallet()` → returns standard Aztec `Wallet` | **Done** |
@@ -91,8 +91,8 @@ The custom Noir contract is the main item explicitly excluded from the POC scope
 
 | Design | POC | Status |
 |---|---|---|
-| First visit: create passkey → PRF → keys → PXE sync | `ConnectFlow` → `credentials.create()` + PRF eval → HKDF → send keys to iframe → PXE Worker init | **Done** |
-| Returning visit: biometric → PRF → decrypt cache → resume | Credential ID stored in SDK's `localStorage`, passed to popup as URL param, `ConnectFlow` uses `credentials.get()` | **Done** |
+| First visit: create passkey → PRF → keys → PXE sync | `ConnectFlow` tries discoverable `credentials.get()` first (shows picker if passkey exists), falls back to `credentials.create()` only for truly new users. PRF eval → HKDF → keys → PXE Worker init | **Done** |
+| Returning visit: biometric → PRF → decrypt cache → resume | Three-tier credential resolution: (1) stored credential ID → direct `credentials.get({ allowCredentials })`, (2) no stored ID → discoverable `credentials.get({})` (authenticator shows picker, same passkey = same address), (3) no existing passkey → `credentials.create()`. Credential ID stored in SDK's `localStorage` on dapp origin | **Done** |
 | Keys in JS memory only (never serialized) | Keys exist in Worker memory during session, garbage collected on Worker termination | **Done** |
 | Encrypted PXE cache in IndexedDB | `EncryptedKVStore` wraps IndexedDB with AES-256-GCM | **Done** |
 | CompositeKVStore (RAM for keys, encrypted IDB for rest) | `CompositeKVStore` routes `key_store`, `complete_addresses`, `complete_address_index` to `InMemoryKVStore` | **Done** |
@@ -197,6 +197,14 @@ The tech design assumes `postMessage` works between the popup and the iframe/SDK
 
 The OAuth callback pattern (redirect → localStorage → poll) solves all three. The tech design's "Communication" section should be updated to reflect this.
 
+### Credential Recovery Without Stored ID
+
+The tech design assumes the `credentialId` is always available (stored in iframe IndexedDB). In practice, the credentialless iframe has ephemeral storage, so the credential ID can be lost between sessions. The POC stores the credential ID in the SDK's `localStorage` (dapp origin) as a fallback.
+
+When even that is cleared, `credentials.create()` would create a NEW passkey — different `CredRandom`, different PRF output, different address. This breaks the "one passkey = one wallet" identity model.
+
+The fix: use WebAuthn's **discoverable credential** flow. `credentials.get()` called WITHOUT `allowCredentials` triggers the authenticator's passkey picker, showing all stored passkeys for this RP ID. The user selects their existing passkey → same `CredRandom` → same PRF → same address. `credentials.create()` is only called if no passkey exists at all.
+
 ### PRF During credentials.create()
 
 The tech design shows PRF extraction from `credentials.create()`. In practice:
@@ -239,10 +247,6 @@ yarn dev
 # Requires: Aztec sandbox node at localhost:8080
 ```
 
-### Same-Origin (automated testing)
-
-The same-origin setup (`walletHost: window.location.origin`) with `wallet-host.html`/`wallet-popup.html` served from the dapp's Vite server was verified working with the sandbox node. Uses mock WebAuthn via Playwright route interception.
-
 ---
 
 ## Files Changed in the Root Project
@@ -255,7 +259,5 @@ The same-origin setup (`walletHost: window.location.origin`) with `wallet-host.h
 | `src/components/Header.tsx` | Added Passkey Wallet tab with Fingerprint icon |
 | `src/containers/MainContent.tsx` | Added `case 'passkey'` rendering `PasskeyDemo` |
 | `src/containers/PasskeyDemo.tsx` | Integration demo using `PasskeyWalletProvider` + `usePasskeyWallet()` |
-| `wallet-host.html` | Same-origin host entry point |
-| `wallet-popup.html` | Same-origin popup entry point |
 | `public/__wallet_callback.html` | OAuth callback landing page |
 | `docs/passkey-wallet-tech-design-v2.md` | Added cross-origin isolation note to Browser Compatibility |
