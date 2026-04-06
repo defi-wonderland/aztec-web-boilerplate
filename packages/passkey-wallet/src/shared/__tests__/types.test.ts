@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ChannelMessage, RPCResponse, PopupResponse } from '../types';
-import { CHANNEL_VERSION, RP_ID, EPHEMERAL_STORE_NAMES } from '../constants';
+import { CHANNEL_VERSION, DEFAULT_RP_ID, EPHEMERAL_STORE_NAMES } from '../constants';
 
 describe('shared types and constants', () => {
   it('ChannelMessage version matches constant', () => {
@@ -34,8 +34,8 @@ describe('shared types and constants', () => {
     expect(authKeys.type).toBe('auth-keys');
   });
 
-  it('RP_ID is the broadest registrable domain', () => {
-    expect(RP_ID).toBe('aztec.network');
+  it('DEFAULT_RP_ID is the broadest registrable domain', () => {
+    expect(DEFAULT_RP_ID).toBe('aztec.network');
   });
 
   it('ephemeral store names include key_store and complete_addresses', () => {

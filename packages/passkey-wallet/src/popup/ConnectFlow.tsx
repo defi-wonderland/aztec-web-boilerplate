@@ -65,6 +65,7 @@ const styles = {
 
 interface ConnectFlowProps {
   credentialId?: ArrayBuffer;
+  rpId?: string;
   onComplete: (response: PopupResponse) => void;
   onCancel: () => void;
 }
@@ -73,7 +74,7 @@ interface ConnectFlowProps {
    Component
    --------------------------------------------------------------------------- */
 
-export function ConnectFlow({ credentialId, onComplete, onCancel }: ConnectFlowProps) {
+export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: ConnectFlowProps) {
   const [status, setStatus] = useState<'idle' | 'authenticating' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const isReturningUser = !!credentialId;
@@ -88,12 +89,12 @@ export function ConnectFlow({ credentialId, onComplete, onCancel }: ConnectFlowP
       let publicKey: Uint8Array;
 
       if (isReturningUser) {
-        const options = buildGetOptions(new Uint8Array(credentialId!));
+        const options = buildGetOptions(new Uint8Array(credentialId!), rpId);
         credential = (await navigator.credentials.get(options)) as PublicKeyCredential;
         prfOutput = extractPRFOutput(credential);
         publicKey = new Uint8Array(0); // Host has it in CredentialStore
       } else {
-        const options = await buildCreateOptions();
+        const options = await buildCreateOptions(rpId);
         credential = (await navigator.credentials.create(options)) as PublicKeyCredential;
         prfOutput = extractPRFOutput(credential);
         publicKey = extractPublicKey(credential);

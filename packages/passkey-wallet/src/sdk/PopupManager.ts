@@ -15,7 +15,7 @@ import type { PopupFlow, PopupResponse, PopupInitMessage, TxSummary, ReadSummary
  * so that window.opener is available in the cross-origin popup.
  */
 export class PopupManager {
-  constructor(private walletHost: string) {}
+  constructor(private walletHost: string, private rpId?: string) {}
 
   async openPopup(
     flow: PopupFlow,
@@ -37,6 +37,7 @@ export class PopupManager {
       const initMsg: PopupInitMessage = {
         type: 'POPUP_INIT',
         flow,
+        rpId: this.rpId,
         context,
         credentialId: credentialId ? Array.from(credentialId).map(b => String.fromCharCode(b)).join('') : undefined,
       };

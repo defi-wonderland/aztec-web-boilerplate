@@ -1,5 +1,5 @@
 import {
-  RP_ID,
+  DEFAULT_RP_ID,
   RP_NAME,
   PRF_SALT,
   ACCOUNT_INDEX,
@@ -12,7 +12,7 @@ const encoder = new TextEncoder();
  * Builds the options object for navigator.credentials.create().
  * Creates a discoverable passkey with PRF extension support.
  */
-export async function buildCreateOptions(): Promise<CredentialCreationOptions> {
+export async function buildCreateOptions(rpId?: string): Promise<CredentialCreationOptions> {
   const prfSalt = `${USER_ID_SALT_PREFIX}${ACCOUNT_INDEX}`;
   const userId = new Uint8Array(
     await crypto.subtle.digest('SHA-256', encoder.encode(prfSalt)),
@@ -20,7 +20,7 @@ export async function buildCreateOptions(): Promise<CredentialCreationOptions> {
 
   return {
     publicKey: {
-      rp: { id: RP_ID, name: RP_NAME },
+      rp: { id: rpId ?? DEFAULT_RP_ID, name: RP_NAME },
       user: { id: userId, name: 'user', displayName: 'Aztec User' },
       challenge: crypto.getRandomValues(new Uint8Array(32)),
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
@@ -42,9 +42,12 @@ export async function buildCreateOptions(): Promise<CredentialCreationOptions> {
  */
 export function buildGetOptions(
   credentialId: Uint8Array,
+  rpId?: string,
 ): CredentialRequestOptions {
   return {
     publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rpId: rpId ?? DEFAULT_RP_ID,
       allowCredentials: [
         {
           id: credentialId,

@@ -7,6 +7,8 @@ export interface PasskeyWalletConfig {
   network: 'devnet' | 'sandbox';
   /** Aztec node URL. Defaults based on network ('sandbox' → localhost:8080, 'devnet' → devnet.aztec-labs.com). */
   nodeUrl?: string;
+  /** WebAuthn Relying Party ID. Must match the origin's registrable domain. Defaults to 'aztec.network', use 'localhost' for local dev. */
+  rpId?: string;
   walletHost?: string;
   contracts: ContractConfig[];
 }
@@ -84,6 +86,7 @@ export interface InitMessage {
 export interface PopupInitMessage {
   type: 'POPUP_INIT';
   flow: PopupFlow;
+  rpId?: string;
   context?: TxSummary | ReadSummary;
   credentialId?: ArrayBuffer;
 }

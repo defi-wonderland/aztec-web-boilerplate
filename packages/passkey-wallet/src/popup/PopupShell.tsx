@@ -28,6 +28,7 @@ const styles = {
 export function PopupShell() {
   const [port, setPort] = useState<MessagePort | null>(null);
   const [flow, setFlow] = useState<PopupFlow | null>(null);
+  const [rpId, setRpId] = useState<string | undefined>();
   const [context, setContext] = useState<TxSummary | ReadSummary | undefined>();
   const [credentialId, setCredentialId] = useState<ArrayBuffer | undefined>();
 
@@ -36,6 +37,7 @@ export function PopupShell() {
       const data = event.data as PopupInitMessage;
       if (data?.type !== 'POPUP_INIT') return false;
       setFlow(data.flow);
+      setRpId(data.rpId);
       setContext(data.context);
       setCredentialId(data.credentialId);
       if (event.ports[0]) setPort(event.ports[0]);
@@ -96,6 +98,7 @@ export function PopupShell() {
       return (
         <ConnectFlow
           credentialId={credentialId}
+          rpId={rpId}
           onComplete={handleComplete}
           onCancel={handleCancel}
         />

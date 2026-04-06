@@ -1,5 +1,5 @@
-/** Relying Party ID for WebAuthn — broadest registrable domain. Permanent decision. */
-export const RP_ID = 'aztec.network';
+/** Relying Party ID for WebAuthn. Production: 'aztec.network'. Local dev: 'localhost'. */
+export const DEFAULT_RP_ID = 'aztec.network';
 export const RP_NAME = 'Aztec Wallet';
 
 /** HKDF info strings — each produces a cryptographically independent key from the same PRF output. */

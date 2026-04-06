@@ -23,7 +23,7 @@ export class PasskeyWallet {
     const host = config.walletHost ?? DEFAULT_WALLET_HOST;
     this.nodeUrl = config.nodeUrl ?? NETWORK_URLS[config.network] ?? NETWORK_URLS.devnet;
     this.iframeManager = new IframeManager(host);
-    this.popupManager = new PopupManager(host);
+    this.popupManager = new PopupManager(host, config.rpId);
   }
 
   get isConnected(): boolean { return this.wallet !== null; }

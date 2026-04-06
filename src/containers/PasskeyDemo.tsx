@@ -7,6 +7,7 @@ import { cn, iconSize } from '../utils';
 const config: PasskeyWalletConfig = {
   network: 'sandbox',
   nodeUrl: 'http://localhost:8080',
+  rpId: 'localhost',
   walletHost: 'http://localhost:3001',
   contracts: [],
 };

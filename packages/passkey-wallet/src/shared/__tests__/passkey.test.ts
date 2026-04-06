@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { buildCreateOptions, buildGetOptions } from '../passkey';
-import { RP_ID, RP_NAME, PRF_SALT } from '../constants';
+import { DEFAULT_RP_ID, RP_NAME } from '../constants';
 
 describe('passkey config builders', () => {
-  it('buildCreateOptions includes PRF extension and correct RP ID', async () => {
+  it('buildCreateOptions uses default RP ID when none provided', async () => {
     const options = await buildCreateOptions();
-    expect(options.publicKey!.rp.id).toBe(RP_ID);
+    expect(options.publicKey!.rp.id).toBe(DEFAULT_RP_ID);
     expect(options.publicKey!.rp.name).toBe(RP_NAME);
     expect(options.publicKey!.pubKeyCredParams).toEqual([
       { alg: -7, type: 'public-key' },
@@ -15,6 +15,12 @@ describe('passkey config builders', () => {
       userVerification: 'preferred',
     });
     expect((options.publicKey!.extensions as any)).toEqual({ prf: {} });
+    expect(options.publicKey!.challenge).toBeInstanceOf(Uint8Array);
+  });
+
+  it('buildCreateOptions uses custom RP ID when provided', async () => {
+    const options = await buildCreateOptions('localhost');
+    expect(options.publicKey!.rp.id).toBe('localhost');
   });
 
   it('buildCreateOptions generates deterministic userId from account index', async () => {
@@ -33,5 +39,10 @@ describe('passkey config builders', () => {
     expect(options.publicKey!.userVerification).toBe('preferred');
     const prfExt = (options.publicKey!.extensions as any).prf;
     expect(prfExt.eval.first).toBeInstanceOf(Uint8Array);
+  });
+
+  it('buildGetOptions uses custom RP ID when provided', () => {
+    const options = buildGetOptions(new Uint8Array([1]), 'localhost');
+    expect(options.publicKey!.rpId).toBe('localhost');
   });
 });
