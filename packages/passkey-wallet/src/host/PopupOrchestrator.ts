@@ -8,7 +8,7 @@ export class PopupOrchestrator {
     context?: TxSummary | ReadSummary,
     credentialId?: Uint8Array,
   ): Promise<PopupResponse> {
-    const url = `${this.walletOrigin}/auth?flow=${flow}`;
+    const url = `${this.walletOrigin}/popup.html?flow=${flow}`;
     const popup = window.open(url, '_blank', 'width=400,height=500,popup=yes');
     if (!popup) throw new Error('Popup blocked. Please allow popups for this site.');
 
