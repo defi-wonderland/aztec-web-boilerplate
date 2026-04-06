@@ -549,7 +549,7 @@ Total passkey loss = funds locked (same as losing a seed phrase).
 
 ## Cross-Origin Isolation Note
 
-`crossOriginIsolated` is a browser property that gates `SharedArrayBuffer`. For top-level pages, setting `COOP: same-origin` + `COEP: credentialless` headers enables it. For iframes, it works differently — the iframe inherits `crossOriginIsolated` from the parent page, but only if the iframe is **same-origin** with the parent.
+In browsers, there is a security property called `crossOriginIsolated` that controls whether a page can use `SharedArrayBuffer` (shared memory between threads). Barretenberg's WASM needs this for its multi-threaded memory model. For top-level pages (the main browser tab), a server can enable it by setting two HTTP headers: `COOP: same-origin` and `COEP: credentialless`. For iframes, it works differently — an iframe inherits `crossOriginIsolated` from the parent page, but only if the iframe is **same-origin** with the parent.
 
 If the parent is `dapp.com` and the iframe is `wallet.aztec.network`, they're different origins. The browser will not let the iframe share memory with the parent, regardless of what headers either side sends. The iframe gets `crossOriginIsolated = false`. This is a Spectre mitigation baked into the browser spec, not configurable.
 
