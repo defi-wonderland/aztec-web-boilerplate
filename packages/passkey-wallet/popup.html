@@ -9,14 +9,15 @@
 </head>
 <body>
   <div id="root"></div>
-  <!--
-    Early message buffer: captures postMessage events that arrive before
-    React mounts. The SDK sends POPUP_INIT immediately after window.open(),
-    which often arrives before React's useEffect registers its listener.
-    Without this buffer, the message (with the transferred MessagePort)
-    is silently dropped and the popup stays on "Loading wallet...".
-  -->
   <script>
+    // Signal READY to the opener (SDK) so it knows popup.html has loaded.
+    // This runs synchronously before React — the SDK waits for this before
+    // sending POPUP_INIT with the MessagePort.
+    //
+    // Also buffer any POPUP_INIT that arrives before React mounts.
+    if (window.opener) {
+      window.opener.postMessage({ type: 'POPUP_READY' }, '*');
+    }
     window.__earlyMessages = [];
     window.addEventListener('message', function __earlyHandler(event) {
       if (event.data && event.data.type === 'POPUP_INIT') {
