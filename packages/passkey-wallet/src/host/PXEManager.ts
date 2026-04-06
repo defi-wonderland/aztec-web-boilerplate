@@ -8,20 +8,22 @@ export class PXEManager {
   private ramStore: InMemoryKVStore | null = null;
 
   async initialize(node: any, encryptionKey: CryptoKey): Promise<any> {
-    // Lazy import to avoid loading WASM at module level
     const { createPXE } = await import('@aztec/pxe/client/bundle');
     const { AztecIndexedDBStore } = await import('@aztec/kv-store/indexeddb');
+    const { createLogger } = await import('@aztec/foundation/log');
 
     this.ramStore = new InMemoryKVStore();
+
+    const storeLogger = createLogger('passkey-wallet:store');
     const rawIndexedDB = await AztecIndexedDBStore.open(
-      undefined as any,
+      storeLogger,
       'passkey-wallet-pxe',
       false,
     );
     const encryptedStore = new EncryptedKVStore(rawIndexedDB, encryptionKey);
     const compositeStore = new CompositeKVStore(encryptedStore, this.ramStore, EPHEMERAL_STORE_NAMES);
 
-    this.pxe = await createPXE(node, {} as any, { store: compositeStore });
+    this.pxe = await createPXE(node, {}, { store: compositeStore });
     return this.pxe;
   }
 
