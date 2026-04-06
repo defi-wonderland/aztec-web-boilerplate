@@ -72,8 +72,11 @@ export class RPCHandler {
     );
 
     // Initialize PXE
+    console.log('[RPCHandler] Creating node client for', this.nodeUrl);
     const node = await this.getAztecNode();
+    console.log('[RPCHandler] Node client created, initializing PXE...');
     const pxe = await this.pxeManager.initialize(node, encryptionKey);
+    console.log('[RPCHandler] PXE initialized');
 
     // Register account
     const masterSecret = BigInt(authKeys.masterSecret);

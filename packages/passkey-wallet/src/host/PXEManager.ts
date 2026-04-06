@@ -8,7 +8,10 @@ export class PXEManager {
   private ramStore: InMemoryKVStore | null = null;
 
   async initialize(node: any, encryptionKey: CryptoKey): Promise<any> {
-    const { createPXE } = await import('@aztec/pxe/client/bundle');
+    // Use lazy PXE creator — defers BB WASM/prover initialization until
+    // a proof is actually needed. The bundle creator eagerly initializes
+    // BB Workers which hang in credentialless iframes (no SharedArrayBuffer).
+    const { createPXE } = await import('@aztec/pxe/client/lazy');
     const { AztecIndexedDBStore } = await import('@aztec/kv-store/indexeddb');
     const { createLogger } = await import('@aztec/foundation/log');
 
@@ -23,7 +26,9 @@ export class PXEManager {
     const encryptedStore = new EncryptedKVStore(rawIndexedDB, encryptionKey);
     const compositeStore = new CompositeKVStore(encryptedStore, this.ramStore, EPHEMERAL_STORE_NAMES);
 
+    console.log('[PXEManager] Creating PXE (lazy)...');
     this.pxe = await createPXE(node, {}, { store: compositeStore });
+    console.log('[PXEManager] PXE created!');
     return this.pxe;
   }
 

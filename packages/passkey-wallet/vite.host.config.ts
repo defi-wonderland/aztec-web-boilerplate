@@ -123,10 +123,22 @@ export default defineConfig({
     outDir: 'dist/host',
     sourcemap: false,
     target: 'esnext',
+    minify: 'esbuild',
+    commonjsOptions: {
+      defaultIsModuleExports: (id) => {
+        if (id.includes('@aztec/')) return false;
+        return 'auto';
+      },
+      exclude: ['@aztec/stdlib/**', '@aztec/foundation/**', '@aztec/aztec.js/**'],
+    },
     rollupOptions: {
       input: {
         host: './host.html',
         popup: './popup.html',
+      },
+      output: {
+        format: 'es',
+        interop: 'auto',
       },
     },
   },
