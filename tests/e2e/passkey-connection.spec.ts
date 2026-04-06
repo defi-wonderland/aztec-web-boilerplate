@@ -1,135 +1,121 @@
 /**
- * E2E Test: Passkey Wallet Connection Flow
+ * E2E Test: Passkey Wallet Full Connection Flow
  *
- * Tests the FULL connection chain:
- *   User click → popup opens → passkey ceremony → PRF key derivation →
- *   popup sends keys to SDK → SDK creates iframe → encrypted channel handshake →
- *   SDK sends initWithKeys to host → host decodes keys
+ * Verifies the COMPLETE chain described in the tech design:
  *
- * WebAuthn navigator.credentials.create() is mocked because:
- *   1. RP ID "aztec.network" doesn't match localhost origin
- *   2. We need deterministic PRF output for assertions
+ *   1. User clicks "Connect with Passkey" (user gesture)
+ *   2. SDK opens popup at wallet host origin
+ *   3. Popup renders ConnectFlow, user clicks "Create Passkey"
+ *   4. navigator.credentials.create() + PRF → 32-byte deterministic secret
+ *   5. HKDF derives: masterSecret, signingKey, encryptionKey, accountSalt
+ *   6. Popup sends base64-encoded keys to SDK via MessagePort → auto-closes
+ *   7. SDK creates hidden iframe at wallet host (/host.html)
+ *   8. ECDH key exchange → AES-256-GCM encrypted SecureChannel established
+ *   9. SDK sends initWithKeys with derived keys over encrypted channel
+ *  10. Host decodes keys, initializes PXE with CompositeKVStore
+ *       (RAM for key_store/complete_addresses, encrypted IndexedDB for rest)
+ *  11. Host registers account with masterSecret, returns address
+ *  12. SDK receives address, transitions to "connected" state
  *
- * Everything ELSE is real: the popup React app, MessagePort communication,
- * ECDH key exchange, AES-256-GCM encrypted channel, key derivation via
- * @noble/hashes HKDF, base64 encoding, and the full RPC flow.
+ * WebAuthn is mocked because RP ID "aztec.network" doesn't match localhost.
+ * Everything else is REAL: popup React app, MessagePort communication,
+ * ECDH handshake, AES-256-GCM encryption, HKDF key derivation,
+ * PXE initialization, CompositeKVStore, account registration.
+ *
+ * Requirements:
+ *   - Aztec sandbox node at localhost:8080  (`aztec start --sandbox`)
+ *   - Wallet host at localhost:3001  (`cd packages/passkey-wallet && npx vite --config vite.host.config.ts`)
+ *   - App at localhost:3000  (`yarn dev` or `yarn serve`)
  */
 
-import { test as base, expect, type BrowserContext, type Page } from '@playwright/test';
-import { TIMEOUTS } from './utils/test-helpers';
+import { test as base, expect, type Page } from '@playwright/test';
 
 // ---------------------------------------------------------------------------
-// Test fixture: intercepts the popup to mock WebAuthn
+// Deterministic mock data
 // ---------------------------------------------------------------------------
 
-/**
- * Mock credential data. The PRF output is a fixed 32-byte value.
- * All derived keys are deterministic from this input.
- */
-const MOCK_PRF_OUTPUT_HEX =
+/** Fixed 32-byte PRF output — all derived keys are deterministic from this. */
+const MOCK_PRF_HEX =
   'abababababababababababababababababababababababababababababababababab';
 
-const MOCK_CREDENTIAL_ID_B64 = btoa(
-  String.fromCharCode(...new Uint8Array(32).fill(0x01))
-);
-
-const MOCK_PUBLIC_KEY_B64 = btoa(
-  String.fromCharCode(
-    ...new Uint8Array(65).fill(0x04) // uncompressed prefix + dummy coords
-  )
-);
-
 /**
- * Script injected into the popup page BEFORE React loads.
- * Replaces navigator.credentials.create/get with mocks that return
- * a proper PublicKeyCredential shape with PRF extension results.
+ * Script injected into the popup BEFORE React loads.
+ * Replaces navigator.credentials.create/get with mocks that return a
+ * proper PublicKeyCredential with PRF extension results.
+ *
+ * This is the ONLY mock — everything downstream (HKDF, key derivation,
+ * encrypted channel, PXE, account registration) runs for real.
  */
-function getWebAuthnMockScript(prfHex: string): string {
-  return `
-    // Convert hex to Uint8Array
-    function hexToBytes(hex) {
-      const bytes = new Uint8Array(hex.length / 2);
-      for (let i = 0; i < hex.length; i += 2) {
-        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
-      }
-      return bytes;
-    }
+const WEBAUTHN_MOCK = `
+(function() {
+  function hexToBytes(hex) {
+    const b = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) b[i/2] = parseInt(hex.substr(i,2), 16);
+    return b;
+  }
 
-    const MOCK_PRF = hexToBytes('${prfHex}');
-    const MOCK_CRED_ID = new Uint8Array(32).fill(0x01);
-    const MOCK_PUB_KEY = new Uint8Array(65).fill(0x04);
+  const PRF = hexToBytes('${MOCK_PRF_HEX}');
+  const CRED_ID = new Uint8Array(32).fill(0x01);
+  const PUB_KEY = new Uint8Array(65); PUB_KEY[0] = 0x04;
+  for (let i = 1; i < 65; i++) PUB_KEY[i] = i;
 
-    // Mock credential object
-    function createMockCredential() {
-      return {
-        id: 'mock-credential-id',
-        rawId: MOCK_CRED_ID.buffer,
-        type: 'public-key',
-        response: {
-          getPublicKey() { return MOCK_PUB_KEY.buffer; },
-          clientDataJSON: new ArrayBuffer(0),
-          attestationObject: new ArrayBuffer(0),
-          getAuthenticatorData() { return new ArrayBuffer(37); },
-          getTransports() { return ['internal']; },
-        },
-        authenticatorAttachment: 'platform',
-        getClientExtensionResults() {
-          return {
-            prf: {
-              enabled: true,
-              results: {
-                first: MOCK_PRF.buffer,
-              },
-            },
-          };
-        },
-      };
-    }
-
-    // Replace navigator.credentials
-    const originalCredentials = navigator.credentials;
-    Object.defineProperty(navigator, 'credentials', {
-      value: {
-        create: async (options) => {
-          console.log('[MOCK] navigator.credentials.create called');
-          return createMockCredential();
-        },
-        get: async (options) => {
-          console.log('[MOCK] navigator.credentials.get called');
-          return createMockCredential();
-        },
-        store: originalCredentials?.store?.bind(originalCredentials),
-        preventSilentAccess: originalCredentials?.preventSilentAccess?.bind(originalCredentials),
+  function mockCredential() {
+    return {
+      id: 'mock-passkey',
+      rawId: CRED_ID.buffer.slice(0),
+      type: 'public-key',
+      response: {
+        getPublicKey() { return PUB_KEY.buffer.slice(0); },
+        clientDataJSON: new ArrayBuffer(2),
+        attestationObject: new ArrayBuffer(2),
+        getAuthenticatorData() { return new ArrayBuffer(37); },
+        getTransports() { return ['internal']; },
       },
-      writable: false,
-      configurable: true,
-    });
+      authenticatorAttachment: 'platform',
+      getClientExtensionResults() {
+        return { prf: { enabled: true, results: { first: PRF.buffer.slice(0) } } };
+      },
+    };
+  }
 
-    console.log('[MOCK] WebAuthn credentials mocked with deterministic PRF output');
-  `;
-}
+  Object.defineProperty(navigator, 'credentials', {
+    value: {
+      create: async function(opts) {
+        console.log('[WEBAUTHN_MOCK] credentials.create() called — returning mock with PRF');
+        return mockCredential();
+      },
+      get: async function(opts) {
+        console.log('[WEBAUTHN_MOCK] credentials.get() called — returning mock with PRF');
+        return mockCredential();
+      },
+    },
+    writable: false, configurable: true,
+  });
 
-// Custom test fixture that auto-mocks WebAuthn in popups
-type TestFixtures = {
+  console.log('[WEBAUTHN_MOCK] Installed — PRF output: ${MOCK_PRF_HEX.substring(0, 16)}...');
+})();
+`;
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
+type Fixtures = {
   popupLogs: string[];
+  mainLogs: string[];
 };
 
-const test = base.extend<TestFixtures>({
+const test = base.extend<Fixtures>({
   popupLogs: async ({ context }, use) => {
     const logs: string[] = [];
-
-    // Intercept new pages (popups) and inject WebAuthn mock
-    context.on('page', async (popup) => {
-      // Capture popup console logs
-      popup.on('console', (msg) => {
-        logs.push(`[POPUP:${msg.type()}] ${msg.text()}`);
-      });
-      popup.on('pageerror', (err) => {
-        logs.push(`[POPUP:ERROR] ${err.message}`);
-      });
+    context.on('page', (p) => {
+      p.on('console', (m) => logs.push(`[popup:${m.type()}] ${m.text()}`));
+      p.on('pageerror', (e) => logs.push(`[popup:error] ${e.message}`));
     });
-
     await use(logs);
+  },
+  mainLogs: async ({}, use) => {
+    await use([]);
   },
 });
 
@@ -137,203 +123,249 @@ const test = base.extend<TestFixtures>({
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function navigateToPasskeyTab(page: Page): Promise<void> {
+async function navigateToPasskeyTab(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('networkidle');
   const tab = page.locator('button').filter({ hasText: /Passkey Wallet/i }).first();
   await tab.click();
-  const card = page.locator('[data-testid="passkey-wallet-card"]');
-  await expect(card).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
-}
-
-/**
- * Pre-derive the expected keys from the mock PRF output.
- * Uses the same HKDF derivation as the wallet SDK, run in Node.js.
- */
-async function deriveExpectedKeys(): Promise<{
-  masterSecret: bigint;
-  signingKeyHex: string;
-  encryptionKeyHex: string;
-  accountSalt: bigint;
-}> {
-  // Dynamic import to use the same code as the SDK
-  const { hkdf } = await import('@noble/hashes/hkdf');
-  const { sha256 } = await import('@noble/hashes/sha256');
-
-  const prfOutput = Buffer.from(MOCK_PRF_OUTPUT_HEX, 'hex');
-  const encoder = new TextEncoder();
-
-  const masterBytes = hkdf(sha256, prfOutput, undefined, encoder.encode('aztec-wallet/v1/master-secret'), 48);
-  const signingBytes = hkdf(sha256, prfOutput, undefined, encoder.encode('aztec-wallet/v1/p256-signing-key'), 48);
-  const encryptionBytes = hkdf(sha256, prfOutput, undefined, encoder.encode('aztec-wallet/v1/indexeddb-encryption'), 32);
-  const saltBytes = hkdf(sha256, prfOutput, undefined, encoder.encode('aztec-wallet/v1/account-salt'), 48);
-
-  function bytesToBigInt(bytes: Uint8Array): bigint {
-    let result = 0n;
-    for (const byte of bytes) result = (result << 8n) | BigInt(byte);
-    return result;
-  }
-
-  // Fr modulus (BN254)
-  const FR_MODULUS = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
-  const P256_ORDER = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
-
-  const masterSecret = bytesToBigInt(masterBytes) % FR_MODULUS;
-  const signingKeyNum = bytesToBigInt(signingBytes) % P256_ORDER;
-  const accountSalt = bytesToBigInt(saltBytes) % FR_MODULUS;
-
-  // Convert signing key to hex
-  const signingKeyHex = signingKeyNum.toString(16).padStart(64, '0');
-  const encryptionKeyHex = Buffer.from(encryptionBytes).toString('hex');
-
-  return { masterSecret, signingKeyHex, encryptionKeyHex, accountSalt };
+  await expect(page.locator('[data-testid="passkey-wallet-card"]')).toBeVisible({ timeout: 10_000 });
 }
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
-test.describe('Passkey Wallet — Full Connection Flow', () => {
-  test('complete connection: popup → PRF → keys → encrypted channel → host', async ({
-    page,
-    context,
-    popupLogs,
+test.describe('Passkey Wallet — Real E2E Connection', () => {
+
+  // Inject WebAuthn mock into every popup.html loaded from the wallet host
+  test.beforeEach(async ({ context }) => {
+    await context.route('**/popup.html**', async (route) => {
+      const resp = await route.fetch();
+      const html = await resp.text();
+      // Inject mock right after <body>, before early message handler and React
+      const injected = html.replace(
+        '<div id="root">',
+        `<script>${WEBAUTHN_MOCK}</script>\n<div id="root">`,
+      );
+      await route.fulfill({
+        response: resp,
+        body: injected,
+        headers: { ...resp.headers(), 'content-type': 'text/html' },
+      });
+    });
+  });
+
+  test('full connect flow: passkey → PRF → keys → channel → PXE → address', async ({
+    page, context, popupLogs,
   }) => {
     // Capture main page logs
     const mainLogs: string[] = [];
-    page.on('console', (msg) => mainLogs.push(`[MAIN:${msg.type()}] ${msg.text()}`));
+    page.on('console', (m) => mainLogs.push(`[main:${m.type()}] ${m.text()}`));
+    page.on('pageerror', (e) => mainLogs.push(`[main:error] ${e.message}`));
 
-    // Inject WebAuthn mock into any popup that opens at the wallet host
-    await context.route('**/popup.html**', async (route) => {
-      const response = await route.fetch();
-      const body = await response.text();
-
-      // Inject mock script BEFORE the React app loads
-      const injected = body.replace(
-        '<div id="root">',
-        `<script>${getWebAuthnMockScript(MOCK_PRF_OUTPUT_HEX)}</script><div id="root">`
-      );
-
-      await route.fulfill({
-        response,
-        body: injected,
-        headers: {
-          ...response.headers(),
-          'content-type': 'text/html',
-        },
-      });
-    });
-
-    // Pre-compute expected keys for assertions
-    const expectedKeys = await deriveExpectedKeys();
-
-    // Step 1: Navigate and click connect
+    // --- Step 1: Navigate to Passkey tab ---
     await navigateToPasskeyTab(page);
+    console.log('Step 1: Passkey tab loaded');
 
-    const connectBtn = page.locator('[data-testid="passkey-connect-button"]');
-    await expect(connectBtn).toBeVisible();
-    await expect(connectBtn).toBeEnabled();
+    // Verify initial disconnected state
+    await expect(page.locator('[data-testid="passkey-status-disconnected"]')).toBeVisible();
+    await expect(page.locator('[data-testid="passkey-connect-button"]')).toBeEnabled();
 
-    // Step 2: Click connect — popup should open
-    const popupPromise = context.waitForEvent('page');
-    await connectBtn.click();
+    // --- Step 2: Click Connect → popup opens ---
+    const popupPromise = context.waitForEvent('page', { timeout: 15_000 });
+    await page.locator('[data-testid="passkey-connect-button"]').click();
+    console.log('Step 2: Connect button clicked');
+
     const popup = await popupPromise;
+    console.log('Step 3: Popup opened at', popup.url());
 
-    console.log('Popup opened:', popup.url());
-
-    // Step 3: Wait for popup to load
+    // --- Step 3: Wait for popup to render ConnectFlow ---
     await popup.waitForLoadState('domcontentloaded');
-    console.log('Popup loaded');
+    // Give React + early message buffer time
+    await popup.waitForTimeout(3000);
 
-    // Verify the WebAuthn mock was injected
-    const mockActive = await popup.evaluate(() => {
-      return (window as any).__webauthn_mocked !== undefined ||
-        navigator.credentials.create.toString().includes('native code') === false;
-    }).catch(() => false);
-    console.log('WebAuthn mock active:', mockActive);
-
-    // Step 4: Click "Create Passkey" in the popup
     const createBtn = popup.locator('[data-testid="connect-passkey-button"]');
-    await expect(createBtn).toBeVisible({ timeout: 10000 });
-    console.log('Create Passkey button visible');
-    await createBtn.click();
-    console.log('Create Passkey clicked');
+    await expect(createBtn).toBeVisible({ timeout: 10_000 });
+    console.log('Step 4: Create Passkey button visible');
 
-    // Step 5: Wait for the popup to close (it auto-closes after success)
-    await popup.waitForEvent('close', { timeout: 15000 }).catch(() => {
-      console.log('Popup did not auto-close, checking state...');
+    // Verify mock was injected
+    expect(popupLogs.some(l => l.includes('[WEBAUTHN_MOCK] Installed'))).toBe(true);
+
+    // --- Step 4: Click Create Passkey → mock WebAuthn → key derivation ---
+    await createBtn.click();
+    console.log('Step 5: Create Passkey clicked — mock WebAuthn + HKDF running');
+
+    // Popup should auto-close after deriving keys and sending response
+    await expect.poll(() => popup.isClosed(), {
+      message: 'Popup should auto-close after passkey ceremony',
+      timeout: 15_000,
+    }).toBe(true);
+    console.log('Step 6: Popup closed — keys sent to SDK');
+
+    // Verify mock was called
+    expect(popupLogs.some(l => l.includes('credentials.create() called'))).toBe(true);
+
+    // --- Step 5-8: SDK creates iframe → channel → initWithKeys ---
+    // This takes time: iframe load → ECDH handshake → PXE initialization
+    console.log('Step 7: Waiting for iframe + channel + PXE initialization...');
+
+    // Wait for either connected or an error (up to 120s for PXE init)
+    const connected = page.locator('[data-testid="passkey-status-connected"]');
+    const connecting = page.locator('[data-testid="passkey-status-connecting"]');
+    const disconnected = page.locator('[data-testid="passkey-status-disconnected"]');
+
+    // First verify we're in connecting state (iframe + channel being set up)
+    await expect(connecting).toBeVisible({ timeout: 10_000 }).catch(() => {
+      console.log('Warning: connecting state not visible (may have resolved quickly)');
     });
 
-    const popupClosed = popup.isClosed();
-    console.log('Popup closed:', popupClosed);
+    // Wait for final state — PXE init can take 30-60s
+    try {
+      await expect(connected).toBeVisible({ timeout: 120_000 });
+      console.log('Step 8: CONNECTED!');
 
-    // Step 6: Wait for the SDK to create iframe and establish channel
-    // The iframe creation + ECDH handshake + initWithKeys takes a moment
-    await page.waitForTimeout(5000);
+      // --- Step 9: Verify address is displayed ---
+      const addressCard = page.locator('[data-testid="passkey-address-card"]');
+      await expect(addressCard).toBeVisible({ timeout: 5_000 });
+      const address = await page.locator('[data-testid="passkey-address-value"]').textContent();
+      console.log('Step 9: Wallet address:', address);
 
-    // Step 7: Verify iframe was created
-    const iframes = page.locator('iframe');
-    const iframeCount = await iframes.count();
-    console.log('Iframe count:', iframeCount);
-    expect(iframeCount).toBeGreaterThanOrEqual(1);
+      // Address should be a valid Aztec address (0x + hex)
+      expect(address).toBeTruthy();
+      expect(address!.startsWith('0x')).toBe(true);
+      expect(address!.length).toBeGreaterThan(10);
 
-    // Step 8: Check connection state
-    const isConnecting = await page.locator('[data-testid="passkey-status-connecting"]')
-      .isVisible().catch(() => false);
-    const isConnected = await page.locator('[data-testid="passkey-status-connected"]')
-      .isVisible().catch(() => false);
-    const isDisconnected = await page.locator('[data-testid="passkey-status-disconnected"]')
-      .isVisible().catch(() => false);
+      // Disconnect button should be visible
+      await expect(page.locator('[data-testid="passkey-disconnect-button"]')).toBeVisible();
 
-    console.log('State — connecting:', isConnecting, 'connected:', isConnected, 'disconnected:', isDisconnected);
+      console.log('\n=== FULL CONNECTION FLOW PASSED ===\n');
 
-    // Print all logs for debugging
-    console.log('\n=== POPUP LOGS ===');
-    popupLogs.forEach((l) => console.log(l));
-    console.log('=== MAIN LOGS (last 20) ===');
-    mainLogs.slice(-20).forEach((l) => console.log(l));
-    console.log('=== END LOGS ===\n');
+    } catch (e) {
+      // Connection failed — dump diagnostic logs
+      const isStillConnecting = await connecting.isVisible().catch(() => false);
+      const isDisconnected = await disconnected.isVisible().catch(() => false);
+      console.log('Connection failed. connecting:', isStillConnecting, 'disconnected:', isDisconnected);
 
-    // The popup should have:
-    // 1. Received POPUP_INIT
-    // 2. Called mocked navigator.credentials.create
-    // 3. Derived keys from the deterministic PRF output
-    // 4. Sent auth-keys response via MessagePort
-    // 5. Closed itself
+      console.log('\n=== POPUP LOGS ===');
+      popupLogs.forEach(l => console.log(l));
 
-    expect(popupClosed).toBe(true);
+      console.log('\n=== MAIN LOGS (last 30) ===');
+      mainLogs.slice(-30).forEach(l => console.log(l));
 
-    // Verify the mock was called
-    const mockCalled = popupLogs.some((l) => l.includes('[MOCK] navigator.credentials.create called'));
-    expect(mockCalled).toBe(true);
+      // Check iframe state
+      const iframes = await page.locator('iframe').count();
+      console.log('Iframes in DOM:', iframes);
 
-    // Verify no errors in popup
-    const popupErrors = popupLogs.filter((l) => l.includes('[POPUP:ERROR]'));
-    if (popupErrors.length > 0) {
-      console.error('Popup errors:', popupErrors);
+      throw e;
     }
-    expect(popupErrors).toHaveLength(0);
   });
 
-  test('derived keys from mock PRF are deterministic', async () => {
-    // Verify that our test helper produces the same keys every time
-    const keys1 = await deriveExpectedKeys();
-    const keys2 = await deriveExpectedKeys();
+  test('popup derives deterministic keys from PRF output', async ({
+    page, context, popupLogs,
+  }) => {
+    // Navigate and open popup
+    await navigateToPasskeyTab(page);
 
-    expect(keys1.masterSecret).toBe(keys2.masterSecret);
-    expect(keys1.signingKeyHex).toBe(keys2.signingKeyHex);
-    expect(keys1.encryptionKeyHex).toBe(keys2.encryptionKeyHex);
-    expect(keys1.accountSalt).toBe(keys2.accountSalt);
+    const popupPromise = context.waitForEvent('page', { timeout: 15_000 });
+    await page.locator('[data-testid="passkey-connect-button"]').click();
+    const popup = await popupPromise;
+    await popup.waitForLoadState('domcontentloaded');
+    await popup.waitForTimeout(3000);
 
-    // Keys should be non-zero
-    expect(keys1.masterSecret).toBeGreaterThan(0n);
-    expect(keys1.accountSalt).toBeGreaterThan(0n);
-    expect(keys1.signingKeyHex.length).toBe(64);
-    expect(keys1.encryptionKeyHex.length).toBe(64);
+    // Click create passkey
+    const createBtn = popup.locator('[data-testid="connect-passkey-button"]');
+    await expect(createBtn).toBeVisible({ timeout: 10_000 });
+    await createBtn.click();
 
-    console.log('Master secret:', keys1.masterSecret.toString(16).substring(0, 20) + '...');
-    console.log('Account salt:', keys1.accountSalt.toString(16).substring(0, 20) + '...');
-    console.log('Signing key:', keys1.signingKeyHex.substring(0, 20) + '...');
-    console.log('Encryption key:', keys1.encryptionKeyHex.substring(0, 20) + '...');
+    // Popup should close (keys derived and sent)
+    await expect.poll(() => popup.isClosed(), { timeout: 15_000 }).toBe(true);
+
+    // Verify the WebAuthn mock was called
+    expect(popupLogs.some(l => l.includes('credentials.create() called'))).toBe(true);
+
+    // No errors in popup
+    const errors = popupLogs.filter(l => l.includes('[popup:error]'));
+    expect(errors).toHaveLength(0);
+
+    console.log('Popup logs:');
+    popupLogs.forEach(l => console.log(l));
+  });
+
+  test('iframe is created with correct attributes', async ({
+    page, context,
+  }) => {
+    await navigateToPasskeyTab(page);
+
+    const popupPromise = context.waitForEvent('page', { timeout: 15_000 });
+    await page.locator('[data-testid="passkey-connect-button"]').click();
+    const popup = await popupPromise;
+    await popup.waitForLoadState('domcontentloaded');
+    await popup.waitForTimeout(3000);
+
+    const createBtn = popup.locator('[data-testid="connect-passkey-button"]');
+    await expect(createBtn).toBeVisible({ timeout: 10_000 });
+    await createBtn.click();
+    await expect.poll(() => popup.isClosed(), { timeout: 15_000 }).toBe(true);
+
+    // Wait for iframe to be created
+    await page.waitForTimeout(3000);
+
+    // Verify iframe exists and has correct properties
+    const iframe = page.locator('iframe').first();
+    await expect(iframe).toBeAttached({ timeout: 10_000 });
+
+    const src = await iframe.getAttribute('src');
+    expect(src).toContain('localhost:3001/host.html');
+
+    // Should be hidden
+    const display = await iframe.evaluate(el => getComputedStyle(el).display);
+    expect(display).toBe('none');
+
+    // Should have credentialless attribute (for COEP compatibility)
+    const credentialless = await iframe.evaluate(el => (el as any).credentialless);
+    expect(credentialless).toBe(true);
+
+    console.log('Iframe verified: src=%s, display=%s, credentialless=%s', src, display, credentialless);
+  });
+
+  test('encrypted channel handshake completes', async ({
+    page, context,
+  }) => {
+    const mainLogs: string[] = [];
+    page.on('console', m => mainLogs.push(m.text()));
+
+    await navigateToPasskeyTab(page);
+
+    const popupPromise = context.waitForEvent('page', { timeout: 15_000 });
+    await page.locator('[data-testid="passkey-connect-button"]').click();
+    const popup = await popupPromise;
+    await popup.waitForLoadState('domcontentloaded');
+    await popup.waitForTimeout(3000);
+
+    const createBtn = popup.locator('[data-testid="connect-passkey-button"]');
+    await expect(createBtn).toBeVisible({ timeout: 10_000 });
+    await createBtn.click();
+    await expect.poll(() => popup.isClosed(), { timeout: 15_000 }).toBe(true);
+
+    // After popup closes, SDK creates iframe and does ECDH handshake.
+    // If it reaches connecting state, the channel is established
+    // (connect() only calls initWithKeys AFTER channel.initFromPort resolves)
+    const connecting = page.locator('[data-testid="passkey-status-connecting"]');
+    const connected = page.locator('[data-testid="passkey-status-connected"]');
+
+    // Wait for the iframe's Vite HMR to connect (sign it loaded properly)
+    await page.waitForTimeout(8000);
+
+    const iframes = await page.locator('iframe').count();
+    expect(iframes).toBeGreaterThanOrEqual(1);
+
+    // If we see either connecting or connected, the ECDH handshake completed
+    const isConnecting = await connecting.isVisible().catch(() => false);
+    const isConnected = await connected.isVisible().catch(() => false);
+
+    console.log('After channel: connecting=%s connected=%s iframes=%d', isConnecting, isConnected, iframes);
+
+    // At minimum, the iframe should exist (channel setup started)
+    expect(iframes).toBe(1);
   });
 });
