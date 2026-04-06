@@ -22,6 +22,7 @@ export async function buildCreateOptions(): Promise<CredentialCreationOptions> {
     publicKey: {
       rp: { id: RP_ID, name: RP_NAME },
       user: { id: userId, name: 'user', displayName: 'Aztec User' },
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
       authenticatorSelection: {
         residentKey: 'required',
