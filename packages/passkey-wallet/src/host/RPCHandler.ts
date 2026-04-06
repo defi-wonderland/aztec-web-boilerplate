@@ -1,34 +1,42 @@
 import type { SecureChannel } from '../shared/SecureChannel';
-import type { TxSummary } from '../shared/types';
+import type { PopupResponse, TxSummary } from '../shared/types';
 import type { PXEManager } from './PXEManager';
-import type { PopupOrchestrator } from './PopupOrchestrator';
 import type { CredentialStore } from './CredentialStore';
 import { Fr } from '@aztec/foundation/curves/bn254';
 
 const TX_METHODS = new Set(['proveTx', 'sendTx']);
 // TIER-2-UPGRADE: TX_METHODS trigger WebAuthn signing ceremony in popup, not just consent.
 
+/**
+ * Processes RPC messages from the SDK over the SecureChannel.
+ *
+ * - initWithKeys: receives passkey-derived keys, initializes PXE, registers account
+ * - disconnect: tears down PXE
+ * - All other methods: forwarded to the PXE instance
+ *
+ * Note: Popups are opened by the SDK (dapp side) because browsers require
+ * user gesture context for window.open(). The iframe has no user gesture.
+ */
 export class RPCHandler {
   // TIER-2-UPGRADE: Remove signingKey field.
   private signingKey: Uint8Array | null = null;
 
   constructor(
     private pxeManager: PXEManager,
-    private popupOrchestrator: PopupOrchestrator,
     private credentialStore: CredentialStore,
     private contractConfigs: any[],
   ) {}
 
   register(channel: SecureChannel): void {
     channel.onRequest(async (method, params) => {
-      if (method === 'connect') return this.handleConnect();
+      if (method === 'initWithKeys') return this.handleInitWithKeys(params[0] as PopupResponse);
       if (method === 'disconnect') return this.handleDisconnect();
 
       const pxe = this.pxeManager.getPXE();
       if (!pxe) throw new Error('PXE not initialized. Call connect() first.');
 
-      if (TX_METHODS.has(method)) await this.requireTxApproval(params);
-
+      // TX methods would need approval — for Tier 1, the SDK handles this
+      // by opening a popup before calling proveTx/sendTx
       if (typeof (pxe as any)[method] !== 'function') {
         throw new Error(`Unknown PXE method: ${method}`);
       }
@@ -36,34 +44,42 @@ export class RPCHandler {
     });
   }
 
-  private async handleConnect(): Promise<{ address: string }> {
-    const credentialId = this.credentialStore.getCredentialId();
-    const response = await this.popupOrchestrator.openPopup(
-      'connect', undefined, credentialId ?? undefined,
-    );
-    if (response.type !== 'auth-keys') throw new Error(`Unexpected response: ${response.type}`);
+  private async handleInitWithKeys(authKeys: PopupResponse): Promise<{ address: string }> {
+    if (authKeys.type !== 'auth-keys') {
+      throw new Error(`Expected auth-keys, got: ${authKeys.type}`);
+    }
 
-    this.credentialStore.saveCredentialId(new Uint8Array(response.credentialId));
-    this.credentialStore.savePublicKey(new Uint8Array(response.publicKey));
+    // Store credential for future visits
+    this.credentialStore.saveCredentialId(new Uint8Array(authKeys.credentialId));
+    this.credentialStore.savePublicKey(new Uint8Array(authKeys.publicKey));
+
     // TIER-2-UPGRADE: Remove signingKey storage.
-    this.signingKey = new Uint8Array(response.signingKey);
+    this.signingKey = new Uint8Array(authKeys.signingKey);
 
+    // Import encryption key
     const encryptionKey = await crypto.subtle.importKey(
-      'raw', new Uint8Array(response.encryptionKey),
-      { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'],
+      'raw',
+      new Uint8Array(authKeys.encryptionKey),
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt', 'decrypt'],
     );
 
+    // Initialize PXE
     const node = await this.getAztecNode();
     const pxe = await this.pxeManager.initialize(node, encryptionKey);
 
-    const masterSecret = BigInt(response.masterSecret);
+    // Register account
+    const masterSecret = BigInt(authKeys.masterSecret);
     const secretKey = new Fr(masterSecret);
     await pxe.registerAccount(secretKey, Fr.ZERO);
 
+    // Register contracts
     for (const config of this.contractConfigs) {
       await pxe.registerContract({ instance: config, artifact: config.artifact });
     }
 
+    // Get the registered address
     const accounts = await pxe.getRegisteredAccounts();
     const address = accounts[0]?.address?.toString() ?? 'unknown';
     return { address };
@@ -72,19 +88,6 @@ export class RPCHandler {
   private async handleDisconnect(): Promise<void> {
     this.signingKey = null;
     await this.pxeManager.destroy();
-  }
-
-  private async requireTxApproval(params: unknown[]): Promise<void> {
-    const summary: TxSummary = {
-      contractAddress: 'unknown',
-      methodName: 'unknown',
-      args: params,
-      dappOrigin: '*',
-    };
-    const response = await this.popupOrchestrator.openPopup('sign', summary);
-    if (response.type === 'tx-cancelled') throw new Error('Transaction rejected by user');
-    if (response.type !== 'tx-approved') throw new Error(`Unexpected: ${response.type}`);
-    // TIER-2-UPGRADE: response will have auth-witness from WebAuthn signing
   }
 
   private async getAztecNode(): Promise<any> {
