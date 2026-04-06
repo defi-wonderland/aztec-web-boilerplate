@@ -186,7 +186,13 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       headers: {
-        'Cross-Origin-Opener-Policy': 'same-origin',
+        // same-origin-allow-popups: allows cross-origin popups (passkey wallet)
+        // to retain their opener relationship for postMessage communication,
+        // while still enabling COEP for iframe-based PXE.
+        // Note: this disables crossOriginIsolated (SharedArrayBuffer) in the
+        // main page. The passkey wallet's PXE runs in its own iframe with
+        // its own headers, so this only affects the legacy embedded wallet.
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
         'Cross-Origin-Embedder-Policy': 'credentialless',
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },
@@ -198,7 +204,13 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 3000,
       headers: {
-        'Cross-Origin-Opener-Policy': 'same-origin',
+        // same-origin-allow-popups: allows cross-origin popups (passkey wallet)
+        // to retain their opener relationship for postMessage communication,
+        // while still enabling COEP for iframe-based PXE.
+        // Note: this disables crossOriginIsolated (SharedArrayBuffer) in the
+        // main page. The passkey wallet's PXE runs in its own iframe with
+        // its own headers, so this only affects the legacy embedded wallet.
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
         'Cross-Origin-Embedder-Policy': 'credentialless',
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },

@@ -32,20 +32,35 @@ export function PopupShell() {
   const [credentialId, setCredentialId] = useState<ArrayBuffer | undefined>();
 
   useEffect(() => {
-    // Listen for POPUP_INIT from the SDK (dapp).
-    // Note: window.opener is null because the dapp has COOP: same-origin.
-    // The SDK sends POPUP_INIT directly via popup.postMessage() on a retry
-    // loop, so we just need to listen — no POPUP_READY handshake needed.
-    const onMessage = (event: MessageEvent) => {
+    const handleInit = (event: MessageEvent) => {
       const data = event.data as PopupInitMessage;
-      if (data?.type !== 'POPUP_INIT') return;
-      window.removeEventListener('message', onMessage);
+      if (data?.type !== 'POPUP_INIT') return false;
       setFlow(data.flow);
       setContext(data.context);
       setCredentialId(data.credentialId);
       if (event.ports[0]) setPort(event.ports[0]);
+      return true;
     };
 
+    // Check for early messages captured before React mounted.
+    // The SDK sends POPUP_INIT immediately after window.open(), which often
+    // arrives before useEffect runs. popup.html buffers these in __earlyMessages.
+    const earlyMessages = (window as any).__earlyMessages as MessageEvent[] | undefined;
+    if (earlyMessages && earlyMessages.length > 0) {
+      for (const msg of earlyMessages) {
+        if (handleInit(msg)) {
+          earlyMessages.length = 0;
+          return;
+        }
+      }
+    }
+
+    // No early message found — listen for late arrivals
+    const onMessage = (event: MessageEvent) => {
+      if (handleInit(event)) {
+        window.removeEventListener('message', onMessage);
+      }
+    };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, []);
