@@ -89,38 +89,53 @@ export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: Connec
       let publicKey: Uint8Array;
 
       if (isReturningUser) {
-        // Returning user: authenticate with existing passkey + PRF eval
+        // Returning user with known credential ID — fastest path
         const options = buildGetOptions(new Uint8Array(credentialId!), rpId);
         credential = (await navigator.credentials.get(options)) as PublicKeyCredential;
         prfOutput = extractPRFOutput(credential);
-        publicKey = new Uint8Array(0); // Host has it in CredentialStore
+        publicKey = new Uint8Array(0);
       } else {
-        // New user: create passkey first, then authenticate to get PRF output.
-        // credentials.create() only checks PRF capability (prf.enabled),
-        // it does NOT evaluate PRF. We need credentials.get() for that.
-        const createOptions = await buildCreateOptions(rpId);
-        credential = (await navigator.credentials.create(createOptions)) as PublicKeyCredential;
-        publicKey = extractPublicKey(credential);
+        // No stored credential ID. Try discoverable credential first —
+        // if the user already has a passkey for this RP, the authenticator
+        // will show it. Same passkey = same CredRandom = same PRF = same address.
+        // This handles the "localStorage cleared" case without creating
+        // a duplicate passkey.
+        let usedExisting = false;
+        try {
+          const discoverOptions = buildGetOptions(undefined, rpId);
+          credential = (await navigator.credentials.get(discoverOptions)) as PublicKeyCredential;
+          prfOutput = extractPRFOutput(credential);
+          publicKey = new Uint8Array(0);
+          usedExisting = true;
+        } catch {
+          // No existing credential found — create a new passkey
+          usedExisting = false;
+        }
 
-        // Check if PRF output came back from create (some authenticators support eval during create)
-        prfOutput = extractPRFOutput(credential);
+        if (!usedExisting) {
+          const createOptions = await buildCreateOptions(rpId);
+          credential = (await navigator.credentials.create(createOptions)) as PublicKeyCredential;
+          publicKey = extractPublicKey(credential);
 
-        if (!prfOutput) {
-          // PRF wasn't evaluated during create — check if it's at least supported
-          const createExtensions = credential.getClientExtensionResults() as any;
-          if (!createExtensions?.prf?.enabled) {
-            throw new Error(
-              'Your authenticator does not support the PRF extension required for key derivation. ' +
-              'Please use a platform authenticator (Touch ID, Windows Hello) or a FIDO2 security key with PRF support.'
-            );
+          // Check if PRF came back from create
+          prfOutput = extractPRFOutput(credential);
+
+          if (!prfOutput) {
+            const createExtensions = credential.getClientExtensionResults() as any;
+            if (!createExtensions?.prf?.enabled) {
+              throw new Error(
+                'Your authenticator does not support the PRF extension required for key derivation. ' +
+                'Please use a platform authenticator (Touch ID, Windows Hello) or a FIDO2 security key with PRF support.',
+              );
+            }
+
+            // PRF supported but not evaluated during create — second get() call
+            const newCredentialId = new Uint8Array(credential.rawId);
+            const getOptions = buildGetOptions(newCredentialId, rpId);
+            const authCredential = (await navigator.credentials.get(getOptions)) as PublicKeyCredential;
+            prfOutput = extractPRFOutput(authCredential);
+            credential = authCredential;
           }
-
-          // PRF supported but not evaluated during create — do a second get() call
-          const newCredentialId = new Uint8Array(credential.rawId);
-          const getOptions = buildGetOptions(newCredentialId, rpId);
-          const authCredential = (await navigator.credentials.get(getOptions)) as PublicKeyCredential;
-          prfOutput = extractPRFOutput(authCredential);
-          credential = authCredential;
         }
       }
 

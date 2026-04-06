@@ -48,19 +48,23 @@ export async function buildCreateOptions(rpId?: string): Promise<CredentialCreat
  * credentials.get() becomes the signing ceremony.
  */
 export function buildGetOptions(
-  credentialId: Uint8Array,
+  credentialId?: Uint8Array,
   rpId?: string,
 ): CredentialRequestOptions {
   return {
     publicKey: {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
       rpId: rpId ?? DEFAULT_RP_ID,
-      allowCredentials: [
-        {
-          id: credentialId,
-          type: 'public-key',
-        },
-      ],
+      // If credentialId is provided, target that specific credential (fastest).
+      // If not, omit allowCredentials to trigger the discoverable credential
+      // picker — the authenticator shows all passkeys for this RP ID.
+      // This handles the "localStorage cleared" case: the user picks their
+      // existing passkey → same CredRandom → same PRF → same address.
+      ...(credentialId
+        ? {
+            allowCredentials: [{ id: credentialId, type: 'public-key' as const }],
+          }
+        : {}),
       userVerification: 'preferred',
       extensions: {
         prf: {
