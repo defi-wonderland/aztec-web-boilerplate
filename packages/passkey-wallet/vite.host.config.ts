@@ -60,12 +60,93 @@ const nodeBuiltinsShim = (): Plugin => ({
   },
 });
 
+/**
+ * Plugin to fix static class field initialization issue with Rollup bundling.
+ * When Rollup bundles classes, it transforms `class Foo {}` to `let Foo; Foo = class {}`
+ * This breaks static initializers like `static ZERO = new AztecAddress(...)` because
+ * they execute before the assignment completes — causing "We is not a constructor".
+ *
+ * This plugin runs AFTER minification (writeBundle hook) and transforms the minified
+ * pattern to a lazy getter that defers initialization.
+ * (Copied from root vite.config.ts)
+ */
+const fixStaticFieldInit = (): Plugin => ({
+  name: 'fix-static-field-init',
+  enforce: 'post',
+  async writeBundle(options, bundle) {
+    const fs = await import('fs');
+    const path = await import('path');
+    const outDir = options.dir || 'dist/host';
+
+    for (const [fileName, chunk] of Object.entries(bundle)) {
+      if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
+        const filePath = path.default.join(outDir, fileName);
+        let code = fs.default.readFileSync(filePath, 'utf-8');
+
+        // Pattern for minified code: static ZERO=new X(Y.alloc(32,0))
+        // Both class name and Buffer get minified to short identifiers
+        const minifiedPattern =
+          /static ZERO=new (\w+)\((\w+)\.alloc\(32,0\)\)/g;
+
+        if (minifiedPattern.test(code)) {
+          code = code.replace(
+            /static ZERO=new (\w+)\((\w+)\.alloc\(32,0\)\)/g,
+            'static get ZERO(){return this._ZC||(this._ZC=new $1($2.alloc(32,0)))}'
+          );
+          fs.default.writeFileSync(filePath, code);
+          console.log(`[fix-static-field-init] Patched ${fileName}`);
+        }
+      }
+    }
+  },
+});
+
+/**
+ * Plugin to replace @aztec/foundation/crypto/poseidon with our async Worker-based
+ * implementation. Uses resolveId to intercept both bare specifier and resolved paths.
+ * More robust than resolve.alias for package subpath exports.
+ */
+const asyncPoseidonReplace = (): Plugin => {
+  const replacement = resolve(__dirname, 'src/host/async-poseidon.ts');
+  return {
+    name: 'async-poseidon-replace',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      // Intercept the bare specifier used in @aztec/* internal imports
+      if (source === '@aztec/foundation/crypto/poseidon') {
+        console.log(`[async-poseidon-replace] Redirecting: ${source} (from ${importer})`);
+        return replacement;
+      }
+      // Intercept the resolved file path (in case something resolves it before us)
+      if (source.includes('@aztec/foundation/dest/crypto/poseidon')) {
+        console.log(`[async-poseidon-replace] Redirecting resolved path: ${source} (from ${importer})`);
+        return replacement;
+      }
+      return null;
+    },
+  };
+};
+
+// Cross-origin isolation headers shared between server and preview.
+// CORP: cross-origin allows the parent (different origin) to embed us.
+// COEP: credentialless for sub-resource loading within the iframe.
+// Document-Isolation-Policy (Chrome 137+): gives this iframe its own
+// crossOriginIsolated context for SharedArrayBuffer WITHOUT requiring
+// the parent to be cross-origin isolated.
+const crossOriginHeaders = {
+  'Cross-Origin-Resource-Policy': 'cross-origin',
+  'Cross-Origin-Embedder-Policy': 'credentialless',
+  'Document-Isolation-Policy': 'isolate-and-credentialless',
+};
+
 export default defineConfig({
   plugins: [
-    nodeBuiltinsShim(),
+    nodeBuiltinsShim(), // Must be first to intercept before nodePolyfills
+    asyncPoseidonReplace(), // Intercept poseidon before other resolution
     react(),
     wasm(),
     topLevelAwait(),
+    fixStaticFieldInit(), // Fix static field initialization after bundling
     nodePolyfills({
       include: [
         'buffer',
@@ -90,6 +171,12 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  worker: {
+    format: 'es',
+  },
+  esbuild: {
+    target: 'esnext',
+  },
   resolve: {
     alias: {
       crypto: 'crypto-browserify',
@@ -104,12 +191,6 @@ export default defineConfig({
       'lodash.isequal': 'lodash.isequal/index.js',
       'lodash.pickby': 'lodash.pickby/index.js',
       'json-stringify-deterministic': 'json-stringify-deterministic/lib/index.js',
-      // Swap sync Poseidon2 (needs SharedArrayBuffer on main thread) with async
-      // version (runs in a Worker). This enables cross-origin iframe operation.
-      // Both the package export path and the resolved file path are aliased
-      // to ensure Vite catches it regardless of resolution order.
-      '@aztec/foundation/crypto/poseidon': resolve(__dirname, 'src/host/async-poseidon.ts'),
-      '@aztec/foundation/dest/crypto/poseidon/index.js': resolve(__dirname, 'src/host/async-poseidon.ts'),
     },
   },
   css: {
@@ -124,7 +205,9 @@ export default defineConfig({
     sourcemap: false,
     target: 'esnext',
     minify: 'esbuild',
+    chunkSizeWarningLimit: 2000,
     commonjsOptions: {
+      // Forces @aztec packages to be treated as ESM to prevent class identity errors
       defaultIsModuleExports: (id) => {
         if (id.includes('@aztec/')) return false;
         return 'auto';
@@ -138,25 +221,31 @@ export default defineConfig({
       },
       output: {
         format: 'es',
+        preserveModules: false,
+        inlineDynamicImports: false,
         interop: 'auto',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.names?.some((name: string) => name.endsWith('.wasm'))) {
+            return 'assets/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
       },
     },
   },
   server: {
     port: 3001,
-    headers: {
-      // CORP: cross-origin allows the parent (different origin) to embed us.
-      'Cross-Origin-Resource-Policy': 'cross-origin',
-      // COEP for sub-resource loading within the iframe.
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-      // Document-Isolation-Policy (Chrome 137+): gives this iframe its own
-      // crossOriginIsolated context for SharedArrayBuffer WITHOUT requiring
-      // the parent to be cross-origin isolated. This is the key header that
-      // makes the passkey wallet architecture viable.
-      'Document-Isolation-Policy': 'isolate-and-credentialless',
+    headers: crossOriginHeaders,
+    warmup: {
+      clientFiles: ['./src/host/entry.tsx'],
     },
   },
+  preview: {
+    port: 3001,
+    headers: crossOriginHeaders,
+  },
   optimizeDeps: {
+    force: false,
     include: [
       'react',
       'react-dom',
@@ -166,6 +255,7 @@ export default defineConfig({
       'stream-browserify',
       'util',
       'path-browserify',
+      '@tanstack/react-query',
     ],
     exclude: ['@aztec/noir-acvm_js', '@aztec/noir-noirc_abi', '@aztec/bb.js'],
     esbuildOptions: {
