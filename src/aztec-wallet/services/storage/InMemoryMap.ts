@@ -1,7 +1,9 @@
 import type { AztecAsyncMap, Range } from '@aztec/kv-store/interfaces';
 import type { Key, Value } from '@aztec/kv-store/interfaces';
 
-export class InMemoryMap<K extends Key, V extends Value> implements AztecAsyncMap<K, V> {
+export class InMemoryMap<K extends Key, V extends Value>
+  implements AztecAsyncMap<K, V>
+{
   private data = new Map<string, V>();
 
   private serialize(key: K): string {

@@ -5,12 +5,12 @@ import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import { contractsConfig } from '../config/contracts';
 import { getChainId } from '../config/networks/constants';
-import type { AztecChainId } from '../types/network';
 import { type ContractNames } from '../contract-registry';
 import { NetworkConfig } from '../types/network';
 import type { RegisterContractOp } from '../aztec-wallet/types/browserWallet';
 import type { NetworkDeployments } from '../config/deployments/types';
 import type { ResolvedArtifacts } from '../services/aztec/artifact';
+import type { AztecChainId } from '../types/network';
 
 interface BuildRegisterContractOperationsOptions {
   config: NetworkConfig;

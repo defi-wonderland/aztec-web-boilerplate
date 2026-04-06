@@ -11,7 +11,6 @@ import type {
   StoreSize,
   Value,
 } from '@aztec/kv-store/interfaces';
-
 import { InMemoryMap } from './InMemoryMap.js';
 
 // ---------------------------------------------------------------------------
@@ -258,9 +257,14 @@ export class InMemoryKVStore implements AztecAsyncKVStore {
     return this.sets.get(name)! as AztecAsyncSet<K>;
   }
 
-  openMultiMap<K extends Key, V extends Value>(name: string): AztecAsyncMultiMap<K, V> {
+  openMultiMap<K extends Key, V extends Value>(
+    name: string
+  ): AztecAsyncMultiMap<K, V> {
     if (!this.multiMaps.has(name)) {
-      this.multiMaps.set(name, new InMemoryMultiMap<K, V>() as AztecAsyncMultiMap<Key, Value>);
+      this.multiMaps.set(
+        name,
+        new InMemoryMultiMap<K, V>() as AztecAsyncMultiMap<Key, Value>
+      );
     }
     return this.multiMaps.get(name)! as AztecAsyncMultiMap<K, V>;
   }
@@ -274,19 +278,28 @@ export class InMemoryKVStore implements AztecAsyncKVStore {
 
   openSingleton<T extends Value>(name: string): AztecAsyncSingleton<T> {
     if (!this.singletons.has(name)) {
-      this.singletons.set(name, new InMemorySingleton<T>() as AztecAsyncSingleton<Value>);
+      this.singletons.set(
+        name,
+        new InMemorySingleton<T>() as AztecAsyncSingleton<Value>
+      );
     }
     return this.singletons.get(name)! as AztecAsyncSingleton<T>;
   }
 
   openCounter<K extends Key>(name: string): AztecAsyncCounter<K> {
     if (!this.counters.has(name)) {
-      this.counters.set(name, new InMemoryCounter<K>() as AztecAsyncCounter<Key>);
+      this.counters.set(
+        name,
+        new InMemoryCounter<K>() as AztecAsyncCounter<Key>
+      );
     }
     return this.counters.get(name)! as AztecAsyncCounter<K>;
   }
 
-  async transactionAsync<T extends Exclude<any, Promise<any>>>(callback: () => Promise<T>): Promise<T> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async transactionAsync<T extends Exclude<any, Promise<any>>>(
+    callback: () => Promise<T>
+  ): Promise<T> {
     return callback();
   }
 

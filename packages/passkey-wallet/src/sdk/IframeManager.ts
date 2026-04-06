@@ -8,10 +8,11 @@ export class IframeManager {
 
   constructor(private walletHost: string = DEFAULT_WALLET_HOST) {}
 
-  async connect(contracts: ContractConfig[], nodeUrl: string): Promise<SecureChannel> {
-    // Parse the wallet host to separate origin from path
+  async connect(
+    contracts: ContractConfig[],
+    nodeUrl: string,
+  ): Promise<SecureChannel> {
     const hostUrl = new URL(this.walletHost);
-    const origin = hostUrl.origin; // e.g. "http://localhost:3001"
 
     // Build the full iframe URL — append /host.html if path is just root
     if (hostUrl.pathname === '/') {
@@ -68,7 +69,10 @@ export class IframeManager {
   disconnect(): void {
     this.channel?.destroy();
     this.channel = null;
-    if (this.iframe) { this.iframe.remove(); this.iframe = null; }
+    if (this.iframe) {
+      this.iframe.remove();
+      this.iframe = null;
+    }
   }
 
   getChannel(): SecureChannel | null { return this.channel; }

@@ -1,8 +1,16 @@
 import { Fingerprint, Unplug, Loader2, CheckCircle } from 'lucide-react';
 import { PasskeyWalletProvider, usePasskeyWallet } from '@aztec/passkey-wallet';
 import type { PasskeyWalletConfig } from '@aztec/passkey-wallet';
-import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, Badge } from '../components/ui';
-import { cn, iconSize } from '../utils';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Badge,
+} from '../components/ui';
+import { iconSize } from '../utils';
 
 const config: PasskeyWalletConfig = {
   network: 'sandbox',
@@ -28,7 +36,8 @@ const styles = {
 } as const;
 
 function WalletStatus() {
-  const { isConnected, isConnecting, address, connect, disconnect } = usePasskeyWallet();
+  const { isConnected, isConnecting, address, connect, disconnect } =
+    usePasskeyWallet();
 
   return (
     <Card className={styles.card} data-testid="passkey-wallet-card">
@@ -61,16 +70,25 @@ function WalletStatus() {
               </Badge>
             )}
             {!isConnected && !isConnecting && (
-              <Badge variant="default" data-testid="passkey-status-disconnected">
+              <Badge
+                variant="default"
+                data-testid="passkey-status-disconnected"
+              >
                 Disconnected
               </Badge>
             )}
           </div>
 
           {address && (
-            <div className={styles.addressCard} data-testid="passkey-address-card">
+            <div
+              className={styles.addressCard}
+              data-testid="passkey-address-card"
+            >
               <div className={styles.addressLabel}>Wallet Address</div>
-              <div className={styles.addressValue} data-testid="passkey-address-value">
+              <div
+                className={styles.addressValue}
+                data-testid="passkey-address-value"
+              >
                 {address}
               </div>
             </div>
@@ -83,7 +101,9 @@ function WalletStatus() {
                 onClick={connect}
                 disabled={isConnecting}
                 isLoading={isConnecting}
-                icon={!isConnecting ? <Fingerprint size={iconSize()} /> : undefined}
+                icon={
+                  !isConnecting ? <Fingerprint size={iconSize()} /> : undefined
+                }
                 data-testid="passkey-connect-button"
               >
                 {isConnecting ? 'Connecting...' : 'Connect with Passkey'}

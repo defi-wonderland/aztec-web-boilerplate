@@ -18,8 +18,8 @@ import { calculateBalanceMetrics } from './utils';
 export const DripperCard: React.FC = () => {
   const { account, isPXEInitialized, connectors, connector, currentConfig } =
     useAztecWallet();
-  const tokenAddress =
-    getNetworkDeployments(currentConfig.name)?.token?.address;
+  const tokenAddress = getNetworkDeployments(currentConfig.name)?.token
+    ?.address;
   const { open: openConnectModal } = useConnectModal();
   const { success, error: toastError, loading } = useToast();
   const {

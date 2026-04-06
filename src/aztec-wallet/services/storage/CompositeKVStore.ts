@@ -15,7 +15,7 @@ export class CompositeKVStore implements AztecAsyncKVStore {
   constructor(
     private persistent: AztecAsyncKVStore,
     private ephemeral: AztecAsyncKVStore,
-    private ephemeralNames: Set<string>,
+    private ephemeralNames: Set<string>
   ) {}
 
   private route(name: string): AztecAsyncKVStore {
@@ -30,7 +30,9 @@ export class CompositeKVStore implements AztecAsyncKVStore {
     return this.route(name).openSet<K>(name);
   }
 
-  openMultiMap<K extends Key, V extends Value>(name: string): AztecAsyncMultiMap<K, V> {
+  openMultiMap<K extends Key, V extends Value>(
+    name: string
+  ): AztecAsyncMultiMap<K, V> {
     return this.route(name).openMultiMap<K, V>(name);
   }
 
