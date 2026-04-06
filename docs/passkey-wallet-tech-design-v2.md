@@ -545,19 +545,7 @@ Total passkey loss = funds locked (same as losing a seed phrase).
 | PXE cache survives restart | Yes (encrypted, partitioned per dapp) | Yes (encrypted, partitioned per dapp) | **No (full re-sync every session)** |
 | Multi-threaded proving (SAB) | Yes (DIP, 137+) | Only with dapp COOP/COEP | No |
 
----
-
-## Cross-Origin Isolation Note
-
-In browsers, there is a security property called `crossOriginIsolated` that controls whether a page can use `SharedArrayBuffer` (shared memory between threads). Barretenberg's WASM needs this for its multi-threaded memory model. For top-level pages (the main browser tab), a server can enable it by setting two HTTP headers: `COOP: same-origin` and `COEP: credentialless`. For iframes, it works differently — an iframe inherits `crossOriginIsolated` from the parent page, but only if the iframe is **same-origin** with the parent.
-
-If the parent is `dapp.com` and the iframe is `wallet.aztec.network`, they're different origins. The browser will not let the iframe share memory with the parent, regardless of what headers either side sends. The iframe gets `crossOriginIsolated = false`. This is a Spectre mitigation baked into the browser spec, not configurable.
-
-Barretenberg uses `BarretenbergSync` (synchronous WASM) for Poseidon2 hashing on the iframe main thread, which requires `SharedArrayBuffer`.
-
-ZK proof generation is unaffected — it runs in Web Workers that handle their own isolation independently. The blocker is only synchronous hashing during account registration and address computation.
-
-**Solution:** `@aztec/bb.js` exposes an async Barretenberg backend that delegates to a Worker internally and does not require main-thread `SharedArrayBuffer`. Replace the `BarretenbergSync` Poseidon2 calls in the iframe with the async backend. Same API, same output, no cross-origin constraint.
+**SharedArrayBuffer in cross-origin iframes:** Browsers only grant `crossOriginIsolated` (required for `SharedArrayBuffer`) to iframes that are same-origin with the parent — a Spectre mitigation, not configurable via headers. Since our iframe (`wallet.aztec.network`) is cross-origin to the dapp, Barretenberg's synchronous Poseidon2 hashing on the main thread won't work. ZK proof generation is unaffected (runs in Workers with their own isolation). Solution: use the async `@aztec/bb.js` backend which delegates to a Worker internally.
 
 ---
 
