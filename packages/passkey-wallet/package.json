@@ -1,0 +1,39 @@
+{
+  "name": "@aztec/passkey-wallet",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "src/sdk/index.ts",
+  "exports": {
+    ".": "./src/sdk/index.ts",
+    "./host": "./src/host/index.ts",
+    "./popup": "./src/popup/index.ts"
+  },
+  "scripts": {
+    "dev:host": "vite --config vite.host.config.ts",
+    "build": "vite build --config vite.sdk.config.ts && vite build --config vite.host.config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@aztec/accounts": "4.0.0-devnet.2-patch.1",
+    "@aztec/aztec.js": "4.0.0-devnet.2-patch.1",
+    "@aztec/foundation": "4.0.0-devnet.2-patch.1",
+    "@aztec/kv-store": "4.0.0-devnet.2-patch.1",
+    "@aztec/pxe": "4.0.0-devnet.2-patch.1",
+    "@aztec/stdlib": "4.0.0-devnet.2-patch.1",
+    "@aztec/wallet-sdk": "4.0.0-devnet.2-patch.1",
+    "@noble/curves": "^2.0.0",
+    "@noble/hashes": "^1.7.0"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "~5.3.3",
+    "vite": "^7.3.1",
+    "vitest": "^3.2.4",
+    "@vitejs/plugin-react": "^4.5.2"
+  }
+}
