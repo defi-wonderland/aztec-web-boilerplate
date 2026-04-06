@@ -1,0 +1,190 @@
+/**
+ * =============================================================================
+ * POPUP CSS — Standalone Tailwind v4 + Theme tokens
+ * =============================================================================
+ *
+ * This file is the styling entry point for the passkey popup window.
+ * It mirrors the theme tokens from the main app's globals.css so the popup
+ * shares the same visual language without importing from the host app.
+ */
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Tailwind v4 */
+@import 'tailwindcss';
+
+/* Enable dark mode with .dark class */
+@variant dark (&:where(.dark, .dark *));
+
+/* =============================================================================
+   CSS VARIABLES — THEME TOKENS
+   Light: soft purple/pink playground aesthetic
+   Dark:  Aztec.network dark aesthetic
+   ============================================================================= */
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #eeedf1;
+  --bg-tertiary: #f8f7fa;
+  --bg-gradient-start: #f8f7fa;
+  --bg-gradient-end: #ffffff;
+
+  --text-primary: #321e4c;
+  --text-secondary: #5a4a6b;
+  --text-muted: #8b7a9b;
+
+  --accent-primary: #8c7eff;
+  --accent-secondary: #eda1ff;
+
+  --border-color: #d4d1db;
+  --shadow-color: rgba(50, 30, 76, 0.1);
+  --button-text: #eeedf1;
+
+  --bg-page: #f8f7fa;
+  --bg-card: #ffffff;
+  --bg-interactive: #f3f4f6;
+  --bg-interactive-hover: #e5e7eb;
+
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+}
+
+.dark {
+  --bg-primary: #121218;
+  --bg-secondary: #1e1e24;
+  --bg-tertiary: #2a2a32;
+  --bg-gradient-start: #121218;
+  --bg-gradient-end: #121218;
+
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #9ca3af;
+
+  --accent-primary: #a78bfa;
+  --accent-secondary: #8c7eff;
+
+  --border-color: #3a3a44;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --button-text: #000000;
+
+  --bg-page: #121218;
+  --bg-card: #1e1e24;
+  --bg-interactive: #3a3a44;
+  --bg-interactive-hover: #4a4a54;
+}
+
+/* =============================================================================
+   BASE STYLES
+   ============================================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  color: var(--text-primary);
+}
+
+/* =============================================================================
+   CUSTOM THEME UTILITIES
+   ============================================================================= */
+
+/* Backgrounds */
+.bg-surface         { background-color: var(--bg-primary); }
+.bg-surface-secondary { background-color: var(--bg-secondary); }
+.bg-surface-tertiary  { background-color: var(--bg-tertiary); }
+.bg-accent          { background-color: var(--accent-primary); }
+.bg-accent-secondary { background-color: var(--accent-secondary); }
+.bg-page            { background-color: var(--bg-page); }
+.bg-card            { background-color: var(--bg-card); }
+.bg-interactive     { background-color: var(--bg-interactive); }
+
+.hover\:bg-surface:hover          { background-color: var(--bg-primary); }
+.hover\:bg-surface-secondary:hover { background-color: var(--bg-secondary); }
+.hover\:bg-surface-tertiary:hover  { background-color: var(--bg-tertiary); }
+.hover\:bg-interactive-hover:hover { background-color: var(--bg-interactive-hover); }
+
+/* Text */
+.text-default          { color: var(--text-primary); }
+.text-secondary        { color: var(--text-secondary); }
+.text-muted            { color: var(--text-muted); }
+.text-accent           { color: var(--accent-primary); }
+.text-accent-secondary { color: var(--accent-secondary); }
+.text-on-accent        { color: var(--button-text); }
+
+.hover\:text-default:hover  { color: var(--text-primary); }
+.hover\:text-accent:hover   { color: var(--accent-primary); }
+
+/* Borders */
+.border-default { border-color: var(--border-color); }
+.border-accent  { border-color: var(--accent-primary); }
+
+/* Shadows */
+.shadow-theme     { box-shadow: 0 2px 8px var(--shadow-color); }
+.shadow-theme-hover { box-shadow: 0 4px 12px var(--shadow-color); }
+.shadow-theme-lg  { box-shadow: 0 0.5rem 1.5rem var(--shadow-color); }
+
+/* Gradients */
+.gradient-primary {
+  background: linear-gradient(180deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 85%, black) 100%);
+}
+.gradient-primary:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 90%, white) 0%, var(--accent-primary) 100%);
+}
+
+/* =============================================================================
+   ANIMATIONS
+   ============================================================================= */
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.3s ease-out forwards;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-primary); }
+  50%      { box-shadow: 0 0 12px 2px color-mix(in srgb, var(--accent-primary) 40%, transparent); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes scale-bounce {
+  0%   { transform: scale(0.8); opacity: 0; }
+  50%  { transform: scale(1.1); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+.animate-scale-bounce {
+  animation: scale-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Fingerprint pulse ring for biometric CTA */
+@keyframes ring-pulse {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.animate-ring-pulse {
+  animation: ring-pulse 1.5s ease-out infinite;
+}

@@ -1,8 +1,29 @@
 import { useEffect, useState, useCallback } from 'react';
-import type { PopupInitMessage, PopupResponse, PopupFlow, TxSummary, ReadSummary } from '../shared/types';
+import type {
+  PopupInitMessage,
+  PopupResponse,
+  PopupFlow,
+  TxSummary,
+  ReadSummary,
+} from '../shared/types';
 import { ConnectFlow } from './ConnectFlow';
 import { SignFlow } from './SignFlow';
 import { ReadFlow } from './ReadFlow';
+import { loadingStyles } from './styles';
+
+/* ---------------------------------------------------------------------------
+   Styles
+   --------------------------------------------------------------------------- */
+
+const styles = {
+  loadingShell: loadingStyles.shell,
+  loadingSpinner: loadingStyles.spinner,
+  loadingText: loadingStyles.text,
+} as const;
+
+/* ---------------------------------------------------------------------------
+   Component
+   --------------------------------------------------------------------------- */
 
 export function PopupShell() {
   const [port, setPort] = useState<MessagePort | null>(null);
@@ -11,6 +32,7 @@ export function PopupShell() {
   const [credentialId, setCredentialId] = useState<ArrayBuffer | undefined>();
 
   useEffect(() => {
+    // Signal to the host that the popup is ready to receive POPUP_INIT
     if (window.opener) window.opener.postMessage({ type: 'POPUP_READY' }, '*');
 
     const onMessage = (event: MessageEvent) => {
@@ -27,20 +49,56 @@ export function PopupShell() {
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
-  const handleComplete = useCallback((response: PopupResponse) => {
-    port?.postMessage(response);
-    window.close();
-  }, [port]);
+  const handleComplete = useCallback(
+    (response: PopupResponse) => {
+      port?.postMessage(response);
+      window.close();
+    },
+    [port],
+  );
 
   const handleCancel = useCallback(() => {
     window.close();
   }, []);
 
-  if (!flow || !port) return <div style={{ padding: 24, fontFamily: 'system-ui' }}>Loading...</div>;
+  // Waiting for POPUP_INIT — show a minimal loading shell
+  if (!flow || !port) {
+    return (
+      <div className={styles.loadingShell} data-testid="popup-loading">
+        <span
+          className={styles.loadingSpinner}
+          role="status"
+          aria-label="Loading wallet"
+        />
+        <p className={styles.loadingText}>Loading wallet…</p>
+      </div>
+    );
+  }
 
   switch (flow) {
-    case 'connect': return <ConnectFlow credentialId={credentialId} onComplete={handleComplete} onCancel={handleCancel} />;
-    case 'sign': return <SignFlow summary={context as TxSummary} onComplete={handleComplete} onCancel={handleCancel} />;
-    case 'read': return <ReadFlow summary={context as ReadSummary} onComplete={handleComplete} onCancel={handleCancel} />;
+    case 'connect':
+      return (
+        <ConnectFlow
+          credentialId={credentialId}
+          onComplete={handleComplete}
+          onCancel={handleCancel}
+        />
+      );
+    case 'sign':
+      return (
+        <SignFlow
+          summary={context as TxSummary}
+          onComplete={handleComplete}
+          onCancel={handleCancel}
+        />
+      );
+    case 'read':
+      return (
+        <ReadFlow
+          summary={context as ReadSummary}
+          onComplete={handleComplete}
+          onCancel={handleCancel}
+        />
+      );
   }
 }

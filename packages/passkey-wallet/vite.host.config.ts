@@ -4,6 +4,14 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   root: '.',
+  css: {
+    postcss: {
+      plugins: [
+        // Use workspace-root @tailwindcss/postcss so the popup gets Tailwind v4
+        (await import('@tailwindcss/postcss')).default,
+      ],
+    },
+  },
   build: {
     outDir: 'dist/host',
     rollupOptions: {
