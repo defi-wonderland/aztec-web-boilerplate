@@ -38,6 +38,25 @@ export function createWalletProxy(channel: SecureChannel): Wallet {
 
       if (schemaHasMethod(WalletSchema, prop)) {
         return async (...args: unknown[]) => {
+          // Pad args with undefined to match the schema's expected tuple length.
+          // Zod tuples are strict about length — optional params must be present
+          // as undefined/null, otherwise parseAsync rejects.
+          const schema = WalletSchema[prop as keyof typeof WalletSchema];
+          if (schema && typeof schema.parameters === 'function') {
+            try {
+              const shape = schema.parameters();
+              // Access the _def.items array to get the expected tuple length
+              const expectedLength = (shape as any)?._def?.items?.length;
+              if (expectedLength && args.length < expectedLength) {
+                while (args.length < expectedLength) {
+                  args.push(undefined);
+                }
+              }
+            } catch {
+              // If we can't determine length, proceed with original args
+            }
+          }
+
           // Serialize args with jsonStringify to handle Aztec types (Fr, Buffer, etc.)
           const serializedArgs = jsonStringify(args);
 

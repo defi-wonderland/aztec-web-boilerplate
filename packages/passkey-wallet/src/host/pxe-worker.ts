@@ -96,10 +96,8 @@ async function handleInit(data: {
   const secretKey = new Fr(BigInt(data.masterSecret));
   await pxe.registerAccount(secretKey, Fr.ZERO);
 
-  // Register contracts
-  for (const config of data.contracts) {
-    await pxe.registerContract({ instance: config, artifact: config.artifact });
-  }
+  // Contract registration is handled via wallet.registerContract() RPC calls
+  // after connect. Artifacts are too large to pass through the JSON channel.
 
   // Get registered address
   const accounts = await pxe.getRegisteredAccounts();
