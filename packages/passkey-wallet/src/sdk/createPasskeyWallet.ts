@@ -4,6 +4,7 @@ import { DEFAULT_WALLET_HOST, NETWORK_URLS } from '../shared/constants';
 import { IframeManager } from './IframeManager';
 import { PXEProxy } from './PXEProxy';
 import { PopupManager } from './PopupManager';
+import { createWalletProxy } from './WalletProxy';
 
 export function createPasskeyWallet(config: PasskeyWalletConfig): PasskeyWallet {
   return new PasskeyWallet(config);
@@ -74,7 +75,7 @@ export class PasskeyWallet {
       const result = (await this.pxeProxy.call('initWithKeys', [popupResponse])) as { address: string };
       this._address = result.address;
 
-      this.wallet = this.pxeProxy.createInterface<Wallet>();
+      this.wallet = createWalletProxy(channel);
       return this.wallet;
     } finally {
       this._isConnecting = false;

@@ -9,13 +9,16 @@
  * - PXE initialization (createPXE, BarretenbergSync, CompositeKVStore)
  * - Account registration (deriveKeys via native poseidon2Hash)
  * - All PXE method calls forwarded from the main thread
+ * - Wallet method calls (BaseWallet with ECDSA-R signing)
  *
  * Message protocol:
- *   Main -> Worker: { type: 'init', nodeUrl, encryptionKeyRaw, masterSecret, accountSalt, contracts }
+ *   Main -> Worker: { type: 'init', nodeUrl, encryptionKeyRaw, masterSecret, accountSalt, signingKey, contracts }
  *   Main -> Worker: { type: 'call', id, method, params }
+ *   Main -> Worker: { type: 'wallet-call', id, method, serializedArgs }
  *   Main -> Worker: { type: 'destroy' }
  *   Worker -> Main: { type: 'init-result', success, address?, error? }
  *   Worker -> Main: { type: 'call-result', id, success, result?, error? }
+ *   Worker -> Main: { type: 'wallet-call-result', id, success, result?, error? }
  *   Worker -> Main: { type: 'destroy-result', success }
  */
 
@@ -23,6 +26,7 @@
 declare const self: DedicatedWorkerGlobalScope;
 
 let pxe: any = null;
+let wallet: any = null;
 
 function log(msg: string) {
   console.log(msg);
@@ -39,6 +43,7 @@ async function handleInit(data: {
   encryptionKeyRaw: number[];
   masterSecret: string;
   accountSalt: string;
+  signingKey: number[];
   contracts: any[];
 }): Promise<{ address: string }> {
   const { createPXE } = await import('@aztec/pxe/client/lazy');
@@ -46,12 +51,15 @@ async function handleInit(data: {
   const { createLogger } = await import('@aztec/foundation/log');
   const { createAztecNodeClient } = await import('@aztec/aztec.js/node');
   const { Fr } = await import('@aztec/foundation/curves/bn254');
+  const { BaseWallet } = await import('@aztec/wallet-sdk/base-wallet');
+  const { AccountManager } = await import('@aztec/aztec.js/wallet');
 
   // These are our own modules bundled into the worker
   const { CompositeKVStore } = await import('../storage/CompositeKVStore');
   const { InMemoryKVStore } = await import('../storage/InMemoryKVStore');
   const { EncryptedKVStore } = await import('./EncryptedKVStore');
   const { EPHEMERAL_STORE_NAMES } = await import('../shared/constants');
+  const { createAccountContract } = await import('./AccountManager');
 
   // Import encryption key from raw bytes (CryptoKey is not transferable)
   const keyBytes = new Uint8Array(data.encryptionKeyRaw);
@@ -98,11 +106,41 @@ async function handleInit(data: {
   const address = accounts[0]?.address?.toString() ?? 'unknown';
   log('[pxe-worker] Account registered: ' + address);
 
+  // Create the PasskeyWallet (BaseWallet subclass) for wallet RPC calls
+  const signingKeyBytes = new Uint8Array(data.signingKey);
+  const accountContract = createAccountContract(signingKeyBytes);
+  const accountManager = await AccountManager.create(pxe as any, secretKey, accountContract, Fr.ZERO);
+  const account = await accountManager.getAccount();
+
+  // Create a concrete PasskeyWallet extending BaseWallet
+  const accountAddress = accountManager.address;
+
+  class PasskeyWallet extends BaseWallet {
+    constructor(pxeInstance: any, aztecNode: any, private account: any, private accountAddress: any) {
+      super(pxeInstance, aztecNode);
+    }
+
+    protected async getAccountFromAddress(addr: any): Promise<any> {
+      // For the wallet's own address or zero address (deployment), return our account
+      if (addr.equals(this.accountAddress) || addr.isZero()) {
+        return this.account;
+      }
+      throw new Error(`Unknown account: ${addr.toString()}`);
+    }
+
+    async getAccounts(): Promise<Array<{ alias: string; item: any }>> {
+      return [{ alias: '', item: this.accountAddress }];
+    }
+  }
+
+  wallet = new PasskeyWallet(pxe, node, account, accountAddress);
+  log('[pxe-worker] PasskeyWallet created for ' + address);
+
   return { address };
 }
 
 // ---------------------------------------------------------------------------
-// Call handler
+// Call handler (raw PXE methods)
 // ---------------------------------------------------------------------------
 
 async function handleCall(method: string, params: unknown[]): Promise<unknown> {
@@ -114,10 +152,42 @@ async function handleCall(method: string, params: unknown[]): Promise<unknown> {
 }
 
 // ---------------------------------------------------------------------------
+// Wallet call handler
+// ---------------------------------------------------------------------------
+
+async function handleWalletCall(method: string, serializedArgs: string): Promise<string> {
+  if (!wallet) throw new Error('Wallet not initialized. Call init first.');
+
+  const { jsonStringify } = await import('@aztec/foundation/json-rpc');
+  const { WalletSchema } = await import('@aztec/aztec.js/wallet');
+
+  // Deserialize args using the WalletSchema's parameter schemas
+  const rawArgs = JSON.parse(serializedArgs);
+  const schema = WalletSchema[method as keyof typeof WalletSchema];
+  if (!schema || typeof schema.parameters !== 'function') {
+    throw new Error(`Unknown wallet method: ${method}`);
+  }
+
+  // Parse args through the schema to reconstruct Aztec types
+  const parsedArgs = await schema.parameters().parseAsync(rawArgs);
+
+  // Call the actual wallet method
+  const fn = (wallet as any)[method];
+  if (typeof fn !== 'function') {
+    throw new Error(`Wallet method not implemented: ${method}`);
+  }
+  const result = await fn.apply(wallet, parsedArgs);
+
+  // Serialize the result with jsonStringify to handle Aztec types
+  return jsonStringify(result);
+}
+
+// ---------------------------------------------------------------------------
 // Destroy handler
 // ---------------------------------------------------------------------------
 
 async function handleDestroy(): Promise<void> {
+  wallet = null;
   if (pxe) {
     await pxe.stop();
     pxe = null;
@@ -151,6 +221,18 @@ self.onmessage = async (event: MessageEvent) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[pxe-worker] Call ${data.method} failed:`, err);
       self.postMessage({ type: 'call-result', id: data.id, success: false, error: message });
+    }
+    return;
+  }
+
+  if (data.type === 'wallet-call') {
+    try {
+      const result = await handleWalletCall(data.method, data.serializedArgs);
+      self.postMessage({ type: 'wallet-call-result', id: data.id, success: true, result });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[pxe-worker] Wallet call ${data.method} failed:`, err);
+      self.postMessage({ type: 'wallet-call-result', id: data.id, success: false, error: message });
     }
     return;
   }

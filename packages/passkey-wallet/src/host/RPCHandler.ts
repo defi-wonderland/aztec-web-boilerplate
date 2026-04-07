@@ -29,6 +29,16 @@ export class RPCHandler {
         if (method === 'initWithKeys') return await this.handleInitWithKeys(params[0] as PopupResponse);
         if (method === 'disconnect') return await this.handleDisconnect();
 
+        // Wallet method calls: params = [walletMethodName, serializedArgs]
+        if (method === 'wallet') {
+          if (!this.pxeManager.isInitialized()) {
+            throw new Error('Wallet not initialized. Call connect() first.');
+          }
+          const walletMethod = params[0] as string;
+          const serializedArgs = params[1] as string;
+          return this.pxeManager.callWallet(walletMethod, serializedArgs);
+        }
+
         // All other methods are forwarded to the PXE Worker
         if (!this.pxeManager.isInitialized()) {
           throw new Error('PXE not initialized. Call connect() first.');
@@ -67,6 +77,7 @@ export class RPCHandler {
       encryptionKeyBytes,
       authKeys.masterSecret,
       authKeys.accountSalt,
+      signingKeyBytes,
       this.contractConfigs,
     );
     console.log('[RPCHandler] PXE Worker initialized, address:', address);

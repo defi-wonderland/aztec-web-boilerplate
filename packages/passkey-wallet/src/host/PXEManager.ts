@@ -22,6 +22,7 @@ export class PXEManager {
    * @param encryptionKeyRaw - Raw AES-256 key bytes (CryptoKey is not transferable)
    * @param masterSecret - Master secret as bigint string
    * @param accountSalt - Account salt as bigint string
+   * @param signingKey - Raw ECDSA-R signing key bytes
    * @param contracts - Contract configs to register
    * @returns The registered account address
    */
@@ -30,6 +31,7 @@ export class PXEManager {
     encryptionKeyRaw: Uint8Array,
     masterSecret: string,
     accountSalt: string,
+    signingKey: Uint8Array,
     contracts: any[],
   ): Promise<string> {
     if (this.worker) {
@@ -56,6 +58,7 @@ export class PXEManager {
         encryptionKeyRaw: Array.from(encryptionKeyRaw),
         masterSecret,
         accountSalt,
+        signingKey: Array.from(signingKey),
         contracts,
       });
     });
@@ -73,6 +76,28 @@ export class PXEManager {
     return new Promise<unknown>((resolve, reject) => {
       this.pendingCalls.set(id, { resolve, reject });
       this.worker!.postMessage({ type: 'call', id, method, params });
+    });
+  }
+
+  /**
+   * Forward a Wallet method call to the Worker.
+   *
+   * Unlike callPXE which passes raw params, wallet calls use pre-serialized
+   * args (via jsonStringify) and return a serialized result string.
+   *
+   * @param method - Wallet method name (e.g. 'sendTx', 'simulateTx')
+   * @param serializedArgs - JSON string of args, serialized with jsonStringify
+   * @returns JSON string of result, serialized with jsonStringify
+   */
+  async callWallet(method: string, serializedArgs: string): Promise<unknown> {
+    if (!this.worker || !this.initialized) {
+      throw new Error('Wallet not initialized. Call initialize() first.');
+    }
+
+    const id = crypto.randomUUID();
+    return new Promise<unknown>((resolve, reject) => {
+      this.pendingCalls.set(id, { resolve, reject });
+      this.worker!.postMessage({ type: 'wallet-call', id, method, serializedArgs });
     });
   }
 
@@ -139,7 +164,7 @@ export class PXEManager {
       return;
     }
 
-    if (data.type === 'call-result') {
+    if (data.type === 'call-result' || data.type === 'wallet-call-result') {
       const pending = this.pendingCalls.get(data.id);
       if (!pending) return;
       this.pendingCalls.delete(data.id);
