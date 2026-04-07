@@ -76,25 +76,38 @@ function WalletDashboard() {
     setIsLoadingBalance(true);
     setError(null);
     try {
+      // First test: verify the Wallet proxy works with a simple call
+      const accounts = await wallet.getAccounts();
+      const chainInfo = await wallet.getChainInfo();
+      setPublicBalance(
+        `Chain ${chainInfo.l1ChainId}, ${accounts.length} account(s)`,
+      );
+
+      // Then try reading private balance via utility function
       const tokenAddress = AztecAddress.fromString(SANDBOX_TOKEN_ADDRESS);
       const ownerAddress = AztecAddress.fromString(address);
       const token = Contract.at(
         tokenAddress,
         TokenContract.artifact,
-        wallet,
+        wallet as Wallet,
       );
       const result = await token.methods
-        .balance_of_public(ownerAddress)
+        .balance_of_private(ownerAddress)
         .simulate();
-      setPublicBalance(result.toString());
+      setPublicBalance(result.toString() + ' TST (private)');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(`Balance fetch failed: ${msg}`);
+      // If balance_of_private fails, still show chain info if we got it
+      if (publicBalance?.startsWith('Chain')) {
+        setError(`Balance read failed (chain info OK): ${msg}`);
+      } else {
+        setError(`Wallet call failed: ${msg}`);
+      }
       console.error('Balance error:', err);
     } finally {
       setIsLoadingBalance(false);
     }
-  }, [wallet, address]);
+  }, [wallet, address, publicBalance]);
 
   const mintPublic = useCallback(async () => {
     if (!wallet || !address) return;
@@ -107,14 +120,16 @@ function WalletDashboard() {
       const dripper = Contract.at(
         dripperAddress,
         DripperContract.artifact,
-        wallet,
+        wallet as Wallet,
       );
+      // drip_to_private is a private function
       const result = await dripper.methods
-        .drip_to_public(tokenAddress, 1n)
+        .drip_to_private(tokenAddress, 1n)
         .send()
         .wait();
-      setLastResult(`Minted! Tx: ${result.txHash?.toString().substring(0, 20)}...`);
-      // Refresh balance after mint
+      setLastResult(
+        `Minted! Tx: ${result.txHash?.toString().substring(0, 20)}...`,
+      );
       await fetchBalance();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -256,7 +271,7 @@ function WalletDashboard() {
                   icon={<Coins size={iconSize()} />}
                   data-testid="passkey-mint-button"
                 >
-                  {isMinting ? 'Minting...' : 'Mint 1 TST (Public)'}
+                  {isMinting ? 'Minting...' : 'Mint 1 TST (Private)'}
                 </Button>
                 {lastResult && (
                   <p className={styles.resultMessage}>{lastResult}</p>
