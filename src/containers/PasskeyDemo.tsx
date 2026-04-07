@@ -76,21 +76,34 @@ function WalletDashboard() {
     setIsLoadingBalance(true);
     setError(null);
     try {
-      // Step 1: Test basic Wallet proxy (no contract, just RPC)
-      console.log('[PasskeyDemo] Calling wallet.getAccounts()...');
+      // Step 1: Test Wallet proxy with getAccounts
       const accounts = await wallet.getAccounts();
-      console.log('[PasskeyDemo] Accounts:', accounts);
+      console.log('[PasskeyDemo] Accounts:', accounts.length);
 
-      console.log('[PasskeyDemo] Calling wallet.getChainInfo()...');
-      const chainInfo = await wallet.getChainInfo();
-      console.log('[PasskeyDemo] ChainInfo:', chainInfo);
-
-      setPublicBalance(
-        `Chain ${chainInfo.l1ChainId}, ${accounts.length} account(s)`,
+      // Step 2: Register token contract with PXE (required for reads)
+      console.log('[PasskeyDemo] Registering token contract...');
+      const tokenAddress = AztecAddress.fromString(SANDBOX_TOKEN_ADDRESS);
+      await wallet.registerContract(
+        { address: tokenAddress } as any,
+        TokenContract.artifact,
       );
+      console.log('[PasskeyDemo] Token contract registered');
+
+      // Step 3: Read private balance
+      const ownerAddress = AztecAddress.fromString(address);
+      const token = Contract.at(
+        tokenAddress,
+        TokenContract.artifact,
+        wallet as Wallet,
+      );
+      console.log('[PasskeyDemo] Calling balance_of_private...');
+      const result = await token.methods
+        .balance_of_private(ownerAddress)
+        .simulate();
+      setPublicBalance(result.toString() + ' TST');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(`Wallet call failed: ${msg}`);
+      setError(`Failed: ${msg}`);
       console.error('[PasskeyDemo] Error:', err);
     } finally {
       setIsLoadingBalance(false);
