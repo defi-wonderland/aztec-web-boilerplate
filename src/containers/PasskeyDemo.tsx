@@ -76,34 +76,22 @@ function WalletDashboard() {
     setIsLoadingBalance(true);
     setError(null);
     try {
-      // First test: verify the Wallet proxy works with a simple call
+      // Step 1: Test basic Wallet proxy (no contract, just RPC)
+      console.log('[PasskeyDemo] Calling wallet.getAccounts()...');
       const accounts = await wallet.getAccounts();
+      console.log('[PasskeyDemo] Accounts:', accounts);
+
+      console.log('[PasskeyDemo] Calling wallet.getChainInfo()...');
       const chainInfo = await wallet.getChainInfo();
+      console.log('[PasskeyDemo] ChainInfo:', chainInfo);
+
       setPublicBalance(
         `Chain ${chainInfo.l1ChainId}, ${accounts.length} account(s)`,
       );
-
-      // Then try reading private balance via utility function
-      const tokenAddress = AztecAddress.fromString(SANDBOX_TOKEN_ADDRESS);
-      const ownerAddress = AztecAddress.fromString(address);
-      const token = Contract.at(
-        tokenAddress,
-        TokenContract.artifact,
-        wallet as Wallet,
-      );
-      const result = await token.methods
-        .balance_of_private(ownerAddress)
-        .simulate();
-      setPublicBalance(result.toString() + ' TST (private)');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      // If balance_of_private fails, still show chain info if we got it
-      if (publicBalance?.startsWith('Chain')) {
-        setError(`Balance read failed (chain info OK): ${msg}`);
-      } else {
-        setError(`Wallet call failed: ${msg}`);
-      }
-      console.error('Balance error:', err);
+      setError(`Wallet call failed: ${msg}`);
+      console.error('[PasskeyDemo] Error:', err);
     } finally {
       setIsLoadingBalance(false);
     }
