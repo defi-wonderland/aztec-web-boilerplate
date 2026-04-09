@@ -18,6 +18,7 @@ export function usePasskeyWallet() {
       setWallet(result.wallet);
       setCapabilities(result.capabilities);
       setAddress(passkeyWallet.getAddress());
+      return result;
     } finally {
       setIsConnecting(false);
     }

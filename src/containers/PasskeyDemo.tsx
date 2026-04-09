@@ -11,7 +11,7 @@ import { PasskeyWalletProvider, usePasskeyWallet } from '@aztec/passkey-wallet';
 import type { PasskeyWalletConfig } from '@aztec/passkey-wallet';
 import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
 import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
-import { Contract } from '@aztec/aztec.js/contracts';
+import { Contract, getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
 import { Fr } from '@aztec/aztec.js/fields';
 import type { Wallet } from '@aztec/aztec.js';
@@ -129,14 +129,52 @@ const styles = {
   errorMessage: 'text-xs text-red-500 mt-1',
 } as const;
 
+/** Register deployed contracts with PXE after connect */
+async function registerContractsWithWallet(w: Wallet) {
+  const tokenAddress = AztecAddress.fromString(SANDBOX_TOKEN_ADDRESS);
+  const dripperAddress = AztecAddress.fromString(SANDBOX_DRIPPER_ADDRESS);
+
+  // Build contract instances from deployment params (same as ContractRegistry does)
+  const dripperInstance = await getContractInstanceFromInstantiationParams(
+    DripperContract.artifact,
+    { salt: SANDBOX_SALT, deployer: SANDBOX_DEPLOYER, constructorArtifact: 'constructor', constructorArgs: [] },
+  );
+  const tokenInstance = await getContractInstanceFromInstantiationParams(
+    TokenContract.artifact,
+    {
+      salt: SANDBOX_SALT,
+      deployer: SANDBOX_DEPLOYER,
+      constructorArtifact: 'constructor_with_minter',
+      constructorArgs: [
+        'WETH', 'WETH', 18,
+        AztecAddress.fromString(SANDBOX_DRIPPER_ADDRESS),
+        AztecAddress.ZERO,
+      ],
+    },
+  );
+
+  console.log('[PasskeyDemo] Registering contracts with PXE...');
+  await w.registerContract({ instance: dripperInstance, artifact: DripperContract.artifact });
+  await w.registerContract({ instance: tokenInstance, artifact: TokenContract.artifact });
+  console.log('[PasskeyDemo] Contracts registered!');
+}
+
 function WalletDashboard() {
-  const { isConnected, isConnecting, address, wallet, connect, disconnect } =
+  const { isConnected, isConnecting, address, wallet, connect: rawConnect, disconnect } =
     usePasskeyWallet();
   const [publicBalance, setPublicBalance] = useState<string | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const connect = useCallback(async () => {
+    const result = await rawConnect(TEST_MANIFEST);
+    // Register contracts with PXE after connect so send/simulate work
+    if (result?.wallet) {
+      await registerContractsWithWallet(result.wallet as Wallet);
+    }
+  }, [rawConnect]);
 
   const fetchBalance = useCallback(async () => {
     if (!wallet || !address) return;
@@ -253,7 +291,7 @@ function WalletDashboard() {
             {!isConnected ? (
               <Button
                 variant="primary"
-                onClick={() => connect(TEST_MANIFEST)}
+                onClick={connect}
                 disabled={isConnecting}
                 isLoading={isConnecting}
                 icon={
