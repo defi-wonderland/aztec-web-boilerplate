@@ -187,6 +187,11 @@ async function handleInit(data: {
 
     const walletAccountManager = await AccountManager.create(wallet as any, secretKey, accountContract, Fr.ZERO);
     const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
+
+    // Register the SponsoredFPC contract with PXE so it can be used for fee payment
+    await pxe.registerContract({ instance: fpcInstance, artifact: SponsoredFPCContractArtifact });
+    log('[pxe-worker] Registered SponsoredFPC at ' + fpcInstance.address.toString().slice(0, 14) + '...');
+
     const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
 
     const deployMethod = await walletAccountManager.getDeployMethod();
