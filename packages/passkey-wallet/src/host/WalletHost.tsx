@@ -53,6 +53,20 @@ export function WalletHost() {
     setPhase('idle');
   }, []);
 
+  // Report content height to parent so iframe can resize dynamically
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!contentRef.current) return;
+    const observer = new ResizeObserver(() => {
+      const height = document.documentElement.scrollHeight;
+      window.parent.postMessage({ type: 'IFRAME_RESIZE', height }, '*');
+    });
+    observer.observe(contentRef.current);
+    // Also fire once on mount
+    window.parent.postMessage({ type: 'IFRAME_RESIZE', height: document.documentElement.scrollHeight }, '*');
+    return () => observer.disconnect();
+  }, [phase, manifest]);
+
   useEffect(() => {
     // Inject global CSS for the popup-style UI
     const styleEl = document.createElement('style');
@@ -109,24 +123,28 @@ export function WalletHost() {
   // Phase 1: Permission review
   if (phase === 'reviewing' && manifest) {
     return (
-      <PermissionReview
-        manifest={manifest}
-        onApprove={handlePermissionApprove}
-        onReject={handlePermissionReject}
-      />
+      <div ref={contentRef}>
+        <PermissionReview
+          manifest={manifest}
+          onApprove={handlePermissionApprove}
+          onReject={handlePermissionReject}
+        />
+      </div>
     );
   }
 
   // Phase 2: Biometric authentication
   if (phase === 'authenticating') {
     return (
-      <ConnectFlow
-        rpId={rpId}
-        onComplete={handleAuthComplete}
-        onCancel={handleAuthCancel}
-      />
+      <div ref={contentRef}>
+        <ConnectFlow
+          rpId={rpId}
+          onComplete={handleAuthComplete}
+          onCancel={handleAuthCancel}
+        />
+      </div>
     );
   }
 
-  return null;
+  return <div ref={contentRef} />;
 }

@@ -6,6 +6,8 @@ export class IframeManager {
   private iframe: HTMLIFrameElement | null = null;
   private channel: SecureChannel | null = null;
   private backdrop: HTMLDivElement | null = null;
+  private resizeListener: ((event: MessageEvent) => void) | null = null;
+  private isModal = false;
 
   constructor(private walletHost: string = DEFAULT_WALLET_HOST) { }
 
@@ -75,6 +77,7 @@ export class IframeManager {
   /** Show the iframe as a centered modal overlay with backdrop */
   showAsModal(): void {
     if (!this.iframe) return;
+    this.isModal = true;
     Object.assign(this.iframe.style, {
       display: 'block',
       position: 'fixed',
@@ -82,7 +85,7 @@ export class IframeManager {
       left: '50%',
       transform: 'translate(-50%, -50%)',
       width: '420px',
-      height: '90vh',
+      height: '0px',
       maxHeight: '90vh',
       border: 'none',
       borderRadius: '20px',
@@ -91,7 +94,17 @@ export class IframeManager {
       overflow: 'hidden',
       colorScheme: 'light',
       background: '#ffffff',
+      transition: 'height 0.15s ease',
     });
+
+    // Listen for content height changes from iframe
+    this.resizeListener = (event: MessageEvent) => {
+      if (event.data?.type !== 'IFRAME_RESIZE' || !this.iframe || !this.isModal) return;
+      const contentHeight = Math.min(event.data.height, window.innerHeight * 0.9);
+      this.iframe.style.height = `${contentHeight}px`;
+    };
+    window.addEventListener('message', this.resizeListener);
+
     // Create backdrop
     if (!this.backdrop) {
       this.backdrop = document.createElement('div');
@@ -102,7 +115,6 @@ export class IframeManager {
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
         zIndex: '9999',
-        transition: 'opacity 0.2s ease',
       });
       document.body.appendChild(this.backdrop);
     }
@@ -110,8 +122,14 @@ export class IframeManager {
 
   /** Hide the iframe back to invisible */
   hideModal(): void {
+    this.isModal = false;
     if (this.iframe) {
       this.iframe.style.display = 'none';
+      this.iframe.style.transition = '';
+    }
+    if (this.resizeListener) {
+      window.removeEventListener('message', this.resizeListener);
+      this.resizeListener = null;
     }
     if (this.backdrop) {
       this.backdrop.remove();
