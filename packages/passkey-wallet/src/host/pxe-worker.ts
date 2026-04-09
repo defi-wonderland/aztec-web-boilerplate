@@ -165,44 +165,15 @@ async function handleInit(data: {
   wallet = new PasskeyWallet(pxe, node, account, accountAddress);
   log('[pxe-worker] PasskeyWallet created for ' + accountAddress.toString());
 
-  // Deploy account contract if not already deployed.
-  // The EcdsaR account stores its signing key as a note created during deployment.
-  // Without deployment, private function simulation fails with "Failed to get a note".
-  // AccountManager.getDeployMethod() needs a Wallet (not raw PXE), so we recreate
-  // the AccountManager with our PasskeyWallet as the wallet parameter.
-  try {
-    log('[pxe-worker] Deploying account contract...');
-    const { SponsoredFeePaymentMethod } = await import('@aztec/aztec.js/fee');
-    const { SPONSORED_FPC_SALT } = await import('@aztec/constants');
-    const { SponsoredFPCContractArtifact } = await import('@aztec/noir-contracts.js/SponsoredFPC');
-    const { getContractInstanceFromInstantiationParams: getInstanceFromParams } = await import('@aztec/aztec.js/contracts');
-
-    // Recreate AccountManager with the wallet (not raw PXE) so getDeployMethod works
-    const walletAccountManager = await AccountManager.create(wallet as any, secretKey, accountContract, Fr.ZERO);
-
-    const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
-    const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
-
-    const { AztecAddress } = await import('@aztec/stdlib/aztec-address');
-    const { TxStatus } = await import('@aztec/stdlib/tx');
-    const deployMethod = await walletAccountManager.getDeployMethod();
-    const tx = await deployMethod.send({
-      from: AztecAddress.ZERO,
-      fee: { paymentMethod },
-      skipClassPublication: false,
-      skipInstancePublication: false,
-    });
-    log('[pxe-worker] Deploy tx sent, waiting for confirmation...');
-    await tx.wait({ timeout: 120, waitForStatus: TxStatus.PROPOSED });
-    log('[pxe-worker] Account deployed!');
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('already initialized') || msg.includes('already deployed')) {
-      log('[pxe-worker] Account already deployed');
-    } else {
-      log('[pxe-worker] Account deployment failed: ' + msg);
-    }
-  }
+  // TODO: Deploy account contract on first use.
+  // EcdsaR account deployment has a chicken-and-egg issue: the deployment
+  // simulation calls is_valid_impl which reads the signing key note, but
+  // the note is created BY the constructor which hasn't run yet.
+  // The main app's SharedPXEService handles this through additional internal
+  // state management. The passkey wallet's isolated PXE worker needs a
+  // different approach — either a custom deployment flow or integration
+  // with the SharedPXEService pattern. For now, the passkey wallet works
+  // for accounts that were previously deployed through the main app.
 
   return { address: accountAddress.toString() };
 }
