@@ -45,15 +45,14 @@ export class RPCHandler {
           const walletMethod = params[0] as string;
           const serializedArgs = params[1] as string;
 
-          // TODO: Re-enable after payload extraction is fixed for Aztec serialized types
-          // Capability guard check — disabled for debugging
-          // const payload = this.extractPayload(walletMethod, serializedArgs);
-          // const decision = this.guard.check(walletMethod, payload);
-          // if (decision === 'prompt') {
-          //   const approved = await this.requestRuntimePrompt(walletMethod, payload);
-          //   if (!approved) throw new Error('User denied: operation not authorized');
-          // }
-          console.log(`[RPCHandler] wallet.${walletMethod} — guard bypassed (debugging)`);
+          // Capability guard check
+          const payload = this.extractPayload(walletMethod, serializedArgs);
+          const decision = this.guard.check(walletMethod, payload);
+          if (decision === 'prompt') {
+            console.log(`[RPCHandler] wallet.${walletMethod} — prompting (outside scope)`);
+            const approved = await this.requestRuntimePrompt(walletMethod, payload);
+            if (!approved) throw new Error('User denied: operation not authorized');
+          }
 
 
           return this.pxeManager.callWallet(walletMethod, serializedArgs);
