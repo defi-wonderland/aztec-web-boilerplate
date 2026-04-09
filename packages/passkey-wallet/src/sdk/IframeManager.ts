@@ -81,13 +81,17 @@ export class IframeManager {
       top: '50%',
       left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: '400px',
-      height: '600px',
-      maxHeight: '90vh',
+      width: '420px',
+      height: 'auto',
+      maxHeight: '85vh',
+      minHeight: '400px',
       border: 'none',
-      borderRadius: '16px',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      borderRadius: '20px',
+      boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(140, 126, 255, 0.15)',
       zIndex: '10000',
+      overflow: 'hidden',
+      colorScheme: 'light',
+      background: '#ffffff',
     });
     // Create backdrop
     if (!this.backdrop) {
@@ -95,8 +99,11 @@ export class IframeManager {
       Object.assign(this.backdrop.style, {
         position: 'fixed',
         inset: '0',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
         zIndex: '9999',
+        transition: 'opacity 0.2s ease',
       });
       document.body.appendChild(this.backdrop);
     }

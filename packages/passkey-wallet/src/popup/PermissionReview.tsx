@@ -3,26 +3,65 @@ import {
   transformCapabilities,
 } from '../host/capabilities/PermissionDisplay';
 import {
-  layoutStyles,
   headerStyles,
-  originStyles,
   buttonStyles,
   permissionStyles,
 } from './styles';
 import type { CSSProperties } from 'react';
 
 const styles = {
-  shell: layoutStyles.shell,
-  card: { ...layoutStyles.card, maxHeight: '90vh', overflowY: 'auto' } as CSSProperties,
-  section: layoutStyles.section,
+  /** Fills the iframe naturally — no min-height, no extra card wrapper */
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '24px',
+    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+    color: 'var(--text-primary)',
+    background: 'var(--bg-primary)',
+    minHeight: '100%',
+  } as CSSProperties,
   headerRow: headerStyles.row,
   logoWrap: headerStyles.logoWrap,
   logoText: headerStyles.logoText,
   wordmark: headerStyles.wordmark,
-  originWrap: originStyles.wrap,
-  originLabel: originStyles.label,
-  originBadge: originStyles.badge,
-  rejectButton: buttonStyles.danger,
+  appInfo: {
+    textAlign: 'center',
+    marginBottom: '20px',
+  } as CSSProperties,
+  appName: {
+    fontSize: '18px',
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    margin: 0,
+  } as CSSProperties,
+  appUrl: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    marginTop: '4px',
+  } as CSSProperties,
+  appSubtitle: {
+    fontSize: '13px',
+    color: 'var(--text-secondary)',
+    marginTop: '4px',
+  } as CSSProperties,
+  permissionsList: {
+    flex: 1,
+    overflowY: 'auto',
+    marginBottom: '16px',
+  } as CSSProperties,
+  actions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    paddingTop: '8px',
+    borderTop: '1px solid var(--border-color)',
+  } as CSSProperties,
+  rejectButton: {
+    ...buttonStyles.ghost,
+    fontSize: '13px',
+    padding: '8px 16px',
+    color: 'var(--text-muted)',
+  } as CSSProperties,
   ...permissionStyles,
 } as const;
 
@@ -36,32 +75,26 @@ export function PermissionReview({ manifest, onApprove, onReject }: PermissionRe
   const display = transformCapabilities(manifest.capabilities);
 
   return (
-    <div style={styles.shell}>
-      <div style={styles.card}>
-        {/* Header */}
-        <div style={styles.headerRow}>
-          <div style={styles.logoWrap} aria-hidden="true">
-            <span style={styles.logoText}>A</span>
-          </div>
-          <span style={styles.wordmark}>Aztec Wallet</span>
+    <div style={styles.container}>
+      {/* Header */}
+      <div style={styles.headerRow}>
+        <div style={styles.logoWrap} aria-hidden="true">
+          <span style={styles.logoText}>A</span>
         </div>
+        <span style={styles.wordmark}>Aztec Wallet</span>
+      </div>
 
-        {/* App info */}
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <h1 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
-            {manifest.metadata.name}
-          </h1>
-          {manifest.metadata.url && (
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {manifest.metadata.url}
-            </p>
-          )}
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            wants to connect to your wallet
-          </p>
-        </div>
+      {/* App info */}
+      <div style={styles.appInfo}>
+        <h1 style={styles.appName}>{manifest.metadata.name}</h1>
+        {manifest.metadata.url && (
+          <p style={styles.appUrl}>{manifest.metadata.url}</p>
+        )}
+        <p style={styles.appSubtitle}>wants to connect to your wallet</p>
+      </div>
 
-        {/* Requested permissions label */}
+      {/* Permissions list */}
+      <div style={styles.permissionsList}>
         <div style={styles.sectionLabel}>Requested Permissions</div>
 
         {/* Account access */}
@@ -129,17 +162,17 @@ export function PermissionReview({ manifest, onApprove, onReject }: PermissionRe
             </div>
           </div>
         )}
+      </div>
 
-        {/* Actions */}
-        <div style={{ ...styles.section, marginTop: '16px' }}>
-          <button type="button" onClick={onApprove} style={buttonStyles.primary}>
-            <Shield size={16} strokeWidth={2} aria-hidden="true" />
-            <span>Approve &amp; Continue</span>
-          </button>
-          <button type="button" onClick={onReject} style={styles.rejectButton}>
-            <span>Reject</span>
-          </button>
-        </div>
+      {/* Actions — pinned at bottom */}
+      <div style={styles.actions}>
+        <button type="button" onClick={onApprove} style={buttonStyles.primary}>
+          <Shield size={16} strokeWidth={2} aria-hidden="true" />
+          <span>Approve &amp; Continue</span>
+        </button>
+        <button type="button" onClick={onReject} style={styles.rejectButton}>
+          <span>Reject</span>
+        </button>
       </div>
     </div>
   );
