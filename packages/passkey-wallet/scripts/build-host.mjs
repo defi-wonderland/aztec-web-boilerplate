@@ -16,7 +16,7 @@
  * async-poseidon workarounds that the main thread previously required.
  */
 import esbuild from 'esbuild';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -46,12 +46,28 @@ const commonOptions = {
 // Build PXE Worker (heavy — Aztec PXE, BarretenbergSync, crypto)
 // This runs in a Worker with crossOriginIsolated=true, so BarretenbergSync
 // works natively — no shims needed.
+// WASM files must be in the same directory as the worker (not assets/) so that
+// `new URL("file.wasm", import.meta.url)` resolves correctly from the worker context.
 console.log('[build-host] Building PXE Worker...');
 await esbuild.build({
   ...commonOptions,
   entryPoints: [resolve(root, 'src/host/pxe-worker.ts')],
   outfile: resolve(root, 'dist/host/pxe-worker.js'),
 });
+// Copy WASM files from assets/ to dist root with original names so the worker
+// can find them via `new URL("file.wasm", import.meta.url)` which resolves
+// relative to the worker's URL (at dist/host/ root, not assets/).
+const assetsDir = resolve(root, 'dist/host/assets');
+try {
+  for (const file of readdirSync(assetsDir)) {
+    if (file.endsWith('.wasm')) {
+      // Strip hash: "noirc_abi_wasm_bg-jP0Ef61K.wasm" → "noirc_abi_wasm_bg.wasm"
+      const originalName = file.replace(/-[A-Za-z0-9_]+\.wasm$/, '.wasm');
+      copyFileSync(resolve(assetsDir, file), resolve(root, 'dist/host', originalName));
+      console.log(`[build-host] Copied ${file} → ${originalName}`);
+    }
+  }
+} catch { /* assets dir may not exist if no wasm files */ }
 console.log('[build-host] PXE Worker built.');
 
 // Build host entry (lighter now — no Aztec PXE, just SecureChannel + Worker management)
