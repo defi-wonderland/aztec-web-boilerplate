@@ -163,7 +163,7 @@ async function handleInit(data: {
   }
 
   wallet = new PasskeyWallet(pxe, node, account, accountAddress);
-  log('[pxe-worker] PasskeyWallet created for ' + address);
+  log('[pxe-worker] PasskeyWallet created for ' + accountAddress.toString());
 
   return { address: accountAddress.toString() };
 }
