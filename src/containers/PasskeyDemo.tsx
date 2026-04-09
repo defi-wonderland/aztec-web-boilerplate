@@ -13,7 +13,7 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/ar
 import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
 import { Contract } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
-import { Fr } from '@aztec/foundation/fields';
+import { Fr } from '@aztec/aztec.js/fields';
 import type { Wallet } from '@aztec/aztec.js';
 import {
   Button,
