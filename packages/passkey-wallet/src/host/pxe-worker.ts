@@ -149,9 +149,16 @@ async function handleInit(data: {
     }
 
     protected async getAccountFromAddress(addr: any): Promise<any> {
-      // Compare by string — addr may be a Zod-deserialized AztecAddress whose
-      // .equals() fails against the AccountManager's address due to type mismatch.
-      if (addr.toString() === this.accountAddress.toString() || addr.isZero()) {
+      // AztecAddress.ZERO means "deploy without auth" — use SignerlessAccount
+      // which routes through MultiCallEntrypoint (no is_valid_impl check).
+      // This is critical for account deployment: the constructor creates the
+      // signing key note, so is_valid_impl can't run before it exists.
+      if (addr.isZero()) {
+        const { SignerlessAccount } = await import('@aztec/aztec.js/account');
+        return new SignerlessAccount();
+      }
+      // Compare by string — addr may be a Zod-deserialized AztecAddress
+      if (addr.toString() === this.accountAddress.toString()) {
         return this.account;
       }
       throw new Error(`Unknown account: ${addr.toString()}`);
@@ -165,15 +172,39 @@ async function handleInit(data: {
   wallet = new PasskeyWallet(pxe, node, account, accountAddress);
   log('[pxe-worker] PasskeyWallet created for ' + accountAddress.toString());
 
-  // TODO: Deploy account contract on first use.
-  // EcdsaR account deployment has a chicken-and-egg issue: the deployment
-  // simulation calls is_valid_impl which reads the signing key note, but
-  // the note is created BY the constructor which hasn't run yet.
-  // The main app's SharedPXEService handles this through additional internal
-  // state management. The passkey wallet's isolated PXE worker needs a
-  // different approach — either a custom deployment flow or integration
-  // with the SharedPXEService pattern. For now, the passkey wallet works
-  // for accounts that were previously deployed through the main app.
+  // Deploy account contract if not already deployed.
+  // Uses from: AztecAddress.ZERO which triggers SignerlessAccount →
+  // MultiCallEntrypoint (no is_valid_impl check). The constructor runs
+  // first and creates the signing key note.
+  try {
+    log('[pxe-worker] Deploying account contract...');
+    const { SponsoredFeePaymentMethod } = await import('@aztec/aztec.js/fee');
+    const { SPONSORED_FPC_SALT } = await import('@aztec/constants');
+    const { SponsoredFPCContractArtifact } = await import('@aztec/noir-contracts.js/SponsoredFPC');
+    const { getContractInstanceFromInstantiationParams: getInstanceFromParams } = await import('@aztec/aztec.js/contracts');
+    const { AztecAddress } = await import('@aztec/stdlib/aztec-address');
+    const { TxStatus } = await import('@aztec/stdlib/tx');
+
+    const walletAccountManager = await AccountManager.create(wallet as any, secretKey, accountContract, Fr.ZERO);
+    const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
+    const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
+
+    const deployMethod = await walletAccountManager.getDeployMethod();
+    const tx = await deployMethod.send({
+      from: AztecAddress.ZERO,
+      fee: { paymentMethod },
+    });
+    log('[pxe-worker] Deploy tx sent, waiting for confirmation...');
+    await tx.wait({ timeout: 120, waitForStatus: TxStatus.PROPOSED });
+    log('[pxe-worker] Account deployed!');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('already initialized') || msg.includes('already deployed')) {
+      log('[pxe-worker] Account already deployed');
+    } else {
+      log('[pxe-worker] Account deployment failed: ' + msg);
+    }
+  }
 
   return { address: accountAddress.toString() };
 }
