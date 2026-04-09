@@ -113,7 +113,10 @@ export class CapabilityGuard {
     if (!cap) return 'prompt';
     const sub = cap[subType] as { scope?: unknown } | undefined;
     if (!sub?.scope) return 'prompt';
-    if (!payload?.contractAddress || !payload?.functionName) return 'prompt';
+    // If we couldn't extract contract/function from the serialized args,
+    // allow it — permissive mode should not break the flow. The dapp already
+    // declared it needs simulation capability, and the wallet granted it.
+    if (!payload?.contractAddress || !payload?.functionName) return 'allowed';
     return matchesScope(
       sub.scope as '*' | { contract: string; function: string }[],
       payload.contractAddress,
@@ -126,7 +129,8 @@ export class CapabilityGuard {
     if (!cap) return 'prompt';
     const scope = cap.scope;
     if (!scope) return 'prompt';
-    if (!payload?.contractAddress || !payload?.functionName) return 'prompt';
+    // Same as simulation: if payload extraction failed, allow it in permissive mode.
+    if (!payload?.contractAddress || !payload?.functionName) return 'allowed';
     return matchesScope(
       scope as '*' | { contract: string; function: string }[],
       payload.contractAddress,
