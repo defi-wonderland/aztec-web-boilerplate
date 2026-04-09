@@ -102,7 +102,7 @@ async function handleInit(data: {
 
   // Register account contract + keys with PXE
   // (mirrors BaseWallet.registerContract logic: register contract, then registerAccount with partial address)
-  const { computePartialAddress } = await import('@aztec/aztec.js/contracts');
+  const { computePartialAddress } = await import('@aztec/stdlib/contract');
   const account = await accountManager.getAccount();
   const accountInstance = accountManager.getInstance();
   const accountArtifact = await accountManager.getAccountContract().getContractArtifact();
