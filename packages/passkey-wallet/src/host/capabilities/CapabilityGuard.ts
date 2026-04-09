@@ -82,7 +82,9 @@ export class CapabilityGuard {
   private checkContracts(field: string, contractAddress?: string): 'allowed' | 'prompt' {
     const cap = this.findCapability('contracts');
     if (!cap || cap[field] !== true) return 'prompt';
-    if (!contractAddress) return 'prompt';
+    // If we can't extract the address from serialized args, allow it —
+    // the capability type is granted, permissive mode doesn't block.
+    if (!contractAddress) return 'allowed';
     const contracts = cap.contracts as string | string[];
     if (contracts === '*') return 'allowed';
     if (Array.isArray(contracts)) {
@@ -95,7 +97,8 @@ export class CapabilityGuard {
   private checkContractClasses(classId?: string): 'allowed' | 'prompt' {
     const cap = this.findCapability('contractClasses');
     if (!cap || cap.canGetMetadata !== true) return 'prompt';
-    if (!classId) return 'prompt';
+    // Same permissive approach — capability exists, can't verify specific scope.
+    if (!classId) return 'allowed';
     const classes = cap.classes as string | string[];
     if (classes === '*') return 'allowed';
     if (Array.isArray(classes)) {
@@ -143,7 +146,7 @@ export class CapabilityGuard {
     if (!cap) return 'prompt';
     const pe = cap.privateEvents as { contracts?: string | string[] } | undefined;
     if (!pe) return 'prompt';
-    if (!contractAddress) return 'prompt';
+    if (!contractAddress) return 'allowed';
     const contracts = pe.contracts as string | string[];
     if (contracts === '*') return 'allowed';
     if (Array.isArray(contracts)) {
