@@ -77,8 +77,20 @@ interface ConnectFlowProps {
 export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: ConnectFlowProps) {
   const [status, setStatus] = useState<'idle' | 'authenticating' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const isReturningUser = !!credentialId;
   const isAuthenticating = status === 'authenticating';
+
+  // Check both: prop from SDK + wallet host localStorage (popup runs at wallet host origin)
+  const resolvedCredentialId = credentialId ?? (() => {
+    try {
+      const stored = localStorage.getItem('aztec-wallet:credentialId');
+      if (!stored) return undefined;
+      const binary = atob(stored);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes.buffer;
+    } catch { return undefined; }
+  })();
+  const isReturningUser = !!resolvedCredentialId;
 
   const handleAuth = async () => {
     setStatus('authenticating');
@@ -90,7 +102,7 @@ export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: Connec
 
       if (isReturningUser) {
         // Returning user with known credential ID — fastest path
-        const options = buildGetOptions(new Uint8Array(credentialId!), rpId);
+        const options = buildGetOptions(new Uint8Array(resolvedCredentialId!), rpId);
         credential = (await navigator.credentials.get(options)) as PublicKeyCredential;
         prfOutput = extractPRFOutput(credential);
         publicKey = new Uint8Array(0);
