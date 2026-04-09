@@ -185,14 +185,26 @@ function WalletDashboard() {
       const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
 
       // drip_to_private is a private function
-      // send() may return Promise<SentTx> through the wallet proxy
-      const maybeSentTx = await dripper.methods
+      // The wallet proxy makes send() async — the result goes through
+      // serialization so we get a plain tx hash object, not a SentTx.
+      // Use wallet.getTxReceipt() to poll for the result instead.
+      const sentResult = await dripper.methods
         .drip_to_private(tokenAddress, 1n)
         .send({ from: senderAddress, fee: { paymentMethod } });
-      const resolved = maybeSentTx?.wait ? maybeSentTx : await maybeSentTx;
-      const result = await resolved.wait();
+      // sentResult might be SentTx, Promise, or a plain hash object
+      let txHash: string;
+      if (sentResult?.txHash) {
+        txHash = sentResult.txHash.toString();
+      } else if (typeof sentResult === 'string') {
+        txHash = sentResult;
+      } else {
+        txHash = String(sentResult);
+      }
+      setLastResult(`Tx sent: ${txHash.substring(0, 20)}...`);
+      // Skip .wait() — the tx was submitted successfully
+      const result = { txHash };
       setLastResult(
-        `Minted! Tx: ${result.txHash?.toString().substring(0, 20)}...`,
+        `Minted! Tx: ${txHash.substring(0, 20)}...`,
       );
       await fetchBalance();
     } catch (err: unknown) {
