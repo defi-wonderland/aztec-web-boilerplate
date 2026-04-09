@@ -169,16 +169,17 @@ function WalletDashboard() {
     try {
       const tokenAddress = AztecAddress.fromString(SANDBOX_TOKEN_ADDRESS);
       const dripperAddress = AztecAddress.fromString(SANDBOX_DRIPPER_ADDRESS);
+      const senderAddress = AztecAddress.fromString(address);
       const dripper = Contract.at(
         dripperAddress,
         DripperContract.artifact,
         wallet as Wallet,
       );
       // drip_to_private is a private function
-      // Note: send() must be awaited separately because WalletProxy is async
+      // send() requires { from } — the Aztec SDK uses it to build the tx
       const sentTx = await dripper.methods
         .drip_to_private(tokenAddress, 1n)
-        .send();
+        .send({ from: senderAddress });
       const result = await sentTx.wait();
       setLastResult(
         `Minted! Tx: ${result.txHash?.toString().substring(0, 20)}...`,
