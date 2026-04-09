@@ -183,13 +183,17 @@ async function handleInit(data: {
     const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
     const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
 
+    const { AztecAddress } = await import('@aztec/stdlib/aztec-address');
+    const { TxStatus } = await import('@aztec/stdlib/tx');
     const deployMethod = await walletAccountManager.getDeployMethod();
     const tx = await deployMethod.send({
-      from: accountAddress,
+      from: AztecAddress.ZERO,
       fee: { paymentMethod },
+      skipClassPublication: false,
+      skipInstancePublication: false,
     });
     log('[pxe-worker] Deploy tx sent, waiting for confirmation...');
-    await tx.wait({ timeout: 120 });
+    await tx.wait({ timeout: 120, waitForStatus: TxStatus.PROPOSED });
     log('[pxe-worker] Account deployed!');
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
