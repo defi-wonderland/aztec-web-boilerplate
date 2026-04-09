@@ -15,9 +15,10 @@ import { describe, it, expect, vi, beforeAll } from 'vitest';
 // We test the actual Aztec SDK logic — no mocking of Aztec internals
 import { Fr } from '@aztec/foundation/curves/bn254';
 import { AccountManager } from '@aztec/aztec.js/wallet';
-import { computePartialAddress, getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
+import { getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
+import { computePartialAddress } from '@aztec/stdlib/contract';
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
-import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa-r';
+import { createAccountContract } from '../AccountManager';
 import { serializeContractConfig, deserializeContractConfig } from '../../shared/contractSerialization';
 
 // Use the actual DripperContract artifact for realistic testing
@@ -33,7 +34,7 @@ describe('PXE Worker Registration Logic', () => {
     it('AccountManager computes a deterministic address from secretKey + accountContract', async () => {
       // This is what pxe-worker does:
       const secretKey = new Fr(BigInt(masterSecret));
-      const accountContract = new EcdsaRAccountContract(signingKey);
+      const accountContract = createAccountContract(signingKey);
 
       // Create a mock PXE that tracks calls
       const mockPxe = {
@@ -67,7 +68,7 @@ describe('PXE Worker Registration Logic', () => {
 
     it('computePartialAddress produces consistent result for the account instance', async () => {
       const secretKey = new Fr(BigInt(masterSecret));
-      const accountContract = new EcdsaRAccountContract(signingKey);
+      const accountContract = createAccountContract(signingKey);
 
       const mockPxe = {
         getRegisteredAccounts: vi.fn().mockResolvedValue([]),
@@ -94,7 +95,7 @@ describe('PXE Worker Registration Logic', () => {
 
     it('full registration sequence mirrors BaseWallet.registerContract', async () => {
       const secretKey = new Fr(BigInt(masterSecret));
-      const accountContract = new EcdsaRAccountContract(signingKey);
+      const accountContract = createAccountContract(signingKey);
 
       const mockPxe = {
         getRegisteredAccounts: vi.fn().mockResolvedValue([]),
