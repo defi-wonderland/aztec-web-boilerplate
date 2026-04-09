@@ -60,9 +60,11 @@ export type PopupResponse =
     //   authData: ArrayBuffer; clientDataJSON: ArrayBuffer }
   | { type: 'tx-cancelled' }
   | { type: 'read-approved' }
-  | { type: 'read-cancelled' };
+  | { type: 'read-cancelled' }
+  | { type: 'prompt-approved' }
+  | { type: 'prompt-denied' };
 
-export type PopupFlow = 'connect' | 'sign' | 'read';
+export type PopupFlow = 'connect' | 'sign' | 'read' | 'runtime-prompt';
 
 export interface TxSummary {
   contractAddress: string;
@@ -75,6 +77,19 @@ export interface ReadSummary {
   contractAddress: string;
   methodName: string;
   dappOrigin: string;
+}
+
+export interface RuntimePromptSummary {
+  /** The wallet method being called */
+  methodName: string;
+  /** Contract address (if applicable) */
+  contractAddress?: string;
+  /** Function name (if applicable) */
+  functionName?: string;
+  /** Origin of the requesting dapp */
+  dappOrigin: string;
+  /** Whether this is a read or write operation */
+  operationType: 'read' | 'write';
 }
 
 export interface InitMessage {
