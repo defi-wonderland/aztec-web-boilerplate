@@ -114,6 +114,30 @@ async function handleInit(data: {
   const accountAddress = accountManager.address;
   log('[pxe-worker] Account registered: ' + accountAddress.toString());
 
+  // Deploy account contract if not already deployed.
+  // The EcdsaR account stores its signing key as a note created during deployment.
+  // Without deployment, private function simulation fails with "Failed to get a note".
+  try {
+    const metadata = await pxe.getContractMetadata(accountAddress);
+    if (!metadata?.isContractInitialized) {
+      log('[pxe-worker] Account not deployed, deploying...');
+      const deployMethod = await accountManager.getDeployMethod();
+      const { SponsoredFeePaymentMethod } = await import('@aztec/aztec.js/fee');
+      const tx = await deployMethod.send({
+        from: accountAddress,
+        fee: { paymentMethod: new SponsoredFeePaymentMethod(accountAddress) },
+      });
+      log('[pxe-worker] Deploy tx sent, waiting...');
+      await tx.wait({ timeout: 120 });
+      log('[pxe-worker] Account deployed!');
+    } else {
+      log('[pxe-worker] Account already deployed');
+    }
+  } catch (err) {
+    log('[pxe-worker] Account deployment failed (may work without it for public calls): ' +
+      (err instanceof Error ? err.message : String(err)));
+  }
+
   // Register contracts directly in the worker (bypasses WalletProxy serialization
   // which can't handle the complex ContractInstanceWithAddress Zod schemas).
   if (data.contracts && data.contracts.length > 0) {
