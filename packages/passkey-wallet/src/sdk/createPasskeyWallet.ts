@@ -1,5 +1,5 @@
 import type { Wallet } from '@aztec/aztec.js';
-import type { PasskeyWalletConfig, PopupResponse } from '../shared/types';
+import type { PasskeyWalletConfig, PopupResponse, RuntimePromptSummary } from '../shared/types';
 import { DEFAULT_WALLET_HOST, NETWORK_URLS } from '../shared/constants';
 import { IframeManager } from './IframeManager';
 import { PXEProxy } from './PXEProxy';
@@ -39,8 +39,8 @@ export class PasskeyWallet {
    * 5. SDK sends keys to iframe via encrypted channel
    * 6. Iframe initializes PXE, registers account, returns address
    */
-  async connect(): Promise<Wallet> {
-    if (this.wallet) return this.wallet;
+  async connect(manifest?: unknown): Promise<{ wallet: Wallet; capabilities: unknown }> {
+    if (this.wallet) return { wallet: this.wallet, capabilities: this.buildCapabilitiesResponse(manifest) };
     this._isConnecting = true;
 
     try {
@@ -53,6 +53,7 @@ export class PasskeyWallet {
         'connect',
         undefined,
         storedCredentialId ?? undefined,
+        manifest,
       );
 
       // Step 2: Create iframe + encrypted channel in parallel with popup
@@ -70,13 +71,23 @@ export class PasskeyWallet {
         localStorage.setItem('aztec-wallet:sdk-credential-id', popupResponse.credentialId);
       }
 
-      // Step 4: Send keys to iframe to initialize PXE
+      // Step 4: Send keys to iframe to initialize PXE (with manifest for capability grants)
       this.pxeProxy = new PXEProxy(channel);
-      const result = (await this.pxeProxy.call('initWithKeys', [popupResponse])) as { address: string };
+      const result = (await this.pxeProxy.call('initWithKeys', [popupResponse, manifest])) as { address: string };
       this._address = result.address;
 
+      // Register SDK-side handler for runtime prompt requests from iframe
+      channel.onRequest(async (method: string, params: unknown[]) => {
+        if (method === 'runtime-prompt') {
+          const summary = params[0] as RuntimePromptSummary;
+          const response = await this.popupManager.openPopup('runtime-prompt', summary);
+          return response.type === 'prompt-approved';
+        }
+        throw new Error(`Unknown SDK request: ${method}`);
+      });
+
       this.wallet = createWalletProxy(channel);
-      return this.wallet;
+      return { wallet: this.wallet, capabilities: this.buildCapabilitiesResponse(manifest) };
     } finally {
       this._isConnecting = false;
     }
@@ -88,6 +99,19 @@ export class PasskeyWallet {
     this.wallet = null;
     this._address = null;
     this.pxeProxy = null;
+  }
+
+  private buildCapabilitiesResponse(manifest?: unknown): unknown {
+    if (!manifest || typeof manifest !== 'object') {
+      return { version: '1.0', granted: [], wallet: { name: 'Passkey Wallet', version: '1.0.0' } };
+    }
+    // v1: grant exactly what was requested (no narrowing)
+    const m = manifest as { capabilities?: unknown[] };
+    return {
+      version: '1.0',
+      granted: m.capabilities ?? [],
+      wallet: { name: 'Passkey Wallet', version: '1.0.0' },
+    };
   }
 
   getWallet(): Wallet | null { return this.wallet; }
