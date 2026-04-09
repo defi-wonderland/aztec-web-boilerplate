@@ -206,7 +206,7 @@ async function handleInit(data: {
     log('[pxe-worker] Account deployed!');
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('already initialized') || msg.includes('already deployed')) {
+    if (msg.includes('already initialized') || msg.includes('already deployed') || msg.includes('Existing nullifier')) {
       log('[pxe-worker] Account already deployed');
     } else {
       log('[pxe-worker] Account deployment failed: ' + msg);
