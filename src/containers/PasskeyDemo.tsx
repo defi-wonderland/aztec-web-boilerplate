@@ -185,10 +185,12 @@ function WalletDashboard() {
       const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
 
       // drip_to_private is a private function
-      const sentTx = await dripper.methods
+      // send() may return Promise<SentTx> through the wallet proxy
+      const maybeSentTx = await dripper.methods
         .drip_to_private(tokenAddress, 1n)
         .send({ from: senderAddress, fee: { paymentMethod } });
-      const result = await sentTx.wait();
+      const resolved = maybeSentTx?.wait ? maybeSentTx : await maybeSentTx;
+      const result = await resolved.wait();
       setLastResult(
         `Minted! Tx: ${result.txHash?.toString().substring(0, 20)}...`,
       );
