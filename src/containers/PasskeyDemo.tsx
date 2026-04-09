@@ -13,6 +13,7 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/ar
 import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
 import { Contract } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
+import { Fr } from '@aztec/foundation/fields';
 import type { Wallet } from '@aztec/aztec.js';
 import {
   Button,
@@ -31,12 +32,34 @@ const SANDBOX_TOKEN_ADDRESS =
 const SANDBOX_DRIPPER_ADDRESS =
   '0x14fc6329654486ae793a6ba5b4ac0479fd09902e98f928bfd0ef05d103ea402a';
 
+const SANDBOX_SALT = Fr.fromHexString('0x0000000000000000000000000000000000000000000000000000000000000539');
+const SANDBOX_DEPLOYER = AztecAddress.fromString('0x0000000000000000000000000000000000000000000000000000000000000000');
+
 const config: PasskeyWalletConfig = {
   network: 'sandbox',
   nodeUrl: 'http://localhost:8080',
   rpId: 'localhost',
   walletHost: 'http://localhost:3001',
-  contracts: [],
+  contracts: [
+    {
+      artifact: DripperContract.artifact,
+      salt: SANDBOX_SALT,
+      deployer: SANDBOX_DEPLOYER,
+      constructorArtifact: 'constructor',
+      constructorArgs: [],
+    },
+    {
+      artifact: TokenContract.artifact,
+      salt: SANDBOX_SALT,
+      deployer: SANDBOX_DEPLOYER,
+      constructorArtifact: 'constructor_with_minter',
+      constructorArgs: [
+        'WETH', 'WETH', 18,
+        AztecAddress.fromString(SANDBOX_DRIPPER_ADDRESS),
+        AztecAddress.ZERO,
+      ],
+    },
+  ],
 };
 
 /** Test capability manifest — mirrors GregoSwap pattern */
