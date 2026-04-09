@@ -1,7 +1,24 @@
 import { matchesScope } from './PatternMatcher';
 
-/** Ungated methods — always allowed regardless of grants. */
-const UNGATED_METHODS = new Set(['getChainInfo', 'registerSender']);
+/**
+ * Methods explicitly gated by the capability spec.
+ * Only these methods are checked against grants.
+ * All other wallet methods (createTxExecutionRequest, proveTx, getTxReceipt, etc.)
+ * are internal SDK plumbing and pass through ungated.
+ */
+const GATED_METHODS = new Set([
+  'getAccounts',
+  'createAuthWit',
+  'registerContract',
+  'getContractMetadata',
+  'getContractClassMetadata',
+  'simulateTx',
+  'profileTx',
+  'executeUtility',
+  'sendTx',
+  'getAddressBook',
+  'getPrivateEvents',
+]);
 
 /** Payload shape expected by the guard for scope checks. */
 export interface GuardPayload {
@@ -19,7 +36,10 @@ export class CapabilityGuard {
   constructor(private capabilities: unknown[] = []) {}
 
   check(method: string, payload?: GuardPayload): 'allowed' | 'prompt' {
-    if (UNGATED_METHODS.has(method)) return 'allowed';
+    // Only gated methods are checked. Everything else (createTxExecutionRequest,
+    // proveTx, getTxReceipt, etc.) passes through — these are internal SDK
+    // plumbing, not user-facing operations in the capability spec.
+    if (!GATED_METHODS.has(method)) return 'allowed';
 
     switch (method) {
       case 'getAccounts':
@@ -44,7 +64,7 @@ export class CapabilityGuard {
       case 'getPrivateEvents':
         return this.checkDataEvents(payload?.contractAddress);
       default:
-        return 'prompt';
+        return 'allowed';
     }
   }
 

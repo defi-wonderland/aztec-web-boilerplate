@@ -19,6 +19,14 @@ describe('CapabilityGuard', () => {
       const guard = makeGuard();
       expect(guard.check('registerSender')).toBe('allowed');
     });
+
+    it('allows internal SDK methods (not in capability spec)', () => {
+      const guard = makeGuard();
+      expect(guard.check('createTxExecutionRequest')).toBe('allowed');
+      expect(guard.check('proveTx')).toBe('allowed');
+      expect(guard.check('getTxReceipt')).toBe('allowed');
+      expect(guard.check('getContractClassMetadata')).toBe('prompt');
+    });
   });
 
   describe('no grants (no manifest)', () => {
