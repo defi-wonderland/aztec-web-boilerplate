@@ -10,6 +10,7 @@ import { deriveAllKeys } from '../shared/crypto';
 import { HKDF_INFO_ENCRYPTION_KEY } from '../shared/constants';
 import { toBase64 } from '../shared/encoding';
 import type { PopupResponse } from '../shared/types';
+import { PermissionReview } from './PermissionReview';
 import {
   layoutStyles,
   headerStyles,
@@ -66,6 +67,7 @@ const styles = {
 interface ConnectFlowProps {
   credentialId?: ArrayBuffer;
   rpId?: string;
+  manifest?: { metadata: { name: string; url?: string }; capabilities: unknown[] };
   onComplete: (response: PopupResponse) => void;
   onCancel: () => void;
 }
@@ -74,9 +76,10 @@ interface ConnectFlowProps {
    Component
    --------------------------------------------------------------------------- */
 
-export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: ConnectFlowProps) {
+export function ConnectFlow({ credentialId, rpId, manifest, onComplete, onCancel }: ConnectFlowProps) {
   const [status, setStatus] = useState<'idle' | 'authenticating' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [permissionsApproved, setPermissionsApproved] = useState(!manifest);
   const isReturningUser = !!credentialId;
   const isAuthenticating = status === 'authenticating';
 
@@ -175,6 +178,17 @@ export function ConnectFlow({ credentialId, rpId, onComplete, onCancel }: Connec
       setError(message);
     }
   };
+
+  // Show permission review first if manifest provided and not yet approved
+  if (!permissionsApproved && manifest) {
+    return (
+      <PermissionReview
+        manifest={manifest}
+        onApprove={() => setPermissionsApproved(true)}
+        onReject={onCancel}
+      />
+    );
+  }
 
   return (
     <div style={styles.shell}>
