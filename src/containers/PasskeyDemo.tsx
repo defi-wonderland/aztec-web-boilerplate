@@ -151,10 +151,11 @@ function WalletDashboard() {
     setIsLoadingBalance(true);
     setError(null);
     try {
-      // Step 1: Verify Wallet proxy works
-      const accounts = await wallet.getAccounts();
-      console.log('[PasskeyDemo] Accounts:', accounts.length);
-      setPublicBalance(`${accounts.length} account(s) connected`);
+      const tokenAddress = AztecAddress.fromString(SANDBOX_TOKEN_ADDRESS);
+      const senderAddress = AztecAddress.fromString(address);
+      const token = Contract.at(tokenAddress, TokenContract.artifact, wallet as Wallet);
+      const balance = await token.methods.balance_of_private(senderAddress).simulate({ from: senderAddress });
+      setPublicBalance(balance.toString());
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Failed: ${msg}`);
@@ -162,7 +163,7 @@ function WalletDashboard() {
     } finally {
       setIsLoadingBalance(false);
     }
-  }, [wallet, address, publicBalance]);
+  }, [wallet, address]);
 
   const mintPublic = useCallback(async () => {
     if (!wallet || !address) return;
@@ -184,29 +185,10 @@ function WalletDashboard() {
       );
       const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
 
-      // drip_to_private is a private function
-      // The wallet proxy makes send() async — the result goes through
-      // serialization so we get a plain tx hash object, not a SentTx.
-      // Use wallet.getTxReceipt() to poll for the result instead.
-      const sentResult = await dripper.methods
+      await dripper.methods
         .drip_to_private(tokenAddress, 1n)
         .send({ from: senderAddress, fee: { paymentMethod } });
-      // sentResult might be SentTx, Promise, or a plain hash object
-      let txHash: string;
-      if (sentResult?.txHash) {
-        txHash = sentResult.txHash.toString();
-      } else if (typeof sentResult === 'string') {
-        txHash = sentResult;
-      } else {
-        txHash = String(sentResult);
-      }
-      setLastResult(`Tx sent: ${txHash.substring(0, 20)}...`);
-      // Skip .wait() — the tx was submitted successfully
-      const result = { txHash };
-      setLastResult(
-        `Minted! Tx: ${txHash.substring(0, 20)}...`,
-      );
-      await fetchBalance();
+      setLastResult('Minted successfully');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Mint failed: ${msg}`);

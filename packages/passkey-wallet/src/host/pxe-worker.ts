@@ -167,10 +167,36 @@ async function handleInit(data: {
     async getAccounts(): Promise<Array<{ alias: string; item: any }>> {
       return [{ alias: '', item: this.accountAddress }];
     }
+
+    async sendTx(executionPayload: any, opts: any): Promise<any> {
+      // Default to PROPOSED instead of CHECKPOINTED — local networks don't
+      // produce CHECKPOINTED blocks, matching the embedded wallet behavior.
+      const { NO_WAIT } = await import('@aztec/aztec.js/contracts');
+      if (opts.wait !== NO_WAIT && !opts.wait?.waitForStatus) {
+        const { TxStatus } = await import('@aztec/stdlib/tx');
+        opts = {
+          ...opts,
+          wait: { ...opts.wait, timeout: opts.wait?.timeout ?? 120, waitForStatus: TxStatus.PROPOSED },
+        };
+      }
+      return super.sendTx(executionPayload, opts);
+    }
   }
 
   wallet = new PasskeyWallet(pxe, node, account, accountAddress);
   log('[pxe-worker] PasskeyWallet created for ' + accountAddress.toString());
+
+  // Compute SponsoredFPC address and register it with PXE (needed for fee payment).
+  // We do this outside the deploy try/catch so the address is always available.
+  const { SponsoredFeePaymentMethod } = await import('@aztec/aztec.js/fee');
+  const { SPONSORED_FPC_SALT } = await import('@aztec/constants');
+  const { SponsoredFPCContractArtifact } = await import('@aztec/noir-contracts.js/SponsoredFPC');
+  const { getContractInstanceFromInstantiationParams: getInstanceFromParams } = await import('@aztec/aztec.js/contracts');
+  const { AztecAddress } = await import('@aztec/stdlib/aztec-address');
+
+  const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
+  await pxe.registerContract({ instance: fpcInstance, artifact: SponsoredFPCContractArtifact });
+  log('[pxe-worker] Registered SponsoredFPC at ' + fpcInstance.address.toString().slice(0, 14) + '...');
 
   // Deploy account contract if not already deployed.
   // Uses from: AztecAddress.ZERO which triggers SignerlessAccount →
@@ -178,20 +204,9 @@ async function handleInit(data: {
   // first and creates the signing key note.
   try {
     log('[pxe-worker] Deploying account contract...');
-    const { SponsoredFeePaymentMethod } = await import('@aztec/aztec.js/fee');
-    const { SPONSORED_FPC_SALT } = await import('@aztec/constants');
-    const { SponsoredFPCContractArtifact } = await import('@aztec/noir-contracts.js/SponsoredFPC');
-    const { getContractInstanceFromInstantiationParams: getInstanceFromParams } = await import('@aztec/aztec.js/contracts');
-    const { AztecAddress } = await import('@aztec/stdlib/aztec-address');
     const { TxStatus } = await import('@aztec/stdlib/tx');
 
     const walletAccountManager = await AccountManager.create(wallet as any, secretKey, accountContract, Fr.ZERO);
-    const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
-
-    // Register the SponsoredFPC contract with PXE so it can be used for fee payment
-    await pxe.registerContract({ instance: fpcInstance, artifact: SponsoredFPCContractArtifact });
-    log('[pxe-worker] Registered SponsoredFPC at ' + fpcInstance.address.toString().slice(0, 14) + '...');
-
     const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
 
     const deployMethod = await walletAccountManager.getDeployMethod();

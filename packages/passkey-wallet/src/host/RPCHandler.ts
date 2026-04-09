@@ -80,12 +80,19 @@ export class RPCHandler {
       const parsed = JSON.parse(serializedArgs);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const first = parsed[0];
-        // ExecutionPayload shape: { calls: [{ to, name, ... }] }
+        // ExecutionPayload shape: { calls: [{ to, name, ... }], feePayer? }
+        // When a fee payment method is used, the SDK puts the fee call at
+        // calls[0] and the user call(s) after it. The feePayer field matches
+        // the fee call's target address. Skip it to extract the real user intent.
         if (first?.calls && Array.isArray(first.calls) && first.calls.length > 0) {
-          const call = first.calls[0];
+          const feePayer = first.feePayer?.toString?.() ?? first.feePayer;
+          const userCall = first.calls.find((c: any) => {
+            const to = c.to?.toString?.() ?? c.to;
+            return !feePayer || to !== feePayer;
+          }) ?? first.calls[0]; // fallback to first if all match (unlikely)
           return {
-            contractAddress: call.to?.toString?.() ?? call.to,
-            functionName: call.name ?? call.functionName,
+            contractAddress: userCall.to?.toString?.() ?? userCall.to,
+            functionName: userCall.name ?? userCall.functionName,
           };
         }
         // registerContract: first arg is the contract instance with address

@@ -119,6 +119,7 @@ async function setupPXE() {
   const config = {
     ...getPXEConfig(),
     proverEnabled: PROVER_ENABLED,
+    realProofs: false,
   };
 
   const pxe = await createPXE(aztecNode, config, {
