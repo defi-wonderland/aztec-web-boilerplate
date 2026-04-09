@@ -119,18 +119,25 @@ async function handleInit(data: {
   // Without deployment, private function simulation fails with "Failed to get a note".
   try {
     log('[pxe-worker] Deploying account contract...');
-    const deployMethod = await accountManager.getDeployMethod();
     const { SponsoredFeePaymentMethod } = await import('@aztec/aztec.js/fee');
+    const { SPONSORED_FPC_SALT } = await import('@aztec/constants');
+    const { SponsoredFPCContractArtifact } = await import('@aztec/noir-contracts.js/SponsoredFPC');
+    const { getContractInstanceFromInstantiationParams: getInstanceFromParams } = await import('@aztec/aztec.js/contracts');
+
+    // Get the sponsored FPC contract address (same as SharedPXEService does)
+    const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
+    const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
+
+    const deployMethod = await accountManager.getDeployMethod();
     const tx = await deployMethod.send({
       from: accountAddress,
-      fee: { paymentMethod: new SponsoredFeePaymentMethod(accountAddress) },
+      fee: { paymentMethod },
     });
     log('[pxe-worker] Deploy tx sent, waiting for confirmation...');
     await tx.wait({ timeout: 120 });
     log('[pxe-worker] Account deployed!');
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // "already initialized" means account was deployed in a previous session — safe to ignore
     if (msg.includes('already initialized') || msg.includes('already deployed')) {
       log('[pxe-worker] Account already deployed');
     } else {
