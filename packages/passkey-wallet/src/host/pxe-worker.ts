@@ -114,37 +114,6 @@ async function handleInit(data: {
   const accountAddress = accountManager.address;
   log('[pxe-worker] Account registered: ' + accountAddress.toString());
 
-  // Deploy account contract if not already deployed.
-  // The EcdsaR account stores its signing key as a note created during deployment.
-  // Without deployment, private function simulation fails with "Failed to get a note".
-  try {
-    log('[pxe-worker] Deploying account contract...');
-    const { SponsoredFeePaymentMethod } = await import('@aztec/aztec.js/fee');
-    const { SPONSORED_FPC_SALT } = await import('@aztec/constants');
-    const { SponsoredFPCContractArtifact } = await import('@aztec/noir-contracts.js/SponsoredFPC');
-    const { getContractInstanceFromInstantiationParams: getInstanceFromParams } = await import('@aztec/aztec.js/contracts');
-
-    // Get the sponsored FPC contract address (same as SharedPXEService does)
-    const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
-    const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
-
-    const deployMethod = await accountManager.getDeployMethod();
-    const tx = await deployMethod.send({
-      from: accountAddress,
-      fee: { paymentMethod },
-    });
-    log('[pxe-worker] Deploy tx sent, waiting for confirmation...');
-    await tx.wait({ timeout: 120 });
-    log('[pxe-worker] Account deployed!');
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('already initialized') || msg.includes('already deployed')) {
-      log('[pxe-worker] Account already deployed');
-    } else {
-      log('[pxe-worker] Account deployment failed: ' + msg);
-    }
-  }
-
   // Register contracts directly in the worker (bypasses WalletProxy serialization
   // which can't handle the complex ContractInstanceWithAddress Zod schemas).
   if (data.contracts && data.contracts.length > 0) {
@@ -195,6 +164,41 @@ async function handleInit(data: {
 
   wallet = new PasskeyWallet(pxe, node, account, accountAddress);
   log('[pxe-worker] PasskeyWallet created for ' + accountAddress.toString());
+
+  // Deploy account contract if not already deployed.
+  // The EcdsaR account stores its signing key as a note created during deployment.
+  // Without deployment, private function simulation fails with "Failed to get a note".
+  // AccountManager.getDeployMethod() needs a Wallet (not raw PXE), so we recreate
+  // the AccountManager with our PasskeyWallet as the wallet parameter.
+  try {
+    log('[pxe-worker] Deploying account contract...');
+    const { SponsoredFeePaymentMethod } = await import('@aztec/aztec.js/fee');
+    const { SPONSORED_FPC_SALT } = await import('@aztec/constants');
+    const { SponsoredFPCContractArtifact } = await import('@aztec/noir-contracts.js/SponsoredFPC');
+    const { getContractInstanceFromInstantiationParams: getInstanceFromParams } = await import('@aztec/aztec.js/contracts');
+
+    // Recreate AccountManager with the wallet (not raw PXE) so getDeployMethod works
+    const walletAccountManager = await AccountManager.create(wallet as any, secretKey, accountContract, Fr.ZERO);
+
+    const fpcInstance = await getInstanceFromParams(SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) });
+    const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
+
+    const deployMethod = await walletAccountManager.getDeployMethod();
+    const tx = await deployMethod.send({
+      from: accountAddress,
+      fee: { paymentMethod },
+    });
+    log('[pxe-worker] Deploy tx sent, waiting for confirmation...');
+    await tx.wait({ timeout: 120 });
+    log('[pxe-worker] Account deployed!');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('already initialized') || msg.includes('already deployed')) {
+      log('[pxe-worker] Account already deployed');
+    } else {
+      log('[pxe-worker] Account deployment failed: ' + msg);
+    }
+  }
 
   return { address: accountAddress.toString() };
 }
