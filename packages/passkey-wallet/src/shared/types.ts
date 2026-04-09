@@ -21,6 +21,24 @@ export interface ContractConfig {
   constructorArgs: unknown[];
 }
 
+/**
+ * A fully JSON-safe version of ContractConfig where all Aztec types
+ * (Fr, AztecAddress) have been converted to hex strings.
+ *
+ * This is safe to pass through structured clone (postMessage) without
+ * losing type prototypes.
+ */
+export interface SerializedContractConfig {
+  artifact: ContractArtifact;
+  /** Salt as hex string */
+  salt: string;
+  /** Deployer as hex string */
+  deployer: string;
+  constructorArtifact: string;
+  /** Constructor args with AztecAddress/Fr values converted to hex strings, tagged with __type */
+  constructorArgs: unknown[];
+}
+
 export interface ChannelMessage {
   id: string;
   dir: 'p2i' | 'i2p';
@@ -94,7 +112,7 @@ export interface RuntimePromptSummary {
 
 export interface InitMessage {
   type: 'INIT';
-  contracts?: ContractConfig[];
+  contracts?: SerializedContractConfig[];
   nodeUrl?: string;
 }
 

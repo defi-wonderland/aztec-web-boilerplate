@@ -101,33 +101,25 @@ async function handleInit(data: {
   if (data.contracts && data.contracts.length > 0) {
     const { getContractInstanceFromInstantiationParams } = await import('@aztec/aztec.js/contracts');
     const { AztecAddress } = await import('@aztec/stdlib/aztec-address');
+    const { deserializeContractConfig } = await import('../shared/contractSerialization');
 
     for (const c of data.contracts) {
       try {
-        // Reconstruct types that lost prototypes during structured clone (postMessage)
-        const salt = c.salt?.value !== undefined
-          ? new Fr(BigInt(c.salt.value))
-          : typeof c.salt === 'string' ? Fr.fromHexString(c.salt)
-          : c.salt?.inner ? new Fr(BigInt('0x' + Array.from(c.salt.inner).map((b: number) => b.toString(16).padStart(2, '0')).join('')))
-          : Fr.ZERO;
-
-        const deployer = c.deployer?.buffer
-          ? AztecAddress.fromBuffer(new Uint8Array(c.deployer.buffer))
-          : typeof c.deployer === 'string' ? AztecAddress.fromString(c.deployer)
-          : c.deployer?.inner ? AztecAddress.fromBuffer(new Uint8Array(c.deployer.inner))
-          : AztecAddress.ZERO;
+        // Contracts were serialized to hex strings in IframeManager before
+        // the first postMessage. Reconstruct proper Aztec types here.
+        const deserialized = deserializeContractConfig(c, Fr, AztecAddress);
 
         const instance = await getContractInstanceFromInstantiationParams(
-          c.artifact,
+          deserialized.artifact,
           {
-            salt,
-            deployer,
-            constructorArtifact: c.constructorArtifact ?? 'constructor',
-            constructorArgs: c.constructorArgs ?? [],
+            salt: deserialized.salt,
+            deployer: deserialized.deployer,
+            constructorArtifact: deserialized.constructorArtifact ?? 'constructor',
+            constructorArgs: deserialized.constructorArgs ?? [],
           },
         );
 
-        await pxe.registerContract({ instance, artifact: c.artifact });
+        await pxe.registerContract({ instance, artifact: deserialized.artifact });
         log(`[pxe-worker] Registered contract: ${instance.address.toString().slice(0, 14)}...`);
       } catch (err) {
         log(`[pxe-worker] Failed to register contract: ${err instanceof Error ? err.message : String(err)}`);

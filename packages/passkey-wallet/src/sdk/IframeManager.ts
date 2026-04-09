@@ -1,6 +1,7 @@
 import { SecureChannel } from '../shared/SecureChannel';
 import { DEFAULT_WALLET_HOST } from '../shared/constants';
 import type { ContractConfig } from '../shared/types';
+import { serializeContractConfig } from '../shared/contractSerialization';
 
 export class IframeManager {
   private iframe: HTMLIFrameElement | null = null;
@@ -60,11 +61,15 @@ export class IframeManager {
     }
 
     const { port1, port2 } = new MessageChannel();
+    // Serialize Aztec types (Fr, AztecAddress) to hex strings before
+    // structured clone. They will be reconstructed in the PXE Worker.
+    const serializedContracts = contracts.map(serializeContractConfig);
+
     // Use '*' because cross-origin iframes under COEP: credentialless
     // report origin as 'null'. Safe because INIT only transfers a
     // MessagePort — the encrypted SecureChannel provides authentication.
     this.iframe.contentWindow.postMessage(
-      { type: 'INIT', contracts, nodeUrl },
+      { type: 'INIT', contracts: serializedContracts, nodeUrl },
       '*',
       [port2],
     );
