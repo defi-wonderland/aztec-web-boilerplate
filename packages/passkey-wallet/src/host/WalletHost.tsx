@@ -4,37 +4,57 @@ import { PXEManager } from './PXEManager';
 import { CredentialStore } from './CredentialStore';
 import { RPCHandler } from './RPCHandler';
 import { PermissionReview } from '../popup/PermissionReview';
+import { ConnectFlow } from '../popup/ConnectFlow';
 import { popupGlobalCSS } from '../popup/styles';
+import type { PopupResponse } from '../shared/types';
 
 interface ManifestData {
   metadata: { name: string; url?: string };
   capabilities: unknown[];
 }
 
+type IframePhase = 'idle' | 'reviewing' | 'authenticating';
+
 /**
  * Root component for the wallet host iframe.
- * - Initially invisible (display:none on iframe element)
- * - When SDK sends REVIEW_CAPABILITIES, SDK makes iframe visible as modal
- * - WalletHost renders PermissionReview for user approval
- * - After approval, signals SDK via postMessage, iframe goes back to invisible
- * - Also handles RPC routing to PXE Worker via SecureChannel
+ * Handles the full connect ceremony inside the iframe (no popup needed):
+ *   1. Permission review (if manifest provided)
+ *   2. Biometric authentication (WebAuthn/PRF)
+ *   3. Sends auth-keys back to SDK via postMessage
+ * Also handles RPC routing to PXE Worker via SecureChannel.
  */
 export function WalletHost() {
   const channelRef = useRef<SecureChannel | null>(null);
+  const [phase, setPhase] = useState<IframePhase>('idle');
   const [manifest, setManifest] = useState<ManifestData | null>(null);
+  const [rpId, setRpId] = useState<string | undefined>();
 
-  const handleApprove = useCallback(() => {
-    window.parent.postMessage({ type: 'CAPABILITIES_APPROVED' }, '*');
-    setManifest(null);
+  const handlePermissionApprove = useCallback(() => {
+    // Move to biometric step
+    setPhase('authenticating');
   }, []);
 
-  const handleReject = useCallback(() => {
-    window.parent.postMessage({ type: 'CAPABILITIES_REJECTED' }, '*');
+  const handlePermissionReject = useCallback(() => {
+    window.parent.postMessage({ type: 'CONNECT_REJECTED' }, '*');
     setManifest(null);
+    setPhase('idle');
+  }, []);
+
+  const handleAuthComplete = useCallback((response: PopupResponse) => {
+    // Send auth-keys back to SDK
+    window.parent.postMessage({ type: 'CONNECT_AUTH_RESULT', response }, '*');
+    setManifest(null);
+    setPhase('idle');
+  }, []);
+
+  const handleAuthCancel = useCallback(() => {
+    window.parent.postMessage({ type: 'CONNECT_REJECTED' }, '*');
+    setManifest(null);
+    setPhase('idle');
   }, []);
 
   useEffect(() => {
-    // Inject global CSS for the PermissionReview UI (same styles as popup)
+    // Inject global CSS for the popup-style UI
     const styleEl = document.createElement('style');
     styleEl.textContent = popupGlobalCSS;
     document.head.appendChild(styleEl);
@@ -43,16 +63,23 @@ export function WalletHost() {
     const credentialStore = new CredentialStore();
 
     const onMessage = async (event: MessageEvent) => {
-      // Handle capability review request (plain postMessage, not SecureChannel)
-      if (event.data?.type === 'REVIEW_CAPABILITIES') {
-        setManifest(event.data.manifest);
+      // Handle connect ceremony request
+      if (event.data?.type === 'START_CONNECT') {
+        const { manifest: m, rpId: rp } = event.data;
+        setRpId(rp);
+        if (m) {
+          setManifest(m);
+          setPhase('reviewing');
+        } else {
+          // No manifest — skip straight to biometric
+          setPhase('authenticating');
+        }
         return;
       }
 
       if (event.data?.type !== 'INIT') return;
       const port = event.ports[0];
       if (!port) return;
-      // Only process INIT once
       if (channelRef.current) return;
 
       const channel = new SecureChannel('i2p');
@@ -67,7 +94,6 @@ export function WalletHost() {
 
     window.addEventListener('message', onMessage);
 
-    // Signal to the parent SDK that we're ready to receive INIT
     if (window.parent && window.parent !== window) {
       window.parent.postMessage({ type: 'WALLET_HOST_READY' }, '*');
     }
@@ -80,13 +106,24 @@ export function WalletHost() {
     };
   }, []);
 
-  // If we have a manifest to review, render the PermissionReview UI
-  if (manifest) {
+  // Phase 1: Permission review
+  if (phase === 'reviewing' && manifest) {
     return (
       <PermissionReview
         manifest={manifest}
-        onApprove={handleApprove}
-        onReject={handleReject}
+        onApprove={handlePermissionApprove}
+        onReject={handlePermissionReject}
+      />
+    );
+  }
+
+  // Phase 2: Biometric authentication
+  if (phase === 'authenticating') {
+    return (
+      <ConnectFlow
+        rpId={rpId}
+        onComplete={handleAuthComplete}
+        onCancel={handleAuthCancel}
       />
     );
   }
