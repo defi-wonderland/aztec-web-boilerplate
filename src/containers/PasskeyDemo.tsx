@@ -146,10 +146,11 @@ function WalletDashboard() {
         wallet as Wallet,
       );
       // drip_to_private is a private function
-      const result = await dripper.methods
+      // Note: send() must be awaited separately because WalletProxy is async
+      const sentTx = await dripper.methods
         .drip_to_private(tokenAddress, 1n)
-        .send()
-        .wait();
+        .send();
+      const result = await sentTx.wait();
       setLastResult(
         `Minted! Tx: ${result.txHash?.toString().substring(0, 20)}...`,
       );
