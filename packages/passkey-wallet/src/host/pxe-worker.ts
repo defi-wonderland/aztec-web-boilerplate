@@ -149,10 +149,13 @@ async function handleInit(data: {
     protected async getAccountFromAddress(addr: any): Promise<any> {
       // Compare by string — addr may be a Zod-deserialized AztecAddress whose
       // .equals() fails against the AccountManager's address due to type mismatch.
-      if (addr.toString() === this.accountAddress.toString() || addr.isZero()) {
+      const addrStr = addr.toString();
+      const ownStr = this.accountAddress.toString();
+      log(`[pxe-worker] getAccountFromAddress: addr=${addrStr}, own=${ownStr}, match=${addrStr === ownStr}`);
+      if (addrStr === ownStr || addr.isZero()) {
         return this.account;
       }
-      throw new Error(`Unknown account: ${addr.toString()}`);
+      throw new Error(`Unknown account: ${addrStr} (expected: ${ownStr})`);
     }
 
     async getAccounts(): Promise<Array<{ alias: string; item: any }>> {
