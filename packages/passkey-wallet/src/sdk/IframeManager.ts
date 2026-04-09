@@ -5,6 +5,7 @@ import type { ContractConfig } from '../shared/types';
 export class IframeManager {
   private iframe: HTMLIFrameElement | null = null;
   private channel: SecureChannel | null = null;
+  private backdrop: HTMLDivElement | null = null;
 
   constructor(private walletHost: string = DEFAULT_WALLET_HOST) { }
 
@@ -71,9 +72,51 @@ export class IframeManager {
     return this.channel;
   }
 
+  /** Show the iframe as a centered modal overlay with backdrop */
+  showAsModal(): void {
+    if (!this.iframe) return;
+    Object.assign(this.iframe.style, {
+      display: 'block',
+      position: 'fixed',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '400px',
+      height: '600px',
+      maxHeight: '90vh',
+      border: 'none',
+      borderRadius: '16px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      zIndex: '10000',
+    });
+    // Create backdrop
+    if (!this.backdrop) {
+      this.backdrop = document.createElement('div');
+      Object.assign(this.backdrop.style, {
+        position: 'fixed',
+        inset: '0',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: '9999',
+      });
+      document.body.appendChild(this.backdrop);
+    }
+  }
+
+  /** Hide the iframe back to invisible */
+  hideModal(): void {
+    if (this.iframe) {
+      this.iframe.style.display = 'none';
+    }
+    if (this.backdrop) {
+      this.backdrop.remove();
+      this.backdrop = null;
+    }
+  }
+
   disconnect(): void {
     this.channel?.destroy();
     this.channel = null;
+    this.hideModal();
     if (this.iframe) {
       this.iframe.remove();
       this.iframe = null;
@@ -81,4 +124,5 @@ export class IframeManager {
   }
 
   getChannel(): SecureChannel | null { return this.channel; }
+  getIframe(): HTMLIFrameElement | null { return this.iframe; }
 }

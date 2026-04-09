@@ -24,7 +24,6 @@ export function PopupShell() {
   const [callbackOrigin, setCallbackOrigin] = useState<string>('');
   const [context, setContext] = useState<TxSummary | ReadSummary | undefined>();
   const [credentialId, setCredentialId] = useState<ArrayBuffer | undefined>();
-  const [manifest, setManifest] = useState<{ metadata: { name: string; url?: string }; capabilities: unknown[] } | undefined>();
 
   // Inject global CSS on mount
   useEffect(() => {
@@ -57,10 +56,6 @@ export function PopupShell() {
     }
     if (contextParam) {
       try { setContext(JSON.parse(atob(contextParam))); } catch { /* ignore */ }
-    }
-    const manifestParam = params.get('manifest');
-    if (manifestParam) {
-      try { setManifest(JSON.parse(atob(manifestParam))); } catch { /* ignore */ }
     }
   }, []);
 
@@ -95,7 +90,6 @@ export function PopupShell() {
       return (
         <ConnectFlow
           rpId={rpId}
-          manifest={manifest}
           onComplete={handleComplete}
           onCancel={handleCancel}
         />

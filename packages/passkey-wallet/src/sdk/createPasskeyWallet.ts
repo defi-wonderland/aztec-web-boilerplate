@@ -1,5 +1,5 @@
 import type { Wallet } from '@aztec/aztec.js';
-import type { PasskeyWalletConfig, PopupResponse, RuntimePromptSummary } from '../shared/types';
+import type { PasskeyWalletConfig, RuntimePromptSummary } from '../shared/types';
 import { DEFAULT_WALLET_HOST, NETWORK_URLS } from '../shared/constants';
 import { IframeManager } from './IframeManager';
 import { PXEProxy } from './PXEProxy';
@@ -32,46 +32,46 @@ export class PasskeyWallet {
 
   /**
    * Connect flow:
-   * 1. Open popup (synchronous — user gesture) + start popup result promise
-   * 2. Create iframe + encrypted channel (parallel with popup)
-   * 3. Popup does passkey ceremony, redirects to dapp origin with result
-   * 4. SDK reads result from popup URL (OAuth callback pattern)
-   * 5. SDK sends keys to iframe via encrypted channel
-   * 6. Iframe initializes PXE, registers account, returns address
+   * 1. Create iframe + encrypted channel
+   * 2. If manifest: show iframe as modal for capability review, wait for approval
+   * 3. Open popup for biometric (passkey ceremony) — no manifest in popup
+   * 4. Send keys + manifest to iframe via encrypted channel
+   * 5. Iframe initializes PXE, stores capability grants, registers account
    */
   async connect(manifest?: unknown): Promise<{ wallet: Wallet; capabilities: unknown }> {
     if (this.wallet) return { wallet: this.wallet, capabilities: this.buildCapabilitiesResponse(manifest) };
     this._isConnecting = true;
 
     try {
-      // Check for stored credential ID (returning user)
-      const storedCredentialId = localStorage.getItem('aztec-wallet:sdk-credential-id');
+      // Step 1: Create iframe + encrypted channel
+      const channel = await this.iframeManager.connect(this.config.contracts, this.nodeUrl);
 
-      // Step 1: Open popup and start listening for result.
-      // openPopup must be called synchronously (user gesture).
-      const popupResultPromise = this.popupManager.openPopup(
+      // Step 2: If manifest provided, show capability review in iframe modal
+      if (manifest) {
+        const approved = await this.reviewCapabilitiesInIframe(manifest);
+        if (!approved) {
+          throw new Error('Capability review rejected by user');
+        }
+      }
+
+      // Step 3: Open popup for biometric only (no manifest — review already done)
+      const storedCredentialId = localStorage.getItem('aztec-wallet:sdk-credential-id');
+      const popupResponse = await this.popupManager.openPopup(
         'connect',
         undefined,
         storedCredentialId ?? undefined,
-        manifest,
       );
-
-      // Step 2: Create iframe + encrypted channel in parallel with popup
-      const [popupResponse, channel] = await Promise.all([
-        popupResultPromise,
-        this.iframeManager.connect(this.config.contracts, this.nodeUrl),
-      ]);
 
       if (popupResponse.type !== 'auth-keys') {
         throw new Error('Passkey authentication cancelled');
       }
 
-      // Step 3: Store credential ID for returning visits
+      // Step 4: Store credential ID for returning visits
       if (popupResponse.credentialId) {
         localStorage.setItem('aztec-wallet:sdk-credential-id', popupResponse.credentialId);
       }
 
-      // Step 4: Send keys to iframe to initialize PXE (with manifest for capability grants)
+      // Step 5: Send keys + manifest to iframe to initialize PXE
       this.pxeProxy = new PXEProxy(channel);
       const result = (await this.pxeProxy.call('initWithKeys', [popupResponse, manifest])) as { address: string };
       this._address = result.address;
@@ -91,6 +91,40 @@ export class PasskeyWallet {
     } finally {
       this._isConnecting = false;
     }
+  }
+
+  /**
+   * Show the iframe as a modal overlay, send the manifest for review,
+   * and wait for the user's decision.
+   */
+  private reviewCapabilitiesInIframe(manifest: unknown): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      // Show iframe as modal
+      this.iframeManager.showAsModal();
+
+      // Send manifest to iframe for review
+      const iframe = this.iframeManager.getIframe();
+      if (!iframe?.contentWindow) {
+        this.iframeManager.hideModal();
+        resolve(false);
+        return;
+      }
+      iframe.contentWindow.postMessage({ type: 'REVIEW_CAPABILITIES', manifest }, '*');
+
+      // Listen for approval/rejection from iframe
+      const onResponse = (event: MessageEvent) => {
+        if (event.data?.type === 'CAPABILITIES_APPROVED') {
+          window.removeEventListener('message', onResponse);
+          this.iframeManager.hideModal();
+          resolve(true);
+        } else if (event.data?.type === 'CAPABILITIES_REJECTED') {
+          window.removeEventListener('message', onResponse);
+          this.iframeManager.hideModal();
+          resolve(false);
+        }
+      };
+      window.addEventListener('message', onResponse);
+    });
   }
 
   async disconnect(): Promise<void> {
