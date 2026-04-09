@@ -18,8 +18,42 @@ import type {
 
 const IV_BYTES = 12;
 
+// Type markers prefixed to plaintext before encryption so we know how to deserialize
+const MARKER_JSON = 0x00;
+const MARKER_BINARY = 0x01;
+
+function isBinaryLike(value: unknown): value is Uint8Array | ArrayBuffer | Buffer {
+  return (
+    value instanceof Uint8Array ||
+    value instanceof ArrayBuffer ||
+    (typeof Buffer !== 'undefined' && Buffer.isBuffer(value))
+  );
+}
+
+function toUint8Array(value: Uint8Array | ArrayBuffer | Buffer): Uint8Array {
+  if (value instanceof Uint8Array) return value;
+  if (value instanceof ArrayBuffer) return new Uint8Array(value);
+  // Buffer
+  return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+}
+
 async function encrypt(encryptionKey: CryptoKey, value: unknown): Promise<Uint8Array> {
-  const plaintext = new TextEncoder().encode(JSON.stringify(value));
+  let plaintext: Uint8Array;
+
+  if (isBinaryLike(value)) {
+    // Binary data: prefix with MARKER_BINARY + raw bytes
+    const raw = toUint8Array(value);
+    plaintext = new Uint8Array(1 + raw.byteLength);
+    plaintext[0] = MARKER_BINARY;
+    plaintext.set(raw, 1);
+  } else {
+    // Everything else: prefix with MARKER_JSON + JSON-encoded bytes
+    const json = new TextEncoder().encode(JSON.stringify(value));
+    plaintext = new Uint8Array(1 + json.byteLength);
+    plaintext[0] = MARKER_JSON;
+    plaintext.set(json, 1);
+  }
+
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
   const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, encryptionKey, plaintext);
   const result = new Uint8Array(IV_BYTES + ciphertext.byteLength);
@@ -31,8 +65,23 @@ async function encrypt(encryptionKey: CryptoKey, value: unknown): Promise<Uint8A
 async function decrypt<T>(encryptionKey: CryptoKey, data: Uint8Array): Promise<T> {
   const iv = data.slice(0, IV_BYTES);
   const ciphertext = data.slice(IV_BYTES);
-  const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, encryptionKey, ciphertext);
-  return JSON.parse(new TextDecoder().decode(plaintext)) as T;
+  const plaintext = new Uint8Array(
+    await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, encryptionKey, ciphertext),
+  );
+
+  const marker = plaintext[0];
+  const payload = plaintext.slice(1);
+
+  if (marker === MARKER_BINARY) {
+    // Return as Buffer (what PXE expects for block headers, etc.)
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(payload) as T;
+    }
+    return payload as T;
+  }
+
+  // MARKER_JSON — parse JSON
+  return JSON.parse(new TextDecoder().decode(payload)) as T;
 }
 
 // ---------------------------------------------------------------------------
