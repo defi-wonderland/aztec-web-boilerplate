@@ -100,9 +100,17 @@ async function handleInit(data: {
   const accountContract = createAccountContract(signingKeyBytes);
   const accountManager = await AccountManager.create(pxe as any, secretKey, accountContract, Fr.ZERO);
 
-  // register() calls pxe.registerAccount with the correct partial address
-  await accountManager.register();
+  // Register account contract + keys with PXE
+  // (mirrors BaseWallet.registerContract logic: register contract, then registerAccount with partial address)
+  const { computePartialAddress } = await import('@aztec/aztec.js/contracts');
   const account = await accountManager.getAccount();
+  const accountInstance = accountManager.getInstance();
+  const accountArtifact = await accountManager.getAccountContract().getContractArtifact();
+
+  await pxe.registerContract({ instance: accountInstance, artifact: accountArtifact });
+  const partialAddress = await computePartialAddress(accountInstance);
+  await pxe.registerAccount(secretKey, partialAddress);
+
   const accountAddress = accountManager.address;
   log('[pxe-worker] Account registered: ' + accountAddress.toString());
 
