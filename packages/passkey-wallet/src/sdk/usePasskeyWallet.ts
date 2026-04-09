@@ -9,12 +9,14 @@ export function usePasskeyWallet() {
   const [wallet, setWallet] = useState<Wallet | null>(passkeyWallet.getWallet());
   const [isConnecting, setIsConnecting] = useState(false);
   const [address, setAddress] = useState<string | null>(passkeyWallet.getAddress());
+  const [capabilities, setCapabilities] = useState<unknown>(null);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (manifest?: unknown) => {
     setIsConnecting(true);
     try {
-      const w = await passkeyWallet.connect();
-      setWallet(w);
+      const result = await passkeyWallet.connect(manifest);
+      setWallet(result.wallet);
+      setCapabilities(result.capabilities);
       setAddress(passkeyWallet.getAddress());
     } finally {
       setIsConnecting(false);
@@ -27,5 +29,5 @@ export function usePasskeyWallet() {
     setAddress(null);
   }, [passkeyWallet]);
 
-  return { wallet, isConnected: wallet !== null, isConnecting, address, connect, disconnect };
+  return { wallet, isConnected: wallet !== null, isConnecting, address, capabilities, connect, disconnect };
 }

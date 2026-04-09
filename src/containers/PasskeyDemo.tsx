@@ -39,6 +39,49 @@ const config: PasskeyWalletConfig = {
   contracts: [],
 };
 
+/** Test capability manifest — mirrors GregoSwap pattern */
+const TEST_MANIFEST = {
+  version: '1.0' as const,
+  metadata: {
+    name: 'Passkey Demo',
+    version: '1.0.0',
+    description: 'Test dapp for passkey wallet capabilities',
+    url: window.location.origin,
+  },
+  capabilities: [
+    {
+      type: 'accounts',
+      canGet: true,
+      canCreateAuthWit: true,
+    },
+    {
+      type: 'contracts',
+      contracts: [SANDBOX_TOKEN_ADDRESS, SANDBOX_DRIPPER_ADDRESS],
+      canRegister: true,
+      canGetMetadata: true,
+    },
+    {
+      type: 'simulation',
+      transactions: {
+        scope: [
+          { contract: SANDBOX_TOKEN_ADDRESS, function: 'balance_of_public' },
+        ],
+      },
+      utilities: {
+        scope: [
+          { contract: SANDBOX_TOKEN_ADDRESS, function: 'balance_of_private' },
+        ],
+      },
+    },
+    {
+      type: 'transaction',
+      scope: [
+        { contract: SANDBOX_DRIPPER_ADDRESS, function: 'drip_to_private' },
+      ],
+    },
+  ],
+};
+
 const styles = {
   card: 'w-full',
   header: 'flex flex-col gap-1',
@@ -185,7 +228,7 @@ function WalletDashboard() {
             {!isConnected ? (
               <Button
                 variant="primary"
-                onClick={connect}
+                onClick={() => connect(TEST_MANIFEST)}
                 disabled={isConnecting}
                 isLoading={isConnecting}
                 icon={
