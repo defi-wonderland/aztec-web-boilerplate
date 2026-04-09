@@ -11,9 +11,12 @@ import { PasskeyWalletProvider, usePasskeyWallet } from '@aztec/passkey-wallet';
 import type { PasskeyWalletConfig } from '@aztec/passkey-wallet';
 import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
 import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
-import { Contract } from '@aztec/aztec.js/contracts';
+import { Contract, getContractInstanceFromInstantiationParams } from '@aztec/aztec.js/contracts';
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
 import { Fr } from '@aztec/aztec.js/fields';
+import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
+import { SPONSORED_FPC_SALT } from '@aztec/constants';
+import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/SponsoredFPC';
 import type { Wallet } from '@aztec/aztec.js';
 import {
   Button,
@@ -175,11 +178,16 @@ function WalletDashboard() {
         DripperContract.artifact,
         wallet as Wallet,
       );
+      // Get sponsored fee payment (same as deployment uses)
+      const fpcInstance = await getContractInstanceFromInstantiationParams(
+        SponsoredFPCContractArtifact, { salt: new Fr(SPONSORED_FPC_SALT) },
+      );
+      const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
+
       // drip_to_private is a private function
-      // send() requires { from } — the Aztec SDK uses it to build the tx
       const sentTx = await dripper.methods
         .drip_to_private(tokenAddress, 1n)
-        .send({ from: senderAddress });
+        .send({ from: senderAddress, fee: { paymentMethod } });
       const result = await sentTx.wait();
       setLastResult(
         `Minted! Tx: ${result.txHash?.toString().substring(0, 20)}...`,
