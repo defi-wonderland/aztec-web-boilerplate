@@ -195,12 +195,14 @@ async function handleInit(data: {
     const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
 
     const deployMethod = await walletAccountManager.getDeployMethod();
-    const tx = await deployMethod.send({
+    const sentTx = await deployMethod.send({
       from: AztecAddress.ZERO,
       fee: { paymentMethod },
     });
     log('[pxe-worker] Deploy tx sent, waiting for confirmation...');
-    await tx.wait({ timeout: 120, waitForStatus: TxStatus.PROPOSED });
+    // sentTx might be a SentTx or a Promise<SentTx> depending on wallet proxy
+    const resolved = sentTx?.wait ? sentTx : await sentTx;
+    await resolved.wait({ timeout: 120, waitForStatus: TxStatus.PROPOSED });
     log('[pxe-worker] Account deployed!');
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
