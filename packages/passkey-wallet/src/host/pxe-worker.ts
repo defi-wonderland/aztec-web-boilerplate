@@ -147,8 +147,9 @@ async function handleInit(data: {
     }
 
     protected async getAccountFromAddress(addr: any): Promise<any> {
-      // For the wallet's own address or zero address (deployment), return our account
-      if (addr.equals(this.accountAddress) || addr.isZero()) {
+      // Compare by string — addr may be a Zod-deserialized AztecAddress whose
+      // .equals() fails against the AccountManager's address due to type mismatch.
+      if (addr.toString() === this.accountAddress.toString() || addr.isZero()) {
         return this.account;
       }
       throw new Error(`Unknown account: ${addr.toString()}`);
