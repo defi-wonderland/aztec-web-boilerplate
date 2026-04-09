@@ -424,6 +424,136 @@ export const infoStyles = {
 };
 
 /* ---------------------------------------------------------------------------
+   PERMISSION REVIEW
+   --------------------------------------------------------------------------- */
+
+export const permissionStyles = {
+  sectionLabel: {
+    fontSize: '11px',
+    fontWeight: 500,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: '8px',
+  } as CSSProperties,
+
+  permissionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-color)',
+    marginBottom: '6px',
+  } as CSSProperties,
+
+  permissionIcon: {
+    fontSize: '16px',
+    flexShrink: 0,
+  } as CSSProperties,
+
+  permissionTitle: {
+    fontSize: '13px',
+    fontWeight: 500,
+    color: 'var(--text-primary)',
+  } as CSSProperties,
+
+  permissionDesc: {
+    fontSize: '11px',
+    color: 'var(--text-muted)',
+  } as CSSProperties,
+
+  contractCard: {
+    padding: '10px 12px',
+    borderRadius: '8px',
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-color)',
+    marginBottom: '6px',
+  } as CSSProperties,
+
+  contractHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '6px',
+  } as CSSProperties,
+
+  contractAddress: {
+    fontSize: '13px',
+    fontWeight: 500,
+    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+    color: 'var(--text-primary)',
+  } as CSSProperties,
+
+  badgeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginBottom: '4px',
+    paddingLeft: '28px',
+  } as CSSProperties,
+
+  readBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '1px 6px',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    color: '#3b82f6',
+    fontSize: '10px',
+    fontWeight: 600,
+    flexShrink: 0,
+  } as CSSProperties,
+
+  writeBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '1px 6px',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    color: '#ef4444',
+    fontSize: '10px',
+    fontWeight: 600,
+    flexShrink: 0,
+  } as CSSProperties,
+
+  functionList: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+  } as CSSProperties,
+
+  warningBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    color: '#f59e0b',
+    fontSize: '11px',
+    fontWeight: 600,
+    marginBottom: '12px',
+  } as CSSProperties,
+
+  warningApproveButton: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '12px 16px',
+    borderRadius: '12px',
+    backgroundColor: '#f59e0b',
+    color: '#1a1a2e',
+    fontSize: '14px',
+    fontWeight: 600,
+    border: 'none',
+    cursor: 'pointer',
+  } as CSSProperties,
+};
+
+/* ---------------------------------------------------------------------------
    LOADING SHELL (waiting for POPUP_INIT)
    --------------------------------------------------------------------------- */
 
