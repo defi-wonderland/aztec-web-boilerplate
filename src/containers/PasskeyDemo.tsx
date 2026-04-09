@@ -88,6 +88,7 @@ const TEST_MANIFEST = {
       transactions: {
         scope: [
           { contract: SANDBOX_TOKEN_ADDRESS, function: 'balance_of_public' },
+          { contract: SANDBOX_DRIPPER_ADDRESS, function: 'drip_to_private' },
         ],
       },
       utilities: {
