@@ -92,9 +92,19 @@ async function handleInit(data: {
   pxe = await createPXE(node, {}, { store: compositeStore });
   log('[pxe-worker] PXE created!');
 
-  // Register account
+  // Create the account via AccountManager — this computes the correct address
+  // from the secret key + account contract (ECDSA-R). Don't use raw pxe.registerAccount()
+  // which produces a different address without the account contract.
   const secretKey = new Fr(BigInt(data.masterSecret));
-  await pxe.registerAccount(secretKey, Fr.ZERO);
+  const signingKeyBytes = new Uint8Array(data.signingKey);
+  const accountContract = createAccountContract(signingKeyBytes);
+  const accountManager = await AccountManager.create(pxe as any, secretKey, accountContract, Fr.ZERO);
+
+  // register() calls pxe.registerAccount with the correct partial address
+  await accountManager.register();
+  const account = await accountManager.getAccount();
+  const accountAddress = accountManager.address;
+  log('[pxe-worker] Account registered: ' + accountAddress.toString());
 
   // Register contracts directly in the worker (bypasses WalletProxy serialization
   // which can't handle the complex ContractInstanceWithAddress Zod schemas).
@@ -105,8 +115,6 @@ async function handleInit(data: {
 
     for (const c of data.contracts) {
       try {
-        // Contracts were serialized to hex strings in IframeManager before
-        // the first postMessage. Reconstruct proper Aztec types here.
         const deserialized = deserializeContractConfig(c, Fr, AztecAddress);
 
         const instance = await getContractInstanceFromInstantiationParams(
@@ -127,20 +135,6 @@ async function handleInit(data: {
     }
   }
 
-  // Get registered address
-  const accounts = await pxe.getRegisteredAccounts();
-  const address = accounts[0]?.address?.toString() ?? 'unknown';
-  log('[pxe-worker] Account registered: ' + address);
-
-  // Create the PasskeyWallet (BaseWallet subclass) for wallet RPC calls
-  const signingKeyBytes = new Uint8Array(data.signingKey);
-  const accountContract = createAccountContract(signingKeyBytes);
-  const accountManager = await AccountManager.create(pxe as any, secretKey, accountContract, Fr.ZERO);
-  const account = await accountManager.getAccount();
-
-  // Create a concrete PasskeyWallet extending BaseWallet
-  const accountAddress = accountManager.address;
-
   class PasskeyWallet extends BaseWallet {
     constructor(pxeInstance: any, aztecNode: any, private account: any, private accountAddress: any) {
       super(pxeInstance, aztecNode);
@@ -149,13 +143,10 @@ async function handleInit(data: {
     protected async getAccountFromAddress(addr: any): Promise<any> {
       // Compare by string — addr may be a Zod-deserialized AztecAddress whose
       // .equals() fails against the AccountManager's address due to type mismatch.
-      const addrStr = addr.toString();
-      const ownStr = this.accountAddress.toString();
-      log(`[pxe-worker] getAccountFromAddress: addr=${addrStr}, own=${ownStr}, match=${addrStr === ownStr}`);
-      if (addrStr === ownStr || addr.isZero()) {
+      if (addr.toString() === this.accountAddress.toString() || addr.isZero()) {
         return this.account;
       }
-      throw new Error(`Unknown account: ${addrStr} (expected: ${ownStr})`);
+      throw new Error(`Unknown account: ${addr.toString()}`);
     }
 
     async getAccounts(): Promise<Array<{ alias: string; item: any }>> {
