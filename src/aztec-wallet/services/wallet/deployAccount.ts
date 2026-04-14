@@ -1,5 +1,5 @@
-import { AztecAddress } from '@aztec/aztec.js/addresses';
-import type { AccountManager } from '@aztec/aztec.js/wallet';
+import type { AztecAddress } from '@aztec/aztec.js/addresses';
+import { type AccountManager } from '@aztec/aztec.js/wallet';
 import { TxStatus } from '@aztec/stdlib/tx';
 import { AccountDeploymentError } from './errors';
 import type { SharedPXEInstance } from '../aztec/pxe';
@@ -49,11 +49,13 @@ export async function deployAccountIfNotExists(
     const metadata =
       await pxeInstance.wallet.getContractMetadata(accountAddress);
     console.log(
-      '[deploy-account] Contract initialized:',
-      metadata.isContractInitialized
+      '[deploy-account] Initialization status:',
+      metadata.initializationStatus
     );
 
-    if (metadata.isContractInitialized) {
+    if (
+      metadata.initializationStatus === ContractInitializationStatus.INITIALIZED
+    ) {
       return { deployed: false, address: accountAddress };
     }
 
@@ -64,7 +66,7 @@ export async function deployAccountIfNotExists(
     console.log('[deploy-account] Sending deploy tx...');
 
     await deployMethod.send({
-      from: AztecAddress.ZERO,
+      from: NO_FROM,
       fee: { paymentMethod },
       skipClassPublication: opts.skipClassPublication,
       skipInstancePublication: opts.skipInstancePublication,

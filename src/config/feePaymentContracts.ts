@@ -11,8 +11,8 @@ import type { FeePaymentContractsConfig } from './networks/types';
  */
 export type FeePaymentMethodType =
   | 'sponsored' // Built-in Aztec SponsoredFeePaymentMethod
-  | 'metered' // MeteredFeePaymentMethod from aztec-fee-payment
-  | 'meteredExact'; // MeteredExactFeePaymentMethod with gas refund
+  | 'metered' // FPCFeePaymentMethod from aztec-fee-payment
+  | 'meteredExact'; // BridgedMintAndPayFeePaymentMethod with gas refund
 
 /**
  * Labels for fee payment methods.

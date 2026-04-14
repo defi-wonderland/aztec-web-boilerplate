@@ -1,6 +1,5 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import type { Fr } from '@aztec/aztec.js/fields';
-import type { CaipAccount } from '@azguardwallet/types';
 
 // ============================================================================
 // STORAGE SERVICE INTERFACES
@@ -79,16 +78,3 @@ export enum ExternalSignerType {
  * - 'evm': External signers using EVM wallets (e.g., MetaMask)
  */
 export type ModalWalletType = 'embedded' | 'aztec' | 'evm';
-
-// ============================================================================
-// AZGUARD WALLET INTERFACES
-// ============================================================================
-
-/**
- * Azguard-specific account data for storage
- */
-export interface AzguardAccountData {
-  caipAccount: CaipAccount;
-  connectedAt: number;
-  lastUsed: number;
-}

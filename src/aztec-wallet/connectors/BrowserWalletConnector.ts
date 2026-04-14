@@ -1,181 +1,81 @@
 /**
- * BrowserWalletConnector - Connector for Browser Wallet extensions
+ * BrowserWalletConnector - Connector for Browser Wallet extensions via wallet-sdk
  *
- * Uses external PXE (browser extension manages everything).
- * Supports any wallet that implements IBrowserWalletAdapter.
- * Self-contained: handles adapter initialization and event listeners internally.
+ * Uses @aztec/wallet-sdk for wallet discovery and secure connection.
+ * connect() performs the full flow automatically (discover + auto-confirm).
+ *
+ * For advanced use cases requiring manual emoji verification, the two-phase
+ * flow is still available:
+ *   1. startConnect() - discovers wallet, performs key exchange, returns emoji data
+ *   2. confirmConnect() - user confirms emojis match, finalizes connection
+ *
+ * After connection, getWallet() returns a standard Wallet interface.
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import { Fr } from '@aztec/aztec.js/fields';
+import { createAztecNodeClient } from '@aztec/aztec.js/node';
+import type { Wallet } from '@aztec/aztec.js/wallet';
+import { hashToEmoji } from '@aztec/wallet-sdk/crypto';
+import {
+  WalletManager,
+  type WalletProvider,
+  type PendingConnection,
+} from '@aztec/wallet-sdk/manager';
 import { getNetworkStore } from '../store/network';
 import { getWalletStore } from '../store/wallet';
 import { WalletType } from '../types/aztec';
 import type {
-  BrowserWalletOperation,
-  BrowserWalletOperationResult,
-  SendTransactionOp,
-  ContractCall,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
-} from '../types/browserWallet';
-import type {
-  IBrowserWalletAdapter,
-  BrowserWalletAdapterFactory,
-} from '../types/browserWalletAdapter';
-import type {
   BrowserWalletConnector as IBrowserWalletConnector,
   ConnectorStatus,
 } from '../types/walletConnector';
-import type { CaipAccount } from '@azguardwallet/types';
 
-const toContractCall = (
-  action: ConnectorTransactionRequest['actions'][number]
-): ContractCall => ({
-  kind: 'call',
-  contract: action.contract,
-  method: action.method,
-  args: action.args,
-});
+const APP_ID = 'aztec-web-boilerplate';
+
+/** Discovery timeout in milliseconds */
+const DISCOVERY_TIMEOUT_MS = 30_000;
+
+export interface EmojiVerificationData {
+  emojis: string;
+  walletName: string;
+  walletIcon?: string;
+}
 
 interface BrowserWalletConnectorConfig {
   id: string;
   label: string;
-  adapterFactory: BrowserWalletAdapterFactory;
+  providerId: string;
 }
 
 /**
- * Connector for Browser Wallet extensions (Azguard, Obsidian, etc.)
+ * Connector for Browser Wallet extensions (Azguard, etc.) using @aztec/wallet-sdk.
  *
  * These wallets have their own PXE running in the extension.
- * We communicate via the adapter interface.
- * Initializes eagerly on construction for immediate "installed" status.
+ * Communication is handled via wallet-sdk's secure channel protocol.
  */
 export class BrowserWalletConnector implements IBrowserWalletConnector {
   readonly id: string;
   readonly label: string;
   readonly type = WalletType.BROWSER_WALLET;
-  readonly adapterFactory: BrowserWalletAdapterFactory;
+  readonly providerId: string;
 
-  private _adapter: IBrowserWalletAdapter | null = null;
-  private _initPromise: Promise<void> | null = null;
-  // Guards async account hydration to avoid stale updates; not related to crypto tokens
-  private latestAccountChangeMarker: symbol | null = null;
+  private _wallet: Wallet | null = null;
+  private _provider: WalletProvider | null = null;
+  private _pendingConnection: PendingConnection | null = null;
+  private _unsubDisconnect: (() => void) | null = null;
 
   constructor(config: BrowserWalletConnectorConfig) {
     this.id = config.id;
     this.label = config.label;
-    this.adapterFactory = config.adapterFactory;
-
-    // Start initialization immediately (eager init for "installed" badge)
-    void this.ensureInitialized().catch((error) => {
-      // Swallow to avoid unhandled rejection; installation status will remain false
-      console.warn(
-        `[BrowserWalletConnector:${this.id}] initialize failed`,
-        error
-      );
-    });
-  }
-
-  /**
-   * Get or create the adapter instance.
-   * Async to support dynamic imports for the adapter factory.
-   */
-  async getAdapter(): Promise<IBrowserWalletAdapter> {
-    if (!this._adapter) {
-      this._adapter = await this.adapterFactory();
-    }
-    return this._adapter;
-  }
-
-  /**
-   * Initialize the adapter and set up event listeners.
-   * Called automatically in constructor (eager init).
-   */
-  private async initialize(): Promise<void> {
-    const adapter = await this.getAdapter();
-
-    await adapter.initialize();
-    const state = adapter.getState();
-
-    getWalletStore().setBrowserWalletState({
-      isInstalled: state.isInstalled,
-      supportedChains: state.supportedChains,
-    });
-
-    // Set up event listeners
-    adapter.onAccountsChanged(async (accounts) => {
-      const updateMarker = Symbol('accountsChanged');
-      this.latestAccountChangeMarker = updateMarker;
-
-      const selectedAccount = accounts.length > 0 ? accounts[0] : null;
-      const store = getWalletStore();
-
-      store.setBrowserWalletState({
-        caipAccounts: accounts,
-        caipAccount: selectedAccount,
-      });
-
-      if (selectedAccount) {
-        try {
-          const accountWallet = await adapter.toAccountWallet(selectedAccount);
-          if (this.latestAccountChangeMarker !== updateMarker) {
-            return;
-          }
-          getWalletStore().setBrowserWalletState({ account: accountWallet });
-        } catch {
-          if (this.latestAccountChangeMarker !== updateMarker) {
-            return;
-          }
-          getWalletStore().setBrowserWalletState({ account: null });
-        }
-      } else {
-        getWalletStore().setBrowserWalletState({ account: null });
-      }
-    });
-
-    adapter.onDisconnected(async () => {
-      await getWalletStore().disconnect();
-    });
-  }
-
-  /**
-   * Ensure initialization is in-flight or completed.
-   * Safe to call multiple times; reinitializes after destroy().
-   */
-  private ensureInitialized(): Promise<void> {
-    if (!this._initPromise) {
-      this._initPromise = this.initialize().catch((error) => {
-        // Reset so a later retry can occur
-        this._initPromise = null;
-        throw error;
-      });
-    }
-    return this._initPromise;
-  }
-
-  /**
-   * Clean up adapter resources.
-   */
-  destroy(): void {
-    if (this._adapter) {
-      this._adapter.destroy();
-      this._adapter = null;
-      this._initPromise = null;
-    }
+    this.providerId = config.providerId;
   }
 
   getStatus(): ConnectorStatus {
     const state = getWalletStore();
     const isBrowserWallet = state.walletType === WalletType.BROWSER_WALLET;
 
-    // Check installation from adapter if not yet connected
-    const adapter = this._adapter;
-    const isInstalled = isBrowserWallet
-      ? state.isInstalled
-      : (adapter?.getState().isInstalled ?? false);
-
     return {
-      isInstalled,
+      isInstalled: isBrowserWallet ? state.isInstalled : false,
       status: isBrowserWallet ? state.status : 'disconnected',
       error: isBrowserWallet ? state.error : null,
     };
@@ -189,84 +89,147 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     return null;
   }
 
-  getCaipAccount(): CaipAccount | null {
-    const state = getWalletStore();
-    if (state.walletType === WalletType.BROWSER_WALLET) {
-      return state.caipAccount as CaipAccount | null;
-    }
-    return null;
+  getWallet(): Wallet | null {
+    return this._wallet;
   }
 
-  async connect(): Promise<void> {
-    await this.ensureInitialized();
-
-    const adapter = await this.getAdapter();
+  /**
+   * Phase 1: Discover wallet provider and establish secure channel.
+   * Returns emoji verification data for the user to confirm.
+   */
+  async startConnect(): Promise<EmojiVerificationData> {
     const config = getNetworkStore().currentConfig;
-    await getWalletStore().connectBrowserWallet(adapter, config.name, this.id);
-  }
 
-  async disconnect(): Promise<void> {
-    const adapter = this._adapter;
-    await getWalletStore().disconnect(async () => {
-      if (adapter) {
-        await adapter.disconnect();
-        adapter.destroy();
-      }
-      this._adapter = null;
-      this._initPromise = null;
-    });
-  }
-
-  async sendTransaction(
-    request: ConnectorTransactionRequest
-  ): Promise<ConnectorTransactionResult> {
-    const state = getWalletStore();
-    const account = state.caipAccount;
-    const chain = state.supportedChains[0] ?? '';
-
-    if (!account) {
-      throw new Error('No account selected');
-    }
-
-    const operation: SendTransactionOp = {
-      kind: 'send_transaction',
-      account,
-      chain,
-      calls: request.actions.map(toContractCall),
+    // Get chain info from the Aztec node
+    const nodeClient = createAztecNodeClient(config.nodeUrl);
+    const nodeInfo = await nodeClient.getNodeInfo();
+    const chainInfo = {
+      chainId: new Fr(nodeInfo.l1ChainId),
+      version: new Fr(nodeInfo.rollupVersion),
     };
 
-    const result = await this.executeOperation(operation);
+    // Configure the WalletManager for extension discovery
+    const manager = WalletManager.configure({
+      extensions: { enabled: true },
+    });
 
-    if (result.status !== 'ok') {
-      const message =
-        'error' in result && result.error ? result.error : 'Transaction failed';
-      return {
-        status: 'failed',
-        error: message,
-      };
+    // Discover wallets matching our providerId
+    const discovery = manager.getAvailableWallets({
+      chainInfo,
+      appId: APP_ID,
+      timeout: DISCOVERY_TIMEOUT_MS,
+    });
+
+    let matchedProvider: WalletProvider | null = null;
+
+    for await (const provider of discovery.wallets) {
+      if (provider.id === this.providerId) {
+        matchedProvider = provider;
+        discovery.cancel();
+        break;
+      }
     }
 
+    if (!matchedProvider) {
+      throw new Error(
+        `Wallet "${this.label}" not found. Make sure the extension is installed and enabled.`
+      );
+    }
+
+    this._provider = matchedProvider;
+
+    // Establish secure channel (ECDH key exchange)
+    const pending = await matchedProvider.establishSecureChannel(APP_ID);
+    this._pendingConnection = pending;
+
+    // Convert verification hash to emojis for user display
+    const emojis = hashToEmoji(pending.verificationHash);
+
     return {
-      status: 'success',
-      txHash: typeof result.result === 'string' ? result.result : undefined,
-      rawResult: result.result,
+      emojis,
+      walletName: matchedProvider.name,
+      walletIcon: matchedProvider.icon,
     };
   }
 
   /**
-   * Execute a single operation and return the result directly.
-   * Throws if no result is returned.
+   * Phase 2: User confirmed emojis match. Finalize the connection.
    */
-  async executeOperation(
-    operation: BrowserWalletOperation
-  ): Promise<BrowserWalletOperationResult> {
-    const adapter = await this.getAdapter();
-    const results = await adapter.executeOperations([operation]);
-
-    if (!results.length) {
-      throw new Error('No result returned from wallet operation');
+  async confirmConnect(): Promise<void> {
+    if (!this._pendingConnection) {
+      throw new Error('No pending connection. Call startConnect() first.');
     }
 
-    return results[0];
+    const wallet = await this._pendingConnection.confirm();
+    this._wallet = wallet;
+    this._pendingConnection = null;
+
+    // Listen for disconnect events from the wallet
+    if (this._provider) {
+      this._unsubDisconnect = this._provider.onDisconnect(() => {
+        void this.handleWalletDisconnect();
+      });
+    }
+
+    // Update store state
+    getWalletStore().setBrowserWalletState({
+      isInstalled: true,
+    });
+  }
+
+  /**
+   * Cancel a pending connection (user rejected emoji verification).
+   */
+  cancelConnect(): void {
+    if (this._pendingConnection) {
+      this._pendingConnection.cancel();
+      this._pendingConnection = null;
+    }
+  }
+
+  /**
+   * Convenience method that performs the full connection flow (discover + auto-confirm).
+   * Equivalent to calling startConnect() followed by confirmConnect().
+   */
+  async connect(): Promise<void> {
+    await this.startConnect();
+    await this.confirmConnect();
+  }
+
+  async disconnect(): Promise<void> {
+    await getWalletStore().disconnect(async () => {
+      await this.cleanup();
+    });
+  }
+
+  private async cleanup(): Promise<void> {
+    if (this._unsubDisconnect) {
+      this._unsubDisconnect();
+      this._unsubDisconnect = null;
+    }
+
+    if (this._provider) {
+      try {
+        await this._provider.disconnect();
+      } catch {
+        // Ignore disconnect errors during cleanup
+      }
+      this._provider = null;
+    }
+
+    this._wallet = null;
+    this._pendingConnection = null;
+  }
+
+  private async handleWalletDisconnect(): Promise<void> {
+    this._wallet = null;
+    this._provider = null;
+
+    if (this._unsubDisconnect) {
+      this._unsubDisconnect();
+      this._unsubDisconnect = null;
+    }
+
+    await getWalletStore().disconnect();
   }
 }

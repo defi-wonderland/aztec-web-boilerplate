@@ -8,14 +8,8 @@ import {
   executeAppManagedBatch,
   executeAppManagedRead,
   executeAppManagedWrite,
-  executeBrowserWalletBatch,
-  executeBrowserWalletRead,
-  executeBrowserWalletWrite,
 } from '../execution';
-import {
-  hasAppManagedPXE,
-  isBrowserWalletConnector,
-} from '../types/walletConnector';
+import { hasWallet } from '../types/walletConnector';
 import type { FeePaymentContractsConfig } from '../../config/networks/types';
 import type { FeePaymentContext } from '../../services/aztec/feePayment/index';
 import type {
@@ -75,21 +69,11 @@ export const createWalletExecutionClient = (
   }
 
   const executeRead = async (readParams: ReadExecutionParams) => {
-    if (isBrowserWalletConnector(connector)) {
-      return executeBrowserWalletRead({
-        executeOperation: (op) => connector.executeOperation(op),
-        getCaipAccount: () => connector.getCaipAccount(),
-        address: readParams.address,
-        functionName: readParams.functionName,
-        args: readParams.args,
-      });
-    }
-
     if (!account) {
       throw new Error('Account not available');
     }
 
-    if (hasAppManagedPXE(connector)) {
+    if (hasWallet(connector)) {
       const wallet = connector.getWallet();
       if (!wallet) {
         throw new Error('Wallet instance not available');
@@ -111,20 +95,11 @@ export const createWalletExecutionClient = (
   const executeBatchRead = async <TAllowFailure extends boolean>(
     batchParams: BatchReadExecutionParams<TAllowFailure>
   ) => {
-    if (isBrowserWalletConnector(connector)) {
-      return executeBrowserWalletBatch({
-        executeOperation: (op) => connector.executeOperation(op),
-        getCaipAccount: () => connector.getCaipAccount(),
-        contracts: batchParams.contracts,
-        allowFailure: batchParams.allowFailure,
-      });
-    }
-
     if (!account) {
       throw new Error('Account not available');
     }
 
-    if (hasAppManagedPXE(connector)) {
+    if (hasWallet(connector)) {
       const wallet = connector.getWallet();
       if (!wallet) {
         throw new Error('Wallet instance not available');
@@ -142,23 +117,11 @@ export const createWalletExecutionClient = (
   };
 
   const executeWrite = async (writeParams: WriteExecutionParams) => {
-    if (isBrowserWalletConnector(connector)) {
-      return executeBrowserWalletWrite({
-        sendTransaction: (req) => connector.sendTransaction(req),
-        executeOperation: (op) => connector.executeOperation(op),
-        getCaipAccount: () => connector.getCaipAccount(),
-        address: writeParams.address,
-        functionName: writeParams.functionName,
-        args: writeParams.args,
-        receiptPolling: writeParams.receiptPolling,
-      });
-    }
-
     if (!account) {
       throw new Error('Account not available');
     }
 
-    if (hasAppManagedPXE(connector)) {
+    if (hasWallet(connector)) {
       const wallet = connector.getWallet();
       if (!wallet) {
         throw new Error('Wallet instance not available');
@@ -166,8 +129,22 @@ export const createWalletExecutionClient = (
 
       const feePaymentContext: FeePaymentContext = {
         config: feePaymentConfig ?? {},
-        getSponsoredFeePaymentMethod: () =>
-          connector.getSponsoredFeePaymentMethod(),
+        getSponsoredFeePaymentMethod: async () => {
+          // Browser wallets don't have getSponsoredFeePaymentMethod
+          // Only app-managed connectors (embedded/external signer) do
+          if ('getSponsoredFeePaymentMethod' in connector) {
+            return (
+              connector as {
+                getSponsoredFeePaymentMethod: () => Promise<unknown>;
+              }
+            ).getSponsoredFeePaymentMethod() as ReturnType<
+              typeof feePaymentContext.getSponsoredFeePaymentMethod
+            >;
+          }
+          throw new Error(
+            'Sponsored fee payment not available for this wallet type'
+          );
+        },
       };
 
       return executeAppManagedWrite({

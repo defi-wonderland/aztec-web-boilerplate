@@ -3,7 +3,6 @@
  */
 
 import { afterEach, beforeEach, vi } from 'vitest';
-import type { CaipAccount } from '@azguardwallet/types';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -18,15 +17,15 @@ afterEach(() => {
  */
 export class TestUtils {
   /**
-   * Create a mock CAIP account for testing
+   * Create a mock address for testing
    */
-  static createMockCaipAccount(chain = 'aztec:0', address?: string): CaipAccount {
-    const mockAddress = address || TEST_CONSTANTS.MOCK_ADDRESS;
-    return `${chain}:${mockAddress}` as CaipAccount;
+  static createMockAddress(address?: string): string {
+    return address || TEST_CONSTANTS.MOCK_ADDRESS;
   }
 }
 
 export const TEST_CONSTANTS = {
   MOCK_ADDRESS: '0x1234567890abcdef1234567890abcdef12345678',
-  MOCK_TX_HASH: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+  MOCK_TX_HASH:
+    '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
 } as const;

@@ -8,7 +8,7 @@
  */
 export const NETWORK_URLS = {
   sandbox: 'http://localhost:8080',
-  devnet: 'https://v4-devnet-2.aztec-labs.com',
+  devnet: 'https://rpc.testnet.aztec-labs.com',
 } as const;
 
 /**

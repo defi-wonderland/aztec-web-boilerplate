@@ -3,8 +3,8 @@
  */
 
 import {
-  MeteredFeePaymentMethod,
-  MeteredExactFeePaymentMethod,
+  FPCFeePaymentMethod,
+  BridgedMintAndPayFeePaymentMethod,
 } from '@defi-wonderland/aztec-fee-payment/fee-payment-methods';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
@@ -33,7 +33,7 @@ export async function createFeePaymentMethod(
       if (!config.metered?.address) {
         throw new Error('Metered FPC not configured for this network');
       }
-      return new MeteredFeePaymentMethod(
+      return new FPCFeePaymentMethod(
         AztecAddress.fromString(config.metered.address)
       );
 
@@ -41,7 +41,7 @@ export async function createFeePaymentMethod(
       if (!config.metered?.address) {
         throw new Error('Metered FPC not configured for this network');
       }
-      return new MeteredExactFeePaymentMethod(
+      return new BridgedMintAndPayFeePaymentMethod(
         AztecAddress.fromString(config.metered.address)
       );
 

@@ -1,5 +1,4 @@
 import { EVM_WALLETS, type EVMWalletId } from '../../config/evmWallets';
-import { createAzguardAdapter } from '../adapters';
 import { ExternalSignerType } from '../types/aztec';
 import { BrowserWalletConnector } from './BrowserWalletConnector';
 import { createEmbeddedConnector } from './EmbeddedConnector';
@@ -15,14 +14,14 @@ export const embedded = (): ConnectorFactory => createEmbeddedConnector;
 
 /**
  * Azguard wallet connector preset.
- * Uses external PXE (browser extension).
+ * Uses wallet-sdk for discovery and secure connection.
  * Usage: connectors: [azguard()]
  */
 export const azguard = (): ConnectorFactory => () =>
   new BrowserWalletConnector({
     id: 'azguard',
     label: 'Azguard Wallet',
-    adapterFactory: createAzguardAdapter,
+    providerId: 'azguard-wallet',
   });
 
 /**

@@ -72,7 +72,6 @@ export const boilerplateContracts = createContractConfig({
         'WETH',
         18,
         AztecAddress.fromString(config.dripperContractAddress),
-        AztecAddress.ZERO,
       ],
       constructorArtifact: 'constructor_with_minter',
     }),

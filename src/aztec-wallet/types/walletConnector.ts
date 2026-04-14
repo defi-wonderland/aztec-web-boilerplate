@@ -3,13 +3,6 @@ import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
 import { WalletType, ExternalSignerType } from './aztec';
-import type {
-  BrowserWalletOperation,
-  BrowserWalletOperationResult,
-  ConnectorTransactionRequest,
-  ConnectorTransactionResult,
-} from './browserWallet';
-import type { CaipAccount } from '@azguardwallet/types';
 
 export type WalletConnectorId = string;
 
@@ -59,13 +52,7 @@ export interface ExternalSignerWalletConnector extends WalletConnector {
 export interface BrowserWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.BROWSER_WALLET;
 
-  getCaipAccount: () => CaipAccount | null;
-  sendTransaction: (
-    request: ConnectorTransactionRequest
-  ) => Promise<ConnectorTransactionResult>;
-  executeOperation: (
-    operation: BrowserWalletOperation
-  ) => Promise<BrowserWalletOperationResult>;
+  getWallet: () => Wallet | null;
 }
 
 export const isEmbeddedConnector = (
@@ -92,5 +79,22 @@ export const hasAppManagedPXE = (
   return (
     connector?.type === WalletType.EMBEDDED ||
     connector?.type === WalletType.EXTERNAL_SIGNER
+  );
+};
+
+/**
+ * Type guard that returns true for all connector types that expose a Wallet interface.
+ * With wallet-sdk, all three connector types provide a standard Wallet.
+ */
+export const hasWallet = (
+  connector: WalletConnector | null | undefined
+): connector is
+  | EmbeddedWalletConnector
+  | ExternalSignerWalletConnector
+  | BrowserWalletConnector => {
+  return (
+    connector?.type === WalletType.EMBEDDED ||
+    connector?.type === WalletType.EXTERNAL_SIGNER ||
+    connector?.type === WalletType.BROWSER_WALLET
   );
 };
