@@ -45,3 +45,5 @@ playwright/.cache/
 .cursor/*
 .claude/*
 .gstack/
+
+docs/

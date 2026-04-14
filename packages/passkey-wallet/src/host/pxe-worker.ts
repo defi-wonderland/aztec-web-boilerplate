@@ -202,29 +202,104 @@ async function handleInit(data: {
   // Uses from: AztecAddress.ZERO which triggers SignerlessAccount →
   // MultiCallEntrypoint (no is_valid_impl check). The constructor runs
   // first and creates the signing key note.
-  try {
-    log('[pxe-worker] Deploying account contract...');
-    const { TxStatus } = await import('@aztec/stdlib/tx');
+  //
+  // After deploy we MUST verify that PXE sees the contract as initialized
+  // before returning — otherwise the next tx's is_valid_impl will try to
+  // read the signing-key note from a block PXE hasn't indexed yet and fail
+  // with "Failed to get a note 'self.is_some()'". This mirrors the pattern
+  // in scripts/deploy.ts:221-242.
+  const ensureDeployed = async () => {
+    const preMeta = await (wallet as any).getContractMetadata(accountAddress);
+    if (preMeta?.isContractInitialized) {
+      log('[pxe-worker] Account already initialized on-chain, skipping deploy');
+      return;
+    }
 
+    log('[pxe-worker] Deploying account contract...');
     const walletAccountManager = await AccountManager.create(wallet as any, secretKey, accountContract, Fr.ZERO);
     const paymentMethod = new SponsoredFeePaymentMethod(fpcInstance.address);
 
     const deployMethod = await walletAccountManager.getDeployMethod();
-    const sentTx = await deployMethod.send({
+    // DeployMethod.send() without `wait: NO_WAIT` already awaits the tx
+    // internally (via wallet.sendTx → waitForTx) and returns a Contract
+    // instance. No need (and no way) to call .wait() on the result.
+    await deployMethod.send({
       from: AztecAddress.ZERO,
       fee: { paymentMethod },
     });
-    log('[pxe-worker] Deploy tx sent, waiting for confirmation...');
-    // sentTx might be a SentTx or a Promise<SentTx> depending on wallet proxy
-    const resolved = sentTx?.wait ? sentTx : await sentTx;
-    await resolved.wait({ timeout: 120, waitForStatus: TxStatus.PROPOSED });
-    log('[pxe-worker] Account deployed!');
+    log('[pxe-worker] Deploy tx mined, verifying PXE has indexed account state...');
+
+    // Poll getContractMetadata until PXE reports the contract as initialized.
+    // Even after waitForStatus: PROPOSED, PXE may need an extra block-sync
+    // round before the note tree state is queryable. Retry ~15s total.
+    for (let i = 0; i < 30; i++) {
+      const meta = await (wallet as any).getContractMetadata(accountAddress);
+      if (meta?.isContractInitialized) {
+        log('[pxe-worker] Account deployed and indexed by PXE (after ' + (i * 500) + 'ms)');
+        return;
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
+    throw new Error(
+      'Account contract was deployed (tx proposed) but PXE still does not ' +
+      'see it as initialized after 15s. Check the sandbox logs — the tx ' +
+      'may have reverted. Address: ' + accountAddress.toString()
+    );
+  };
+
+  const waitForPxeToIndexAccount = async (totalMs: number): Promise<boolean> => {
+    const attempts = Math.ceil(totalMs / 500);
+    for (let i = 0; i < attempts; i++) {
+      const meta = await (wallet as any).getContractMetadata(accountAddress);
+      if (meta?.isContractInitialized) return true;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    return false;
+  };
+
+  try {
+    await ensureDeployed();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('already initialized') || msg.includes('already deployed') || msg.includes('Existing nullifier')) {
-      log('[pxe-worker] Account already deployed');
-    } else {
+
+    // Case 1: "Existing nullifier" means a prior deploy tx already finalized.
+    // The account is on-chain; PXE may just have a stale view. Re-check
+    // getContractMetadata and treat as success if confirmed.
+    if (msg.includes('Existing nullifier') || msg.includes('already initialized') || msg.includes('already deployed')) {
+      const meta = await (wallet as any).getContractMetadata(accountAddress);
+      if (meta?.isContractInitialized) {
+        log('[pxe-worker] Account already deployed (confirmed via getContractMetadata)');
+      } else {
+        throw new Error(
+          'Deploy reported existing nullifier but getContractMetadata says ' +
+          'contract is not initialized. Stale PXE store? Address: ' +
+          accountAddress.toString()
+        );
+      }
+    }
+    // Case 2: "Nullifier conflict with existing tx <hash>" means the node's
+    // mempool already has a PENDING deploy tx for this account (typically
+    // from a prior connect attempt in the same session, before the sandbox
+    // was restarted). That in-flight tx is deploying the exact same account
+    // — we just need to wait for it to settle and then verify.
+    else if (msg.includes('Nullifier conflict with existing tx')) {
+      log('[pxe-worker] Deploy blocked by pending tx in mempool, waiting for it to settle...');
+      const indexed = await waitForPxeToIndexAccount(60_000);
+      if (indexed) {
+        log('[pxe-worker] Pending deploy tx settled, account now initialized');
+      } else {
+        throw new Error(
+          'A prior deploy tx is pending in the sandbox mempool but did not ' +
+          'settle within 60s. Restart the sandbox (`aztec start --sandbox`) ' +
+          'to clear the mempool, then try again. Address: ' +
+          accountAddress.toString()
+        );
+      }
+    }
+    // Any other error is a real failure — do NOT swallow.
+    else {
       log('[pxe-worker] Account deployment failed: ' + msg);
+      throw err;
     }
   }
 
