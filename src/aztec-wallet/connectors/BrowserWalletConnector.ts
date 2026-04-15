@@ -202,8 +202,10 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   async connect(): Promise<void> {
     const store = getWalletStore();
     await store._connectWith(this.id, async () => {
-      store.setBrowserWalletState({ isInstalled: true });
+      // Only flag as installed after discovery succeeds; otherwise a failed
+      // connect (no extension) would leave the store reporting isInstalled=true.
       await this.startConnect();
+      store.setBrowserWalletState({ isInstalled: true });
       await this.confirmConnect();
     });
   }
