@@ -25,6 +25,7 @@ export interface WalletConnector {
 
   getStatus(): ConnectorStatus;
   getAccount(): AccountWithSecretKey | null;
+  getWallet(): Wallet | null;
 
   connect(): Promise<void>;
   disconnect(): Promise<void>;
@@ -34,7 +35,6 @@ export interface EmbeddedWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.EMBEDDED;
 
   getPXE: () => PXE | null;
-  getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
@@ -45,14 +45,11 @@ export interface ExternalSignerWalletConnector extends WalletConnector {
   readonly rdns?: string;
 
   getPXE: () => PXE | null;
-  getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
 export interface BrowserWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.BROWSER_WALLET;
-
-  getWallet: () => Wallet | null;
 }
 
 export const isEmbeddedConnector = (
@@ -79,22 +76,5 @@ export const hasAppManagedPXE = (
   return (
     connector?.type === WalletType.EMBEDDED ||
     connector?.type === WalletType.EXTERNAL_SIGNER
-  );
-};
-
-/**
- * Type guard that returns true for all connector types that expose a Wallet interface.
- * With wallet-sdk, all three connector types provide a standard Wallet.
- */
-export const hasWallet = (
-  connector: WalletConnector | null | undefined
-): connector is
-  | EmbeddedWalletConnector
-  | ExternalSignerWalletConnector
-  | BrowserWalletConnector => {
-  return (
-    connector?.type === WalletType.EMBEDDED ||
-    connector?.type === WalletType.EXTERNAL_SIGNER ||
-    connector?.type === WalletType.BROWSER_WALLET
   );
 };

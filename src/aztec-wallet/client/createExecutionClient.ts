@@ -9,7 +9,6 @@ import {
   executeAppManagedRead,
   executeAppManagedWrite,
 } from '../execution';
-import { hasWallet } from '../types/walletConnector';
 import type { FeePaymentContractsConfig } from '../../config/networks/types';
 import type { FeePaymentContext } from '../../services/aztec/feePayment/index';
 import type {
@@ -73,23 +72,19 @@ export const createWalletExecutionClient = (
       throw new Error('Account not available');
     }
 
-    if (hasWallet(connector)) {
-      const wallet = connector.getWallet();
-      if (!wallet) {
-        throw new Error('Wallet instance not available');
-      }
-
-      return executeAppManagedRead({
-        wallet,
-        fromAddress: account.getAddress(),
-        artifact: readParams.artifact,
-        address: readParams.address,
-        functionName: readParams.functionName,
-        args: readParams.args,
-      });
+    const wallet = connector.getWallet();
+    if (!wallet) {
+      throw new Error('Wallet instance not available');
     }
 
-    throw new Error('Unknown wallet type');
+    return executeAppManagedRead({
+      wallet,
+      fromAddress: account.getAddress(),
+      artifact: readParams.artifact,
+      address: readParams.address,
+      functionName: readParams.functionName,
+      args: readParams.args,
+    });
   };
 
   const executeBatchRead = async <TAllowFailure extends boolean>(
@@ -99,21 +94,17 @@ export const createWalletExecutionClient = (
       throw new Error('Account not available');
     }
 
-    if (hasWallet(connector)) {
-      const wallet = connector.getWallet();
-      if (!wallet) {
-        throw new Error('Wallet instance not available');
-      }
-
-      return executeAppManagedBatch({
-        wallet,
-        fromAddress: account.getAddress(),
-        contracts: batchParams.contracts,
-        allowFailure: batchParams.allowFailure,
-      });
+    const wallet = connector.getWallet();
+    if (!wallet) {
+      throw new Error('Wallet instance not available');
     }
 
-    throw new Error('Unknown wallet type');
+    return executeAppManagedBatch({
+      wallet,
+      fromAddress: account.getAddress(),
+      contracts: batchParams.contracts,
+      allowFailure: batchParams.allowFailure,
+    });
   };
 
   const executeWrite = async (writeParams: WriteExecutionParams) => {
@@ -121,52 +112,47 @@ export const createWalletExecutionClient = (
       throw new Error('Account not available');
     }
 
-    if (hasWallet(connector)) {
-      const wallet = connector.getWallet();
-      if (!wallet) {
-        throw new Error('Wallet instance not available');
-      }
-
-      const feePaymentContext: FeePaymentContext = {
-        config: feePaymentConfig ?? {},
-        getSponsoredFeePaymentMethod: async () => {
-          // Browser wallets don't have getSponsoredFeePaymentMethod
-          // Only app-managed connectors (embedded/external signer) do
-          if ('getSponsoredFeePaymentMethod' in connector) {
-            return (
-              connector as {
-                getSponsoredFeePaymentMethod: () => Promise<unknown>;
-              }
-            ).getSponsoredFeePaymentMethod() as ReturnType<
-              typeof feePaymentContext.getSponsoredFeePaymentMethod
-            >;
-          }
-          throw new Error(
-            'Sponsored fee payment not available for this wallet type'
-          );
-        },
-      };
-
-      return executeAppManagedWrite({
-        wallet,
-        fromAddress: account.getAddress(),
-        artifact: writeParams.artifact,
-        address: writeParams.address,
-        functionName: writeParams.functionName,
-        args: writeParams.args,
-        createFeePaymentMethod: async (feePaymentMethod) => {
-          const method = resolveFeePaymentMethod(
-            feePaymentMethod,
-            defaultFeePaymentMethod
-          );
-          return createFeePaymentMethod(method, feePaymentContext);
-        },
-        feePaymentMethod: writeParams.feePaymentMethod,
-        timeout: writeParams.timeout ?? 900,
-      });
+    const wallet = connector.getWallet();
+    if (!wallet) {
+      throw new Error('Wallet instance not available');
     }
 
-    throw new Error('Unknown wallet type');
+    const feePaymentContext: FeePaymentContext = {
+      config: feePaymentConfig ?? {},
+      getSponsoredFeePaymentMethod: async () => {
+        // Only app-managed connectors (embedded/external signer) provide sponsored fee payment.
+        if ('getSponsoredFeePaymentMethod' in connector) {
+          return (
+            connector as {
+              getSponsoredFeePaymentMethod: () => Promise<unknown>;
+            }
+          ).getSponsoredFeePaymentMethod() as ReturnType<
+            typeof feePaymentContext.getSponsoredFeePaymentMethod
+          >;
+        }
+        throw new Error(
+          'Sponsored fee payment not available for this wallet type'
+        );
+      },
+    };
+
+    return executeAppManagedWrite({
+      wallet,
+      fromAddress: account.getAddress(),
+      artifact: writeParams.artifact,
+      address: writeParams.address,
+      functionName: writeParams.functionName,
+      args: writeParams.args,
+      createFeePaymentMethod: async (feePaymentMethod) => {
+        const method = resolveFeePaymentMethod(
+          feePaymentMethod,
+          defaultFeePaymentMethod
+        );
+        return createFeePaymentMethod(method, feePaymentContext);
+      },
+      feePaymentMethod: writeParams.feePaymentMethod,
+      timeout: writeParams.timeout ?? 900,
+    });
   };
 
   return {

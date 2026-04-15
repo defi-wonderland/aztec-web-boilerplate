@@ -13,7 +13,6 @@ export {
   isExternalSignerConnector,
   isBrowserWalletConnector,
   hasAppManagedPXE,
-  hasWallet,
 } from './walletConnector';
 
 // Config types

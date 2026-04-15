@@ -234,19 +234,6 @@ export { isBrowserWalletConnector } from './types/walletConnector';
  */
 export { hasAppManagedPXE } from './types/walletConnector';
 
-/**
- * Type guard to check if a connector exposes a Wallet interface.
- * Returns true for all connector types (embedded, external signer, browser wallet).
- *
- * @example
- * ```ts
- * if (hasWallet(connector)) {
- *   const wallet = connector.getWallet();
- * }
- * ```
- */
-export { hasWallet } from './types/walletConnector';
-
 // =============================================================================
 // EXECUTION CLIENT
 // =============================================================================
