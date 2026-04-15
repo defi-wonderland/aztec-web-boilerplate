@@ -13,6 +13,7 @@
  */
 
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { createAztecNodeClient } from '@aztec/aztec.js/node';
 import type { Wallet } from '@aztec/aztec.js/wallet';
@@ -60,6 +61,10 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
   readonly providerId: string;
 
   private _wallet: Wallet | null = null;
+  // Cached from wallet.getAccounts() after confirmConnect(). The execution
+  // client needs synchronous access to the active address via getAddress(),
+  // but wallet-sdk's Wallet.getAccounts() is async.
+  private _address: AztecAddress | null = null;
   private _provider: WalletProvider | null = null;
   private _pendingConnection: PendingConnection | null = null;
   private _unsubDisconnect: (() => void) | null = null;
@@ -81,12 +86,13 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     };
   }
 
+  // Browser wallets don't expose secret keys; use getAddress() instead.
   getAccount(): AccountWithSecretKey | null {
-    const state = getWalletStore();
-    if (state.walletType === WalletType.BROWSER_WALLET) {
-      return state.account;
-    }
     return null;
+  }
+
+  getAddress(): AztecAddress | null {
+    return this._address;
   }
 
   getWallet(): Wallet | null {
@@ -164,17 +170,19 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     this._wallet = wallet;
     this._pendingConnection = null;
 
+    // Fetch the active account address from the wallet for downstream execution
+    const accounts = await wallet.getAccounts();
+    if (accounts.length === 0) {
+      throw new Error('Connected wallet has no accounts');
+    }
+    this._address = accounts[0].item;
+
     // Listen for disconnect events from the wallet
     if (this._provider) {
       this._unsubDisconnect = this._provider.onDisconnect(() => {
         void this.handleWalletDisconnect();
       });
     }
-
-    // Update store state
-    getWalletStore().setBrowserWalletState({
-      isInstalled: true,
-    });
   }
 
   /**
@@ -187,13 +195,17 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     }
   }
 
-  /**
-   * Convenience method that performs the full connection flow (discover + auto-confirm).
-   * Equivalent to calling startConnect() followed by confirmConnect().
-   */
+  // Goes through _connectWith so the store orchestrates the state machine
+  // (status: connecting → connected/disconnected) around the wallet-sdk
+  // handshake. Without this wrapper the handshake succeeds but the global
+  // wallet state stays 'disconnected' and the execution client is never built.
   async connect(): Promise<void> {
-    await this.startConnect();
-    await this.confirmConnect();
+    const store = getWalletStore();
+    await store._connectWith(this.id, async () => {
+      store.setBrowserWalletState({ isInstalled: true });
+      await this.startConnect();
+      await this.confirmConnect();
+    });
   }
 
   async disconnect(): Promise<void> {
@@ -218,11 +230,13 @@ export class BrowserWalletConnector implements IBrowserWalletConnector {
     }
 
     this._wallet = null;
+    this._address = null;
     this._pendingConnection = null;
   }
 
   private async handleWalletDisconnect(): Promise<void> {
     this._wallet = null;
+    this._address = null;
     this._provider = null;
 
     if (this._unsubDisconnect) {

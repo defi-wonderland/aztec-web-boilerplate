@@ -91,7 +91,6 @@ export type WalletActions = {
   ) => Promise<AccountWithSecretKey>;
 
   // Browser Wallet
-  connectBrowserWallet: (connectorId: WalletConnectorId) => Promise<void>;
   setBrowserWalletState: (
     state: Partial<
       Pick<

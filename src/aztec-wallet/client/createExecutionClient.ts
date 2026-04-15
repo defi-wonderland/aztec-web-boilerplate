@@ -1,4 +1,3 @@
-import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
 import {
   FEE_PAYMENT_METHOD_LABELS,
   type FeePaymentMethodType,
@@ -21,7 +20,6 @@ import type { WalletConnector } from '../types/walletConnector';
 
 interface CreateWalletExecutionClientParams {
   connector: WalletConnector | null;
-  account: AccountWithSecretKey | null;
   isConnected: boolean;
   feePaymentConfig?: FeePaymentContractsConfig;
   defaultFeePaymentMethod: FeePaymentMethodType;
@@ -55,31 +53,30 @@ const resolveFeePaymentMethod = (
 export const createWalletExecutionClient = (
   params: CreateWalletExecutionClientParams
 ): AztecExecutionClient | null => {
-  const {
-    connector,
-    account,
-    isConnected,
-    feePaymentConfig,
-    defaultFeePaymentMethod,
-  } = params;
+  const { connector, isConnected, feePaymentConfig, defaultFeePaymentMethod } =
+    params;
 
   if (!isConnected || !connector) {
     return null;
   }
 
-  const executeRead = async (readParams: ReadExecutionParams) => {
-    if (!account) {
-      throw new Error('Account not available');
-    }
-
+  const resolveContext = () => {
     const wallet = connector.getWallet();
     if (!wallet) {
       throw new Error('Wallet instance not available');
     }
+    const fromAddress = connector.getAddress();
+    if (!fromAddress) {
+      throw new Error('Account address not available');
+    }
+    return { wallet, fromAddress };
+  };
 
+  const executeRead = async (readParams: ReadExecutionParams) => {
+    const { wallet, fromAddress } = resolveContext();
     return executeAppManagedRead({
       wallet,
-      fromAddress: account.getAddress(),
+      fromAddress,
       artifact: readParams.artifact,
       address: readParams.address,
       functionName: readParams.functionName,
@@ -90,32 +87,17 @@ export const createWalletExecutionClient = (
   const executeBatchRead = async <TAllowFailure extends boolean>(
     batchParams: BatchReadExecutionParams<TAllowFailure>
   ) => {
-    if (!account) {
-      throw new Error('Account not available');
-    }
-
-    const wallet = connector.getWallet();
-    if (!wallet) {
-      throw new Error('Wallet instance not available');
-    }
-
+    const { wallet, fromAddress } = resolveContext();
     return executeAppManagedBatch({
       wallet,
-      fromAddress: account.getAddress(),
+      fromAddress,
       contracts: batchParams.contracts,
       allowFailure: batchParams.allowFailure,
     });
   };
 
   const executeWrite = async (writeParams: WriteExecutionParams) => {
-    if (!account) {
-      throw new Error('Account not available');
-    }
-
-    const wallet = connector.getWallet();
-    if (!wallet) {
-      throw new Error('Wallet instance not available');
-    }
+    const { wallet, fromAddress } = resolveContext();
 
     const feePaymentContext: FeePaymentContext = {
       config: feePaymentConfig ?? {},
@@ -138,7 +120,7 @@ export const createWalletExecutionClient = (
 
     return executeAppManagedWrite({
       wallet,
-      fromAddress: account.getAddress(),
+      fromAddress,
       artifact: writeParams.artifact,
       address: writeParams.address,
       functionName: writeParams.functionName,

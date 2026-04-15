@@ -48,6 +48,10 @@ export class EmbeddedConnector implements EmbeddedWalletConnector {
     return state.walletType === WalletType.EMBEDDED ? state.account : null;
   }
 
+  getAddress() {
+    return this.getAccount()?.getAddress() ?? null;
+  }
+
   async connect(): Promise<void> {
     const state = getWalletStore();
     if (state.walletType === WalletType.EMBEDDED && state.account) {
