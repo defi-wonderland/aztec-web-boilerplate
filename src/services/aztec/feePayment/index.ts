@@ -2,10 +2,7 @@
  * Fee Payment Service
  */
 
-import {
-  FPCFeePaymentMethod,
-  BridgedMintAndPayFeePaymentMethod,
-} from '@defi-wonderland/aztec-fee-payment/fee-payment-methods';
+import { FPCFeePaymentMethod } from '@defi-wonderland/aztec-fee-payment/fee-payment-methods';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { FeePaymentMethodType } from '../../../config/feePaymentContracts';
@@ -29,20 +26,12 @@ export async function createFeePaymentMethod(
     case 'sponsored':
       return getSponsoredFeePaymentMethod();
 
-    case 'metered':
-      if (!config.metered?.address) {
-        throw new Error('Metered FPC not configured for this network');
+    case 'fpc':
+      if (!config.fpc?.address) {
+        throw new Error('FPC not configured for this network');
       }
       return new FPCFeePaymentMethod(
-        AztecAddress.fromString(config.metered.address)
-      );
-
-    case 'meteredExact':
-      if (!config.metered?.address) {
-        throw new Error('Metered FPC not configured for this network');
-      }
-      return new BridgedMintAndPayFeePaymentMethod(
-        AztecAddress.fromString(config.metered.address)
+        AztecAddress.fromString(config.fpc.address)
       );
 
     default:

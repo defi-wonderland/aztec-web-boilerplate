@@ -50,15 +50,15 @@ export class FeePaymentRegister {
       },
     ];
 
-    if (feePaymentConfig?.metered?.address) {
+    if (feePaymentConfig?.fpc?.address) {
       fpcsToRegister.push({
-        name: 'metered',
+        name: 'fpc',
         artifact: BridgedFPCContractArtifact,
-        salt: Fr.fromString(feePaymentConfig.metered.salt ?? '1337'),
-        deployer: feePaymentConfig.metered.deployer
-          ? AztecAddress.fromString(feePaymentConfig.metered.deployer)
+        salt: Fr.fromString(feePaymentConfig.fpc.salt ?? '1337'),
+        deployer: feePaymentConfig.fpc.deployer
+          ? AztecAddress.fromString(feePaymentConfig.fpc.deployer)
           : AztecAddress.ZERO,
-        expectedAddress: feePaymentConfig.metered.address,
+        expectedAddress: feePaymentConfig.fpc.address,
       });
     }
 

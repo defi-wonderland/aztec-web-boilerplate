@@ -1,6 +1,9 @@
 import { NO_FROM } from '@aztec/aztec.js/account';
 import type { AztecAddress } from '@aztec/aztec.js/addresses';
-import { type AccountManager } from '@aztec/aztec.js/wallet';
+import {
+  ContractInitializationStatus,
+  type AccountManager,
+} from '@aztec/aztec.js/wallet';
 import { TxStatus } from '@aztec/stdlib/tx';
 import { AccountDeploymentError } from './errors';
 import type { SharedPXEInstance } from '../aztec/pxe';
@@ -54,10 +57,9 @@ export async function deployAccountIfNotExists(
       metadata.initializationStatus
     );
 
-    // Compare against the literal string value rather than the enum:
-    // ContractInitializationStatus is annotated /*#__PURE__*/ in the SDK and
-    // gets tree-shaken by Vite in production builds, leaving a ReferenceError.
-    if (metadata.initializationStatus === 'INITIALIZED') {
+    if (
+      metadata.initializationStatus === ContractInitializationStatus.INITIALIZED
+    ) {
       return { deployed: false, address: accountAddress };
     }
 
