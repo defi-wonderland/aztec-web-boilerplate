@@ -1,9 +1,6 @@
 import { NO_FROM } from '@aztec/aztec.js/account';
 import type { AztecAddress } from '@aztec/aztec.js/addresses';
-import {
-  ContractInitializationStatus,
-  type AccountManager,
-} from '@aztec/aztec.js/wallet';
+import type { AccountManager } from '@aztec/aztec.js/wallet';
 import { TxStatus } from '@aztec/stdlib/tx';
 import { AccountDeploymentError } from './errors';
 import type { SharedPXEInstance } from '../aztec/pxe';
@@ -57,9 +54,7 @@ export async function deployAccountIfNotExists(
       metadata.initializationStatus
     );
 
-    if (
-      metadata.initializationStatus === ContractInitializationStatus.INITIALIZED
-    ) {
+    if (metadata.initializationStatus === 'INITIALIZED') {
       return { deployed: false, address: accountAddress };
     }
 
