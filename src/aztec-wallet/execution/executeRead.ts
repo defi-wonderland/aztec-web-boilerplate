@@ -91,5 +91,21 @@ export const executeBrowserWalletRead = async (
     throw new Error(errorMsg);
   }
 
-  return result.result;
+  return unwrapSingleReadResult(result.result);
+};
+
+// Some wallets return simulate_views results as a single-element array or a
+// { decoded: [...] } envelope even for single-call batches. Unwrap so callers
+// get the raw view value, matching the shape executeBatchRead uses.
+const unwrapSingleReadResult = (raw: unknown): unknown => {
+  if (Array.isArray(raw) && raw.length === 1) {
+    return raw[0];
+  }
+  if (raw !== null && typeof raw === 'object' && 'decoded' in raw) {
+    const decoded = (raw as { decoded: unknown }).decoded;
+    if (Array.isArray(decoded) && decoded.length === 1) {
+      return decoded[0];
+    }
+  }
+  return raw;
 };

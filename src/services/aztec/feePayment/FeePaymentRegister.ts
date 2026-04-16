@@ -94,8 +94,8 @@ export class FeePaymentRegister {
     if (config.expectedAddress) {
       const expected = AztecAddress.fromString(config.expectedAddress);
       if (!instance.address.equals(expected)) {
-        logger.warn(
-          `${config.name} FPC address mismatch: expected ${config.expectedAddress}, got ${instance.address.toString()}`
+        throw new Error(
+          `${config.name} FPC address mismatch: expected ${config.expectedAddress}, got ${instance.address.toString()}. Check salt/deployer in the network config.`
         );
       }
     }

@@ -19,8 +19,7 @@ export class MinimalWallet extends BaseWallet {
   private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
 
   constructor(pxe: PXE, aztecNode: AztecNode) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    super(pxe as unknown as any, aztecNode);
+    super(pxe, aztecNode);
   }
 
   public addAccount(account: AccountWithSecretKey): void {
