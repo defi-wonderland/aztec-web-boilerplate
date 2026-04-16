@@ -15,6 +15,27 @@ export {
   hasAppManagedPXE,
 } from './walletConnector';
 
+// Browser wallet adapter types
+export type {
+  BrowserWalletState,
+  IBrowserWalletAdapter,
+  BrowserWalletAdapterFactory,
+} from './browserWalletAdapter';
+
+// Browser wallet operation types
+export type {
+  BrowserWalletOperationResult,
+  BrowserWalletOperation,
+  SimulateViewsOp,
+  SendTransactionOp,
+  GetTxReceiptOp,
+  RegisterContractOp,
+  ContractCall,
+  ConnectorTransactionAction,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
+} from './browserWallet';
+
 // Config types
 export type {
   IconType,
@@ -36,6 +57,7 @@ export type {
   IAztecStorageService,
   CreateAccountResult,
   AccountCredentials,
+  AzguardAccountData,
   ModalWalletType,
 } from './aztec';
 export { WalletType, ExternalSignerType } from './aztec';

@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
+import type { IBrowserWalletAdapter } from './browserWalletAdapter';
 import type { AztecNetwork } from '../../config/networks/constants';
 
 /**
@@ -55,8 +56,10 @@ export interface AztecBrowserWalletConfig {
   name: string;
   /** Icon - emoji string, URL, or React component */
   icon?: IconType;
-  /** Provider ID for wallet-sdk discovery matching (e.g., 'azguard-wallet') */
-  providerId: string;
+  /** Factory function to create the adapter (async for lazy loading) */
+  adapter: () => Promise<IBrowserWalletAdapter>;
+  /** Check if wallet extension is installed (optional, async) */
+  checkInstalled?: () => Promise<boolean>;
 }
 
 /**

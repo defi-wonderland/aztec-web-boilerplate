@@ -7,6 +7,7 @@
 
 import { MetaMaskIcon, RabbyIcon, AzguardIcon } from '../assets/icons';
 import type { IconType } from '../types';
+import type { IBrowserWalletAdapter } from '../types/browserWalletAdapter';
 
 // =============================================================================
 // Types
@@ -23,8 +24,10 @@ export interface AztecWalletPreset {
   id: string;
   name: string;
   icon: IconType;
-  /** Provider ID for wallet-sdk discovery matching (e.g., 'azguard-wallet') */
-  providerId: string;
+  /** Lazy adapter factory - only imported when needed (async for dynamic imports) */
+  getAdapter: () => Promise<IBrowserWalletAdapter>;
+  /** Check if wallet extension is installed (optional, async) */
+  checkInstalled?: () => Promise<boolean>;
 }
 
 // =============================================================================
@@ -55,14 +58,30 @@ export const AZTEC_WALLET_PRESETS: Record<string, AztecWalletPreset> = {
     id: 'azguard',
     name: 'Azguard',
     icon: AzguardIcon,
-    providerId: 'azguard-wallet',
+    getAdapter: async () => {
+      // Dynamic import to avoid bundling if not used (ESM-compatible)
+      const { AzguardAdapter } = await import('../adapters/azguard');
+      return new AzguardAdapter();
+    },
+    checkInstalled: async () => {
+      // Lazy import to avoid bundling the client if not used
+      const { AzguardClient } = await import('@azguardwallet/client');
+      return AzguardClient.isAzguardInstalled();
+    },
   },
   // Add more Aztec wallets as they become available:
   // obsidian: {
   //   id: 'obsidian',
   //   name: 'Obsidian',
-  //   icon: ObsidianIcon,
-  //   providerId: 'obsidian-wallet',
+  //   icon: ObsidianIcon, // Use icon component
+  //   getAdapter: () => {
+  //     const { ObsidianAdapter } = require('../../adapters/obsidian');
+  //     return new ObsidianAdapter();
+  //   },
+  //   checkInstalled: async () => {
+  //     // Check for window.obsidian or similar
+  //     return typeof window !== 'undefined' && 'obsidian' in window;
+  //   },
   // },
 };
 

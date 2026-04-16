@@ -1,9 +1,15 @@
 import type { AccountWithSecretKey } from '@aztec/aztec.js/account';
-import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { Wallet } from '@aztec/aztec.js/wallet';
 import type { PXE } from '@aztec/pxe/server';
 import { WalletType, ExternalSignerType } from './aztec';
+import type {
+  BrowserWalletOperation,
+  BrowserWalletOperationResult,
+  ConnectorTransactionRequest,
+  ConnectorTransactionResult,
+} from './browserWallet';
+import type { CaipAccount } from '@azguardwallet/types';
 
 export type WalletConnectorId = string;
 
@@ -25,19 +31,7 @@ export interface WalletConnector {
   readonly type: WalletType;
 
   getStatus(): ConnectorStatus;
-  /**
-   * Returns the active account with secret key. Only available for connectors
-   * that own the signing key (Embedded, ExternalSigner). Browser wallet
-   * connectors return null because the secret key lives in the extension —
-   * use getAddress() to get the active address instead.
-   */
   getAccount(): AccountWithSecretKey | null;
-  /**
-   * Returns the active account address. Available for all connector types.
-   * Returns null when the connector is not connected.
-   */
-  getAddress(): AztecAddress | null;
-  getWallet(): Wallet | null;
 
   connect(): Promise<void>;
   disconnect(): Promise<void>;
@@ -47,6 +41,7 @@ export interface EmbeddedWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.EMBEDDED;
 
   getPXE: () => PXE | null;
+  getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
@@ -57,11 +52,20 @@ export interface ExternalSignerWalletConnector extends WalletConnector {
   readonly rdns?: string;
 
   getPXE: () => PXE | null;
+  getWallet: () => Wallet | null;
   getSponsoredFeePaymentMethod: () => Promise<SponsoredFeePaymentMethod>;
 }
 
 export interface BrowserWalletConnector extends WalletConnector {
   readonly type: typeof WalletType.BROWSER_WALLET;
+
+  getCaipAccount: () => CaipAccount | null;
+  sendTransaction: (
+    request: ConnectorTransactionRequest
+  ) => Promise<ConnectorTransactionResult>;
+  executeOperation: (
+    operation: BrowserWalletOperation
+  ) => Promise<BrowserWalletOperationResult>;
 }
 
 export const isEmbeddedConnector = (

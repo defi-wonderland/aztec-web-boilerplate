@@ -214,7 +214,7 @@ export { isExternalSignerConnector } from './types/walletConnector';
  * @example
  * ```ts
  * if (isBrowserWalletConnector(connector)) {
- *   const wallet = connector.getWallet();
+ *   const caipAccount = connector.getCaipAccount();
  * }
  * ```
  */

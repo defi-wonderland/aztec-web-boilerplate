@@ -634,6 +634,16 @@
   resolved "https://registry.yarnpkg.com/@aws/lambda-invoke-store/-/lambda-invoke-store-0.2.3.tgz#f1137f56209ccc69c15f826242cbf37f828617dd"
   integrity sha512-oLvsaPMTBejkkmHhjf09xTgk71mOqyr/409NKhRIL08If7AhVfUsJhVsx386uJaqNd42v9kWamQ9lFbkoC2dYw==
 
+"@azguardwallet/client@0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@azguardwallet/client/-/client-0.7.0.tgz#120e8501834f405453f5c3c338f4dfc69c7cd193"
+  integrity sha512-AIuVG8IxsWe1KtH/Q5hGAFh2brzbT/YDBjNVd5Cz2lqzkafb29j7bv2CCNBjK9Bi3gVOYJgAp0ZfZXURbsuowg==
+
+"@azguardwallet/types@0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@azguardwallet/types/-/types-0.7.0.tgz#a47586a6b900916f3e76abdaeef2a239b4b761d7"
+  integrity sha512-b2y6HJB5PQZ3tqKJ26vYnoMNMlWpNnFNTTdjCa1gsxLm0y1gDnr9n2d+eYe/c3sVsLwYUJVOlSgA+1A68octCg==
+
 "@aztec/accounts@4.2.0-aztecnr-rc.2":
   version "4.2.0-aztecnr-rc.2"
   resolved "https://registry.yarnpkg.com/@aztec/accounts/-/accounts-4.2.0-aztecnr-rc.2.tgz#490c39d3c82f016271c12a0a9a075077b1b89cff"
@@ -1014,21 +1024,6 @@
     "@aztec/foundation" "4.2.0-aztecnr-rc.2"
     "@aztec/pxe" "4.2.0-aztecnr-rc.2"
     "@aztec/stdlib" "4.2.0-aztecnr-rc.2"
-
-"@aztec/wallets@4.2.0-aztecnr-rc.2":
-  version "4.2.0-aztecnr-rc.2"
-  resolved "https://registry.yarnpkg.com/@aztec/wallets/-/wallets-4.2.0-aztecnr-rc.2.tgz#d065e281abeef29366089001cf61f72cfd89f132"
-  integrity sha512-+REyXLuG2OpzqqxDKkgrcXZKh+9/ob1X1T6TLx0cEgqft8QzOlcgYw7qxMGa7Unf0o+2SS3fvFM7oXn8hB45Bw==
-  dependencies:
-    "@aztec/accounts" "4.2.0-aztecnr-rc.2"
-    "@aztec/aztec.js" "4.2.0-aztecnr-rc.2"
-    "@aztec/entrypoints" "4.2.0-aztecnr-rc.2"
-    "@aztec/foundation" "4.2.0-aztecnr-rc.2"
-    "@aztec/kv-store" "4.2.0-aztecnr-rc.2"
-    "@aztec/protocol-contracts" "4.2.0-aztecnr-rc.2"
-    "@aztec/pxe" "4.2.0-aztecnr-rc.2"
-    "@aztec/stdlib" "4.2.0-aztecnr-rc.2"
-    "@aztec/wallet-sdk" "4.2.0-aztecnr-rc.2"
 
 "@aztec/world-state@4.2.0-aztecnr-rc.2":
   version "4.2.0-aztecnr-rc.2"

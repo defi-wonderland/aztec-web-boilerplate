@@ -166,6 +166,7 @@ export function useAztecWallet() {
       connectExistingEmbedded: state.connectExistingEmbedded,
       hasSavedEmbeddedAccount: state.hasSavedEmbeddedAccount,
       connectExternalSigner: state.connectExternalSigner,
+      connectBrowserWallet: state.connectBrowserWallet,
       disconnect: state.disconnect,
       checkNetwork: state.checkNetwork,
     }))

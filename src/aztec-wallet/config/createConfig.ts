@@ -76,7 +76,8 @@ function resolveAztecWallets(ids: string[]): AztecBrowserWalletConfig[] {
         id: preset.id,
         name: preset.name,
         icon: preset.icon,
-        providerId: preset.providerId,
+        adapter: preset.getAdapter,
+        checkInstalled: preset.checkInstalled,
       });
     } else {
       const available = Object.keys(AZTEC_WALLET_PRESETS).join(', ');
@@ -123,14 +124,17 @@ function createConnectorsFromWalletGroups(walletGroups: {
   // Add Aztec browser wallet connectors
   if (walletGroups.aztecWallets !== false) {
     for (const wallet of walletGroups.aztecWallets.wallets) {
-      connectors.push(
-        () =>
-          new BrowserWalletConnector({
-            id: wallet.id,
-            label: wallet.name,
-            providerId: wallet.providerId,
-          })
-      );
+      const preset = AZTEC_WALLET_PRESETS[wallet.id];
+      if (preset) {
+        connectors.push(
+          () =>
+            new BrowserWalletConnector({
+              id: wallet.id,
+              label: wallet.name,
+              adapterFactory: preset.getAdapter,
+            })
+        );
+      }
     }
   }
 
