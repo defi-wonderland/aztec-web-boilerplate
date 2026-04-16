@@ -195,7 +195,7 @@ export const executeAppManagedBatch = async <TAllowFailure extends boolean>(
     }
 
     try {
-      const result = await method(...contract.args).simulate({
+      const { result } = await method(...contract.args).simulate({
         from: fromAddress,
       });
       results.push({ status: 'success' as const, result });

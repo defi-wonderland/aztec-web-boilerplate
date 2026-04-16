@@ -4,7 +4,7 @@
  * Handles registration of fee payment contracts with PXE.
  */
 
-import { MeteredContractArtifact } from '@defi-wonderland/aztec-fee-payment/artifacts';
+import { BridgedFPCContractArtifact } from '@defi-wonderland/aztec-fee-payment/artifacts/bridged';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
@@ -50,15 +50,15 @@ export class FeePaymentRegister {
       },
     ];
 
-    if (feePaymentConfig?.metered?.address) {
+    if (feePaymentConfig?.fpc?.address) {
       fpcsToRegister.push({
-        name: 'metered',
-        artifact: MeteredContractArtifact,
-        salt: Fr.fromString(feePaymentConfig.metered.salt ?? '1337'),
-        deployer: feePaymentConfig.metered.deployer
-          ? AztecAddress.fromString(feePaymentConfig.metered.deployer)
+        name: 'fpc',
+        artifact: BridgedFPCContractArtifact,
+        salt: Fr.fromString(feePaymentConfig.fpc.salt ?? '1337'),
+        deployer: feePaymentConfig.fpc.deployer
+          ? AztecAddress.fromString(feePaymentConfig.fpc.deployer)
           : AztecAddress.ZERO,
-        expectedAddress: feePaymentConfig.metered.address,
+        expectedAddress: feePaymentConfig.fpc.address,
       });
     }
 
@@ -94,9 +94,13 @@ export class FeePaymentRegister {
     if (config.expectedAddress) {
       const expected = AztecAddress.fromString(config.expectedAddress);
       if (!instance.address.equals(expected)) {
+        // Don't register a mismatched FPC — the derived address would be wrong.
+        // Skip instead of throwing so other FPCs (and PXE init) still complete on
+        // partially deployed or misaligned networks.
         logger.warn(
-          `${config.name} FPC address mismatch: expected ${config.expectedAddress}, got ${instance.address.toString()}`
+          `${config.name} FPC address mismatch: expected ${config.expectedAddress}, got ${instance.address.toString()}. Skipping registration — check salt/deployer in the network config.`
         );
+        return;
       }
     }
 

@@ -2,10 +2,7 @@
  * Fee Payment Service
  */
 
-import {
-  MeteredFeePaymentMethod,
-  MeteredExactFeePaymentMethod,
-} from '@defi-wonderland/aztec-fee-payment/fee-payment-methods';
+import { FPCFeePaymentMethod } from '@defi-wonderland/aztec-fee-payment/fee-payment-methods';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { FeePaymentMethod } from '@aztec/aztec.js/fee';
 import type { FeePaymentMethodType } from '../../../config/feePaymentContracts';
@@ -29,20 +26,20 @@ export async function createFeePaymentMethod(
     case 'sponsored':
       return getSponsoredFeePaymentMethod();
 
-    case 'metered':
-      if (!config.metered?.address) {
-        throw new Error('Metered FPC not configured for this network');
+    case 'fpc':
+      if (!config.fpc?.address) {
+        throw new Error('FPC not configured for this network');
       }
-      return new MeteredFeePaymentMethod(
-        AztecAddress.fromString(config.metered.address)
+      return new FPCFeePaymentMethod(
+        AztecAddress.fromString(config.fpc.address)
       );
 
-    case 'meteredExact':
-      if (!config.metered?.address) {
-        throw new Error('Metered FPC not configured for this network');
-      }
-      return new MeteredExactFeePaymentMethod(
-        AztecAddress.fromString(config.metered.address)
+    case 'bridged':
+      throw new Error(
+        'BridgedMintAndPayFeePaymentMethod requires per-deposit params ' +
+          '(amount, secret, salt, leafIndex) from an L1→L2 FeeJuice bridge deposit. ' +
+          'This boilerplate ships only config plumbing — see ' +
+          'defi-wonderland/aztec-feejuice-frontend for a reference deposit + claim flow.'
       );
 
     default:

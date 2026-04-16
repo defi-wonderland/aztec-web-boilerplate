@@ -1,7 +1,6 @@
 import {
   type AccountWithSecretKey,
   type Account,
-  SignerlessAccount,
 } from '@aztec/aztec.js/account';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import type { AztecNode } from '@aztec/aztec.js/node';
@@ -20,8 +19,7 @@ export class MinimalWallet extends BaseWallet {
   private readonly addressToAccount = new Map<string, AccountWithSecretKey>();
 
   constructor(pxe: PXE, aztecNode: AztecNode) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    super(pxe as unknown as any, aztecNode);
+    super(pxe, aztecNode);
   }
 
   public addAccount(account: AccountWithSecretKey): void {
@@ -31,10 +29,6 @@ export class MinimalWallet extends BaseWallet {
   protected async getAccountFromAddress(
     address: AztecAddress
   ): Promise<Account> {
-    if (address.equals(AztecAddress.ZERO)) {
-      return new SignerlessAccount();
-    }
-
     const account = this.addressToAccount.get(address.toString());
     if (!account) {
       throw new Error(

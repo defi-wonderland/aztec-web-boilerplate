@@ -11,16 +11,16 @@ import type { FeePaymentContractsConfig } from './networks/types';
  */
 export type FeePaymentMethodType =
   | 'sponsored' // Built-in Aztec SponsoredFeePaymentMethod
-  | 'metered' // MeteredFeePaymentMethod from aztec-fee-payment
-  | 'meteredExact'; // MeteredExactFeePaymentMethod with gas refund
+  | 'fpc' // FPCFeePaymentMethod — generic FPC pay_fee()
+  | 'bridged'; // BridgedMintAndPayFeePaymentMethod — requires deposit flow
 
 /**
  * Labels for fee payment methods.
  */
 export const FEE_PAYMENT_METHOD_LABELS: Record<FeePaymentMethodType, string> = {
   sponsored: 'Sponsored (Gasless)',
-  metered: 'Metered FPC',
-  meteredExact: 'Metered FPC (Exact Refund)',
+  fpc: 'FPC',
+  bridged: 'Bridged FPC',
 };
 
 /**
@@ -31,8 +31,9 @@ export const FEE_PAYMENT_METHOD_DESCRIPTIONS: Record<
   string
 > = {
   sponsored: 'Transactions are fully sponsored using the built-in Aztec FPC',
-  metered: 'Pay from your FPC balance (max gas deducted upfront)',
-  meteredExact: 'Pay from your FPC balance with unused gas refunded',
+  fpc: 'Pay from your FPC balance (max gas deducted upfront)',
+  bridged:
+    'Pay from L1-bridged FeeJuice via BridgedFPC (requires deposit flow)',
 };
 
 /**
@@ -43,9 +44,13 @@ export function getAvailableFeePaymentMethods(
 ): FeePaymentMethodType[] {
   const methods: FeePaymentMethodType[] = ['sponsored'];
 
-  if (config?.metered?.address) {
-    methods.push('metered', 'meteredExact');
+  if (config?.fpc?.address) {
+    methods.push('fpc');
   }
+
+  // Note: `bridged` is intentionally not exposed here. The type + config slot
+  // exist for future wiring, but selecting it without a deposit flow would
+  // throw at tx time. Add the branch once an L1→L2 claim flow is implemented.
 
   return methods;
 }

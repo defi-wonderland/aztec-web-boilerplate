@@ -30,6 +30,6 @@ export interface NetworkConfig {
   tokenDeploymentSalt: string;
   proverEnabled: boolean;
   isTestnet: boolean;
-  /** Fee payment contracts configuration (keyed by contract name, e.g., 'metered') */
+  /** Fee payment contracts configuration (keyed by contract name, e.g., 'fpc') */
   feePaymentContracts?: Record<string, DeployedContractConfig>;
 }

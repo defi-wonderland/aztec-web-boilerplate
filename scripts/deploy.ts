@@ -3,9 +3,9 @@ import { DripperContractArtifact } from '@defi-wonderland/aztec-standards/artifa
 import { TokenContractArtifact } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
 import { EcdsaRAccountContract } from '@aztec/accounts/ecdsa';
 import {
+  NO_FROM,
   type AccountWithSecretKey,
   type Account,
-  SignerlessAccount,
 } from '@aztec/aztec.js/account';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import {
@@ -18,7 +18,11 @@ import { SponsoredFeePaymentMethod } from '@aztec/aztec.js/fee';
 import { Fr } from '@aztec/aztec.js/fields';
 import { PublicKeys } from '@aztec/aztec.js/keys';
 import { createAztecNodeClient, type AztecNode } from '@aztec/aztec.js/node';
-import { AccountManager, type Wallet } from '@aztec/aztec.js/wallet';
+import {
+  ContractInitializationStatus,
+  AccountManager,
+  type Wallet,
+} from '@aztec/aztec.js/wallet';
 import { SPONSORED_FPC_SALT } from '@aztec/constants';
 import { poseidon2Hash } from '@aztec/foundation/crypto/poseidon';
 import { createStore } from '@aztec/kv-store/lmdb';
@@ -48,12 +52,7 @@ class MinimalWallet extends BaseWallet {
   protected async getAccountFromAddress(
     address: AztecAddress
   ): Promise<Account> {
-    let account: Account | undefined;
-    if (address.equals(AztecAddress.ZERO)) {
-      account = new SignerlessAccount();
-    } else {
-      account = this.addressToAccount.get(address.toString());
-    }
+    const account = this.addressToAccount.get(address.toString());
 
     if (!account)
       throw new Error(
@@ -220,16 +219,18 @@ async function createAccount(pxe: PXE, node: AztecNode) {
   console.log(`   ✅ Account created: ${account.getAddress().toString()}`);
 
   const metadata = await wallet.getContractMetadata(account.getAddress());
-  if (!metadata.isContractInitialized) {
+  if (
+    metadata.initializationStatus !== ContractInitializationStatus.INITIALIZED
+  ) {
     console.log('   📦 Deploying account contract...');
     const deployMethod = await manager.getDeployMethod();
-    // Use AztecAddress.ZERO as `from` to trigger self-deployment mode:
+    // Use NO_FROM to trigger self-deployment mode:
     // DeployAccountMethod routes the tx so the constructor runs first (initializing
     // the signing key), then the entrypoint handles fee payment.
     // Using the account's own address would fail because the wallet would try to
     // call entrypoint before the account is initialized.
     await deployMethod.send({
-      from: AztecAddress.ZERO,
+      from: NO_FROM,
       ...(FPC_ENABLED
         ? { fee: { paymentMethod: await getSponsoredFeePaymentMethod() } }
         : {}),
@@ -270,7 +271,9 @@ async function deployDripperContract(
 
   // Check if contract is already deployed
   const metadata = await deployer.getContractMetadata(expectedInstance.address);
-  if (metadata.isContractInitialized) {
+  if (
+    metadata.initializationStatus === ContractInitializationStatus.INITIALIZED
+  ) {
     // Register the contract with PXE so it's available for the app
     await pxe.registerContract({
       instance: expectedInstance,
@@ -297,7 +300,7 @@ async function deployDripperContract(
   );
 
   try {
-    const receipt = await deployMethod.send({
+    const result = await deployMethod.send({
       ...options,
       contractAddressSalt: salt,
       ...(FPC_ENABLED
@@ -308,10 +311,10 @@ async function deployDripperContract(
       wait: { timeout: DEPLOY_TIMEOUT, returnReceipt: true as const },
     });
 
-    console.log(`   Mined at block: ${receipt.blockNumber}`);
-    console.log(`   Tx hash: ${receipt.txHash}`);
+    console.log(`   Mined at block: ${result.receipt.blockNumber}`);
+    console.log(`   Tx hash: ${result.receipt.txHash}`);
 
-    const contract = receipt.contract;
+    const contract = result.receipt.contract;
     console.log(`   ✅ Dripper deployed at: ${contract.address.toString()}`);
 
     // Contract is already registered during deployment via DeployMethod
@@ -357,7 +360,6 @@ async function deployTokenContract(
     'WETH', // symbol
     18, // decimals
     dripperAddress, // minter (Dripper address)
-    AztecAddress.ZERO, // upgrade_authority
   ];
 
   // Compute the expected address first
@@ -374,7 +376,9 @@ async function deployTokenContract(
 
   // Check if contract is already deployed
   const metadata = await deployer.getContractMetadata(expectedInstance.address);
-  if (metadata.isContractInitialized) {
+  if (
+    metadata.initializationStatus === ContractInitializationStatus.INITIALIZED
+  ) {
     // Register the contract with PXE so it's available for the app
     await pxe.registerContract({
       instance: expectedInstance,
@@ -390,7 +394,7 @@ async function deployTokenContract(
     };
   }
 
-  // Use constructor_with_minter: name, symbol, decimals, minter, upgrade_authority
+  // Use constructor_with_minter: name, symbol, decimals, minter
   const deployMethod = new DeployMethod(
     PublicKeys.default(),
     deployer,
@@ -402,7 +406,7 @@ async function deployTokenContract(
   );
 
   try {
-    const receipt = await deployMethod.send({
+    const result = await deployMethod.send({
       ...options,
       contractAddressSalt: salt,
       ...(FPC_ENABLED
@@ -413,10 +417,10 @@ async function deployTokenContract(
       wait: { timeout: DEPLOY_TIMEOUT, returnReceipt: true as const },
     });
 
-    console.log(`   Mined at block: ${receipt.blockNumber}`);
-    console.log(`   Tx hash: ${receipt.txHash}`);
+    console.log(`   Mined at block: ${result.receipt.blockNumber}`);
+    console.log(`   Tx hash: ${result.receipt.txHash}`);
 
-    const contract = receipt.contract;
+    const contract = result.receipt.contract;
     console.log(`   ✅ Token deployed at: ${contract.address.toString()}`);
 
     // Contract is already registered during deployment via DeployMethod

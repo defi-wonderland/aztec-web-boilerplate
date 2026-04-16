@@ -144,8 +144,15 @@ export const executeAppManagedWrite = async (
   }
 
   const tx = method(...args);
+
+  // Simulate with gas estimation to get proper gas settings
+  let estimatedGas;
   try {
-    await tx.simulate({ from: fromAddress });
+    const simResult = await tx.simulate({
+      from: fromAddress,
+      ...(paymentMethod ? { fee: { paymentMethod, estimateGas: true } } : {}),
+    });
+    estimatedGas = simResult.estimatedGas;
   } catch (simErr) {
     const simErrorMsg =
       simErr instanceof Error ? simErr.message : 'Simulation failed';
@@ -154,7 +161,14 @@ export const executeAppManagedWrite = async (
 
   const result = await tx.send({
     from: fromAddress,
-    ...(paymentMethod ? { fee: { paymentMethod } } : {}),
+    ...(paymentMethod
+      ? {
+          fee: {
+            paymentMethod,
+            ...(estimatedGas ? { gasSettings: estimatedGas } : {}),
+          },
+        }
+      : {}),
     wait: { timeout: timeout ?? 900, waitForStatus: TxStatus.PROPOSED },
   });
 
