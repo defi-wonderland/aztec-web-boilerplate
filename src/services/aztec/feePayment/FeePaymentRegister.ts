@@ -94,9 +94,13 @@ export class FeePaymentRegister {
     if (config.expectedAddress) {
       const expected = AztecAddress.fromString(config.expectedAddress);
       if (!instance.address.equals(expected)) {
-        throw new Error(
-          `${config.name} FPC address mismatch: expected ${config.expectedAddress}, got ${instance.address.toString()}. Check salt/deployer in the network config.`
+        // Don't register a mismatched FPC — the derived address would be wrong.
+        // Skip instead of throwing so other FPCs (and PXE init) still complete on
+        // partially deployed or misaligned networks.
+        logger.warn(
+          `${config.name} FPC address mismatch: expected ${config.expectedAddress}, got ${instance.address.toString()}. Skipping registration — check salt/deployer in the network config.`
         );
+        return;
       }
     }
 
