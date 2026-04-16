@@ -1,24 +1,27 @@
 # Aztec Web Boilerplate
 
-A starter template for building privacy-preserving web applications on Aztec Network. This boilerplate provides a complete setup with React, Vite, and Aztec.js, featuring embedded wallet support, native Aztec browser wallet integration via `@aztec/wallet-sdk`, and sponsored fee payments.
+A starter template for building privacy-preserving web applications on Aztec Network. This boilerplate provides a complete setup with React, Vite, and Aztec.js, featuring embedded wallet support, Azguard wallet integration, and sponsored fee payments.
 
 ## Features
 
 - 🔐 **Privacy-preserving token operations** using Aztec's private state
-- 💼 **Multi-wallet support** for embedded wallets and browser extension wallets via `@aztec/wallet-sdk`
+- 💼 **Multi-wallet support** for embedded wallets or browser extension wallets (Azguard)
 - ⛽ **Sponsored fee payments** through SponsoredFPC
-- 🔄 **Network switching** between public Testnet and local Sandbox
+- 🔄 **Network switching** between Devnet and local Sandbox
 - 📦 **Lazy contract loading** for optimized performance
 
 ---
 
 ## Quick Start
 
+> **Note:** There is no public v4 devnet yet. Development currently targets the **local Sandbox**.
+
 ### Prerequisites
 
 - Node.js >= 22.0.0
 - Yarn package manager
-- [Docker](https://docs.docker.com/get-docker/) installed and running (used by the local sandbox)
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Foundry](https://book.getfoundry.sh/getting-started/installation) (for Anvil, the local L1 chain)
 
 ### Installation
 
@@ -31,61 +34,69 @@ cd aztec-web-boilerplate
 yarn install
 ```
 
-### Install the Aztec CLI
+### Start Sandbox & Deploy
 
-The boilerplate targets Aztec **`4.2.0-aztecnr-rc.2`**. Install the matching CLI and runtime via the official installer:
+The Aztec v4 sandbox runs as a Docker container and requires a separate Anvil instance as its L1 chain.
 
-```bash
-VERSION=4.2.0-aztecnr-rc.2 bash -i <(curl -sL https://install.aztec.network/4.2.0-aztecnr-rc.2)
-```
-
-Verify:
+**Option A: Docker (recommended)**
 
 ```bash
-aztec --version
-# 4.2.0-aztecnr-rc.2
-```
+# Terminal 1: Start Anvil (local L1 chain)
+anvil --host 0.0.0.0 -p 8545 --block-time 12
 
-If you already have `aztec-up` installed, you can install/switch to a specific version:
+# Terminal 2: Start the Aztec v4 sandbox (Docker)
+docker pull aztecprotocol/aztec:4.0.0-devnet.1-patch.0
+docker run -d --name aztec-sandbox \
+  -p 8080:8080 -p 8880:8880 \
+  -e ETHEREUM_HOSTS=http://host.docker.internal:8545 \
+  aztecprotocol/aztec:4.0.0-devnet.1-patch.0 start --local-network
 
-```bash
-aztec-up install 4.2.0-aztecnr-rc.2
-aztec-up use 4.2.0-aztecnr-rc.2
-```
+# Wait for the sandbox to be ready (check logs)
+docker logs -f aztec-sandbox
+# Look for: "Aztec Node started on port 8080" or block production logs
 
-### Run against the public Testnet
+# Terminal 3: Build and deploy everything
+yarn build            # Builds standards + contracts + app
+yarn deploy-contracts # Deploy to local sandbox
 
-The fastest way to try the app — no local sandbox required. Contracts are pre-deployed on Testnet at `https://rpc.testnet.aztec-labs.com`.
-
-```bash
+# Start the development server
 yarn dev
 ```
 
-The app starts at **http://localhost:3000**. Connect with the embedded wallet or any installed Aztec browser extension and you're ready to go.
-
-### Run against a local Sandbox
-
-For local development you can run a self-contained Aztec sandbox. It bundles its own L1 (anvil) — **no separate anvil instance is required**.
+**Option B: Native CLI (via aztec-up)**
 
 ```bash
-# Terminal 1 — start the local sandbox
-aztec start --local-network --port 8080
+# Install the Aztec version manager
+bash -i <(curl -s https://install.aztec.network)
 
-# Wait until you see "Started PXE" / "Aztec Node started"
-# Verify it's up:
-curl -s -X POST -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"node_getNodeInfo","params":[],"id":1}' \
-  http://localhost:8080 | grep nodeVersion
-# → "nodeVersion":"4.2.0-aztecnr-rc.2"
+# Install the specific version
+aztec-up install 4.0.0-devnet.1-patch.0
+
+# Terminal 1: Start Anvil (local L1 chain)
+anvil --host 0.0.0.0 -p 8545 --block-time 12
+
+# Terminal 2: Start the Aztec local network
+aztec start --local-network --l1-rpc-urls http://localhost:8545
+
+# Terminal 3: Build, deploy, and run
+yarn build && yarn deploy-contracts && yarn dev
 ```
+
+> **Note:** The native CLI install requires Foundry to not be running during installation.
+> If `aztec-up install` fails with "anvil is currently running", stop anvil first,
+> install, then restart anvil.
+
+### Stopping the Sandbox
 
 ```bash
-# Terminal 2 — deploy contracts and run the app
-yarn deploy-contracts   # deploys Dripper + Token to the local sandbox
-yarn dev
+# Docker approach
+docker stop aztec-sandbox && docker rm aztec-sandbox
+
+# Also stop Anvil (Ctrl+C in its terminal, or)
+pkill -f anvil
 ```
 
-To stop the sandbox: **Ctrl+C** in its terminal. State is ephemeral — restarting wipes deployed contracts, so you'll need to redeploy.
+The application will be available at **http://localhost:3000**
 
 ---
 
@@ -97,136 +108,123 @@ Edit `src/config/aztecWalletConfig.ts` to customize wallet options and networks:
 
 ```typescript
 import { createAztecWalletConfig } from '../aztec-wallet';
-import { DEFAULT_NETWORK, NETWORK_URLS } from './networks';
 
 export const aztecWalletConfig = createAztecWalletConfig({
+  // Networks to support
   networks: [
-    { name: 'devnet', displayName: 'Devnet', nodeUrl: NETWORK_URLS.devnet },
-    { name: 'sandbox', displayName: 'Local Network', nodeUrl: NETWORK_URLS.sandbox },
+    { name: 'devnet', nodeUrl: 'https://devnet.aztec.network' },
+    { name: 'sandbox', nodeUrl: 'http://localhost:8080' },
   ],
-  defaultNetwork: DEFAULT_NETWORK,
 
+  // Wallet types to enable
   walletGroups: {
-    embedded: true,              // App-managed wallet (localStorage)
-    aztecWallets: ['azguard'],   // Browser extension wallets via wallet-sdk
+    embedded: true,                    // App-managed wallet
+    evmWallets: ['metamask', 'rabby'], // EVM wallets as signers
+    aztecWallets: ['azguard'],         // Browser extension wallets
   },
 
   showNetworkPicker: 'full',
 });
 ```
 
-> **Note:** The network internally named `'devnet'` currently points to the public **Testnet** at `https://rpc.testnet.aztec-labs.com`. The display label is `Devnet` for backwards compatibility — this naming will be unified in a future release.
-
 ### Contract Configuration
 
-Boilerplate contracts (Dripper + Token) live in `src/config/boilerplateContracts.ts`. Add your own contracts in `src/config/contracts.ts`:
+Edit `src/config/contracts.ts` to add or configure your contracts:
 
 ```typescript
-import { createContractConfig } from '../contract-registry';
-import { boilerplateContracts } from './boilerplateContracts';
-
 export const contractsConfig = createContractConfig({
-  ...boilerplateContracts,
-
-  myContract: {
-    contract: MyContract,
-    address: (config) => config.myContractAddress,
+  dripper: {
+    artifact: DripperContract.artifact,
+    contract: DripperContract,
+    address: (config) => config.dripperContractAddress,
     deployParams: (config) => ({
-      salt: Fr.fromString('1337'),
-      deployer: AztecAddress.ZERO,
-      constructorArgs: [],
-      constructorArtifact: 'constructor',
+      /* ... */
     }),
-    artifactSources: () => [{ local: MyContract.artifact }],
-    lazyRegister: false, // false = register at startup, true = register on first use
+    lazyRegister: false, // Register immediately at initialization
+  },
+
+  token: {
+    artifact: TokenContract.artifact,
+    contract: TokenContract,
+    address: (config) => config.tokenContractAddress,
+    deployParams: (config) => ({
+      /* ... */
+    }),
+    lazyRegister: false,
   },
 });
 ```
 
-#### Lazy Loading
+#### Lazy Loading Contracts
 
-Set `lazyRegister: true` for contracts that aren't needed immediately. They're registered on-demand when first accessed, reducing initial sync time.
-
----
-
-## Wallet Architecture
-
-This boilerplate uses **`@aztec/wallet-sdk`** for browser wallet discovery and connection. Three connector types live in `src/aztec-wallet/connectors/`:
-
-| Connector                  | Description                                       | Use case                       |
-| -------------------------- | ------------------------------------------------- | ------------------------------ |
-| **EmbeddedConnector**      | App-managed key in localStorage                   | Quick testing, simple dApps    |
-| **BrowserWalletConnector** | Wraps `WalletManager` from wallet-sdk             | Production, user-managed keys  |
-| **ExternalSignerConnector**| EVM wallet (MetaMask) deriving an Aztec key       | Currently disabled — see note  |
-
-> **Note:** `ExternalSignerConnector` is **disabled by default** in `aztecWalletConfig.ts`. The `evmWallets` field is commented out pending future iframe-passkey wallet work. The connector code still exists but isn't wired into the active config.
-
-`BrowserWalletConnector` is **generic** — it works with any wallet extension that implements the wallet-sdk discovery protocol. Adding a new wallet only requires registering its `providerId`:
+For contracts that aren't needed immediately, enable lazy loading to improve initial load performance:
 
 ```typescript
-// src/aztec-wallet/config/walletPresets.ts
-export const AZTEC_WALLET_PRESETS = {
-  azguard: {
-    id: 'azguard',
-    name: 'Azguard',
-    icon: AzguardIcon,
-    providerId: 'azguard-wallet',
-  },
-  // Add more wallets:
-  // myNewWallet: {
-  //   id: 'mynewwallet',
-  //   name: 'My New Wallet',
-  //   icon: MyWalletIcon,
-  //   providerId: 'my-wallet-provider-id',
-  // },
-};
-```
-
-Then enable it in `aztecWalletConfig.ts`:
-
-```typescript
-walletGroups: {
-  embedded: true,
-  aztecWallets: ['azguard', 'myNewWallet'],
+myOptionalContract: {
+  artifact: MyContract.artifact,
+  contract: MyContract,
+  address: (config) => config.myContractAddress,
+  lazyRegister: true, // Only register when explicitly requested
 },
 ```
 
-No adapter classes, no SDK dependencies, no boilerplate code — wallet-sdk handles transport and the standard `Wallet` interface.
+Lazy contracts are registered on-demand when first accessed, reducing the initial sync time.
 
 ---
 
-## Build & Deploy
+## Using Azguard Wallet
 
-### Build pipeline
+If you want to use [Azguard Wallet](https://azguardwallet.io/), you'll need to configure sponsored fee payments:
+
+### Setting Up Sponsored Fees in Azguard
+
+1. Open Azguard wallet extension
+2. Navigate to **Settings** → **Fee Configuration**
+3. In the **"Pay fee with"** dropdown, select **FPC**
+4. Click **"Create New FPC"**
+5. Configure your FPC:
+   - **Name**: Any name you prefer (e.g., "Sponsored FPC")
+   - **FPC Address**:
+     ```
+     0x1586f476995be97f07ebd415340a14be48dc28c6c661cc6bdddb80ae790caa4e
+     ```
+6. Save the configuration
+
+This FPC address points to the public Sponsored FPC contract that enables gasless transactions.
+
+---
+
+## Build & Deploy Details
+
+The full build pipeline has three stages:
 
 ```bash
-yarn build              # build the Vite app (uses pre-built artifacts from npm)
-yarn deploy-contracts   # deploy Dripper + Token to local sandbox
-yarn build:local        # full rebuild: local Noir → copy standards → codegen → app
+yarn build-standards    # 1. Clone & compile @defi-wonderland/aztec-standards (Dripper, Token)
+yarn build-contracts    # 2. Compile local Noir contracts (ECDSA account)
+yarn build-app          # 3. Build the Vite app
+
+# Or run all three at once:
+yarn build
 ```
 
-Boilerplate contracts (Dripper, Token) are consumed as **pre-built artifacts** from `@defi-wonderland/aztec-standards`. The `yarn build` command is enough for normal development — it imports the artifacts directly from `node_modules`.
+After building, deploy contracts to your running sandbox:
 
-`yarn build:local` runs the full pipeline:
-1. `aztec compile` on the Nargo workspace (currently empty — `contracts/` has no local Noir contracts)
-2. Copies `node_modules/@defi-wonderland/aztec-standards/target/*.json` into `src/target/`
-3. Runs `aztec codegen` to generate TypeScript wrappers in `src/artifacts/`
-4. Builds the Vite app
-
-You only need `yarn build:local` if you're adding local Noir contracts or want to regenerate TypeScript bindings from a custom build of aztec-standards (see `scripts/build-aztec-standards.ts`).
+```bash
+yarn deploy-contracts   # Deploy account + Dripper + Token to sandbox
+```
 
 ### Environment Variables
 
 Copy `.env.example` to `.env` to customize:
 
 ```bash
-# Aztec node URL (default: http://localhost:8080 for sandbox)
+# Aztec Node URL (default: http://localhost:8080 for sandbox)
 VITE_AZTEC_NODE_URL=http://localhost:8080
 
-# Disable prover for faster local development
+# Disable prover for faster development
 VITE_PROVER_ENABLED=false
 
-# Embedded wallet credentials (optional — auto-generated if not provided)
+# Embedded wallet credentials (optional - auto-generated if not provided)
 VITE_EMBEDDED_ACCOUNT_SECRET_PHRASE="my secret"
 VITE_EMBEDDED_ACCOUNT_SECRET_KEY="0x..."
 VITE_COMMON_SALT="1337"
@@ -238,42 +236,42 @@ VITE_COMMON_SALT="1337"
 
 ```
 aztec-web-boilerplate/
-├── contracts/                       # Local Noir contract sources (currently empty)
+├── contracts/                  # Noir smart contracts
+│   └── dripper/               # Token faucet contract
 ├── scripts/
-│   ├── deploy.ts                    # Contract deployment script (uses @aztec/wallets EmbeddedWallet)
-│   ├── build-contracts.ts           # Local Noir compilation helper
-│   └── build-aztec-standards.ts     # Build aztec-standards from a specific commit/branch
+│   └── deploy.ts              # Contract deployment script
 ├── src/
-│   ├── aztec-wallet/                # Modular wallet library (wagmi-like for Aztec)
-│   │   ├── assets/                  # Wallet icons (MetaMask, Rabby, Azguard)
-│   │   ├── client/                  # createExecutionClient (bridges connector → use-aztec)
-│   │   ├── components/              # ConnectButton and modals
-│   │   ├── config/                  # createAztecWalletConfig, walletPresets
-│   │   ├── connectors/              # EmbeddedConnector, BrowserWalletConnector, ExternalSignerConnector
-│   │   ├── execution/               # executeRead, executeWrite, executeBatchRead
-│   │   ├── hooks/                   # useAztecWallet, useConnectModal, etc.
-│   │   ├── providers/               # AztecWalletProvider
-│   │   ├── services/                # PXE (aztec/), wallet/, evm/
-│   │   ├── signers/                 # Account signing implementations
-│   │   ├── store/                   # Zustand stores (wallet, network, modal, evm)
-│   │   └── types/                   # WalletConnector interfaces
-│   ├── use-aztec/                   # Wallet-agnostic React hooks (useReadContract, useWriteContract, useReadContracts)
-│   ├── components/ui/               # Primitive UI components (Button, Input, etc.)
+│   ├── artifacts/             # Generated contract TypeScript bindings
+│   │   ├── devnet/            # Devnet-specific artifacts
+│   │   └── sandbox/           # Sandbox-specific artifacts
+│   ├── aztec-wallet/          # Modular wallet library (wagmi-like for Aztec)
+│   │   ├── adapters/          # Browser wallet adapters (Azguard)
+│   │   ├── components/        # ConnectButton and internal modals
+│   │   ├── config/            # createAztecWalletConfig
+│   │   ├── connectors/        # Wallet connector implementations
+│   │   ├── hooks/             # useAztecWallet, useConnectModal, etc.
+│   │   ├── providers/         # AztecWalletProvider
+│   │   ├── services/          # Internal services (PXE, EVM)
+│   │   ├── signers/           # Account signing implementations
+│   │   ├── store/             # Zustand stores
+│   │   └── types/             # Configuration types
+│   ├── components/            # React UI components
+│   │   └── ui/                # Primitive UI components (Button, Input, etc.)
 │   ├── config/
-│   │   ├── contracts.ts             # Contract registry configuration
-│   │   ├── boilerplateContracts.ts  # Dripper + Token definitions
-│   │   ├── aztecWalletConfig.ts     # Wallet & network configuration
-│   │   ├── deployments/             # Deployed contract addresses (generated by yarn deploy-contracts)
-│   │   └── networks/                # Network constants (devnet/sandbox)
-│   ├── containers/                  # Page-level components
-│   ├── contract-registry/           # Smart contract registration & caching
-│   ├── hooks/                       # Custom React hooks (queries/, mutations/, context/)
-│   ├── providers/                   # App context providers
-│   ├── styles/                      # Tailwind CSS configuration
-│   └── utils/                       # Utility functions
-└── tests/
-    ├── e2e/                         # Playwright end-to-end tests
-    └── setup.ts                     # Vitest global setup
+│   │   ├── contracts.ts       # Contract configuration
+│   │   ├── aztecWalletConfig.ts # Wallet & network configuration
+│   │   ├── deployments/       # Deployment config JSON files
+│   │   └── networks/          # Network constants
+│   ├── containers/            # Layout and page containers
+│   ├── contract-registry/     # Contract registration utilities
+│   ├── hooks/                 # React hooks
+│   ├── providers/             # React context providers
+│   ├── styles/                # Tailwind CSS configuration
+│   │   ├── globals.css        # Global styles & theme variables
+│   │   └── theme.ts           # CVA variants for components
+│   ├── types/                 # TypeScript type definitions
+│   └── utils/                 # Utility functions
+└── tests/                     # Test suites
 ```
 
 ---
@@ -307,45 +305,58 @@ export const BadComponent = () => (
 );
 ```
 
-### Component Showcase
+### Component Demo
 
-A live showcase of all UI components is available in the app under the **"UI Components"** tab. Source: `src/containers/UIComponentsShowcase.tsx`.
+A live showcase of all UI components is available in the app under the **"UI Components"** tab, or you can view the source at:
+
+📄 **`src/containers/UIComponentsShowcase.tsx`**
+
+This showcase serves as living documentation for the design system.
 
 ### Adding New UI Components
 
-1. **Check [Radix UI Primitives](https://www.radix-ui.com/primitives/docs/overview/introduction) first** — if it exists there, use it as the base
+When you need a new UI component:
+
+1. **Check [Radix UI Primitives](https://www.radix-ui.com/primitives/docs/overview/introduction) first** - If the component exists there, use it as the base
 2. Create a wrapper in `src/components/ui/`
-3. Style with Tailwind using the styles pattern
+3. Style with Tailwind using the semantic styles pattern
 4. Export from `src/components/ui/index.ts`
-5. Add examples to `UIComponentsShowcase.tsx`
+5. **Add examples to `UIComponentsShowcase.tsx`** for documentation
+6. Update the component table above
 
 ---
 
 ## Available Commands
 
-### Development
+### Contract Development
 
 ```bash
-yarn dev                      # Start dev server on localhost:3000
-yarn serve                    # Preview production build
-```
-
-### Build
-
-```bash
-yarn build                    # Build the app (uses pre-built artifacts)
-yarn build:local              # Full local rebuild including contracts
-yarn deploy-contracts         # Deploy contracts to local sandbox
+yarn build-standards          # Build aztec-standards artifacts (Dripper, Token)
+yarn build-contracts          # Compile local Noir contracts + generate TS bindings
+yarn deploy-contracts         # Deploy contracts to sandbox
+yarn build                    # Full build: standards + contracts + app
 ```
 
 ### Testing & Quality
 
 ```bash
-yarn test                     # Run all tests
+yarn test                     # Run test suite
+yarn test:unit                # Run unit tests only
+yarn test:integration         # Run integration tests only
 yarn test:e2e                 # Run E2E tests with Playwright
-yarn lint                     # Check formatting & lint
-yarn lint:fix                 # Auto-fix formatting & lint
+yarn lint                     # Check code formatting
 ```
+
+---
+
+## Adding New Contracts
+
+1. Create your contract in `contracts/your_contract/`
+2. Add it to `contracts/Nargo.toml` workspace members
+3. Run `yarn build-contracts` to compile and generate TypeScript bindings
+4. Update `scripts/deploy.ts` to deploy your contract
+5. Add contract configuration in `src/config/contracts.ts`
+6. Import the generated TypeScript bindings from `src/artifacts/`
 
 ---
 
@@ -353,74 +364,116 @@ yarn lint:fix                 # Auto-fix formatting & lint
 
 ### Aztec Integration
 
-- **PXE**: Client-side Private eXecution Environment for proof generation. Embedded wallets create their own; browser wallets use the extension's PXE
-- **Account Contracts**: ECDSA-R signature-based accounts (configurable)
+- **PXE**: Client-side Private eXecution Environment for proof generation
+- **Account Contracts**: ECDSA signature-based accounts
 - **Note System**: Encrypted UTXO-like notes for private state
 - **Fee Abstraction**: Sponsored transactions through SponsoredFPC
-- **wallet-sdk**: Standard discovery + transport for browser wallet extensions
 
-### Hooks API
+### Wallet Options
 
-The boilerplate exposes a wallet-agnostic React hooks API via `use-aztec`. The API mirrors **wagmi**'s hook style (TanStack Query under the hood).
+| Wallet       | Description                          | Use Case                              |
+| ------------ | ------------------------------------ | ------------------------------------- |
+| **Embedded** | Keys generated and stored in browser | Quick testing, simple dApps           |
+| **Azguard**  | External browser extension wallet    | Production apps, user-controlled keys |
 
-#### Reading contract state
+---
 
-```typescript
-import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
-import { useReadContract } from '../use-aztec';
+## Adding a New Browser Wallet
 
-const { data, isLoading, error } = useReadContract({
-  contract: TokenContract,                              // contract class
-  address: tokenAddress,                                // string | undefined
-  functionName: 'balance_of_public',                    // typed against contract
-  args: [ownerAddress],                                 // typed against function
-  scopeKey: ['tokenBalance', tokenAddress, ownerAddress], // optional cache prefix
-});
+To add support for a new browser wallet (e.g., Obsidian), follow these steps:
+
+### 1. Create the Adapter Folder
+
+Create a new folder under `src/aztec-wallet/adapters/` with your wallet name:
+
+```
+src/aztec-wallet/adapters/obsidian/
+├── ObsidianAdapter.ts       # Implements IBrowserWalletAdapter interface
+├── ObsidianWalletService.ts # Handles extension communication
+└── index.ts                 # Exports adapter and factory
 ```
 
-#### Writing to contracts
+### 2. Implement the Wallet Service
+
+Create `ObsidianWalletService.ts` to handle communication with the browser extension:
 
 ```typescript
-import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
-import { useWriteContract } from '../use-aztec';
-
-const write = useWriteContract({
-  mutation: { onSuccess: (data) => console.log('tx:', data.txHash) },
-});
-
-write.mutate({
-  contract: DripperContract,
-  address: dripperAddress,
-  functionName: 'drip_to_private',
-  args: [recipient, amount],
-});
+export class ObsidianWalletService {
+  async initialize(): Promise<void> { /* detect extension */ }
+  async connect(...): Promise<string[]> { /* connect to wallet */ }
+  async disconnect(): Promise<void> { /* disconnect */ }
+  async executeOperations(ops: Operation[]): Promise<OperationResult[]> { /* execute ops */ }
+  getState(): WalletState { /* return current state */ }
+  onAccountsChanged(cb: (accounts: string[]) => void): void { /* event handler */ }
+  onDisconnected(cb: () => void): void { /* event handler */ }
+  destroy(): void { /* cleanup resources */ }
+}
 ```
 
-`useWriteContract` returns a TanStack `useMutation` result — call `.mutate()` or `.mutateAsync()`.
+### 3. Implement the Adapter
 
-#### Batched reads
+Create `ObsidianAdapter.ts` implementing the `IBrowserWalletAdapter` interface:
 
 ```typescript
-import { useReadContracts } from '../use-aztec';
+import type { IBrowserWalletAdapter } from '../../types/browserWallet';
 
-const result = useReadContracts({
-  contracts: [
-    { contract: TokenContract, address, functionName: 'balance_of_private', args: [owner] },
-    { contract: TokenContract, address, functionName: 'balance_of_public', args: [owner] },
-  ],
-});
+export class ObsidianAdapter implements IBrowserWalletAdapter {
+  readonly id = 'obsidian';
+  readonly label = 'Obsidian Wallet';
+
+  private service: ObsidianWalletService;
+
+  // Implement all IBrowserWalletAdapter methods
+  // Translate generic operations to wallet-specific format
+}
+
+export const createObsidianAdapter = (): IBrowserWalletAdapter =>
+  new ObsidianAdapter();
 ```
 
-These hooks work the same regardless of which connector is active — the execution client dispatches to the correct wallet automatically. Real-world examples live in `src/hooks/queries/` and `src/hooks/mutations/`.
+### 4. Register the Wallet
+
+In `src/aztec-wallet/config/aztecWallets.ts`, add your wallet configuration:
+
+```typescript
+export const AZTEC_WALLETS: AztecWalletInfo[] = [
+  // ... existing wallets
+  {
+    id: 'obsidian',
+    name: 'Obsidian',
+    icon: ObsidianIcon,
+    adapterFactory: createObsidianAdapter,
+  },
+];
+```
+
+### 5. Enable the Wallet
+
+In `src/config/aztecWalletConfig.ts`, add your wallet to the config:
+
+```typescript
+walletGroups: {
+  aztecWallets: ['azguard', 'obsidian'],
+},
+```
+
+### 6. Export from Index Files
+
+Make sure to properly export your adapter from:
+
+- `src/aztec-wallet/adapters/obsidian/index.ts`
+- `src/aztec-wallet/adapters/index.ts`
+
+> **Note:** No changes are needed to hooks, providers, or the `BrowserWalletConnector` class. The adapter pattern handles all wallet-specific logic.
 
 ---
 
 ## Network Information
 
-| Network | Node URL                              | Status                   |
-| ------- | ------------------------------------- | ------------------------ |
-| Testnet | `https://rpc.testnet.aztec-labs.com`  | Public, contracts deployed |
-| Sandbox | `http://localhost:8080`               | Local, run with `aztec start --local-network` |
+| Network | Node URL                | Status                       |
+| ------- | ----------------------- | ---------------------------- |
+| Sandbox | `http://localhost:8080` | Local development (primary)  |
+| Devnet  | TBD                     | No public v4 devnet yet      |
 
 ---
 
@@ -428,15 +481,14 @@ These hooks work the same regardless of which connector is active — the execut
 
 - [Aztec Documentation](https://docs.aztec.network)
 - [Noir Language Guide](https://noir-lang.org/docs)
-- [`@aztec/wallet-sdk`](https://www.npmjs.com/package/@aztec/wallet-sdk)
-- [`@defi-wonderland/aztec-standards`](https://github.com/defi-wonderland/aztec-standards)
+- [Aztec.js API Reference](https://docs.aztec.network/reference/aztec-js)
 - [Azguard Wallet](https://azguard.xyz/)
 
 ---
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
