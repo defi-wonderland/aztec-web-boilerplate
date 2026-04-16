@@ -10,30 +10,18 @@ import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/ar
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { Fr } from '@aztec/aztec.js/fields';
 import { createContractConfig, getDeployerAddress } from '../contract-registry';
-import { ARTIFACT_REGISTRY_URL } from './networks';
 import type { ArtifactSourceConfig } from '../types/artifactSource';
-
-const CLASS_IDS = {
-  dripper: '0x1dffc5e2b304ff01d1c589e19b2c953575f022a17f1acf4e01614527c24093db',
-  token: '0x25a9e07ed00603660d81a3db8836a766dd4f0f259e764b682fad713cdc9aa99d',
-} as const;
 
 // ---------------------------------------------------------------------------
 // Artifact source chains
 // ---------------------------------------------------------------------------
 
 function dripperArtifactSources(): ArtifactSourceConfig[] {
-  return [
-    { registry: ARTIFACT_REGISTRY_URL },
-    { local: DripperContract.artifact },
-  ];
+  return [{ local: DripperContract.artifact }];
 }
 
 function tokenArtifactSources(): ArtifactSourceConfig[] {
-  return [
-    { registry: ARTIFACT_REGISTRY_URL },
-    { local: TokenContract.artifact },
-  ];
+  return [{ local: TokenContract.artifact }];
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +43,6 @@ export const boilerplateContracts = createContractConfig({
     }),
     lazyRegister: false,
     artifactSources: dripperArtifactSources,
-    classId: () => CLASS_IDS.dripper,
   },
 
   /**
@@ -77,6 +64,5 @@ export const boilerplateContracts = createContractConfig({
     }),
     lazyRegister: true,
     artifactSources: tokenArtifactSources,
-    classId: () => CLASS_IDS.token,
   },
 });
