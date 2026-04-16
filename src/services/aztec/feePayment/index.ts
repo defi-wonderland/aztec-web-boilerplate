@@ -34,6 +34,14 @@ export async function createFeePaymentMethod(
         AztecAddress.fromString(config.fpc.address)
       );
 
+    case 'bridged':
+      throw new Error(
+        'BridgedMintAndPayFeePaymentMethod requires per-deposit params ' +
+          '(amount, secret, salt, leafIndex) from an L1→L2 FeeJuice bridge deposit. ' +
+          'This boilerplate ships only config plumbing — see ' +
+          'defi-wonderland/aztec-feejuice-frontend for a reference deposit + claim flow.'
+      );
+
     default:
       throw new Error(`Unknown fee payment method type: ${type}`);
   }
