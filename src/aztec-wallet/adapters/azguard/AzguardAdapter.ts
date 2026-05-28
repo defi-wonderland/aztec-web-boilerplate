@@ -12,14 +12,16 @@ import {
   type AztecChainId,
   type AztecNetwork,
 } from '../../../config/networks/constants';
-import { parseAddressFromCaip } from '../../../utils/azguard';
+import { parseAddressFromCaip } from '../../../utils/caip';
 import { AzguardWalletService } from './AzguardWalletService';
+import type {
+  BrowserWalletOperationResult,
+  BrowserWalletOperation,
+} from '../../types/browserWallet';
 import type {
   IBrowserWalletAdapter,
   BrowserWalletState,
-  BrowserWalletOperationResult,
-  BrowserWalletOperation,
-} from '../../../types/browserWallet';
+} from '../../types/browserWalletAdapter';
 import type {
   CaipAccount,
   CaipChain,

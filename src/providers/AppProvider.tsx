@@ -6,6 +6,7 @@ import { aztecWalletConfig } from '../config/aztecWalletConfig';
 import { ModalProvider, ToastProvider } from '../hooks';
 import { queryClient } from '../lib/queryClient';
 import { ContractRegistryInitializer } from './ContractRegistryInitializer';
+import { UseAztecClientProvider } from './UseAztecClientProvider';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -18,9 +19,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         <ToastProvider>
           <ModalProvider>
             <AztecWalletProvider config={aztecWalletConfig}>
-              <ContractRegistryInitializer>
-                {children}
-              </ContractRegistryInitializer>
+              <UseAztecClientProvider>
+                <ContractRegistryInitializer>
+                  {children}
+                </ContractRegistryInitializer>
+              </UseAztecClientProvider>
             </AztecWalletProvider>
           </ModalProvider>
           <Toaster />

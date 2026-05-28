@@ -25,8 +25,6 @@ export interface ConnectorStatus {
   error: string | null;
 }
 
-export type { ConnectorTransactionRequest, ConnectorTransactionResult };
-
 export interface WalletConnector {
   readonly id: WalletConnectorId;
   readonly label: string;

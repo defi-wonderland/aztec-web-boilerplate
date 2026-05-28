@@ -5,9 +5,9 @@ import { SponsoredFPCContractArtifact } from '@aztec/noir-contracts.js/Sponsored
 import { contractsConfig } from '../config/contracts';
 import { getChainId, type AztecChainId } from '../config/networks/constants';
 import { type ContractNames } from '../contract-registry';
+import type { RegisterContractOp } from '../aztec-wallet/types/browserWallet';
 import type { NetworkConfig } from '../config/networks';
 import type { ResolvedArtifacts } from '../services/aztec/artifact';
-import type { RegisterContractOp } from '../types/browserWallet';
 
 interface BuildRegisterContractOperationsOptions {
   config: NetworkConfig;

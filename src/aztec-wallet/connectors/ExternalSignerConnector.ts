@@ -15,11 +15,11 @@ import { createEVMSigner } from '../signers';
 import { getNetworkStore } from '../store/network';
 import { getWalletStore } from '../store/wallet';
 import { WalletType, ExternalSignerType } from '../types/aztec';
+import type { ExternalSigner } from '../signers/types';
 import type {
   ExternalSignerWalletConnector,
   ConnectorStatus,
-} from '../../types/walletConnector';
-import type { ExternalSigner } from '../signers/types';
+} from '../types/walletConnector';
 
 interface ExternalSignerConnectorConfig {
   id?: string;

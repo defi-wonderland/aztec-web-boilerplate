@@ -2,12 +2,14 @@
  * Deployable Contracts Configuration.
  * See docs/contract-ui.md for documentation.
  */
+import { TokenContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Token.js';
 import dripperSandbox from '@defi-wonderland/aztec-standards/target/dripper-Dripper.json';
 import tokenSandbox from '@defi-wonderland/aztec-standards/target/token_contract-Token.json';
 import {
   loadDeployableContracts,
   type DeployableContractConfig,
 } from '../utils/deployableContracts';
+import { ARTIFACT_REGISTRY_URL } from './networks/constants';
 
 /**
  * ==========================================
@@ -21,6 +23,7 @@ import {
  *   - classId: Class ID to fetch artifact from registry (for devnet)
  *   - network: (optional) Filter by network name
  *   - labelField: (optional) Constructor param to distinguish multiple deployments (e.g., 'name' for Token)
+ *   - artifactSources: (optional) Ordered fallback chain for artifact resolution
  */
 const DEPLOYABLE_CONTRACTS_CONFIG: DeployableContractConfig[] = [
   {
@@ -30,6 +33,10 @@ const DEPLOYABLE_CONTRACTS_CONFIG: DeployableContractConfig[] = [
       '0x1a89e73869a0969d6a14a8eb2ad8c981820302ff64c55b1225fbe29e4bfa99aa',
     network: 'devnet',
     labelField: 'name',
+    artifactSources: [
+      { registry: ARTIFACT_REGISTRY_URL },
+      { local: TokenContract.artifact },
+    ],
   },
   {
     id: 'token-sandbox',

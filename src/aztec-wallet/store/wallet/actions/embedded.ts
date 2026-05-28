@@ -10,7 +10,7 @@ import {
 } from '../../../services/wallet';
 import { WalletType } from '../../../types/aztec';
 import { getNetworkStore } from '../../network';
-import type { WalletConnectorId } from '../../../../types/walletConnector';
+import type { WalletConnectorId } from '../../../types/walletConnector';
 import type { SetState, GetState } from '../types';
 
 export const createEmbeddedActions = (set: SetState, get: GetState) => ({

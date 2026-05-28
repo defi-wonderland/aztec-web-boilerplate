@@ -8,7 +8,7 @@
  */
 export const NETWORK_URLS = {
   sandbox: 'http://localhost:8080',
-  devnet: 'https://v4-devnet-1.aztec-labs.com',
+  devnet: 'https://v4-devnet-2.aztec-labs.com',
 } as const;
 
 /**
@@ -16,6 +16,10 @@ export const NETWORK_URLS = {
  */
 export const DEFAULT_ARTIFACT_REGISTRY_URL =
   'https://devnet.aztec-registry.xyz';
+
+/** Resolved registry URL (env override or default). */
+export const ARTIFACT_REGISTRY_URL: string =
+  import.meta?.env?.VITE_ARTIFACT_REGISTRY_URL ?? DEFAULT_ARTIFACT_REGISTRY_URL;
 
 /**
  * Available network types

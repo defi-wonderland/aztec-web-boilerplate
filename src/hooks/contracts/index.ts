@@ -1,6 +1,3 @@
-// Root-level hooks
-export { useWriteContract } from './useWriteContract';
-export { useReadContract } from './useReadContract';
 export { useRequiredContracts } from './useRequiredContracts';
 
 // Invoke (Contract Interaction UI - dynamic calling)
@@ -32,5 +29,3 @@ export type {
   UsePreconfiguredLoaderOptions,
   UsePreconfiguredLoaderReturn,
 } from './artifact';
-export type { DynamicReadContractParams } from './useReadContract';
-export type { DynamicWriteContractParams } from './useWriteContract';

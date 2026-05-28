@@ -7,7 +7,7 @@
  *
  * The embedded wallet is designed for development and demonstration purposes.
  */
-import { IAztecStorageService, AccountData } from '../../../types/aztec';
+import { IAztecStorageService, AccountData } from '../../types/aztec';
 
 export class AztecStorageService implements IAztecStorageService {
   private static readonly STORAGE_KEY = 'aztec-account';

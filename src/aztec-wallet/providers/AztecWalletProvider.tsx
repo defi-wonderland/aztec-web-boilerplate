@@ -16,12 +16,12 @@ import {
 import { WalletType } from '../types/aztec';
 import { AztecWalletContext } from './context';
 import type { AztecNetwork } from '../../config/networks/constants';
-import type { ExternalSignerWalletConnector } from '../../types/walletConnector';
 import type {
   AztecWalletConfig,
   NetworkPreset,
   StoreNetworkPreset,
 } from '../types';
+import type { ExternalSignerWalletConnector } from '../types/walletConnector';
 
 export interface AztecWalletProviderProps {
   /** AztecWallet configuration */

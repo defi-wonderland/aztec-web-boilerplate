@@ -1,32 +1,40 @@
-import type { GetTxReceiptOp } from '../types/browserWallet';
-import type { BrowserWalletConnector } from '../types/walletConnector';
+import type {
+  BrowserWalletOperation,
+  BrowserWalletOperationResult,
+  GetTxReceiptOp,
+} from '../../types/browserWallet';
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_MAX_ATTEMPTS = 30; // 60 seconds total
 
-export type WaitForReceiptOptions = {
+export interface WaitForReceiptParams {
+  executeOperation: (
+    operation: BrowserWalletOperation
+  ) => Promise<BrowserWalletOperationResult>;
+  txHash: string;
+  chain: string;
   intervalMs?: number;
   maxAttempts?: number;
-};
+}
 
 export type WaitForReceiptResult =
   | { success: true }
   | { success: false; error: string };
 
 /**
- * Polls a browser wallet for transaction receipt until confirmed or timeout.
- * Handles mined/success as success, dropped/failed/reverted as failures.
+ * Polls for a transaction receipt until confirmed or timeout.
+ * Parameterized — accepts an executeOperation function instead of a connector.
  */
-export const waitForBrowserWalletReceipt = async (
-  connector: BrowserWalletConnector,
-  txHash: string,
-  chain: string,
-  options: WaitForReceiptOptions = {}
+export const waitForReceipt = async (
+  params: WaitForReceiptParams
 ): Promise<WaitForReceiptResult> => {
-  const intervalMs = options.intervalMs ?? DEFAULT_POLL_INTERVAL_MS;
-  const maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
-
-  console.log(`[txReceipt] Polling for txHash: ${txHash} on chain: ${chain}`);
+  const {
+    executeOperation,
+    txHash,
+    chain,
+    intervalMs = DEFAULT_POLL_INTERVAL_MS,
+    maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  } = params;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -35,27 +43,19 @@ export const waitForBrowserWalletReceipt = async (
         chain,
         txHash,
       };
-      const result = await connector.executeOperation(operation);
+      const result = await executeOperation(operation);
 
       if (result.status === 'failed') {
         const errorMsg =
-          'error' in result ? String(result.error) : 'Failed to get receipt';
-        console.log(
-          `[txReceipt] Attempt ${attempt}/${maxAttempts} - Operation failed:`,
-          result
-        );
+          'error' in result && result.error
+            ? String(result.error)
+            : 'Failed to get receipt';
         return { success: false, error: errorMsg };
       }
 
       if (result.status === 'ok' && result.result) {
         const receipt = result.result as { status?: string };
         const txStatus = receipt.status?.toLowerCase();
-        console.log(
-          `[txReceipt] Attempt ${attempt}/${maxAttempts} - Receipt:`,
-          receipt,
-          'Status:',
-          txStatus
-        );
 
         if (txStatus === 'mined' || txStatus === 'success') {
           return { success: true };
@@ -70,9 +70,8 @@ export const waitForBrowserWalletReceipt = async (
         }
       }
     } catch (err) {
-      // Network error - continue polling
-      console.log(
-        `[txReceipt] Attempt ${attempt}/${maxAttempts} - Error:`,
+      console.debug(
+        `[txReceipt] Attempt ${attempt}/${maxAttempts} error:`,
         err
       );
     }

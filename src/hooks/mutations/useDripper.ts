@@ -1,10 +1,9 @@
-import { useRef, useLayoutEffect } from 'react';
 import { DripperContract } from '@defi-wonderland/aztec-standards/artifacts/src/artifacts/Dripper.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { AztecAddress } from '@aztec/aztec.js/addresses';
 import { useAztecWallet } from '../../aztec-wallet';
 import { contractsConfig } from '../../config/contracts';
-import { useWriteContract } from '../contracts/useWriteContract';
+import { useWriteContract } from '../../use-aztec';
 import { queryKeys } from '../queries/queryKeys';
 import { useFeeJuiceBalanceInvalidation } from '../queries/useFeeJuiceBalance';
 import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
@@ -23,21 +22,16 @@ interface UseDripperOptions {
 }
 
 export const useDripper = (options: UseDripperOptions = {}) => {
-  // Use ref to avoid stale closures in mutation callbacks
-  const callbacksRef = useRef(options);
-  // Update ref in layout effect to ensure latest callbacks are available
-  useLayoutEffect(() => {
-    callbacksRef.current = options;
-  });
   const { account, currentConfig } = useAztecWallet();
-  const { writeContract } = useWriteContract();
+  const writePrivate = useWriteContract();
+  const writePublic = useWriteContract();
   const queryClient = useQueryClient();
   const { invalidateAll: invalidateFeeJuiceBalances } =
     useFeeJuiceBalanceInvalidation();
 
   const dripperAddress = contractsConfig.dripper.address(currentConfig);
   const tokenAddress = contractsConfig.token.address(currentConfig);
-  const isReady = !!account;
+  const isReady = !!account && !!dripperAddress && !!tokenAddress;
 
   const invalidateBalance = () => {
     if (!account || !tokenAddress) return;
@@ -53,76 +47,75 @@ export const useDripper = (options: UseDripperOptions = {}) => {
     invalidateFeeJuiceBalances();
   };
 
-  const dripToPrivate = useMutation({
-    retry: false,
-    mutationFn: async ({ amount, feePaymentMethod }: DripParams) => {
-      if (!dripperAddress || !tokenAddress) {
-        throw new Error('Contract addresses not configured');
-      }
-      if (!account) {
-        throw new Error('Account not available');
-      }
+  const dripToPrivate = ({ amount, feePaymentMethod }: DripParams) => {
+    if (!dripperAddress || !tokenAddress) {
+      options.onDripToPrivateError?.(
+        new Error('Contract addresses not configured')
+      );
+      return;
+    }
+    if (!account) {
+      options.onDripToPrivateError?.(new Error('Account not available'));
+      return;
+    }
 
-      const result = await writeContract({
+    writePrivate.mutate(
+      {
         contract: DripperContract,
         address: dripperAddress,
         functionName: 'drip_to_private',
         args: [AztecAddress.fromString(tokenAddress), amount],
         feePaymentMethod,
-      });
-
-      if (!result.success) {
-        throw new Error(result.error ?? 'drip_to_private failed');
+      },
+      {
+        onSuccess: () => {
+          invalidateAllBalances();
+          options.onDripToPrivateSuccess?.();
+        },
+        onError: (err) => {
+          options.onDripToPrivateError?.(err);
+        },
       }
+    );
+  };
 
-      invalidateAllBalances();
-    },
-    onSuccess: () => callbacksRef.current.onDripToPrivateSuccess?.(),
-    onError: (error: Error) =>
-      callbacksRef.current.onDripToPrivateError?.(error),
-  });
+  const dripToPublic = ({ amount, feePaymentMethod }: DripParams) => {
+    if (!dripperAddress || !tokenAddress) {
+      options.onDripToPublicError?.(
+        new Error('Contract addresses not configured')
+      );
+      return;
+    }
+    if (!account) {
+      options.onDripToPublicError?.(new Error('Account not available'));
+      return;
+    }
 
-  const dripToPublic = useMutation({
-    retry: false,
-    mutationFn: async ({ amount, feePaymentMethod }: DripParams) => {
-      if (!dripperAddress || !tokenAddress) {
-        throw new Error('Contract addresses not configured');
-      }
-      if (!account) {
-        throw new Error('Account not available');
-      }
-
-      // Simulate first to catch revert reasons before sending
-      console.log('[useDripper] Simulating drip_to_public...', {
-        dripperAddress,
-        tokenAddress,
-        amount: amount.toString(),
-        account: account.getAddress().toString(),
-      });
-
-      const result = await writeContract({
+    writePublic.mutate(
+      {
         contract: DripperContract,
         address: dripperAddress,
         functionName: 'drip_to_public',
         args: [AztecAddress.fromString(tokenAddress), amount],
         feePaymentMethod,
-      });
-
-      if (!result.success) {
-        console.error('[useDripper] drip_to_public failed:', result.error);
-        throw new Error(result.error ?? 'drip_to_public failed');
+      },
+      {
+        onSuccess: () => {
+          invalidateAllBalances();
+          options.onDripToPublicSuccess?.();
+        },
+        onError: (err) => {
+          options.onDripToPublicError?.(err);
+        },
       }
-
-      invalidateAllBalances();
-    },
-    onSuccess: () => callbacksRef.current.onDripToPublicSuccess?.(),
-    onError: (error: Error) =>
-      callbacksRef.current.onDripToPublicError?.(error),
-  });
+    );
+  };
 
   return {
     dripToPrivate,
     dripToPublic,
+    isPrivatePending: writePrivate.isPending,
+    isPublicPending: writePublic.isPending,
     isReady,
   };
 };

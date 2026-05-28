@@ -3,6 +3,17 @@
  */
 
 /**
+ * Coerces an unknown value to bigint.
+ * Handles raw bigints, Aztec field elements (Fr) with `.toBigInt()`, and primitives.
+ */
+export const toBigInt = (v: unknown): bigint => {
+  if (typeof v === 'bigint') return v;
+  if (typeof v === 'object' && v !== null && 'toBigInt' in v)
+    return (v as { toBigInt(): bigint }).toBigInt();
+  return BigInt(String(v));
+};
+
+/**
  * Formats a bigint balance with decimals for display.
  *
  * @param balance - The raw balance as bigint

@@ -7,11 +7,11 @@ import { createEmbeddedActions } from './actions/embedded';
 import { createExternalSignerActions } from './actions/externalSigner';
 import { isValidPXETransition } from './types';
 import type { WalletStore, WalletState } from './types';
+import type { WalletType } from '../../types/aztec';
 import type {
   WalletConnector,
   WalletConnectorId,
-} from '../../../types/walletConnector';
-import type { WalletType } from '../../types/aztec';
+} from '../../types/walletConnector';
 
 export type { WalletStore, PXEStatus, NetworkStatus } from './types';
 

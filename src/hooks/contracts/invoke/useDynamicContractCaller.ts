@@ -1,13 +1,12 @@
 import { useCallback, useState } from 'react';
 import type { ContractArtifact } from '@aztec/aztec.js/abi';
-import { useFeePayment } from '../../../store';
-import { useReadContract } from '../useReadContract';
-import { useWriteContract } from '../useWriteContract';
+import { useFeePayment } from '../../../store/feePayment';
+import { useAztecClient } from '../../../use-aztec';
 
 interface CallParams {
   address: string;
   functionName: string;
-  args: unknown[];
+  args: unknown[]; // Untyped — the artifact's ABI handles encoding/decoding at runtime
 }
 
 interface CallResult {
@@ -17,11 +16,15 @@ interface CallResult {
   error?: string;
 }
 
+/**
+ * Hook for dynamically calling arbitrary contract functions.
+ * Delegates to use-aztec core execution functions via the adapter pattern,
+ * keeping wallet-specific branching centralized in the integration layer.
+ */
 export const useDynamicContractCaller = (
   artifact?: ContractArtifact | null
 ) => {
-  const { readContract } = useReadContract();
-  const { writeContract } = useWriteContract();
+  const client = useAztecClient();
   const { method: feePaymentMethod } = useFeePayment();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -35,23 +38,22 @@ export const useDynamicContractCaller = (
         return { success: false, error: 'Artifact not loaded' };
       }
 
+      if (!client) {
+        return { success: false, error: 'Wallet not connected' };
+      }
+
       setIsSimulating(true);
       setError(null);
 
       try {
-        const result = await readContract({
+        const result = await client.executeRead({
           artifact,
           address,
           functionName,
           args,
         });
 
-        if (!result.success) {
-          setError(result.error ?? 'Simulation failed');
-          return { success: false, error: result.error };
-        }
-
-        return { success: true, data: result.data };
+        return { success: true, data: result };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMsg);
@@ -60,7 +62,7 @@ export const useDynamicContractCaller = (
         setIsSimulating(false);
       }
     },
-    [artifact, readContract]
+    [artifact, client]
   );
 
   const execute = useCallback(
@@ -71,11 +73,15 @@ export const useDynamicContractCaller = (
         return { success: false, error: 'Artifact not loaded' };
       }
 
+      if (!client) {
+        return { success: false, error: 'Wallet not connected' };
+      }
+
       setIsExecuting(true);
       setError(null);
 
       try {
-        const result = await writeContract({
+        const result = await client.executeWrite({
           artifact,
           address,
           functionName,
@@ -83,15 +89,10 @@ export const useDynamicContractCaller = (
           feePaymentMethod,
         });
 
-        if (!result.success) {
-          setError(result.error ?? 'Transaction failed');
-          return { success: false, error: result.error, txHash: result.txHash };
-        }
-
         return {
           success: true,
-          data: result.data,
           txHash: result.txHash,
+          data: result.result,
         };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
@@ -101,7 +102,7 @@ export const useDynamicContractCaller = (
         setIsExecuting(false);
       }
     },
-    [artifact, writeContract, feePaymentMethod]
+    [artifact, client, feePaymentMethod]
   );
 
   return {

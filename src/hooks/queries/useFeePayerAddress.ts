@@ -7,12 +7,12 @@ import { useQuery } from '@tanstack/react-query';
 import type { AztecAddress } from '@aztec/aztec.js/addresses';
 import { createFeePaymentMethod } from '../../services/aztec/feePayment';
 import { queryKeys } from './queryKeys';
-import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
-import type { FeePaymentContractsConfig } from '../../config/networks/types';
 import type {
   EmbeddedWalletConnector,
   ExternalSignerWalletConnector,
-} from '../../types/walletConnector';
+} from '../../aztec-wallet/types/walletConnector';
+import type { FeePaymentMethodType } from '../../config/feePaymentContracts';
+import type { FeePaymentContractsConfig } from '../../config/networks/types';
 
 interface UseFeePayerAddressOptions {
   /** The selected fee payment method */

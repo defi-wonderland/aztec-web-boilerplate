@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { hasAppManagedPXE } from '../../types/walletConnector';
 import { useAztecWalletContext } from '../providers/context';
 import { getEVMWalletService } from '../services/evm/EVMWalletService';
 import { getEVMStore, useEVMStore } from '../store/evm';
@@ -11,6 +10,7 @@ import {
 } from '../store/network';
 import { useWalletStore } from '../store/wallet';
 import { WalletType } from '../types/aztec';
+import { hasAppManagedPXE } from '../types/walletConnector';
 import type { AztecNetwork } from '../../config/networks/constants';
 import type { StoreNetworkPreset } from '../types';
 import type { Hex } from 'viem';
