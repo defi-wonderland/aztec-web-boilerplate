@@ -15,9 +15,18 @@ jobs:
       - name: Setup Aztec environment
         uses: defi-wonderland/aztec-ci-actions/actions/setup-aztec@dev
         with:
-          start-pxe: 'true'
+          # setup-aztec@dev currently cannot start the sandbox from inside the
+          # composite action because its GITHUB_PATH updates are only visible
+          # to later workflow steps. Start it explicitly after setup instead.
+          start-pxe: 'false'
           run-compile: 'false'
           run-codegen: 'false'
+
+      - name: Start Aztec sandbox
+        run: |
+          export PATH="$HOME/.aztec/current/bin:$HOME/.aztec/current/node_modules/.bin:$HOME/.aztec/bin:$PATH"
+          aztec start --local-network > /tmp/aztec-sandbox.log 2>&1 &
+          echo $! > /tmp/aztec-sandbox.pid
 
       - name: Install Playwright Browsers
         run: yarn playwright install --with-deps
@@ -30,7 +39,11 @@ jobs:
               echo "  Still waiting..."
               sleep 5
             done
-          '
+          ' || {
+            echo "Sandbox failed to become ready; recent logs:"
+            tail -200 /tmp/aztec-sandbox.log || true
+            exit 1
+          }
           echo "Sandbox is ready!"
 
       - name: Deploy contracts and build app
