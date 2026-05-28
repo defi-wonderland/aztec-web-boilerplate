@@ -24,7 +24,7 @@ jobs:
 
       - name: Start Aztec sandbox
         run: |
-          export PATH="$HOME/.aztec/current/bin:$HOME/.aztec/bin:$PATH"
+          export PATH="$HOME/.aztec/current/bin:$HOME/.aztec/current/node_modules/.bin:$HOME/.aztec/bin:$PATH"
           aztec start --local-network > /tmp/aztec-sandbox.log 2>&1 &
           echo $! > /tmp/aztec-sandbox.pid
 
