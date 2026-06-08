@@ -1,12 +1,5 @@
 // Placeholder app shell. Replaced with the full app (navbar / block panel /
 // wallet flow) in the final migration step.
-const styles = {
-  shell: "flex min-h-screen flex-col items-center justify-center gap-3.5 px-4",
-  title:
-    "m-0 text-[2.875rem] font-extrabold leading-[1.05] tracking-[-0.02em] text-ink",
-  subtitle: "m-0 text-[1.0625rem] text-ink-soft",
-} as const;
-
 function App() {
   return (
     <div className={styles.shell}>
@@ -15,5 +8,12 @@ function App() {
     </div>
   );
 }
+
+const styles = {
+  shell: "flex min-h-screen flex-col items-center justify-center gap-3.5 px-4",
+  title:
+    "m-0 text-[2.875rem] font-extrabold leading-[1.05] tracking-[-0.02em] text-ink",
+  subtitle: "m-0 text-[1.0625rem] text-ink-soft",
+} as const;
 
 export default App;
