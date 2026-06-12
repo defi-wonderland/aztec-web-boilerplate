@@ -1,22 +1,19 @@
 // External wallet connector (@aztec/wallet-sdk/manager — WalletManager).
 // Azguard-style flow: discovery via extension -> secure-channel handshake ->
 // emoji verification -> confirm() -> Wallet.
-import {
-  WalletManager,
-  type WalletProvider,
-} from '@aztec/wallet-sdk/manager';
-import { hashToEmoji } from '@aztec/wallet-sdk/crypto';
+import { WalletManager, type WalletProvider } from "@aztec/wallet-sdk/manager";
+import { hashToEmoji } from "@aztec/wallet-sdk/crypto";
 import type {
   AppCapabilities,
   GrantedAccountsCapability,
-} from '@aztec/aztec.js/wallet';
-import { getChainInfo } from '../../services/node';
-import { APP_ID, DISCOVERY_TIMEOUT_MS } from '../../config/app';
-import type { ConnectOptions, ConnectResult, WalletConnector } from './types';
+} from "@aztec/aztec.js/wallet";
+import { getChainInfo } from "../../services/node";
+import { APP_ID, DISCOVERY_TIMEOUT_MS } from "../../config/app";
+import type { ConnectOptions, ConnectResult, WalletConnector } from "./types";
 
 /** Take the first provider from the async iterator, or null if discovery is empty. */
 async function firstProvider(
-  wallets: AsyncIterable<WalletProvider>,
+  wallets: AsyncIterable<WalletProvider>
 ): Promise<WalletProvider | null> {
   for await (const provider of wallets) {
     return provider;
@@ -25,8 +22,8 @@ async function firstProvider(
 }
 
 export class ExternalConnector implements WalletConnector {
-  readonly kind = 'external' as const;
-  readonly label = 'Azguard';
+  readonly kind = "external" as const;
+  readonly label = "Azguard";
 
   // Active provider, kept so disconnect() can tear it down.
   private provider: WalletProvider | null = null;
@@ -44,7 +41,13 @@ export class ExternalConnector implements WalletConnector {
     const provider = await firstProvider(discovery.wallets);
     discovery.cancel();
     if (!provider) {
-      throw new Error('No external wallet found');
+      throw new Error("No external wallet found");
+    }
+    // Tear down any previous provider before replacing it, so its secure
+    // channel doesn't orphan (this connector is a long-lived singleton, so
+    // a reconnect without an explicit disconnect would overwrite it).
+    if (this.provider) {
+      await this.provider.disconnect();
     }
     this.provider = provider;
 
@@ -62,25 +65,27 @@ export class ExternalConnector implements WalletConnector {
 
     // External wallets (Azguard) use a capability/permission model: the dApp must
     // declare upfront which methods it needs. Without this, getAccounts() fails with
-    // "Unauthorized method/chain". We request the minimal `accounts` capability —
-    // the wallet shows a permission prompt and returns the granted accounts.
+    // "Unauthorized method/chain". We request the `accounts` capability — the
+    // wallet shows a permission prompt and returns the granted accounts.
     const manifest: AppCapabilities = {
-      version: '1.0',
+      version: "1.0",
       metadata: {
-        name: 'web-boiler',
-        version: '0.1.0',
-        description: 'Aztec frontend boilerplate',
+        name: "web-boiler",
+        version: "0.1.0",
+        description: "Aztec frontend boilerplate",
       },
-      capabilities: [{ type: 'accounts', canGet: true, canCreateAuthWit: true }],
+      capabilities: [
+        { type: "accounts", canGet: true, canCreateAuthWit: true },
+      ],
     };
     const response = await wallet.requestCapabilities(manifest);
 
     const accountsCap = response.granted.find(
-      (cap): cap is GrantedAccountsCapability => cap.type === 'accounts',
+      (cap): cap is GrantedAccountsCapability => cap.type === "accounts"
     );
     const accounts = accountsCap?.accounts ?? [];
     if (accounts.length === 0) {
-      throw new Error('No accounts granted by the external wallet');
+      throw new Error("No accounts granted by the external wallet");
     }
     // Return ALL granted accounts; the store lets the user pick which one
     // (the wallet may grant several). No more silent accounts[0].

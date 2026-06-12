@@ -12,11 +12,22 @@ export class EmbeddedConnector implements WalletConnector {
   readonly kind = "embedded" as const;
   readonly label = "Embedded wallet";
 
+  // Active wallet, kept so disconnect() can stop its in-browser PXE.
+  private wallet: EmbeddedWallet | null = null;
+
   async connect({ node }: ConnectOptions): Promise<ConnectResult> {
+    // Tear down a previous PXE before spinning up a new one (e.g. on a
+    // network switch -> reconnect) so prover/worker resources don't leak.
+    if (this.wallet) {
+      await this.wallet.stop();
+      this.wallet = null;
+    }
+
     // Use `pxe` (not the deprecated `pxeConfig`) in 4.3.0.
     const wallet = await EmbeddedWallet.create(node, {
       pxe: { proverEnabled: true },
     });
+    this.wallet = wallet;
 
     // Reconnect: reuse a persisted account if present; otherwise create a
     // Schnorr account. The signing key is derived automatically when omitted.
@@ -30,7 +41,12 @@ export class EmbeddedConnector implements WalletConnector {
   }
 
   async disconnect(): Promise<void> {
-    // No remote teardown nor local state to clean up: the account lives in
-    // IndexedDB (persisted). The store resets its wallet reference.
+    // Stop the in-browser PXE (prover + workers) so it doesn't leak across
+    // reconnects. The account itself stays in IndexedDB (persisted), so a
+    // later reconnect reuses the same Schnorr account.
+    if (this.wallet) {
+      await this.wallet.stop();
+      this.wallet = null;
+    }
   }
 }
