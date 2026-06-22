@@ -57,6 +57,16 @@ function writeLastConnector(kind: ConnectorKind | null) {
   }
 }
 
+function logConnectorDisconnectError(err: unknown) {
+  console.warn('Failed to disconnect wallet connector', err);
+}
+
+async function disconnectConnector(kind: ConnectorKind | null) {
+  if (!kind) return;
+  const connector = getConnector(kind);
+  await connector?.disconnect();
+}
+
 // 'selecting' = connected to the wallet, but the user still has to pick which
 // granted account to use (only when the wallet exposed more than one).
 export type WalletStatus = 'idle' | 'connecting' | 'selecting' | 'connected' | 'error';
@@ -74,6 +84,8 @@ export interface WalletState {
   emojiGrid: string | null;
   /** Accounts to choose from while status === 'selecting'; null otherwise. */
   pendingAccounts: Aliased<AztecAddress>[] | null;
+  /** Monotonic token used to ignore stale async connection completions. */
+  connectAttemptId: number;
 
   /**
    * Create the node client for the persisted (or default) network and store it.
@@ -115,6 +127,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   error: null,
   emojiGrid: null,
   pendingAccounts: null,
+  connectAttemptId: 0,
 
   initNetwork: () => {
     if (get().node) return;
@@ -143,21 +156,51 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       return;
     }
 
+    const previousConnector = get().connector;
+    const attemptId = get().connectAttemptId + 1;
     set({
+      connectAttemptId: attemptId,
       status: 'connecting',
       connector: kind,
+      wallet: null,
+      address: null,
       error: null,
       emojiGrid: null,
       pendingAccounts: null,
     });
+
+    const isCurrentAttempt = () => {
+      const state = get();
+      return (
+        state.connectAttemptId === attemptId &&
+        state.status === 'connecting' &&
+        state.connector === kind &&
+        state.node === node
+      );
+    };
+
     try {
+      if (previousConnector) {
+        await disconnectConnector(previousConnector);
+        if (!isCurrentAttempt()) return;
+      }
+
       const { wallet, accounts } = await connector.connect({
         node,
         // Display-only: show the grid; the connector proceeds to the wallet popup.
-        onEmojiGrid: (grid) => set({ emojiGrid: grid }),
+        onEmojiGrid: (grid) => {
+          if (isCurrentAttempt()) set({ emojiGrid: grid });
+        },
       });
 
+      if (!isCurrentAttempt()) {
+        await disconnectConnector(kind).catch(logConnectorDisconnectError);
+        return;
+      }
+
       if (accounts.length === 0) {
+        await disconnectConnector(kind).catch(logConnectorDisconnectError);
+        if (!isCurrentAttempt()) return;
         set({
           status: 'error',
           error: 'No accounts available',
@@ -170,15 +213,29 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
       // Keep the wallet either way; a single account is auto-selected, while
       // several move to 'selecting' so the user picks one.
-      set({ wallet, emojiGrid: null });
       if (accounts.length === 1) {
         writeLastConnector(kind);
-        set({ status: 'connected', address: accounts[0].item, error: null, pendingAccounts: null });
+        set({
+          status: 'connected',
+          wallet,
+          address: accounts[0].item,
+          error: null,
+          emojiGrid: null,
+          pendingAccounts: null,
+        });
       } else {
-        set({ status: 'selecting', pendingAccounts: accounts, error: null });
+        set({
+          status: 'selecting',
+          wallet,
+          pendingAccounts: accounts,
+          error: null,
+          emojiGrid: null,
+        });
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      await disconnectConnector(kind).catch(logConnectorDisconnectError);
+      if (!isCurrentAttempt()) return;
       set({
         status: 'error',
         error: message,
@@ -191,20 +248,22 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 
   selectAccount: (address) => {
-    const { status, connector } = get();
+    const { status, connector, pendingAccounts } = get();
     if (status !== 'selecting') return;
+    if (!pendingAccounts?.some((account) => account.item.equals(address))) {
+      set({ status: 'error', error: 'Selected account was not granted by the wallet' });
+      return;
+    }
     if (connector) writeLastConnector(connector);
     set({ status: 'connected', address, pendingAccounts: null, error: null });
   },
 
   disconnect: () => {
-    const { connector } = get();
-    if (connector) {
-      const c = getConnector(connector);
-      void c?.disconnect();
-    }
+    const { connector, connectAttemptId } = get();
+    void disconnectConnector(connector).catch(logConnectorDisconnectError);
     writeLastConnector(null);
     set({
+      connectAttemptId: connectAttemptId + 1,
       status: 'idle',
       connector: null,
       wallet: null,
