@@ -27,6 +27,8 @@ export interface ConnectResult {
    * a single account, or asks the user to choose when there are several.
    */
   accounts: Aliased<AztecAddress>[];
+  /** Tear down the exact wallet/provider created for this connection. */
+  disconnect: () => Promise<void>;
 }
 
 export interface WalletConnector {

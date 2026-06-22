@@ -86,6 +86,8 @@ export interface WalletState {
   pendingAccounts: Aliased<AztecAddress>[] | null;
   /** Monotonic token used to ignore stale async connection completions. */
   connectAttemptId: number;
+  /** Teardown for the exact active wallet/provider session. */
+  walletDisconnect: (() => Promise<void>) | null;
 
   /**
    * Create the node client for the persisted (or default) network and store it.
@@ -128,6 +130,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   emojiGrid: null,
   pendingAccounts: null,
   connectAttemptId: 0,
+  walletDisconnect: null,
 
   initNetwork: () => {
     if (get().node) return;
@@ -157,6 +160,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     }
 
     const previousConnector = get().connector;
+    const previousWalletDisconnect = get().walletDisconnect;
     const attemptId = get().connectAttemptId + 1;
     set({
       connectAttemptId: attemptId,
@@ -167,6 +171,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       error: null,
       emojiGrid: null,
       pendingAccounts: null,
+      walletDisconnect: null,
     });
 
     const isCurrentAttempt = () => {
@@ -180,12 +185,15 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     };
 
     try {
-      if (previousConnector) {
-        await disconnectConnector(previousConnector);
+      if (previousWalletDisconnect) {
+        await previousWalletDisconnect().catch(logConnectorDisconnectError);
+        if (!isCurrentAttempt()) return;
+      } else if (previousConnector) {
+        await disconnectConnector(previousConnector).catch(logConnectorDisconnectError);
         if (!isCurrentAttempt()) return;
       }
 
-      const { wallet, accounts } = await connector.connect({
+      const { wallet, accounts, disconnect } = await connector.connect({
         node,
         // Display-only: show the grid; the connector proceeds to the wallet popup.
         onEmojiGrid: (grid) => {
@@ -194,12 +202,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       });
 
       if (!isCurrentAttempt()) {
-        await disconnectConnector(kind).catch(logConnectorDisconnectError);
+        await disconnect().catch(logConnectorDisconnectError);
         return;
       }
 
       if (accounts.length === 0) {
-        await disconnectConnector(kind).catch(logConnectorDisconnectError);
+        await disconnect().catch(logConnectorDisconnectError);
         if (!isCurrentAttempt()) return;
         set({
           status: 'error',
@@ -207,6 +215,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
           wallet: null,
           address: null,
           emojiGrid: null,
+          walletDisconnect: null,
         });
         return;
       }
@@ -222,6 +231,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
           error: null,
           emojiGrid: null,
           pendingAccounts: null,
+          walletDisconnect: disconnect,
         });
       } else {
         set({
@@ -230,11 +240,11 @@ export const useWalletStore = create<WalletState>((set, get) => ({
           pendingAccounts: accounts,
           error: null,
           emojiGrid: null,
+          walletDisconnect: disconnect,
         });
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      await disconnectConnector(kind).catch(logConnectorDisconnectError);
       if (!isCurrentAttempt()) return;
       set({
         status: 'error',
@@ -243,6 +253,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         address: null,
         emojiGrid: null,
         pendingAccounts: null,
+        walletDisconnect: null,
       });
     }
   },
@@ -259,8 +270,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 
   disconnect: () => {
-    const { connector, connectAttemptId } = get();
-    void disconnectConnector(connector).catch(logConnectorDisconnectError);
+    const { connector, connectAttemptId, walletDisconnect } = get();
+    const disconnect = walletDisconnect ?? (() => disconnectConnector(connector));
+    void disconnect().catch(logConnectorDisconnectError);
     writeLastConnector(null);
     set({
       connectAttemptId: connectAttemptId + 1,
@@ -271,6 +283,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       error: null,
       emojiGrid: null,
       pendingAccounts: null,
+      walletDisconnect: null,
     });
   },
 
