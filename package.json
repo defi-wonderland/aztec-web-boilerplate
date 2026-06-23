@@ -10,9 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@aztec/aztec.js": "4.3.0",
-    "@aztec/wallet-sdk": "4.3.0",
-    "@aztec/wallets": "4.3.0",
+    "@aztec/aztec.js": "5.0.0-rc.1",
+    "@aztec/wallet-sdk": "5.0.0-rc.1",
+    "@aztec/wallets": "5.0.0-rc.1",
     "@fontsource-variable/inter": "5.2.8",
     "@fontsource-variable/jetbrains-mono": "5.2.8",
     "@radix-ui/react-dialog": "1.1.15",
