@@ -1,15 +1,15 @@
 // External wallet connector (@aztec/wallet-sdk/manager — WalletManager).
 // Azguard-style flow: discovery via extension -> secure-channel handshake ->
 // emoji verification -> confirm() -> Wallet.
-import { WalletManager, type WalletProvider } from "@aztec/wallet-sdk/manager";
-import { hashToEmoji } from "@aztec/wallet-sdk/crypto";
+import { WalletManager, type WalletProvider } from '@aztec/wallet-sdk/manager';
+import { hashToEmoji } from '@aztec/wallet-sdk/crypto';
 import type {
   AppCapabilities,
   GrantedAccountsCapability,
-} from "@aztec/aztec.js/wallet";
-import { getChainInfo } from "../../services/node";
-import { APP_ID, DISCOVERY_TIMEOUT_MS } from "../../config/app";
-import type { ConnectOptions, ConnectResult, WalletConnector } from "./types";
+} from '@aztec/aztec.js/wallet';
+import { getChainInfo } from '../../services/node';
+import { APP_ID, DISCOVERY_TIMEOUT_MS } from '../../config/app';
+import type { ConnectOptions, ConnectResult, WalletConnector } from './types';
 
 /** Take the first provider from the async iterator, or null if discovery is empty. */
 async function firstProvider(
@@ -22,8 +22,8 @@ async function firstProvider(
 }
 
 export class ExternalConnector implements WalletConnector {
-  readonly kind = "external" as const;
-  readonly label = "Azguard";
+  readonly kind = 'external' as const;
+  readonly label = 'Azguard';
 
   // Active provider, kept so disconnect() can tear it down.
   private provider: WalletProvider | null = null;
@@ -43,7 +43,7 @@ export class ExternalConnector implements WalletConnector {
       provider = await firstProvider(discovery.wallets);
       discovery.cancel();
       if (!provider) {
-        throw new Error("No external wallet found");
+        throw new Error('No external wallet found');
       }
       // Tear down any previous provider before replacing it, so its secure
       // channel doesn't orphan (this connector is a long-lived singleton, so
@@ -52,7 +52,7 @@ export class ExternalConnector implements WalletConnector {
         const previousProvider = this.provider;
         this.provider = null;
         await previousProvider.disconnect().catch((err) => {
-          console.warn("Failed to disconnect previous external wallet provider", err);
+          console.warn('Failed to disconnect previous external wallet provider', err);
         });
       }
       this.provider = provider;
@@ -74,24 +74,24 @@ export class ExternalConnector implements WalletConnector {
       // "Unauthorized method/chain". We request the `accounts` capability — the
       // wallet shows a permission prompt and returns the granted accounts.
       const manifest: AppCapabilities = {
-        version: "1.0",
+        version: '1.0',
         metadata: {
-          name: "web-boiler",
-          version: "0.1.0",
-          description: "Aztec frontend boilerplate",
+          name: 'web-boiler',
+          version: '0.1.0',
+          description: 'Aztec frontend boilerplate',
         },
         capabilities: [
-          { type: "accounts", canGet: true, canCreateAuthWit: true },
+          { type: 'accounts', canGet: true, canCreateAuthWit: true },
         ],
       };
       const response = await wallet.requestCapabilities(manifest);
 
       const accountsCap = response.granted.find(
-        (cap): cap is GrantedAccountsCapability => cap.type === "accounts"
+        (cap): cap is GrantedAccountsCapability => cap.type === 'accounts'
       );
       const accounts = accountsCap?.accounts ?? [];
       if (accounts.length === 0) {
-        throw new Error("No accounts granted by the external wallet");
+        throw new Error('No accounts granted by the external wallet');
       }
       const connectedProvider = provider;
       // Return ALL granted accounts; the store lets the user pick which one
@@ -107,7 +107,7 @@ export class ExternalConnector implements WalletConnector {
     } catch (err) {
       if (provider) {
         await provider.disconnect().catch((disconnectErr) => {
-          console.warn("Failed to disconnect external provider after connect failure", disconnectErr);
+          console.warn('Failed to disconnect external provider after connect failure', disconnectErr);
         });
         if (this.provider === provider) this.provider = null;
       }

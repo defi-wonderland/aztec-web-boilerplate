@@ -4,9 +4,12 @@ import "@fontsource-variable/inter/index.css";
 import "@fontsource-variable/jetbrains-mono/index.css";
 import "./index.css";
 import App from "./App";
+import { AppProviders } from "./providers/AppProviders";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <AppProviders>
+      <App />
+    </AppProviders>
   </StrictMode>
 );
