@@ -27,7 +27,7 @@ export class EmbeddedConnector implements WalletConnector {
 
     let wallet: EmbeddedWallet | null = null;
     try {
-      // Use `pxe` (not the deprecated `pxeConfig`) in 4.3.0.
+      // Use the unified `pxe` option required by current EmbeddedWalletOptions.
       wallet = await EmbeddedWallet.create(node, {
         pxe: { proverEnabled: true },
       });
