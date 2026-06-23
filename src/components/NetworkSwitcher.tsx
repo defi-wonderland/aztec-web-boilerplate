@@ -1,13 +1,13 @@
 // NetworkSwitcher: button + Radix dialog to pick the Aztec network (node RPC).
 // Switching recreates the node client and disconnects the wallet (chainInfo
 // differs per network). The active network is highlighted with a check.
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Globe, Check, ChevronDown } from 'lucide-react';
 import { NETWORKS } from '../config/app';
 import { useWallet } from '../hooks/useWallet';
 
-export function NetworkSwitcher() {
+export function NetworkSwitcher(): ReactElement {
   const { networkId, setNetwork } = useWallet();
   const [open, setOpen] = useState(false);
   const active = NETWORKS.find((n) => n.id === networkId) ?? NETWORKS[0];
