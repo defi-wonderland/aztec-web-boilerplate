@@ -7,7 +7,11 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import { queryClient } from '../lib/queryClient';
 import { ToastProvider } from './ToastProvider';
 
-export function AppProviders({ children }: { children: ReactNode }) {
+export interface AppProvidersProps {
+  children: ReactNode;
+}
+
+export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {/* One app-level Tooltip provider (Radix recommends a single instance). */}
